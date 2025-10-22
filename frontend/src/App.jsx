@@ -159,7 +159,15 @@ function App() {
           ),
         },
         {
-          path: "/survey/survey-summary",
+          path: "/survey/:surveyId/survey-summary",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
+              <SurveySummary />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/survey/survey-summary", 
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
               <SurveySummary />

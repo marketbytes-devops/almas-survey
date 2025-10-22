@@ -263,7 +263,7 @@ const SurveyDetails = () => {
               new Date(`1970-01-01T${survey.survey_start_time}`) : null;
             reset({
               ...methods.getValues(),
-              enquiry: surveyId,
+              enquiry: survey.enquiry || surveyId, 
               customerType: survey.customer_type?.id || "",
               isMilitary: survey.is_military || false,
               salutation: survey.salutation || "",
@@ -1531,11 +1531,15 @@ const SurveyDetails = () => {
     );
   };
 
-  const saveSurveyData = async (data) => {
+const saveSurveyData = async (data) => {
+  setIsLoading(true);
+
+   const enquiryId = surveyId ? parseInt(surveyId) : null;
+
     setIsLoading(true);
 
     const payload = {
-      enquiry: surveyId,
+      enquiry: enquiryId,
       customer_type: data.customerType || null,
       is_military: data.isMilitary,
       salutation: data.salutation,
@@ -1659,7 +1663,7 @@ const SurveyDetails = () => {
         .then((response) => {
           setMessage("Survey updated successfully!");
           setTimeout(() => {
-            navigate(`/survey/survey-summary`, {
+            navigate(`/survey/${existingSurvey.survey_id}/survey-summary`, {
               state: {
                 customerData: { ...data, survey_id: response.data.survey_id },
                 articles: data.articles,
@@ -1705,9 +1709,10 @@ const SurveyDetails = () => {
       return apiClient
         .post(`/surveys/`, payloadWithoutSurveyId)
         .then((response) => {
+          const newSurveyId = response.data.survey_id;
           setMessage("Survey created successfully!");
           setTimeout(() => {
-            navigate(`/survey/${surveyId}/survey-summary`, {
+            navigate(`/survey/${newSurveyId}/survey-summary`, {
               state: {
                 customerData: { ...data, survey_id: response.data.survey_id },
                 articles: data.articles,
