@@ -306,12 +306,21 @@ const SurveySummary = () => {
       return survey[field] || survey.enquiry?.[enquiryField] || "Not filled";
     };
 
+        const getPhoneNumber = () => {
+      return survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
+    };
+
+    // Helper function to get service type display
+    const getServiceTypeDisplay = () => {
+      return survey.service_type_display || survey.service_type_name || "N/A";
+    };
+
     const formatBoolean = (value) => value ? "Yes" : "No";
 
     return (
       <div className="space-y-6 p-6 bg-white rounded-lg shadow-md">
         {/* CUSTOMER DETAILS */}
-        <div className="section">
+       <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Customer Details</h4>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
@@ -324,9 +333,10 @@ const SurveySummary = () => {
               <tbody>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Customer Type</td><td className="border border-gray-400 px-4 py-2">{survey.customer_type_name || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Salutation</td><td className="border border-gray-400 px-4 py-2">{survey.salutation || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Full Name</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('full_name')}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Mobile Number</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('phone_number')}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Email</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('email')}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Full Name</td><td className="border border-gray-400 px-4 py-2">{survey.full_name || survey.enquiry?.fullName || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Mobile Number</td><td className="border border-gray-400 px-4 py-2">{getPhoneNumber()}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Email</td><td className="border border-gray-400 px-4 py-2">{survey.email || survey.enquiry?.email || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2">{getServiceTypeDisplay()}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray-400 px-4 py-2">{survey.address || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Company</td><td className="border border-gray-400 px-4 py-2">{survey.company || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Is Military</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.is_military)}</td></tr>
@@ -661,6 +671,8 @@ const SurveySummary = () => {
       <div className="space-y-4">
         {surveys.map((survey) => {
           const totalCosts = calculateTotalCost(survey.articles);
+          const getPhoneNumber = () => survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
+          const getServiceType = () => survey.service_type_display || survey.service_type_name || "N/A";
           return (
             <motion.div
               key={survey.survey_id}
@@ -674,10 +686,11 @@ const SurveySummary = () => {
                   <div className="space-y-2">
                     <h3 className="text-lg font-medium">{survey.survey_id}</h3>
                     <p className="text-sm">{survey.full_name || survey.enquiry?.fullName || "N/A"}</p>
-                    <p className="text-sm">{survey.phone_number || "Not filled"}</p> {/* Added phone number display */}
+                    <p className="text-sm">{getPhoneNumber()}</p>
+                    <p className="text-sm">{survey.email || survey.enquiry?.email || "N/A"}</p>
                   </div>
                   <div className="text-right space-y-2">
-                    <p className="text-sm">{survey.service_type_display || "N/A"}</p>
+                    <p className="text-sm">{getServiceType()}</p>
                     <p className="text-xs">{survey.status}</p>
                     {totalCosts.length > 0 && (
                       <p className="text-sm font-medium">

@@ -1616,11 +1616,10 @@ const saveSurveyData = async (data) => {
     customer_type: data.customerType || null,
     is_military: data.isMilitary,
     salutation: data.salutation,
-    // Include these fields in PUT payload
     full_name: data.fullName,
     phone_number: data.phoneNumber,
     email: data.email,
-    service_type: data.serviceType, // Add service type
+    service_type: data.serviceType,
     address: data.address,
     company: data.company,
     goods_type: data.goodsType,

@@ -194,9 +194,17 @@ class SurveySerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 'survey_id', 'created_at', 'updated_at', 
             'enquiry_service_type', 'message', 'note', 'enquiry_survey_date', 'assigned_user_email',
-            'service_type_display'  # Keep this read-only as it's calculated
+            'service_type_display'
         ]
 
+    def get_phone_number(self, obj):
+        """Get phone number from Survey first, then fallback to Enquiry"""
+        if obj.phone_number:
+            return obj.phone_number
+        if obj.enquiry and obj.enquiry.phoneNumber:
+            return obj.enquiry.phoneNumber
+        return None
+    
     def get_service_type_display(self, obj):
         """Get display name for service type - check both Survey and Enquiry"""
         if obj.service_type:
