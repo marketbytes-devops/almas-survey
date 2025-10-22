@@ -615,7 +615,7 @@ const SurveySummary = () => {
   }
 
   return (
-    <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg shadow-md">
+    <div className="p-4 w-full mx-auto bg-white rounded-lg shadow-md">
       <AnimatePresence>
         {success && (
           <motion.div
@@ -681,12 +681,6 @@ const SurveySummary = () => {
               {/* Action Buttons */}
               <div className="p-4 bg-gray-200 flex gap-2 justify-end flex-wrap">
                 <Button
-                  onClick={() => handleQuickEdit(survey)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs rounded"
-                >
-                  Quick Edit
-                </Button>
-                <Button
                   onClick={() => handleEditSurvey(survey)}
                   className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 text-xs rounded"
                 >
@@ -714,7 +708,13 @@ const SurveySummary = () => {
                   Delete
                 </Button>
               </div>
-
+              {/* Expand Toggle */}
+              <button
+                onClick={() => toggleSectionExpansion(survey.survey_id)}
+                className="w-full p-3 text-center bg-gray-100 hover:bg-[#6b8ca3] text-sm text-gray-600 hover:text-white transition-colors"
+              >
+                {expandedSections.has(survey.survey_id) ? "Hide Details" : "Show All Details"}
+              </button>
               {/* Expandable Detailed View */}
               <AnimatePresence>
                 {expandedSections.has(survey.survey_id) && (
@@ -728,14 +728,6 @@ const SurveySummary = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Expand Toggle */}
-              <button
-                onClick={() => toggleSectionExpansion(survey.survey_id)}
-                className="w-full p-3 text-center bg-gray-100 hover:bg-gray-200 text-sm text-gray-600 transition-colors"
-              >
-                {expandedSections.has(survey.survey_id) ? "Hide Details" : "Show All Details"}
-              </button>
             </motion.div>
           );
         })}
