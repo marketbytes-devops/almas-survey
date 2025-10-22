@@ -19,9 +19,7 @@ class Survey(models.Model):
     address = models.TextField(blank=True, null=True)
     company = models.CharField(max_length=100, blank=True, null=True)
     survey_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    service_type = models.ForeignKey(
-        ServiceType, on_delete=models.SET_NULL, null=True, blank=True, related_name="surveys"
-    )
+    service_type = models.CharField(max_length=50, blank=True, null=True)
     goods_type = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=50, blank=True, null=True)
     survey_date = models.DateField(blank=True, null=True)

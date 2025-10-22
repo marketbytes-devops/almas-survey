@@ -32,6 +32,14 @@ TRANSPORT_MODE_CHOICES = (
     ('rail', 'Rail'),
 )
 
+SERVICE_TYPE_CHOICES = (
+    ('localMove', 'Local Move'),
+    ('internationalMove', 'International Move'),
+    ('carExport', 'Car Import and Export'),
+    ('storageServices', 'Storage Services'),
+    ('logistics', 'Logistics'),
+)
+
 class DestinationAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = DestinationAddress
@@ -126,8 +134,8 @@ class SurveySerializer(serializers.ModelSerializer):
         queryset=CustomerType.objects.all(), allow_null=True, required=False
     )
     customer_type_name = serializers.CharField(source='customer_type.name', read_only=True, allow_null=True)
-    service_type = serializers.PrimaryKeyRelatedField(
-        queryset=ServiceType.objects.all(), allow_null=True, required=False
+    service_type = serializers.ChoiceField(
+        choices=SERVICE_TYPE_CHOICES, allow_null=True, required=False
     )
     service_type_name = serializers.CharField(source='service_type.name', read_only=True, allow_null=True)
     status = serializers.ChoiceField(choices=STATUS_CHOICES, allow_null=True, required=False)

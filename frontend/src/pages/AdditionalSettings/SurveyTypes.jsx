@@ -6,7 +6,7 @@ import Input from "../../components/Input";
 
 const SurveyTypes = () => {
   const [customerTypes, setCustomerTypes] = useState([]);
-  const [serviceTypes, setServiceTypes] = useState([]);
+  // const [serviceTypes, setServiceTypes] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [petTypes, setPetTypes] = useState([]);
   const [packingTypes, setPackingTypes] = useState([]);
@@ -28,15 +28,17 @@ const SurveyTypes = () => {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-        const [customerResponse, serviceResponse, vehicleResponse, petResponse, packingResponse] = await Promise.all([
+
+        // serviceResponse, commented
+        const [customerResponse, vehicleResponse, petResponse, packingResponse] = await Promise.all([
           apiClient.get("/customer-types/"),
-          apiClient.get("/service-types/"),
+          // apiClient.get("/service-types/"),
           apiClient.get("/vehicle-types/"),
           apiClient.get("/pet-types/"),
           apiClient.get("/packing-types/"),
         ]);
         setCustomerTypes(customerResponse.data);
-        setServiceTypes(serviceResponse.data);
+        // setServiceTypes(serviceResponse.data);
         setVehicleTypes(vehicleResponse.data);
         setPetTypes(petResponse.data);
         setPackingTypes(packingResponse.data);
@@ -69,11 +71,11 @@ const SurveyTypes = () => {
           updatedTypes = [...customerTypes, response.data];
           setCustomerTypes(updatedTypes);
           break;
-        case "service":
-          response = await apiClient.post("/service-types/", payload);
-          updatedTypes = [...serviceTypes, response.data];
-          setServiceTypes(updatedTypes);
-          break;
+        // case "service":
+        //   response = await apiClient.post("/service-types/", payload);
+        //   updatedTypes = [...serviceTypes, response.data];
+        //   setServiceTypes(updatedTypes);
+        //   break;
         case "vehicle":
           response = await apiClient.post("/vehicle-types/", payload);
           updatedTypes = [...vehicleTypes, response.data];
@@ -112,10 +114,10 @@ const SurveyTypes = () => {
           await apiClient.delete(`/customer-types/${id}/`);
           setCustomerTypes(customerTypes.filter((t) => t.id !== id));
           break;
-        case "service":
-          await apiClient.delete(`/service-types/${id}/`);
-          setServiceTypes(serviceTypes.filter((t) => t.id !== id));
-          break;
+        // case "service":
+        //   await apiClient.delete(`/service-types/${id}/`);
+        //   setServiceTypes(serviceTypes.filter((t) => t.id !== id));
+        //   break;
         case "vehicle":
           await apiClient.delete(`/vehicle-types/${id}/`);
           setVehicleTypes(vehicleTypes.filter((t) => t.id !== id));
@@ -142,7 +144,7 @@ const SurveyTypes = () => {
   const getTypesByCategory = () => {
     switch (selectedTypeCategory) {
       case "customer": return customerTypes;
-      case "service": return serviceTypes;
+      // case "service": return serviceTypes;
       case "vehicle": return vehicleTypes;
       case "pet": return petTypes;
       case "packing": return packingTypes;
@@ -153,7 +155,7 @@ const SurveyTypes = () => {
   const currentTypes = getTypesByCategory();
   const categoryLabels = {
     customer: "Customer Types",
-    service: "Service Types",
+    // service: "Service Types",
     vehicle: "Vehicle Types",
     pet: "Pet Types",
     packing: "Packing Types",
@@ -174,7 +176,7 @@ const SurveyTypes = () => {
               <div className="flex flex-wrap gap-4 mb-4">
                 {[
                   { value: "customer", label: "Customer Type" },
-                  { value: "service", label: "Service Type" },
+                  // { value: "service", label: "Service Type" },
                   { value: "vehicle", label: "Vehicle Type" },
                   { value: "pet", label: "Pet Type" },
                   { value: "packing", label: "Packing Type" },
