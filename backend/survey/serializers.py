@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Survey, DestinationAddress, Article, Vehicle, Pet
 from additional_settings.models import (
-    CustomerType, ServiceType, Room, VolumeUnit, WeightUnit, 
+    CustomerType, Room, VolumeUnit, WeightUnit, 
     PackingType, Handyman, Currency, VehicleType, PetType, Item
 )
 from contact.models import Enquiry
@@ -32,13 +32,13 @@ TRANSPORT_MODE_CHOICES = (
     ('rail', 'Rail'),
 )
 
-SERVICE_TYPE_CHOICES = (
-    ('localMove', 'Local Move'),
-    ('internationalMove', 'International Move'),
-    ('carExport', 'Car Import and Export'),
-    ('storageServices', 'Storage Services'),
-    ('logistics', 'Logistics'),
-)
+SERVICE_TYPE_DISPLAY = {
+    "localMove": "Local Move",
+    "internationalMove": "International Move",
+    "carExport": "Car Import and Export",
+    "storageServices": "Storage Services",
+    "logistics": "Logistics",
+}
 
 class DestinationAddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -134,10 +134,10 @@ class SurveySerializer(serializers.ModelSerializer):
         queryset=CustomerType.objects.all(), allow_null=True, required=False
     )
     customer_type_name = serializers.CharField(source='customer_type.name', read_only=True, allow_null=True)
-    service_type = serializers.ChoiceField(
-        choices=SERVICE_TYPE_CHOICES, allow_null=True, required=False
-    )
-    service_type_name = serializers.CharField(source='service_type.name', read_only=True, allow_null=True)
+    
+    service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)
+    service_type_display = serializers.SerializerMethodField()
+    
     status = serializers.ChoiceField(choices=STATUS_CHOICES, allow_null=True, required=False)
     storage_frequency = serializers.ChoiceField(
         choices=STORAGE_FREQUENCY_CHOICES, allow_null=True, required=False
@@ -157,6 +157,7 @@ class SurveySerializer(serializers.ModelSerializer):
     note = serializers.CharField(source='enquiry.note', read_only=True)
     enquiry_survey_date = serializers.DateTimeField(source='enquiry.survey_date', read_only=True)
     assigned_user_email = serializers.CharField(source='enquiry.assigned_user.email', read_only=True)
+    
     enquiry = serializers.PrimaryKeyRelatedField(
         queryset=Enquiry.objects.all(), required=False, allow_null=True
     )
@@ -165,39 +166,40 @@ class SurveySerializer(serializers.ModelSerializer):
         model = Survey
         fields = [
             'id', 'enquiry', 'customer_type', 'customer_type_name', 'is_military', 'salutation',
-            'full_name', 'mobile_number',
-            'email', 'address', 'company', 'survey_id', 'service_type', 'service_type_name',
-            'goods_type', 'status', 'survey_date', 'survey_start_time', 'survey_end_time',
-            'work_description', 'include_vehicle', 'include_pet', 'cost_together_vehicle',
-            'cost_together_pet', 'same_as_customer_address', 'origin_address', 'origin_city',
-            'origin_country', 'origin_state', 'origin_zip', 'pod_pol', 'multiple_addresses',
-            'destination_addresses', 'packing_date_from', 'packing_date_to', 'loading_date',
-            'eta', 'etd', 'est_delivery_date', 'storage_start_date', 'storage_frequency',
-            'storage_duration', 'storage_mode', 'transport_mode', 'general_owner_packed',
-            'general_owner_packed_notes', 'general_restriction', 'general_restriction_notes',
-            'general_handyman', 'general_handyman_notes', 'general_insurance',
-            'general_insurance_notes', 'origin_floor', 'origin_floor_notes', 'origin_lift',
-            'origin_lift_notes', 'origin_parking', 'origin_parking_notes', 'origin_storage',
-            'origin_storage_notes', 'destination_floor', 'destination_floor_notes',
-            'destination_lift', 'destination_lift_notes', 'destination_parking',
-            'destination_parking_notes', 'articles', 'vehicles', 'pets', 'full_name',
-            'phone_number', 'email', 'enquiry_service_type', 'message', 'note',
+            'full_name', 'phone_number', 'email', 'address', 'company', 'survey_id', 
+            'service_type', 'service_type_display', 'goods_type', 'status', 'survey_date', 
+            'survey_start_time', 'survey_end_time', 'work_description', 'include_vehicle', 
+            'include_pet', 'cost_together_vehicle', 'cost_together_pet', 
+            'same_as_customer_address', 'origin_address', 'origin_city', 'origin_country', 
+            'origin_state', 'origin_zip', 'pod_pol', 'multiple_addresses', 'destination_addresses', 
+            'packing_date_from', 'packing_date_to', 'loading_date', 'eta', 'etd', 
+            'est_delivery_date', 'storage_start_date', 'storage_frequency', 'storage_duration', 
+            'storage_mode', 'transport_mode', 'general_owner_packed', 'general_owner_packed_notes', 
+            'general_restriction', 'general_restriction_notes', 'general_handyman', 
+            'general_handyman_notes', 'general_insurance', 'general_insurance_notes', 
+            'origin_floor', 'origin_floor_notes', 'origin_lift', 'origin_lift_notes', 
+            'origin_parking', 'origin_parking_notes', 'origin_storage', 'origin_storage_notes', 
+            'destination_floor', 'destination_floor_notes', 'destination_lift', 
+            'destination_lift_notes', 'destination_parking', 'destination_parking_notes', 
+            'articles', 'vehicles', 'pets', 'enquiry_service_type', 'message', 'note', 
             'enquiry_survey_date', 'assigned_user_email', 'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'survey_id', 'created_at', 'updated_at', 'full_name', 'phone_number',
-            'email', 'enquiry_service_type', 'message', 'note', 'assigned_user_email',
-            'enquiry_survey_date'
+            'id', 'survey_id', 'created_at', 'updated_at', 
+            'full_name', 'phone_number', 'email', 'enquiry_service_type', 
+            'message', 'note', 'enquiry_survey_date', 'assigned_user_email',
+            'service_type', 'service_type_display' 
         ]
+
+    def get_service_type_display(self, obj):
+        """Get display name for service type from Enquiry"""
+        if obj.enquiry and obj.enquiry.serviceType:
+            return SERVICE_TYPE_DISPLAY.get(obj.enquiry.serviceType, obj.enquiry.serviceType)
+        return "N/A"
 
     def validate_customer_type(self, value):
         if value is not None and not CustomerType.objects.filter(id=value.id).exists():
             raise serializers.ValidationError("Invalid customer type ID.")
-        return value
-
-    def validate_service_type(self, value):
-        if value is not None and not ServiceType.objects.filter(id=value.id).exists():
-            raise serializers.ValidationError("Invalid service type ID.")
         return value
 
     def validate(self, data):

@@ -10,14 +10,6 @@ import Loading from "../../components/Loading";
 import Input from "../../components/Input";
 import apiClient from "../../api/apiClient";
 
-const serviceTypes = [
-  { value: "localMove", label: "Local Move" },
-  { value: "internationalMove", label: "International Move" },
-  { value: "carExport", label: "Car Import and Export" },
-  { value: "storageServices", label: "Storage Services" },
-  { value: "logistics", label: "Logistics" },
-];
-
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
   const { setValue, watch, formState: { errors } } = useFormContext();
   const value = watch(name);
@@ -185,7 +177,6 @@ const SurveyDetails = () => {
       email: initialCustomerData?.email || "",
       address: "",
       company: "",
-      serviceType: "",
       goodsType: "",
       status: "pending",
       surveyDate: initialCustomerData?.surveyDate || null,
@@ -281,7 +272,6 @@ const SurveyDetails = () => {
               email: survey.email || survey.enquiry?.email || initialCustomerData?.email || "",
               address: survey.address || "",
               company: survey.company || "",
-              serviceType: survey.service_type?.id || "",
               goodsType: survey.goods_type || "",
               status: survey.status || "pending",
               surveyDate: surveyDateTime,
@@ -312,78 +302,6 @@ const SurveyDetails = () => {
                   poe: addr.poe || "",
                 }))
                 : [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
-              packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
-              packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
-              loadingDate: survey.loading_date ? new Date(survey.loading_date) : null,
-              eta: survey.eta ? new Date(survey.eta) : null,
-              etd: survey.etd ? new Date(survey.etd) : null,
-              estDeliveryDate: survey.est_delivery_date ? new Date(survey.est_delivery_date) : null,
-              storageStartDate: survey.storage_start_date ? new Date(survey.storage_start_date) : null,
-              storageFrequency: survey.storage_frequency || "",
-              storageDuration: survey.storage_duration || "",
-              storageMode: survey.storage_mode || "",
-              transportMode: survey.transport_mode || "road",
-              articles: survey.articles?.map((article) => ({
-                id: uuidv4(),
-                room: article.room?.id || "",
-                itemName: article.item_name || "",
-                quantity: article.quantity || 1,
-                volume: article.volume || "",
-                volumeUnit: article.volume_unit?.id || "",
-                weight: article.weight || "",
-                weightUnit: article.weight_unit?.id || "",
-                handyman: article.handyman?.id || "",
-                packingOption: article.packing_option?.id || "",
-                moveStatus: article.move_status || "",
-                amount: article.amount || "",
-                currency: article.currency?.id || "",
-                remarks: article.remarks || "",
-              })) || [],
-              vehicles: survey.vehicles?.map((vehicle) => ({
-                id: uuidv4(),
-                vehicleType: vehicle.vehicle_type?.id || "",
-                make: vehicle.make || "",
-                model: vehicle.model || "",
-                insurance: vehicle.insurance || false,
-                remark: vehicle.remark || "",
-                transportMode: vehicle.transport_mode || "",
-              })) || [],
-              pets: survey.pets?.map((pet) => ({
-                id: uuidv4(),
-                petName: pet.pet_name || "",
-                petType: pet.pet_type?.id || "",
-                breed: pet.breed || "",
-                age: pet.age || 0,
-                weight: pet.weight || 0,
-                specialCare: pet.special_care || "",
-                transportRequirements: pet.transport_requirements || "",
-                feedingInstructions: pet.feeding_instructions || "",
-                medication: pet.medication || "",
-                vaccinationStatus: pet.vaccination_status || "",
-                behaviorNotes: pet.behavior_notes || "",
-              })) || [],
-              generalOwnerPacked: survey.general_owner_packed || false,
-              generalOwnerPackedNotes: survey.general_owner_packed_notes || "",
-              generalRestriction: survey.general_restriction || false,
-              generalRestrictionNotes: survey.general_restriction_notes || "",
-              generalHandyman: survey.general_handyman || false,
-              generalHandymanNotes: survey.general_handyman_notes || "",
-              generalInsurance: survey.general_insurance || false,
-              generalInsuranceNotes: survey.general_insurance_notes || "",
-              originFloor: survey.origin_floor || false,
-              originFloorNotes: survey.origin_floor_notes || "",
-              originLift: survey.origin_lift || false,
-              originLiftNotes: survey.origin_lift_notes || "",
-              originParking: survey.origin_parking || false,
-              originParkingNotes: survey.origin_parking_notes || "",
-              originStorage: survey.origin_storage || false,
-              originStorageNotes: survey.origin_storage_notes || "",
-              destinationFloor: survey.destination_floor || false,
-              destinationFloorNotes: survey.destination_floor_notes || "",
-              destinationLift: survey.destination_lift || false,
-              destinationLiftNotes: survey.destination_lift_notes || "",
-              destinationParking: survey.destination_parking || false,
-              destinationParkingNotes: survey.destination_parking_notes || "",
             });
             hasReset.current = true;
           } else {
@@ -393,9 +311,7 @@ const SurveyDetails = () => {
               fullName: initialCustomerData?.fullName || "",
               phoneNumber: initialCustomerData?.phoneNumber || "",
               email: initialCustomerData?.email || "",
-              serviceType: initialCustomerData?.serviceType || "",
               surveyDate: initialCustomerData?.surveyDate || null,
-
             });
             hasReset.current = true;
           }
@@ -505,6 +421,7 @@ const SurveyDetails = () => {
     const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
     const sameAsCustomerAddress = watch("sameAsCustomerAddress");
     const multipleAddresses = watch("multipleAddresses");
+    const serviceTypeDisplay = existingSurvey?.service_type_display || initialCustomerData?.serviceTypeDisplay || "N/A";
 
     const addAddress = () => {
       const newAddresses = [...destinationAddresses, { id: uuidv4() }];
@@ -626,13 +543,19 @@ const SurveyDetails = () => {
         title: "Survey Details",
         content: (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Service Type"
-              name="serviceType"
-              type="select"
-              options={serviceTypes}
-              rules={{ required: "Service Type is required" }}
-            />
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Service Type <span className="text-gray-500">(Read Only)</span>
+              </label>
+              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-800">
+                {serviceTypeDisplay || "Not Available"}
+              </div>
+              {(!serviceTypeDisplay || serviceTypeDisplay === "N/A") && (
+                <p className="mt-1 text-xs text-yellow-600">
+                  Service type will be set after saving
+                </p>
+              )}
+            </div>
             <Input
               label="Goods Type"
               name="goodsType"
@@ -1610,10 +1533,6 @@ const SurveyDetails = () => {
 
   const saveSurveyData = async (data) => {
     setIsLoading(true);
-    const selectedServiceType = apiData.serviceTypes.find(
-      (type) => type.value === data.serviceType
-    );
-    const serviceTypeId = selectedServiceType ? selectedServiceType.id : null;
 
     const payload = {
       enquiry: surveyId,
@@ -1625,7 +1544,6 @@ const SurveyDetails = () => {
       email: data.email,
       address: data.address,
       company: data.company,
-      service_type: data.serviceType,
       goods_type: data.goodsType,
       status: data.status,
       survey_date: data.surveyDate ? data.surveyDate.toISOString().split('T')[0] : null,

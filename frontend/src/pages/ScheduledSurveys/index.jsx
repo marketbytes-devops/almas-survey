@@ -156,18 +156,26 @@ const ScheduledSurveys = () => {
   const startSurvey = async (enquiry) => {
     try {
       let surveyData;
+      let serviceTypeDisplay = enquiry.serviceType; 
+      
       try {
         const response = await apiClient.get(`/surveys/?enquiry_id=${enquiry.id}`);
         if (response.data.length > 0) {
           surveyData = response.data[0];
+          serviceTypeDisplay = surveyData.service_type_display || enquiry.serviceType;
         }
       } catch (error) {
         if (error.response?.status !== 404) {
           throw error;
         }
       }
+      const serviceTypeLabel = serviceOptions.find(opt => opt.value === serviceTypeDisplay)?.label || 
+                              serviceTypeDisplay || 
+                              "Not Specified";
+
       localStorage.setItem("selectedSurveyId", enquiry.id);
       localStorage.setItem("currentSurveyData", JSON.stringify(surveyData || {}));
+
       navigate(`/survey/${enquiry.id}/survey-details`, {
         state: {
           customerData: {
@@ -176,16 +184,16 @@ const ScheduledSurveys = () => {
             email: enquiry.email,
             surveyDate: enquiry.survey_date ? new Date(enquiry.survey_date) : null,
             surveyStartTime: enquiry.survey_date ? new Date(enquiry.survey_date) : null,
-            serviceType: enquiry.serviceType,
+            serviceTypeDisplay: serviceTypeLabel,
             surveyId: enquiry.survey_id || "",
           },
         },
       });
     } catch (error) {
-      console.error("Failed to start survey:", error);
-      setError("Failed to start survey. Please try again.");
-    }
-  };
+    console.error("Failed to start survey:", error);
+    setError("Failed to start survey. Please try again.");
+  }
+};
 
   const onRescheduleSurveySubmit = async (data) => {
     if (!hasPermission("scheduled_surveys", "edit")) {
