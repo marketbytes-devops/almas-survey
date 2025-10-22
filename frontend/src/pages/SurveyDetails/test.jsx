@@ -10,14 +10,6 @@ import Loading from "../../components/Loading";
 import Input from "../../components/Input";
 import apiClient from "../../api/apiClient";
 
-const serviceOptions = [
-  { value: "localMove", label: "Local Move" },
-  { value: "internationalMove", label: "International Move" },
-  { value: "carExport", label: "Car Import and Export" },
-  { value: "storageServices", label: "Storage Services" },
-  { value: "logistics", label: "Logistics" },
-];
-
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
   const { setValue, watch, formState: { errors } } = useFormContext();
   const value = watch(name);
@@ -168,7 +160,7 @@ const SurveyDetails = () => {
     rooms: [],
     items: [],
     currencies: [],
-    serviceTypes: [], 
+    serviceTypes: [],
   });
   const [existingSurvey, setExistingSurvey] = useState(null);
 
@@ -185,12 +177,10 @@ const SurveyDetails = () => {
       email: initialCustomerData?.email || "",
       address: "",
       company: "",
-      
-      serviceType: initialCustomerData?.serviceType || "",
       goodsType: "",
       status: "pending",
       surveyDate: initialCustomerData?.surveyDate || null,
-      surveyStartTime: null,
+      surveyStartTime: initialCustomerData?.surveyStartTime || null,
       surveyEndTime: null,
       workDescription: "",
       includeVehicle: false,
@@ -268,23 +258,26 @@ const SurveyDetails = () => {
           if (response.data.length > 0) {
             const survey = response.data[0];
             setExistingSurvey(survey);
+            const surveyDateTime = survey.survey_date ? new Date(survey.survey_date) : null;
+            const surveyStartTime = survey.survey_start_time ?
+              new Date(`1970-01-01T${survey.survey_start_time}`) : null;
             reset({
               ...methods.getValues(),
-              enquiry: surveyId,
+              enquiry: survey.enquiry || surveyId, 
               customerType: survey.customer_type?.id || "",
               isMilitary: survey.is_military || false,
               salutation: survey.salutation || "",
-              fullName: survey.enquiry?.fullName || initialCustomerData?.fullName || "",
-              phoneNumber: survey.enquiry?.phoneNumber || initialCustomerData?.phoneNumber || "",
-              email: survey.enquiry?.email || initialCustomerData?.email || "",
+              fullName: survey.full_name || survey.enquiry?.fullName || initialCustomerData?.fullName || "",
+              phoneNumber: survey.mobile_number || survey.enquiry?.phoneNumber || initialCustomerData?.phoneNumber || "",
+              email: survey.email || survey.enquiry?.email || initialCustomerData?.email || "",
               address: survey.address || "",
               company: survey.company || "",
-              serviceType: survey.service_type?.id || survey.enquiry?.serviceType || initialCustomerData?.serviceType || "",
               goodsType: survey.goods_type || "",
               status: survey.status || "pending",
-              surveyDate: survey.survey_date ? new Date(survey.survey_date) : initialCustomerData?.surveyDate || null,
-              surveyStartTime: survey.survey_start_time ? new Date(`1970-01-01T${survey.survey_start_time}`) : null,
-              surveyEndTime: survey.survey_end_time ? new Date(`1970-01-01T${survey.survey_end_time}`) : null,
+              surveyDate: surveyDateTime,
+              surveyStartTime: surveyStartTime,
+              surveyEndTime: survey.survey_end_time ?
+                new Date(`1970-01-01T${survey.survey_end_time}`) : null,
               workDescription: survey.work_description || "",
               includeVehicle: survey.include_vehicle || false,
               includePet: survey.include_pet || false,
@@ -300,87 +293,15 @@ const SurveyDetails = () => {
               multipleAddresses: survey.multiple_addresses || false,
               destinationAddresses: survey.destination_addresses?.length > 0
                 ? survey.destination_addresses.map((addr) => ({
-                    id: uuidv4(),
-                    address: addr.address || "",
-                    city: addr.city || "",
-                    country: addr.country || "",
-                    state: addr.state || "",
-                    zip: addr.zip || "",
-                    poe: addr.poe || "",
-                  }))
+                  id: uuidv4(),
+                  address: addr.address || "",
+                  city: addr.city || "",
+                  country: addr.country || "",
+                  state: addr.state || "",
+                  zip: addr.zip || "",
+                  poe: addr.poe || "",
+                }))
                 : [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
-              packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
-              packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
-              loadingDate: survey.loading_date ? new Date(survey.loading_date) : null,
-              eta: survey.eta ? new Date(survey.eta) : null,
-              etd: survey.etd ? new Date(survey.etd) : null,
-              estDeliveryDate: survey.est_delivery_date ? new Date(survey.est_delivery_date) : null,
-              storageStartDate: survey.storage_start_date ? new Date(survey.storage_start_date) : null,
-              storageFrequency: survey.storage_frequency || "",
-              storageDuration: survey.storage_duration || "",
-              storageMode: survey.storage_mode || "",
-              transportMode: survey.transport_mode || "road",
-              articles: survey.articles?.map((article) => ({
-                id: uuidv4(),
-                room: article.room?.id || "",
-                itemName: article.item_name || "",
-                quantity: article.quantity || 1,
-                volume: article.volume || "",
-                volumeUnit: article.volume_unit?.id || "",
-                weight: article.weight || "",
-                weightUnit: article.weight_unit?.id || "",
-                handyman: article.handyman?.id || "",
-                packingOption: article.packing_option?.id || "",
-                moveStatus: article.move_status || "",
-                amount: article.amount || "",
-                currency: article.currency?.id || "",
-                remarks: article.remarks || "",
-              })) || [],
-              vehicles: survey.vehicles?.map((vehicle) => ({
-                id: uuidv4(),
-                vehicleType: vehicle.vehicle_type?.id || "",
-                make: vehicle.make || "",
-                model: vehicle.model || "",
-                insurance: vehicle.insurance || false,
-                remark: vehicle.remark || "",
-                transportMode: vehicle.transport_mode || "",
-              })) || [],
-              pets: survey.pets?.map((pet) => ({
-                id: uuidv4(),
-                petName: pet.pet_name || "",
-                petType: pet.pet_type?.id || "",
-                breed: pet.breed || "",
-                age: pet.age || 0,
-                weight: pet.weight || 0,
-                specialCare: pet.special_care || "",
-                transportRequirements: pet.transport_requirements || "",
-                feedingInstructions: pet.feeding_instructions || "",
-                medication: pet.medication || "",
-                vaccinationStatus: pet.vaccination_status || "",
-                behaviorNotes: pet.behavior_notes || "",
-              })) || [],
-              generalOwnerPacked: survey.general_owner_packed || false,
-              generalOwnerPackedNotes: survey.general_owner_packed_notes || "",
-              generalRestriction: survey.general_restriction || false,
-              generalRestrictionNotes: survey.general_restriction_notes || "",
-              generalHandyman: survey.general_handyman || false,
-              generalHandymanNotes: survey.general_handyman_notes || "",
-              generalInsurance: survey.general_insurance || false,
-              generalInsuranceNotes: survey.general_insurance_notes || "",
-              originFloor: survey.origin_floor || false,
-              originFloorNotes: survey.origin_floor_notes || "",
-              originLift: survey.origin_lift || false,
-              originLiftNotes: survey.origin_lift_notes || "",
-              originParking: survey.origin_parking || false,
-              originParkingNotes: survey.origin_parking_notes || "",
-              originStorage: survey.origin_storage || false,
-              originStorageNotes: survey.origin_storage_notes || "",
-              destinationFloor: survey.destination_floor || false,
-              destinationFloorNotes: survey.destination_floor_notes || "",
-              destinationLift: survey.destination_lift || false,
-              destinationLiftNotes: survey.destination_lift_notes || "",
-              destinationParking: survey.destination_parking || false,
-              destinationParkingNotes: survey.destination_parking_notes || "",
             });
             hasReset.current = true;
           } else {
@@ -390,9 +311,7 @@ const SurveyDetails = () => {
               fullName: initialCustomerData?.fullName || "",
               phoneNumber: initialCustomerData?.phoneNumber || "",
               email: initialCustomerData?.email || "",
-              serviceType: initialCustomerData?.serviceType || "",
               surveyDate: initialCustomerData?.surveyDate || null,
-              
             });
             hasReset.current = true;
           }
@@ -502,6 +421,7 @@ const SurveyDetails = () => {
     const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
     const sameAsCustomerAddress = watch("sameAsCustomerAddress");
     const multipleAddresses = watch("multipleAddresses");
+    const serviceTypeDisplay = existingSurvey?.service_type_display || initialCustomerData?.serviceTypeDisplay || "N/A";
 
     const addAddress = () => {
       const newAddresses = [...destinationAddresses, { id: uuidv4() }];
@@ -580,20 +500,18 @@ const SurveyDetails = () => {
               type="text"
               rules={{ required: "Full Name is required" }}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Mobile Number"
-                name="phoneNumber"
-                type="text"
-                rules={{
-                  required: "Mobile Number is required",
-                  pattern: {
-                    value: /^\+?[0-9]{7,15}$/,
-                    message: "Enter a valid mobile number (7-15 digits)",
-                  },
-                }}
-              />
-            </div>
+            <Input
+              label="Mobile Number"
+              name="phoneNumber"
+              type="text"
+              rules={{
+                required: "Mobile Number is required",
+                pattern: {
+                  value: /^\+?[0-9]{7,15}$/,
+                  message: "Enter a valid mobile number (7-15 digits)",
+                },
+              }}
+            />
             <Input
               label="Email"
               name="email"
@@ -625,18 +543,19 @@ const SurveyDetails = () => {
         title: "Survey Details",
         content: (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Service Type"
-              name="serviceType"
-              type="text"
-              value={
-                serviceOptions.find((opt) => opt.value === watch("serviceType"))?.label ||
-                watch("serviceType") ||
-                "Unknown Service Type"
-              }
-              readOnly
-              rules={{ required: "Service Type is required" }}
-            />
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Service Type <span className="text-gray-500">(Read Only)</span>
+              </label>
+              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-800">
+                {serviceTypeDisplay || "Not Available"}
+              </div>
+              {(!serviceTypeDisplay || serviceTypeDisplay === "N/A") && (
+                <p className="mt-1 text-xs text-yellow-600">
+                  Service type will be set after saving
+                </p>
+              )}
+            </div>
             <Input
               label="Goods Type"
               name="goodsType"
@@ -1614,228 +1533,228 @@ const SurveyDetails = () => {
 
 const saveSurveyData = async (data) => {
   setIsLoading(true);
-  const selectedServiceType = apiData.serviceTypes.find(
-    (type) => type.value === data.serviceType
-  );
-  const serviceTypeId = selectedServiceType ? selectedServiceType.id : null;
 
-  const payload = {
-    enquiry: existingSurvey?.enquiry?.id || data.enquiry_id, 
-    customer_type: data.customerType || null,
-    is_military: data.isMilitary,
-    salutation: data.salutation,
-    mobile_number: data.phoneNumber,    email: data.email,
-    address: data.address,
-    company: data.company,
-    service_type: serviceTypeId,
-    goods_type: data.goodsType,
-    status: data.status,
-    survey_date: data.surveyDate ? data.surveyDate.toISOString().split("T")[0] : null,
-    survey_start_time: data.surveyStartTime
-      ? data.surveyStartTime.toTimeString().split(" ")[0]
-      : null,
-    survey_end_time: data.surveyEndTime
-      ? data.surveyEndTime.toTimeString().split(" ")[0]
-      : null,
-    work_description: data.workDescription,
-    include_vehicle: data.includeVehicle,
-    include_pet: data.includePet,
-    cost_together_vehicle: data.costTogetherVehicle,
-    cost_together_pet: data.costTogetherPet,
-    same_as_customer_address: data.sameAsCustomerAddress,
-    origin_address: data.originAddress,
-    origin_city: data.originCity,
-    origin_country: data.originCountry,
-    origin_state: data.originState,
-    origin_zip: data.originZip,
-    pod_pol: data.podPol,
-    multiple_addresses: data.multipleAddresses,
-    destination_addresses: data.destinationAddresses.map((addr) => ({
-      address: addr.address,
-      city: addr.city,
-      country: addr.country,
-      state: addr.state,
-      zip: addr.zip,
-      poe: addr.poe,
-    })),
-    packing_date_from: data.packingDateFrom
-      ? data.packingDateFrom.toISOString().split("T")[0]
-      : null,
-    packing_date_to: data.packingDateTo
-      ? data.packingDateTo.toISOString().split("T")[0]
-      : null,
-    loading_date: data.loadingDate
-      ? data.loadingDate.toISOString().split("T")[0]
-      : null,
-    eta: data.eta ? data.eta.toISOString().split("T")[0] : null,
-    etd: data.etd ? data.etd.toISOString().split("T")[0] : null,
-    est_delivery_date: data.estDeliveryDate
-      ? data.estDeliveryDate.toISOString().split("T")[0]
-      : null,
-    storage_start_date: data.storageStartDate
-      ? data.storageStartDate.toISOString().split("T")[0]
-      : null,
-    storage_frequency: data.storageFrequency,
-    storage_duration: data.storageDuration,
-    storage_mode: data.storageMode,
-    transport_mode: data.transportMode,
-    general_owner_packed: data.generalOwnerPacked,
-    general_owner_packed_notes: data.generalOwnerPackedNotes,
-    general_restriction: data.generalRestriction,
-    general_restriction_notes: data.generalRestrictionNotes,
-    general_handyman: data.generalHandyman,
-    general_handyman_notes: data.generalHandymanNotes,
-    general_insurance: data.generalInsurance,
-    general_insurance_notes: data.generalInsuranceNotes,
-    origin_floor: data.originFloor,
-    origin_floor_notes: data.originFloorNotes,
-    origin_lift: data.originLift,
-    origin_lift_notes: data.originLiftNotes,
-    origin_parking: data.originParking,
-    origin_parking_notes: data.originParkingNotes,
-    origin_storage: data.originStorage,
-    origin_storage_notes: data.originStorageNotes,
-    destination_floor: data.destinationFloor,
-    destination_floor_notes: data.destinationFloorNotes,
-    destination_lift: data.destinationLift,
-    destination_lift_notes: data.destinationLiftNotes,
-    destination_parking: data.destinationParking,
-    destination_parking_notes: data.destinationParkingNotes,
-    articles: data.articles.map((article) => ({
-      room: article.room || null,
-      item_name: article.itemName,
-      quantity: article.quantity,
-      volume: article.volume || null,
-      volume_unit: article.volumeUnit || null,
-      weight: article.weight || null,
-      weight_unit: article.weightUnit || null,
-      handyman: article.handyman || null,
-      packing_option: article.packingOption || null,
-      move_status: article.moveStatus,
-      amount: article.amount || null,
-      currency: article.currency || null,
-      remarks: article.remarks,
-    })),
-    vehicles: data.vehicles.map((vehicle) => ({
-      vehicle_type: vehicle.vehicleType || null,
-      make: vehicle.make,
-      model: vehicle.model,
-      insurance: vehicle.insurance,
-      remark: vehicle.remark,
-      transport_mode: vehicle.transportMode,
-    })),
-    pets: data.pets.map((pet) => ({
-      pet_name: pet.petName,
-      pet_type: pet.petType || null,
-      breed: pet.breed,
-      age: pet.age,
-      weight: pet.weight,
-      special_care: pet.specialCare,
-      transport_requirements: pet.transportRequirements,
-      feeding_instructions: pet.feedingInstructions,
-      medication: pet.medication,
-      vaccination_status: pet.vaccinationStatus,
-      behavior_notes: pet.behaviorNotes,
-    })),
+   const enquiryId = surveyId ? parseInt(surveyId) : null;
+
+    setIsLoading(true);
+
+    const payload = {
+      enquiry: enquiryId,
+      customer_type: data.customerType || null,
+      is_military: data.isMilitary,
+      salutation: data.salutation,
+      full_name: data.fullName,
+      mobile_number: data.phoneNumber,
+      email: data.email,
+      address: data.address,
+      company: data.company,
+      goods_type: data.goodsType,
+      status: data.status,
+      survey_date: data.surveyDate ? data.surveyDate.toISOString().split('T')[0] : null,
+      survey_start_time: data.surveyStartTime ?
+        data.surveyStartTime.toTimeString().split(' ')[0] : null,
+      survey_end_time: data.surveyEndTime ?
+        data.surveyEndTime.toTimeString().split(' ')[0] : null,
+      work_description: data.workDescription,
+      include_vehicle: data.includeVehicle,
+      include_pet: data.includePet,
+      cost_together_vehicle: data.costTogetherVehicle,
+      cost_together_pet: data.costTogetherPet,
+      same_as_customer_address: data.sameAsCustomerAddress,
+      origin_address: data.originAddress,
+      origin_city: data.originCity,
+      origin_country: data.originCountry,
+      origin_state: data.originState,
+      origin_zip: data.originZip,
+      pod_pol: data.podPol,
+      multiple_addresses: data.multipleAddresses,
+      destination_addresses: data.destinationAddresses.map(addr => ({
+        address: addr.address,
+        city: addr.city,
+        country: addr.country,
+        state: addr.state,
+        zip: addr.zip,
+        poe: addr.poe,
+      })),
+      packing_date_from: data.packingDateFrom
+        ? data.packingDateFrom.toISOString().split("T")[0]
+        : null,
+      packing_date_to: data.packingDateTo
+        ? data.packingDateTo.toISOString().split("T")[0]
+        : null,
+      loading_date: data.loadingDate
+        ? data.loadingDate.toISOString().split("T")[0]
+        : null,
+      eta: data.eta ? data.eta.toISOString().split("T")[0] : null,
+      etd: data.etd ? data.etd.toISOString().split("T")[0] : null,
+      est_delivery_date: data.estDeliveryDate
+        ? data.estDeliveryDate.toISOString().split("T")[0]
+        : null,
+      storage_start_date: data.storageStartDate
+        ? data.storageStartDate.toISOString().split("T")[0]
+        : null,
+      storage_frequency: data.storageFrequency,
+      storage_duration: data.storageDuration,
+      storage_mode: data.storageMode,
+      transport_mode: data.transportMode,
+      general_owner_packed: data.generalOwnerPacked,
+      general_owner_packed_notes: data.generalOwnerPackedNotes,
+      general_restriction: data.generalRestriction,
+      general_restriction_notes: data.generalRestrictionNotes,
+      general_handyman: data.generalHandyman,
+      general_handyman_notes: data.generalHandymanNotes,
+      general_insurance: data.generalInsurance,
+      general_insurance_notes: data.generalInsuranceNotes,
+      origin_floor: data.originFloor,
+      origin_floor_notes: data.originFloorNotes,
+      origin_lift: data.originLift,
+      origin_lift_notes: data.originLiftNotes,
+      origin_parking: data.originParking,
+      origin_parking_notes: data.originParkingNotes,
+      origin_storage: data.originStorage,
+      origin_storage_notes: data.originStorageNotes,
+      destination_floor: data.destinationFloor,
+      destination_floor_notes: data.destinationFloorNotes,
+      destination_lift: data.destinationLift,
+      destination_lift_notes: data.destinationLiftNotes,
+      destination_parking: data.destinationParking,
+      destination_parking_notes: data.destinationParkingNotes,
+      articles: data.articles.map((article) => ({
+        room: article.room || null,
+        item_name: article.itemName,
+        quantity: article.quantity,
+        volume: article.volume || null,
+        volume_unit: article.volumeUnit || null,
+        weight: article.weight || null,
+        weight_unit: article.weightUnit || null,
+        handyman: article.handyman || null,
+        packing_option: article.packingOption || null,
+        move_status: article.moveStatus,
+        amount: article.amount || null,
+        currency: article.currency || null,
+        remarks: article.remarks,
+      })),
+      vehicles: data.vehicles.map((vehicle) => ({
+        vehicle_type: vehicle.vehicleType || null,
+        make: vehicle.make,
+        model: vehicle.model,
+        insurance: vehicle.insurance,
+        remark: vehicle.remark,
+        transport_mode: vehicle.transportMode,
+      })),
+      pets: data.pets.map((pet) => ({
+        pet_name: pet.petName,
+        pet_type: pet.petType || null,
+        breed: pet.breed,
+        age: pet.age,
+        weight: pet.weight,
+        special_care: pet.specialCare,
+        transport_requirements: pet.transportRequirements,
+        feeding_instructions: pet.feedingInstructions,
+        medication: pet.medication,
+        vaccination_status: pet.vaccinationStatus,
+        behavior_notes: pet.behaviorNotes,
+      })),
+    };
+
+    if (existingSurvey) {
+      return apiClient
+        .put(`/surveys/${existingSurvey.survey_id}/`, payload)
+        .then((response) => {
+          setMessage("Survey updated successfully!");
+          setTimeout(() => {
+            navigate(`/survey/${existingSurvey.survey_id}/survey-summary`, {
+              state: {
+                customerData: { ...data, survey_id: response.data.survey_id },
+                articles: data.articles,
+                vehicles: data.vehicles,
+                pets: data.pets,
+                serviceData: {
+                  general_owner_packed: data.generalOwnerPacked,
+                  general_owner_packed_notes: data.generalOwnerPackedNotes,
+                  general_restriction: data.generalRestriction,
+                  general_restriction_notes: data.generalRestrictionNotes,
+                  general_handyman: data.generalHandyman,
+                  general_handyman_notes: data.generalHandymanNotes,
+                  general_insurance: data.generalInsurance,
+                  general_insurance_notes: data.generalInsuranceNotes,
+                  origin_floor: data.originFloor,
+                  origin_floor_notes: data.originFloorNotes,
+                  origin_lift: data.originLift,
+                  origin_lift_notes: data.originLiftNotes,
+                  origin_parking: data.originParking,
+                  origin_parking_notes: data.originParkingNotes,
+                  origin_storage: data.originStorage,
+                  origin_storage_notes: data.originStorageNotes,
+                  destination_floor: data.destinationFloor,
+                  destination_floor_notes: data.destinationFloorNotes,
+                  destination_lift: data.destinationLift,
+                  destination_lift_notes: data.destinationLiftNotes,
+                  destination_parking: data.destinationParking,
+                  destination_parking_notes: data.destinationParkingNotes,
+                },
+              },
+            });
+          }, 2000);
+          setIsLoading(false);
+          return response.data;
+        })
+        .catch((error) => {
+          setError("Failed to update survey data. Please try again.");
+          setIsLoading(false);
+          throw error;
+        });
+    } else {
+      const { surveyId, ...payloadWithoutSurveyId } = payload;
+      return apiClient
+        .post(`/surveys/`, payloadWithoutSurveyId)
+        .then((response) => {
+          const newSurveyId = response.data.survey_id;
+          setMessage("Survey created successfully!");
+          setTimeout(() => {
+            navigate(`/survey/${newSurveyId}/survey-summary`, {
+              state: {
+                customerData: { ...data, survey_id: response.data.survey_id },
+                articles: data.articles,
+                vehicles: data.vehicles,
+                pets: data.pets,
+                serviceData: {
+                  general_owner_packed: data.generalOwnerPacked,
+                  general_owner_packed_notes: data.generalOwnerPackedNotes,
+                  general_restriction: data.generalRestriction,
+                  general_restriction_notes: data.generalRestrictionNotes,
+                  general_handyman: data.generalHandyman,
+                  general_handyman_notes: data.generalHandymanNotes,
+                  general_insurance: data.generalInsurance,
+                  general_insurance_notes: data.generalInsuranceNotes,
+                  origin_floor: data.originFloor,
+                  origin_floor_notes: data.originFloorNotes,
+                  origin_lift: data.originLift,
+                  origin_lift_notes: data.originLiftNotes,
+                  origin_parking: data.originParking,
+                  origin_parking_notes: data.originParkingNotes,
+                  origin_storage: data.originStorage,
+                  origin_storage_notes: data.originStorageNotes,
+                  destination_floor: data.destinationFloor,
+                  destination_floor_notes: data.destinationFloorNotes,
+                  destination_lift: data.destinationLift,
+                  destination_lift_notes: data.destinationLiftNotes,
+                  destination_parking: data.destinationParking,
+                  destination_parking_notes: data.destinationParkingNotes,
+                },
+              },
+            });
+          }, 2000);
+          setIsLoading(false);
+          return response.data;
+        })
+        .catch((error) => {
+          setError("Failed to create survey data. Please try again.");
+          setIsLoading(false);
+          throw error;
+        });
+    }
   };
-
-  if (existingSurvey) {
-    return apiClient
-      .put(`/surveys/${existingSurvey.survey_id}/`, payload)
-      .then((response) => {
-        setMessage("Survey updated successfully!");
-        setTimeout(() => {
-          navigate(`/survey/survey-summary`, {
-            state: {
-              customerData: { ...data, survey_id: response.data.survey_id },
-              articles: data.articles,
-              vehicles: data.vehicles,
-              pets: data.pets,
-              serviceData: {
-                general_owner_packed: data.generalOwnerPacked,
-                general_owner_packed_notes: data.generalOwnerPackedNotes,
-                general_restriction: data.generalRestriction,
-                general_restriction_notes: data.generalRestrictionNotes,
-                general_handyman: data.generalHandyman,
-                general_handyman_notes: data.generalHandymanNotes,
-                general_insurance: data.generalInsurance,
-                general_insurance_notes: data.generalInsuranceNotes,
-                origin_floor: data.originFloor,
-                origin_floor_notes: data.originFloorNotes,
-                origin_lift: data.originLift,
-                origin_lift_notes: data.originLiftNotes,
-                origin_parking: data.originParking,
-                origin_parking_notes: data.originParkingNotes,
-                origin_storage: data.originStorage,
-                origin_storage_notes: data.originStorageNotes,
-                destination_floor: data.destinationFloor,
-                destination_floor_notes: data.destinationFloorNotes,
-                destination_lift: data.destinationLift,
-                destination_lift_notes: data.destinationLiftNotes,
-                destination_parking: data.destinationParking,
-                destination_parking_notes: data.destinationParkingNotes,
-              },
-            },
-          });
-        }, 2000);
-        setIsLoading(false);
-        return response.data;
-      })
-      .catch((error) => {
-        setError("Failed to update survey data. Please try again.");
-        setIsLoading(false);
-        throw error;
-      });
-  } else {
-    const { surveyId, ...payloadWithoutSurveyId } = payload;
-    return apiClient
-      .post(`/surveys/`, payloadWithoutSurveyId)
-      .then((response) => {
-        setMessage("Survey created successfully!");
-        setTimeout(() => {
-          navigate(`/survey/${surveyId}/survey-summary`, {
-            state: {
-              customerData: { ...data, survey_id: response.data.survey_id },
-              articles: data.articles,
-              vehicles: data.vehicles,
-              pets: data.pets,
-              serviceData: {
-                general_owner_packed: data.generalOwnerPacked,
-                general_owner_packed_notes: data.generalOwnerPackedNotes,
-                general_restriction: data.generalRestriction,
-                general_restriction_notes: data.generalRestrictionNotes,
-                general_handyman: data.generalHandyman,
-                general_handyman_notes: data.generalHandymanNotes,
-                general_insurance: data.generalInsurance,
-                general_insurance_notes: data.generalInsuranceNotes,
-                origin_floor: data.originFloor,
-                origin_floor_notes: data.originFloorNotes,
-                origin_lift: data.originLift,
-                origin_lift_notes: data.originLiftNotes,
-                origin_parking: data.originParking,
-                origin_parking_notes: data.originParkingNotes,
-                origin_storage: data.originStorage,
-                origin_storage_notes: data.originStorageNotes,
-                destination_floor: data.destinationFloor,
-                destination_floor_notes: data.destinationFloorNotes,
-                destination_lift: data.destinationLift,
-                destination_lift_notes: data.destinationLiftNotes,
-                destination_parking: data.destinationParking,
-                destination_parking_notes: data.destinationParkingNotes,
-              },
-            },
-          });
-        }, 2000);
-        setIsLoading(false);
-        return response.data;
-      })
-      .catch((error) => {
-        setError("Failed to create survey data. Please try again.");
-        setIsLoading(false);
-        throw error;
-      });
-  }
-};
 
   const onNext = async (data) => {
     if (activeTab === "customer") {
@@ -1908,11 +1827,10 @@ const saveSurveyData = async (data) => {
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabChange(tab.id)}
-                className={`py-2 px-4 text-sm font-medium ${
-                  activeTab === tab.id
+                className={`py-2 px-4 text-sm font-medium ${activeTab === tab.id
                     ? "border-b-2 border-[#4c7085] text-[#4c7085]"
                     : "text-gray-500 hover:text-[#4c7085]"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>

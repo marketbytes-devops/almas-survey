@@ -25,8 +25,6 @@ import Manpower from "./pages/AdditionalSettings/Manpower";
 import Room from "./pages/AdditionalSettings/Room";
 import SurveySummary from "./pages/SurveySummary";
 import SurveyDetails from "./pages/SurveyDetails";
-import SurveyView from "./pages/SurveyView";
-import SurveyPrint from "./pages/SurveyPrint";
 
 const ProtectedRoute = ({ children, isAuthenticated, requiredPage, requiredAction = "view" }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -171,22 +169,6 @@ function App() {
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
               <SurveySummary />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "/survey/:surveyId/view",
-          element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
-              <SurveyView />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "/survey/:surveyId/print",
-          element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
-              <SurveyView />
             </ProtectedRoute>
           ),
         },

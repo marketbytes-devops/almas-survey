@@ -7,325 +7,516 @@ const SurveyPrint = ({ survey }) => {
     return <div className="text-center py-4 text-red-500">No survey data available.</div>;
   }
 
-  const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "Not filled");
-  const formatTime = (time) => (time ? new Date(`1970-01-01T${time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Not filled");
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not filled";
+    return new Date(dateString).toLocaleDateString('en-GB').split('/').reverse().join('/');
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return "Not filled";
+    return timeString.slice(0, 5);
+  };
+
   const formatBoolean = (value) => (value ? "Yes" : "No");
-  const formatValue = (value) => (value || value === false ? value.toString() : "Not filled");
+
+  // FIXED: ENHANCED getCustomerData FUNCTION
+  const getCustomerData = (field) => {
+    const fieldMap = {
+      full_name: 'full_name',
+      mobile_number: 'phone_number', 
+      email: 'email',
+      salutation: 'salutation'
+    };
+    
+    const surveyField = fieldMap[field] || field;
+    
+    // 1. Check SURVEY fields FIRST (PRIORITY)
+    const surveyValue = survey[surveyField];
+    if (surveyValue !== null && surveyValue !== undefined && surveyValue !== '') {
+      return surveyValue;
+    }
+    
+    // 2. Fallback to ENQUIRY fields
+    const enquiryField = field === 'full_name' ? 'fullName' : 
+                        field === 'mobile_number' ? 'phoneNumber' : 
+                        field === 'email' ? 'email' : field;
+    
+    const enquiryValue = survey.enquiry?.[enquiryField];
+    if (enquiryValue !== null && enquiryValue !== undefined && enquiryValue !== '') {
+      return enquiryValue;
+    }
+    
+    return "Not filled";
+  };
+
+  // ✅ CALCULATE TOTAL COST FOR ARTICLES
+  const calculateTotalCost = () => {
+    if (!survey.articles?.length) return [];
+    const costByCurrency = survey.articles.reduce((acc, article) => {
+      if (article.amount && article.currency_code) {
+        acc[article.currency_code] = (acc[article.currency_code] || 0) + parseFloat(article.amount);
+      }
+      return acc;
+    }, {});
+    return Object.entries(costByCurrency).map(([currency, total]) => ({
+      currency,
+      total: total.toFixed(2),
+    }));
+  };
+
+  const totalCosts = calculateTotalCost();
 
   return (
-    <div className="p-8 max-w-6xl mx-auto" ref={contentRef}>
-      <h1 className="text-2xl font-bold mb-6 text-center">Survey Report - {survey.survey_id}</h1>
-      
+    <div className="print-container" ref={contentRef}>
       <style>
         {`
-          @media print {
-            body {
-              font-size: 12pt;
-              color: #000;
-              margin: 0;
-              padding: 0;
-            }
-            @page {
-              size: A4;
-              margin: 1cm;
-              orphans: 2;
-              widows: 2;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 20px;
-              page-break-inside: auto;
-            }
-            thead {
-              display: table-header-group;
-            }
-            tbody {
-              display: table-row-group;
-            }
-            tr {
-              page-break-inside: avoid;
-              page-break-after: auto;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 8px;
-              word-wrap: break-word;
-              max-width: 0;
-            }
-            th {
-              background-color: #f0f0f0;
-              font-weight: bold;
-            }
-            h3 {
-              font-size: 14pt;
-              margin-top: 20px;
-              margin-bottom: 10px;
-              page-break-after: avoid;
-            }
-            h4 {
-              font-size: 12pt;
-              margin-bottom: 8px;
-              page-break-after: avoid;
-            }
-            .no-print {
-              display: none;
-            }
-            table {
-              table-layout: fixed;
-            }
-            td, th {
-              overflow-wrap: break-word;
-            }
+          /* ✅ PERFECT A4 PRINT STYLES */
+          @page {
+            size: A4 portrait;
+            margin: 0.5cm 0.5cm 0.5cm 0.5cm;
           }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box;
+          }
+
+          body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 10pt;
+            color: #000;
+            line-height: 1.3;
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+
+          .print-container {
+            max-width: 19.05cm !important;
+            margin: 0 auto;
+            padding: 0;
+          }
+
+          /* ✅ HEADER - PERFECT CENTERED */
+          .print-header {
+            text-align: center;
+            border-bottom: 3px solid #4c7085;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            page-break-after: avoid;
+          }
+
+          .print-header h1 {
+            font-size: 16pt;
+            color: #4c7085;
+            margin: 0 0 8px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+
+          .print-header .subtitle {
+            font-size: 11pt;
+            margin: 0;
+            font-weight: 500;
+            color: #333;
+          }
+
+          /* ✅ SECTIONS */
+          .section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+
+          .section h3 {
+            font-size: 12pt;
+            color: #4c7085;
+            border-bottom: 2px solid #4c7085;
+            padding-bottom: 6px;
+            margin: 15px 0 10px 0;
+            font-weight: bold;
+            page-break-after: avoid;
+          }
+
+          .section h4 {
+            font-size: 11pt;
+            color: #333;
+            margin: 12px 0 8px 0;
+            font-weight: 600;
+            page-break-after: avoid;
+          }
+
+          /* ✅ PERFECT TABLES */
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 9pt;
+            page-break-inside: auto;
+          }
+
+          th, td {
+            border: 1px solid #000;
+            padding: 6px 4px;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word;
+          }
+
+          th {
+            background-color: #e8f0f2 !important;
+            font-weight: bold;
+            color: #000;
+            font-size: 9pt;
+          }
+
+          .field-col { width: 30%; }
+          .value-col { width: 70%; }
+          .articles-col { font-size: 8pt; }
+
+          /* ✅ TOTAL ROW */
+          .total-row {
+            background-color: #f0f8ff !important;
+            font-weight: bold;
+            font-size: 10pt !important;
+          }
+
+          /* ✅ PAGE BREAKS */
+          .no-break { page-break-inside: avoid; }
+          .page-break { page-break-before: always; }
+
+          /* ✅ HIDE ON PRINT */
+          .no-print { display: none !important; }
+
+          /* ✅ SCREEN VIEW */
           @media screen {
-            body {
+            .print-container {
+              padding: 20px;
+              max-width: 21cm;
+              margin: 0 auto;
               background: #fff;
+              box-shadow: 0 0 20px rgba(0,0,0,0.1);
             }
           }
         `}
       </style>
 
-      <div className="space-y-6">
-        {/* Customer Details */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Customer Details</h3>
-          <table className="min-w-full border-collapse border border-gray-200">
+      {/* ✅ PERFECT A4 HEADER */}
+      <div className="print-header">
+        <h1>SURVEY REPORT</h1>
+        <p className="subtitle">
+          <strong>{survey.survey_id}</strong> | {survey.service_type_display || survey.service_type_name || 'N/A'}
+          {totalCosts.length > 0 && (
+            <span> | Total: {totalCosts.map(c => `${c.total} ${c.currency}`).join(', ')}</span>
+          )}
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {/* 1. CUSTOMER DETAILS */}
+        <div className="section no-break">
+          <h3>1. Customer Details</h3>
+          <table>
+            <thead>
+              <tr>
+                <th className="field-col">Field</th>
+                <th className="value-col">Value</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr><td className="border px-4 py-2 font-medium">Customer Type</td><td className="border px-4 py-2">{formatValue(survey.customer_type_name)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Salutation</td><td className="border px-4 py-2">{formatValue(survey.salutation)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Full Name</td><td className="border px-4 py-2">{formatValue(survey.full_name)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Mobile Number</td><td className="border px-4 py-2">{formatValue(survey.mobile_number)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Email</td><td className="border px-4 py-2">{formatValue(survey.email)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Address</td><td className="border px-4 py-2">{formatValue(survey.address)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Company</td><td className="border px-4 py-2">{formatValue(survey.company)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Is Military</td><td className="border px-4 py-2">{formatBoolean(survey.is_military)}</td></tr>
+              <tr><td className="font-medium">Customer Type</td><td>{survey.customer_type_name || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Salutation</td><td>{getCustomerData('salutation')}</td></tr>
+              <tr><td className="font-medium">Full Name</td><td><strong>{getCustomerData('full_name')}</strong></td></tr>
+              <tr><td className="font-medium">Mobile Number</td><td><strong>{getCustomerData('mobile_number')}</strong></td></tr>
+              <tr><td className="font-medium">Email</td><td>{getCustomerData('email')}</td></tr>
+              <tr><td className="font-medium">Address</td><td>{survey.address || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Company</td><td>{survey.company || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Is Military</td><td>{formatBoolean(survey.is_military)}</td></tr>
             </tbody>
           </table>
         </div>
 
-        {/* Survey Details */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Survey Details</h3>
-          <table className="min-w-full border-collapse border border-gray-200">
+        {/* 2. SURVEY DETAILS */}
+        <div className="section no-break">
+          <h3>2. Survey Details</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
             <tbody>
-              <tr><td className="border px-4 py-2 font-medium">Survey ID</td><td className="border px-4 py-2">{formatValue(survey.survey_id)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Service Type</td><td className="border px-4 py-2">{formatValue(survey.service_type_name)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Goods Type</td><td className="border px-4 py-2">{formatValue(survey.goods_type)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Status</td><td className="border px-4 py-2">{formatValue(survey.status)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Survey Date</td><td className="border px-4 py-2">{formatDate(survey.survey_date)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Survey Start Time</td><td className="border px-4 py-2">{formatTime(survey.survey_start_time)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Survey End Time</td><td className="border px-4 py-2">{formatTime(survey.survey_end_time)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Work Description</td><td className="border px-4 py-2">{formatValue(survey.work_description)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Include Vehicle</td><td className="border px-4 py-2">{formatBoolean(survey.include_vehicle)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Include Pet</td><td className="border px-4 py-2">{formatBoolean(survey.include_pet)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Cost Together (Vehicle)</td><td className="border px-4 py-2">{formatBoolean(survey.cost_together_vehicle)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Cost Together (Pet)</td><td className="border px-4 py-2">{formatBoolean(survey.cost_together_pet)}</td></tr>
+              <tr><td className="font-medium">Service Type</td><td>{survey.service_type_display || survey.service_type_name || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Goods Type</td><td>{survey.goods_type || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Status</td><td>{survey.status || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Survey Date</td><td>{formatDate(survey.survey_date)}</td></tr>
+              <tr><td className="font-medium">Survey Start Time</td><td>{formatTime(survey.survey_start_time)}</td></tr>
+              <tr><td className="font-medium">Survey End Time</td><td>{formatTime(survey.survey_end_time)}</td></tr>
+              <tr><td className="font-medium">Work Description</td><td>{survey.work_description || "Not filled"}</td></tr>
             </tbody>
           </table>
         </div>
 
-        {/* Origin Address */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Origin Address</h3>
-          <table className="min-w-full border-collapse border border-gray-200">
+        {/* 3. ORIGIN ADDRESS */}
+        <div className="section no-break">
+          <h3>3. Origin Address</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
             <tbody>
-              <tr><td className="border px-4 py-2 font-medium">Same as Customer Address</td><td className="border px-4 py-2">{formatBoolean(survey.same_as_customer_address)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Address</td><td className="border px-4 py-2">{formatValue(survey.origin_address)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">City</td><td className="border px-4 py-2">{formatValue(survey.origin_city)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Country</td><td className="border px-4 py-2">{formatValue(survey.origin_country)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">State</td><td className="border px-4 py-2">{formatValue(survey.origin_state)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">ZIP</td><td className="border px-4 py-2">{formatValue(survey.origin_zip)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">POD/POL</td><td className="border px-4 py-2">{formatValue(survey.pod_pol)}</td></tr>
+              <tr><td className="font-medium">Same as Customer Address</td><td>{formatBoolean(survey.same_as_customer_address)}</td></tr>
+              <tr><td className="font-medium">Address</td><td>{survey.origin_address || "Not filled"}</td></tr>
+              <tr><td className="font-medium">City</td><td>{survey.origin_city || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Country</td><td>{survey.origin_country || "Not filled"}</td></tr>
+              <tr><td className="font-medium">State</td><td>{survey.origin_state || "Not filled"}</td></tr>
+              <tr><td className="font-medium">ZIP</td><td>{survey.origin_zip || "Not filled"}</td></tr>
+              <tr><td className="font-medium">POD/POL</td><td>{survey.pod_pol || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Floor</td><td>{survey.origin_floor ? `${formatBoolean(survey.origin_floor)} ${survey.origin_floor_notes || ''}` : "Not filled"}</td></tr>
+              <tr><td className="font-medium">Lift</td><td>{formatBoolean(survey.origin_lift)} {survey.origin_lift_notes || ''}</td></tr>
+              <tr><td className="font-medium">Parking</td><td>{formatBoolean(survey.origin_parking)} {survey.origin_parking_notes || ''}</td></tr>
+              <tr><td className="font-medium">Storage</td><td>{formatBoolean(survey.origin_storage)} {survey.origin_storage_notes || ''}</td></tr>
             </tbody>
           </table>
         </div>
 
-        {/* Destination Addresses */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Destination Addresses</h3>
-          {survey.destination_addresses && survey.destination_addresses.length > 0 ? (
+        {/* 4. DESTINATION ADDRESSES */}
+        <div className="section">
+          <h3>4. Destination Address{survey.destination_addresses?.length > 1 ? 'es' : ''}</h3>
+          {survey.destination_addresses?.length > 0 ? (
             survey.destination_addresses.map((addr, index) => (
-              <div key={index} className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700">Address {index + 1}</h4>
-                <table className="min-w-full border-collapse border border-gray-200">
+              <div key={index} className="no-break">
+                <h4>Address {index + 1}</h4>
+                <table>
+                  <thead>
+                    <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+                  </thead>
                   <tbody>
-                    <tr><td className="border px-4 py-2 font-medium">Address</td><td className="border px-4 py-2">{formatValue(addr.address)}</td></tr>
-                    <tr><td className="border px-4 py-2 font-medium">City</td><td className="border px-4 py-2">{formatValue(addr.city)}</td></tr>
-                    <tr><td className="border px-4 py-2 font-medium">Country</td><td className="border px-4 py-2">{formatValue(addr.country)}</td></tr>
-                    <tr><td className="border px-4 py-2 font-medium">State</td><td className="border px-4 py-2">{formatValue(addr.state)}</td></tr>
-                    <tr><td className="border px-4 py-2 font-medium">ZIP</td><td className="border px-4 py-2">{formatValue(addr.zip)}</td></tr>
-                    <tr><td className="border px-4 py-2 font-medium">POE</td><td className="border px-4 py-2">{formatValue(addr.poe)}</td></tr>
+                    <tr><td className="font-medium">Address</td><td>{addr.address || "Not filled"}</td></tr>
+                    <tr><td className="font-medium">City</td><td>{addr.city || "Not filled"}</td></tr>
+                    <tr><td className="font-medium">Country</td><td>{addr.country || "Not filled"}</td></tr>
+                    <tr><td className="font-medium">State</td><td>{addr.state || "Not filled"}</td></tr>
+                    <tr><td className="font-medium">ZIP</td><td>{addr.zip || "Not filled"}</td></tr>
+                    <tr><td className="font-medium">POE</td><td>{addr.poe || "Not filled"}</td></tr>
                   </tbody>
                 </table>
               </div>
             ))
           ) : (
-            <p>Not filled</p>
+            <table>
+              <tbody><tr><td className="font-medium">No destination addresses</td></tr></tbody>
+            </table>
           )}
         </div>
 
-        {/* Move Details */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Move Details</h3>
-          <table className="min-w-full border-collapse border border-gray-200">
+        {/* 5. MOVE DETAILS */}
+        <div className="section no-break">
+          <h3>5. Move Details</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
             <tbody>
-              <tr><td className="border px-4 py-2 font-medium">Packing Date From</td><td className="border px-4 py-2">{formatDate(survey.packing_date_from)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Packing Date To</td><td className="border px-4 py-2">{formatDate(survey.packing_date_to)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Loading Date</td><td className="border px-4 py-2">{formatDate(survey.loading_date)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">ETA</td><td className="border px-4 py-2">{formatDate(survey.eta)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">ETD</td><td className="border px-4 py-2">{formatDate(survey.etd)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Est. Delivery Date</td><td className="border px-4 py-2">{formatDate(survey.est_delivery_date)}</td></tr>
+              <tr><td className="font-medium">Packing Date From</td><td>{formatDate(survey.packing_date_from)}</td></tr>
+              <tr><td className="font-medium">Packing Date To</td><td>{formatDate(survey.packing_date_to)}</td></tr>
+              <tr><td className="font-medium">Loading Date</td><td>{formatDate(survey.loading_date)}</td></tr>
+              <tr><td className="font-medium">ETA</td><td>{formatDate(survey.eta)}</td></tr>
+              <tr><td className="font-medium">ETD</td><td>{formatDate(survey.etd)}</td></tr>
+              <tr><td className="font-medium">Est. Delivery Date</td><td>{formatDate(survey.est_delivery_date)}</td></tr>
             </tbody>
           </table>
         </div>
 
-        {/* Storage Details */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Storage Details</h3>
-          <table className="min-w-full border-collapse border border-gray-200">
+        {/* 6. STORAGE DETAILS */}
+        <div className="section no-break">
+          <h3>6. Storage Details</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
             <tbody>
-              <tr><td className="border px-4 py-2 font-medium">Start Date</td><td className="border px-4 py-2">{formatDate(survey.storage_start_date)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Frequency</td><td className="border px-4 py-2">{formatValue(survey.storage_frequency)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Duration</td><td className="border px-4 py-2">{formatValue(survey.storage_duration)}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Storage Mode</td><td className="border px-4 py-2">{formatValue(survey.storage_mode)}</td></tr>
+              <tr><td className="font-medium">Start Date</td><td>{formatDate(survey.storage_start_date)}</td></tr>
+              <tr><td className="font-medium">Frequency</td><td>{survey.storage_frequency || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Duration</td><td>{survey.storage_duration || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Storage Mode</td><td>{survey.storage_mode || "Not filled"}</td></tr>
             </tbody>
           </table>
         </div>
 
-        {/* Articles */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Articles</h3>
-          {survey.articles && survey.articles.length > 0 ? (
-            <table className="min-w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Room</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Item</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Quantity</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Volume</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Weight</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Handyman</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Packing Option</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Amount</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Remarks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {survey.articles.map((article, index) => (
-                  <tr key={index}>
-                    <td className="border px-4 py-2">{formatValue(article.room_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.item_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.quantity)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.volume)} {formatValue(article.volume_unit_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.weight)} {formatValue(article.weight_unit_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.handyman_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.packing_option_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.amount)} {formatValue(article.currency_code)}</td>
-                    <td className="border px-4 py-2">{formatValue(article.remarks)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Not filled</p>
-          )}
-        </div>
-
-        {/* Vehicles */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Vehicles</h3>
-          {survey.vehicles && survey.vehicles.length > 0 ? (
-            <table className="min-w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Vehicle Type</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Make</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Model</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Insurance</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Remark</th>
-                </tr>
-              </thead>
-              <tbody>
-                {survey.vehicles.map((vehicle, index) => (
-                  <tr key={index}>
-                    <td className="border px-4 py-2">{formatValue(vehicle.vehicle_type_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(vehicle.make)}</td>
-                    <td className="border px-4 py-2">{formatValue(vehicle.model)}</td>
-                    <td className="border px-4 py-2">{formatBoolean(vehicle.insurance)}</td>
-                    <td className="border px-4 py-2">{formatValue(vehicle.remark)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Not filled</p>
-          )}
-        </div>
-
-        {/* Pets */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Pets</h3>
-          {survey.pets && survey.pets.length > 0 ? (
-            <table className="min-w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Pet Name</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Pet Type</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Breed</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Age</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Weight</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Special Care</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Transport Requirements</th>
-                  <th className="border px-4 py-2 text-left text-xs font-medium text-gray-500">Vaccination Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {survey.pets.map((pet, index) => (
-                  <tr key={index}>
-                    <td className="border px-4 py-2">{formatValue(pet.pet_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.pet_type_name)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.breed)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.age)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.weight)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.special_care)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.transport_requirements)}</td>
-                    <td className="border px-4 py-2">{formatValue(pet.vaccination_status)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Not filled</p>
-          )}
-        </div>
-
-        {/* Service Details */}
-        <div>
-          <h3 className="text-md font-medium text-gray-800 mb-2">Service Details</h3>
-          <table className="min-w-full border-collapse border border-gray-200">
+        {/* 7. VEHICLE DETAILS */}
+        <div className="section no-break">
+          <h3>7. Vehicle Details</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
             <tbody>
-              <tr><td className="border px-4 py-2 font-medium">Owner Packed</td><td className="border px-4 py-2">{formatBoolean(survey.general_owner_packed)} {survey.general_owner_packed_notes && `(${survey.general_owner_packed_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Restriction</td><td className="border px-4 py-2">{formatBoolean(survey.general_restriction)} {survey.general_restriction_notes && `(${survey.general_restriction_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Handyman</td><td className="border px-4 py-2">{formatBoolean(survey.general_handyman)} {survey.general_handyman_notes && `(${survey.general_handyman_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Insurance</td><td className="border px-4 py-2">{formatBoolean(survey.general_insurance)} {survey.general_insurance_notes && `(${survey.general_insurance_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Origin Floor</td><td className="border px-4 py-2">{formatBoolean(survey.origin_floor)} {survey.origin_floor_notes && `(${survey.origin_floor_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Origin Lift</td><td className="border px-4 py-2">{formatBoolean(survey.origin_lift)} {survey.origin_lift_notes && `(${survey.origin_lift_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Origin Parking</td><td className="border px-4 py-2">{formatBoolean(survey.origin_parking)} {survey.origin_parking_notes && `(${survey.origin_parking_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Origin Storage</td><td className="border px-4 py-2">{formatBoolean(survey.origin_storage)} {survey.origin_storage_notes && `(${survey.origin_storage_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Destination Floor</td><td className="border px-4 py-2">{formatBoolean(survey.destination_floor)} {survey.destination_floor_notes && `(${survey.destination_floor_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Destination Lift</td><td className="border px-4 py-2">{formatBoolean(survey.destination_lift)} {survey.destination_lift_notes && `(${survey.destination_lift_notes})`}</td></tr>
-              <tr><td className="border px-4 py-2 font-medium">Destination Parking</td><td className="border px-4 py-2">{formatBoolean(survey.destination_parking)} {survey.destination_parking_notes && `(${survey.destination_parking_notes})`}</td></tr>
+              <tr><td className="font-medium">Include Vehicle</td><td>{formatBoolean(survey.include_vehicle)}</td></tr>
+              <tr><td className="font-medium">Cost Together</td><td>{formatBoolean(survey.cost_together_vehicle)}</td></tr>
+            </tbody>
+          </table>
+          {survey.vehicles?.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width: '20%'}}>Vehicle Type</th>
+                  <th style={{width: '15%'}}>Make</th>
+                  <th style={{width: '15%'}}>Model</th>
+                  <th style={{width: '10%'}}>Insurance</th>
+                  <th style={{width: '40%'}}>Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                {survey.vehicles.map((v, i) => (
+                  <tr key={i}>
+                    <td>{v.vehicle_type_name || "-"}</td>
+                    <td>{v.make || "-"}</td>
+                    <td>{v.model || "-"}</td>
+                    <td>{formatBoolean(v.insurance)}</td>
+                    <td>{v.remark || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* 8. PET DETAILS */}
+        <div className="section no-break">
+          <h3>8. Pet Details</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
+            <tbody>
+              <tr><td className="font-medium">Include Pet</td><td>{formatBoolean(survey.include_pet)}</td></tr>
+              <tr><td className="font-medium">Cost Together</td><td>{formatBoolean(survey.cost_together_pet)}</td></tr>
+              <tr><td className="font-medium">Number of Pets</td><td>{survey.pets?.length || 0}</td></tr>
+            </tbody>
+          </table>
+          {survey.pets?.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width: '12%'}}>Name</th>
+                  <th style={{width: '12%'}}>Type</th>
+                  <th style={{width: '12%'}}>Breed</th>
+                  <th style={{width: '8%'}}>Age</th>
+                  <th style={{width: '8%'}}>Weight</th>
+                  <th style={{width: '12%'}}>Special Care</th>
+                  <th style={{width: '12%'}}>Vaccination</th>
+                </tr>
+              </thead>
+              <tbody>
+                {survey.pets.map((pet, i) => (
+                  <tr key={i}>
+                    <td>{pet.pet_name || "-"}</td>
+                    <td>{pet.pet_type_name || "-"}</td>
+                    <td>{pet.breed || "-"}</td>
+                    <td>{pet.age || "-"}</td>
+                    <td>{pet.weight || "-"}</td>
+                    <td>{pet.special_care || "-"}</td>
+                    <td>{pet.vaccination_status || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* 9. ARTICLES - WITH TOTALS */}
+        {survey.articles?.length > 0 && (
+          <div className="section">
+            <h3>9. Articles ({survey.articles.length})</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width: '8%'}}>Room</th>
+                  <th style={{width: '12%'}}>Item</th>
+                  <th style={{width: '5%'}}>Qty</th>
+                  <th style={{width: '8%'}}>Volume</th>
+                  <th style={{width: '8%'}}>Weight</th>
+                  <th style={{width: '10%'}}>Handyman</th>
+                  <th style={{width: '12%'}}>Packing</th>
+                  <th style={{width: '8%'}}>Amount</th>
+                  <th style={{width: '29%'}}>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {survey.articles.map((article, i) => (
+                  <tr key={i}>
+                    <td className="articles-col">{article.room_name || "-"}</td>
+                    <td className="articles-col">{article.item_name || "-"}</td>
+                    <td className="articles-col">{article.quantity || "-"}</td>
+                    <td className="articles-col">{article.volume || "-"} {article.volume_unit_name || ""}</td>
+                    <td className="articles-col">{article.weight || "-"} {article.weight_unit_name || ""}</td>
+                    <td className="articles-col">{article.handyman_name || "-"}</td>
+                    <td className="articles-col">{article.packing_option_name || "-"}</td>
+                    <td className="articles-col">{article.amount || "-"} {article.currency_code || ""}</td>
+                    <td className="articles-col">{article.remarks || "-"}</td>
+                  </tr>
+                ))}
+                {totalCosts.length > 0 && (
+                  <tr className="total-row">
+                    <td colSpan="7"><strong>Total</strong></td>
+                    <td colSpan="2">
+                      <strong>{totalCosts.map(c => `${c.total} ${c.currency}`).join(', ')}</strong>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 10. SERVICE DETAILS */}
+        <div className="section no-break">
+          <h3>10. Service Details</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style={{width: '25%'}}>Service</th>
+                <th style={{width: '15%'}}>Status</th>
+                <th style={{width: '60%'}}>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td className="font-medium">Owner Packed</td><td>{formatBoolean(survey.general_owner_packed)}</td><td>{survey.general_owner_packed_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Restriction</td><td>{formatBoolean(survey.general_restriction)}</td><td>{survey.general_restriction_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Handyman</td><td>{formatBoolean(survey.general_handyman)}</td><td>{survey.general_handyman_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Insurance</td><td>{formatBoolean(survey.general_insurance)}</td><td>{survey.general_insurance_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Origin Floor</td><td>{formatBoolean(survey.origin_floor)}</td><td>{survey.origin_floor_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Origin Lift</td><td>{formatBoolean(survey.origin_lift)}</td><td>{survey.origin_lift_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Origin Parking</td><td>{formatBoolean(survey.origin_parking)}</td><td>{survey.origin_parking_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Origin Storage</td><td>{formatBoolean(survey.origin_storage)}</td><td>{survey.origin_storage_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Destination Floor</td><td>{formatBoolean(survey.destination_floor)}</td><td>{survey.destination_floor_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Destination Lift</td><td>{formatBoolean(survey.destination_lift)}</td><td>{survey.destination_lift_notes || "-"}</td></tr>
+              <tr><td className="font-medium">Destination Parking</td><td>{formatBoolean(survey.destination_parking)}</td><td>{survey.destination_parking_notes || "-"}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* 11. TRANSPORT MODE */}
+        <div className="section no-break">
+          <h3>11. Transport Mode</h3>
+          <table>
+            <thead>
+              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
+            </thead>
+            <tbody>
+              <tr><td className="font-medium">Transport Mode</td><td>{survey.transport_mode || "Not filled"}</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-      <div className="mt-6 flex justify-center">
+
+      {/* SCREEN ONLY - HIDDEN ON PRINT */}
+      <div className="mt-6 flex justify-center no-print">
         <button
           onClick={() => window.print()}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 no-print"
+          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
         >
-          Print this Survey
+          🖨️ Print Survey Report
         </button>
       </div>
     </div>
