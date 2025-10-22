@@ -168,21 +168,22 @@ const SurveyDetails = () => {
 
   const methods = useForm({
     defaultValues: {
-      enquiry: surveyId || "",
-      customerType: "",
-      isMilitary: false,
-      salutation: "",
-      fullName: initialCustomerData?.fullName || "",
-      phoneNumber: initialCustomerData?.phoneNumber || "",
-      email: initialCustomerData?.email || "",
-      address: "",
-      company: "",
-      goodsType: "",
-      status: "pending",
-      surveyDate: initialCustomerData?.surveyDate || null,
-      surveyStartTime: initialCustomerData?.surveyStartTime || null,
-      surveyEndTime: null,
-      workDescription: "",
+    enquiry: surveyId || "",
+    customerType: "",
+    isMilitary: false,
+    salutation: "",
+    fullName: initialCustomerData?.fullName || "",
+    phoneNumber: initialCustomerData?.phoneNumber || "",
+    email: initialCustomerData?.email || "",
+    serviceType: initialCustomerData?.serviceType || "", 
+    address: "",
+    company: "",
+    goodsType: "",
+    status: "pending",
+    surveyDate: initialCustomerData?.surveyDate || null,
+    surveyStartTime: initialCustomerData?.surveyStartTime || null,
+    surveyEndTime: null,
+    workDescription: "",
       includeVehicle: false,
       includePet: false,
       costTogetherVehicle: false,
@@ -259,25 +260,27 @@ const SurveyDetails = () => {
             const survey = response.data[0];
             setExistingSurvey(survey);
             const surveyDateTime = survey.survey_date ? new Date(survey.survey_date) : null;
-            const surveyStartTime = survey.survey_start_time ?
-              new Date(`1970-01-01T${survey.survey_start_time}`) : null;
+            const surveyStartTime = survey.survey_start_time
+              ? new Date(`1970-01-01T${survey.survey_start_time}`)
+              : null;
+            const surveyEndTime = survey.survey_end_time
+              ? new Date(`1970-01-01T${survey.survey_end_time}`)
+              : null;
             reset({
-              ...methods.getValues(),
-              enquiry: survey.enquiry || surveyId, 
-              customerType: survey.customer_type?.id || "",
+              enquiry: survey.enquiry || surveyId,
+              customerType: survey.customer_type?.id || survey.customer_type || "",
               isMilitary: survey.is_military || false,
               salutation: survey.salutation || "",
-              fullName: survey.full_name || survey.enquiry?.fullName || initialCustomerData?.fullName || "",
-              phoneNumber: survey.mobile_number || survey.enquiry?.phoneNumber || initialCustomerData?.phoneNumber || "",
-              email: survey.email || survey.enquiry?.email || initialCustomerData?.email || "",
+              fullName: survey.full_name || initialCustomerData?.fullName || "",
+              phoneNumber: survey.mobile_number || initialCustomerData?.phoneNumber || "",
+              email: survey.email || initialCustomerData?.email || "",
               address: survey.address || "",
               company: survey.company || "",
               goodsType: survey.goods_type || "",
               status: survey.status || "pending",
               surveyDate: surveyDateTime,
               surveyStartTime: surveyStartTime,
-              surveyEndTime: survey.survey_end_time ?
-                new Date(`1970-01-01T${survey.survey_end_time}`) : null,
+              surveyEndTime: surveyEndTime,
               workDescription: survey.work_description || "",
               includeVehicle: survey.include_vehicle || false,
               includePet: survey.include_pet || false,
@@ -293,15 +296,86 @@ const SurveyDetails = () => {
               multipleAddresses: survey.multiple_addresses || false,
               destinationAddresses: survey.destination_addresses?.length > 0
                 ? survey.destination_addresses.map((addr) => ({
-                  id: uuidv4(),
-                  address: addr.address || "",
-                  city: addr.city || "",
-                  country: addr.country || "",
-                  state: addr.state || "",
-                  zip: addr.zip || "",
-                  poe: addr.poe || "",
-                }))
+                    id: uuidv4(),
+                    address: addr.address || "",
+                    city: addr.city || "",
+                    country: addr.country || "",
+                    state: addr.state || "",
+                    zip: addr.zip || "",
+                    poe: addr.poe || "",
+                  }))
                 : [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
+              packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
+              packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
+              loadingDate: survey.loading_date ? new Date(survey.loading_date) : null,
+              eta: survey.eta ? new Date(survey.eta) : null,
+              etd: survey.etd ? new Date(survey.etd) : null,
+              estDeliveryDate: survey.est_delivery_date ? new Date(survey.est_delivery_date) : null,
+              storageStartDate: survey.storage_start_date ? new Date(survey.storage_start_date) : null,
+              storageFrequency: survey.storage_frequency || "",
+              storageDuration: survey.storage_duration || "",
+              storageMode: survey.storage_mode || "",
+              transportMode: survey.transport_mode || "road",
+              generalOwnerPacked: survey.general_owner_packed || false,
+              generalOwnerPackedNotes: survey.general_owner_packed_notes || "",
+              generalRestriction: survey.general_restriction || false,
+              generalRestrictionNotes: survey.general_restriction_notes || "",
+              generalHandyman: survey.general_handyman || false,
+              generalHandymanNotes: survey.general_handyman_notes || "",
+              generalInsurance: survey.general_insurance || false,
+              generalInsuranceNotes: survey.general_insurance_notes || "",
+              originFloor: survey.origin_floor || false,
+              originFloorNotes: survey.origin_floor_notes || "",
+              originLift: survey.origin_lift || false,
+              originLiftNotes: survey.origin_lift_notes || "",
+              originParking: survey.origin_parking || false,
+              originParkingNotes: survey.origin_parking_notes || "",
+              originStorage: survey.origin_storage || false,
+              originStorageNotes: survey.origin_storage_notes || "",
+              destinationFloor: survey.destination_floor || false,
+              destinationFloorNotes: survey.destination_floor_notes || "",
+              destinationLift: survey.destination_lift || false,
+              destinationLiftNotes: survey.destination_lift_notes || "",
+              destinationParking: survey.destination_parking || false,
+              destinationParkingNotes: survey.destination_parking_notes || "",
+              articles: survey.articles?.map((article) => ({
+                id: uuidv4(),
+                itemName: article.item_name || "",
+                quantity: article.quantity || 0,
+                volume: article.volume || "",
+                volumeUnit: article.volume_unit || "",
+                weight: article.weight || "",
+                weightUnit: article.weight_unit || "",
+                handyman: article.handyman || "",
+                packingOption: article.packing_option || "",
+                moveStatus: article.move_status || "",
+                amount: article.amount || "",
+                currency: article.currency || "",
+                remarks: article.remarks || "",
+                room: article.room || "",
+              })) || [],
+              vehicles: survey.vehicles?.map((vehicle) => ({
+                vehicleType: vehicle.vehicle_type || "",
+                make: vehicle.make || "",
+                model: vehicle.model || "",
+                insurance: vehicle.insurance || false,
+                remark: vehicle.remark || "",
+                transportMode: vehicle.transport_mode || "",
+              })) || [],
+              pets: survey.pets?.map((pet) => ({
+                id: pet.id || Date.now(),
+                petName: pet.pet_name || "",
+                petType: pet.pet_type || "",
+                breed: pet.breed || "",
+                age: pet.age || 0,
+                weight: pet.weight || 0,
+                specialCare: pet.special_care || "",
+                transportRequirements: pet.transport_requirements || "",
+                feedingInstructions: pet.feeding_instructions || "",
+                medication: pet.medication || "",
+                vaccinationStatus: pet.vaccination_status || "",
+                behaviorNotes: pet.behavior_notes || "",
+              })) || [],
             });
             hasReset.current = true;
           } else {
@@ -312,6 +386,7 @@ const SurveyDetails = () => {
               phoneNumber: initialCustomerData?.phoneNumber || "",
               email: initialCustomerData?.email || "",
               surveyDate: initialCustomerData?.surveyDate || null,
+              surveyStartTime: initialCustomerData?.surveyStartTime || null,
             });
             hasReset.current = true;
           }
@@ -416,201 +491,203 @@ const SurveyDetails = () => {
     setActiveTab(tabId);
   };
 
-  const Customer = () => {
-    const [activeSection, setActiveSection] = useState("customer-details");
-    const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
-    const sameAsCustomerAddress = watch("sameAsCustomerAddress");
-    const multipleAddresses = watch("multipleAddresses");
-    const serviceTypeDisplay = existingSurvey?.service_type_display || initialCustomerData?.serviceTypeDisplay || "N/A";
+const Customer = () => {
+  const [activeSection, setActiveSection] = useState("customer-details");
+  const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
+  const sameAsCustomerAddress = watch("sameAsCustomerAddress");
+  const multipleAddresses = watch("multipleAddresses");
 
-    const addAddress = () => {
-      const newAddresses = [...destinationAddresses, { id: uuidv4() }];
+  const serviceTypeOptions = [
+    { value: "localMove", label: "Local Move" },
+    { value: "internationalMove", label: "International Move" },
+    { value: "carExport", label: "Car Import and Export" },
+    { value: "storageServices", label: "Storage Services" },
+    { value: "logistics", label: "Logistics" },
+  ];
+
+  const addAddress = () => {
+    const newAddresses = [...destinationAddresses, { id: uuidv4() }];
+    setDestinationAddresses(newAddresses);
+    setValue("destinationAddresses", newAddresses);
+  };
+
+  const removeAddress = (index) => {
+    if (destinationAddresses.length > 1) {
+      const newAddresses = destinationAddresses.filter((_, i) => i !== index);
       setDestinationAddresses(newAddresses);
       setValue("destinationAddresses", newAddresses);
-    };
+    }
+  };
 
-    const removeAddress = (index) => {
-      if (destinationAddresses.length > 1) {
-        const newAddresses = destinationAddresses.filter((_, i) => i !== index);
-        setDestinationAddresses(newAddresses);
-        setValue("destinationAddresses", newAddresses);
-      }
-    };
+  const salutationOptions = [
+    { value: "Mr", label: "Mr" },
+    { value: "Ms", label: "Ms" },
+    { value: "Mrs", label: "Mrs" },
+  ];
+  const goodsTypeOptions = [
+    { value: "article", label: "Article" },
+    { value: "pet", label: "Pet" },
+  ];
+  const statusOptions = [
+    { value: "pending", label: "Pending" },
+    { value: "in_progress", label: "In Progress" },
+    { value: "completed", label: "Completed" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
+  const frequencyOptions = [
+    { value: "weekly", label: "Weekly" },
+    { value: "monthly", label: "Monthly" },
+    { value: "yearly", label: "Yearly" },
+  ];
+  const storageModeOptions = [
+    { value: "warehouse", label: "Warehouse" },
+    { value: "container", label: "Container" },
+  ];
+  const cityOptions = [
+    { value: "new_york", label: "New York" },
+    { value: "los_angeles", label: "Los Angeles" },
+  ];
+  const countryOptions = [
+    { value: "usa", label: "USA" },
+    { value: "india", label: "India" },
+  ];
+  const stateOptions = [
+    { value: "ny", label: "New York" },
+    { value: "ca", label: "California" },
+  ];
 
-    const salutationOptions = [
-      { value: "Mr", label: "Mr" },
-      { value: "Ms", label: "Ms" },
-      { value: "Mrs", label: "Mrs" },
-    ];
-    const goodsTypeOptions = [
-      { value: "article", label: "Article" },
-      { value: "pet", label: "Pet" },
-    ];
-    const statusOptions = [
-      { value: "pending", label: "Pending" },
-      { value: "in_progress", label: "In Progress" },
-      { value: "completed", label: "Completed" },
-      { value: "cancelled", label: "Cancelled" },
-    ];
-    const frequencyOptions = [
-      { value: "weekly", label: "Weekly" },
-      { value: "monthly", label: "Monthly" },
-      { value: "yearly", label: "Yearly" },
-    ];
-    const storageModeOptions = [
-      { value: "warehouse", label: "Warehouse" },
-      { value: "container", label: "Container" },
-    ];
-    const cityOptions = [
-      { value: "new_york", label: "New York" },
-      { value: "los_angeles", label: "Los Angeles" },
-    ];
-    const countryOptions = [
-      { value: "usa", label: "USA" },
-      { value: "india", label: "India" },
-    ];
-    const stateOptions = [
-      { value: "ny", label: "New York" },
-      { value: "ca", label: "California" },
-    ];
-
-    const sections = [
-      {
-        id: "customer-details",
-        title: "Customer Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Customer Type"
-              name="customerType"
-              type="select"
-              options={apiData.customerTypes}
-              rules={{ required: "Customer Type is required" }}
-            />
-            <Input
-              label="Salutation"
-              name="salutation"
-              type="select"
-              options={salutationOptions}
-              rules={{ required: "Salutation is required" }}
-            />
-            <Input
-              label="Full Name"
-              name="fullName"
-              type="text"
-              rules={{ required: "Full Name is required" }}
-            />
-            <Input
-              label="Mobile Number"
-              name="phoneNumber"
-              type="text"
-              rules={{
-                required: "Mobile Number is required",
-                pattern: {
-                  value: /^\+?[0-9]{7,15}$/,
-                  message: "Enter a valid mobile number (7-15 digits)",
-                },
-              }}
-            />
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              rules={{
-                required: "Email is required",
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: "Enter a valid email",
-                },
-              }}
-            />
-            <Input
-              label="Address"
-              name="address"
-              type="text"
-              rules={{ required: "Address is required" }}
-            />
-            <Input label="Company" name="company" type="text" />
-            <div>
-              <p className="block text-sm font-medium text-gray-700 mb-1 mt-1">(Optional Field)</p>
-              <Input label="Is Military" name="isMilitary" type="checkbox" />
-            </div>
+  const sections = [
+    {
+      id: "customer-details",
+      title: "Customer Details",
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Customer Type"
+            name="customerType"
+            type="select"
+            options={apiData.customerTypes}
+            rules={{ required: "Customer Type is required" }}
+          />
+          <Input
+            label="Salutation"
+            name="salutation"
+            type="select"
+            options={salutationOptions}
+            rules={{ required: "Salutation is required" }}
+          />
+          <Input
+            label="Full Name"
+            name="fullName"
+            type="text"
+            rules={{ required: "Full Name is required" }}
+          />
+          <Input
+            label="Mobile Number"
+            name="phoneNumber"
+            type="text"
+            rules={{
+              required: "Mobile Number is required",
+              pattern: {
+                value: /^\+?[0-9]{7,15}$/,
+                message: "Enter a valid mobile number (7-15 digits)",
+              },
+            }}
+          />
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            rules={{
+              required: "Email is required",
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Enter a valid email",
+              },
+            }}
+          />
+          <Input
+            label="Service Type"
+            name="serviceType"
+            type="select"
+            options={serviceTypeOptions}
+            rules={{ required: "Service Type is required" }}
+          />
+          <Input
+            label="Address"
+            name="address"
+            type="text"
+            rules={{ required: "Address is required" }}
+          />
+          <Input label="Company" name="company" type="text" />
+          <div>
+            <p className="block text-sm font-medium text-gray-700 mb-1 mt-1">(Optional Field)</p>
+            <Input label="Is Military" name="isMilitary" type="checkbox" />
           </div>
-        ),
-      },
-      {
-        id: "survey-details",
-        title: "Survey Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Type <span className="text-gray-500">(Read Only)</span>
-              </label>
-              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-800">
-                {serviceTypeDisplay || "Not Available"}
-              </div>
-              {(!serviceTypeDisplay || serviceTypeDisplay === "N/A") && (
-                <p className="mt-1 text-xs text-yellow-600">
-                  Service type will be set after saving
-                </p>
-              )}
-            </div>
-            <Input
-              label="Goods Type"
-              name="goodsType"
-              type="select"
-              options={goodsTypeOptions}
-              rules={{ required: "Goods Type is required" }}
-            />
-            <Input
-              label="Status"
-              name="status"
-              type="select"
-              options={statusOptions}
-              rules={{ required: "Status is required" }}
-            />
-            <DatePickerInput
-              label="Survey Date"
-              name="surveyDate"
-              rules={{ required: "Survey Date is required" }}
-            />
-            <DatePickerInput
-              label="Survey Start Time"
-              name="surveyStartTime"
-              isTimeOnly
-              rules={{ required: "Survey Start Time is required" }}
-            />
-            <DatePickerInput
-              label="Survey End Time"
-              name="surveyEndTime"
-              isTimeOnly
-              rules={{ required: "Survey End Time is required" }}
-            />
-            <Input
-              label="Work Description"
-              name="workDescription"
-              type="textarea"
-              rules={{ required: "Work Description is required" }}
-            />
-            <Input
-              label="Include Vehicle"
-              name="includeVehicle"
-              type="checkbox"
-            />
-            <Input label="Include Pet" name="includePet" type="checkbox" />
-            <Input
-              label="Cost Together (Vehicle)"
-              name="costTogetherVehicle"
-              type="checkbox"
-            />
-            <Input
-              label="Cost Together (Pet)"
-              name="costTogetherPet"
-              type="checkbox"
-            />
-          </div>
-        ),
+        </div>
+      )
+    },
+    {
+      id: "survey-details",
+      title: "Survey Details",
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* REMOVE the Service Type display section since it's now an editable field */}
+          <Input
+            label="Goods Type"
+            name="goodsType"
+            type="select"
+            options={goodsTypeOptions}
+            rules={{ required: "Goods Type is required" }}
+          />
+          <Input
+            label="Status"
+            name="status"
+            type="select"
+            options={statusOptions}
+            rules={{ required: "Status is required" }}
+          />
+          <DatePickerInput
+            label="Survey Date"
+            name="surveyDate"
+            rules={{ required: "Survey Date is required" }}
+          />
+          <DatePickerInput
+            label="Survey Start Time"
+            name="surveyStartTime"
+            isTimeOnly
+            rules={{ required: "Survey Start Time is required" }}
+          />
+          <DatePickerInput
+            label="Survey End Time"
+            name="surveyEndTime"
+            isTimeOnly
+            rules={{ required: "Survey End Time is required" }}
+          />
+          <Input
+            label="Work Description"
+            name="workDescription"
+            type="textarea"
+            rules={{ required: "Work Description is required" }}
+          />
+          <Input
+            label="Include Vehicle"
+            name="includeVehicle"
+            type="checkbox"
+          />
+          <Input label="Include Pet" name="includePet" type="checkbox" />
+          <Input
+            label="Cost Together (Vehicle)"
+            name="costTogetherVehicle"
+            type="checkbox"
+          />
+          <Input
+            label="Cost Together (Pet)"
+            name="costTogetherPet"
+            type="checkbox"
+          />
+        </div>
+      ),
       },
       {
         id: "origin-address",
@@ -1534,227 +1611,247 @@ const SurveyDetails = () => {
 const saveSurveyData = async (data) => {
   setIsLoading(true);
 
-   const enquiryId = surveyId ? parseInt(surveyId) : null;
-
-    setIsLoading(true);
-
-    const payload = {
-      enquiry: enquiryId,
-      customer_type: data.customerType || null,
-      is_military: data.isMilitary,
-      salutation: data.salutation,
-      full_name: data.fullName,
-      mobile_number: data.phoneNumber,
-      email: data.email,
-      address: data.address,
-      company: data.company,
-      goods_type: data.goodsType,
-      status: data.status,
-      survey_date: data.surveyDate ? data.surveyDate.toISOString().split('T')[0] : null,
-      survey_start_time: data.surveyStartTime ?
-        data.surveyStartTime.toTimeString().split(' ')[0] : null,
-      survey_end_time: data.surveyEndTime ?
-        data.surveyEndTime.toTimeString().split(' ')[0] : null,
-      work_description: data.workDescription,
-      include_vehicle: data.includeVehicle,
-      include_pet: data.includePet,
-      cost_together_vehicle: data.costTogetherVehicle,
-      cost_together_pet: data.costTogetherPet,
-      same_as_customer_address: data.sameAsCustomerAddress,
-      origin_address: data.originAddress,
-      origin_city: data.originCity,
-      origin_country: data.originCountry,
-      origin_state: data.originState,
-      origin_zip: data.originZip,
-      pod_pol: data.podPol,
-      multiple_addresses: data.multipleAddresses,
-      destination_addresses: data.destinationAddresses.map(addr => ({
-        address: addr.address,
-        city: addr.city,
-        country: addr.country,
-        state: addr.state,
-        zip: addr.zip,
-        poe: addr.poe,
-      })),
-      packing_date_from: data.packingDateFrom
-        ? data.packingDateFrom.toISOString().split("T")[0]
-        : null,
-      packing_date_to: data.packingDateTo
-        ? data.packingDateTo.toISOString().split("T")[0]
-        : null,
-      loading_date: data.loadingDate
-        ? data.loadingDate.toISOString().split("T")[0]
-        : null,
-      eta: data.eta ? data.eta.toISOString().split("T")[0] : null,
-      etd: data.etd ? data.etd.toISOString().split("T")[0] : null,
-      est_delivery_date: data.estDeliveryDate
-        ? data.estDeliveryDate.toISOString().split("T")[0]
-        : null,
-      storage_start_date: data.storageStartDate
-        ? data.storageStartDate.toISOString().split("T")[0]
-        : null,
-      storage_frequency: data.storageFrequency,
-      storage_duration: data.storageDuration,
-      storage_mode: data.storageMode,
-      transport_mode: data.transportMode,
-      general_owner_packed: data.generalOwnerPacked,
-      general_owner_packed_notes: data.generalOwnerPackedNotes,
-      general_restriction: data.generalRestriction,
-      general_restriction_notes: data.generalRestrictionNotes,
-      general_handyman: data.generalHandyman,
-      general_handyman_notes: data.generalHandymanNotes,
-      general_insurance: data.generalInsurance,
-      general_insurance_notes: data.generalInsuranceNotes,
-      origin_floor: data.originFloor,
-      origin_floor_notes: data.originFloorNotes,
-      origin_lift: data.originLift,
-      origin_lift_notes: data.originLiftNotes,
-      origin_parking: data.originParking,
-      origin_parking_notes: data.originParkingNotes,
-      origin_storage: data.originStorage,
-      origin_storage_notes: data.originStorageNotes,
-      destination_floor: data.destinationFloor,
-      destination_floor_notes: data.destinationFloorNotes,
-      destination_lift: data.destinationLift,
-      destination_lift_notes: data.destinationLiftNotes,
-      destination_parking: data.destinationParking,
-      destination_parking_notes: data.destinationParkingNotes,
-      articles: data.articles.map((article) => ({
-        room: article.room || null,
-        item_name: article.itemName,
-        quantity: article.quantity,
-        volume: article.volume || null,
-        volume_unit: article.volumeUnit || null,
-        weight: article.weight || null,
-        weight_unit: article.weightUnit || null,
-        handyman: article.handyman || null,
-        packing_option: article.packingOption || null,
-        move_status: article.moveStatus,
-        amount: article.amount || null,
-        currency: article.currency || null,
-        remarks: article.remarks,
-      })),
-      vehicles: data.vehicles.map((vehicle) => ({
-        vehicle_type: vehicle.vehicleType || null,
-        make: vehicle.make,
-        model: vehicle.model,
-        insurance: vehicle.insurance,
-        remark: vehicle.remark,
-        transport_mode: vehicle.transportMode,
-      })),
-      pets: data.pets.map((pet) => ({
-        pet_name: pet.petName,
-        pet_type: pet.petType || null,
-        breed: pet.breed,
-        age: pet.age,
-        weight: pet.weight,
-        special_care: pet.specialCare,
-        transport_requirements: pet.transportRequirements,
-        feeding_instructions: pet.feedingInstructions,
-        medication: pet.medication,
-        vaccination_status: pet.vaccinationStatus,
-        behavior_notes: pet.behaviorNotes,
-      })),
-    };
-
-    if (existingSurvey) {
-      return apiClient
-        .put(`/surveys/${existingSurvey.survey_id}/`, payload)
-        .then((response) => {
-          setMessage("Survey updated successfully!");
-          setTimeout(() => {
-            navigate(`/survey/${existingSurvey.survey_id}/survey-summary`, {
-              state: {
-                customerData: { ...data, survey_id: response.data.survey_id },
-                articles: data.articles,
-                vehicles: data.vehicles,
-                pets: data.pets,
-                serviceData: {
-                  general_owner_packed: data.generalOwnerPacked,
-                  general_owner_packed_notes: data.generalOwnerPackedNotes,
-                  general_restriction: data.generalRestriction,
-                  general_restriction_notes: data.generalRestrictionNotes,
-                  general_handyman: data.generalHandyman,
-                  general_handyman_notes: data.generalHandymanNotes,
-                  general_insurance: data.generalInsurance,
-                  general_insurance_notes: data.generalInsuranceNotes,
-                  origin_floor: data.originFloor,
-                  origin_floor_notes: data.originFloorNotes,
-                  origin_lift: data.originLift,
-                  origin_lift_notes: data.originLiftNotes,
-                  origin_parking: data.originParking,
-                  origin_parking_notes: data.originParkingNotes,
-                  origin_storage: data.originStorage,
-                  origin_storage_notes: data.originStorageNotes,
-                  destination_floor: data.destinationFloor,
-                  destination_floor_notes: data.destinationFloorNotes,
-                  destination_lift: data.destinationLift,
-                  destination_lift_notes: data.destinationLiftNotes,
-                  destination_parking: data.destinationParking,
-                  destination_parking_notes: data.destinationParkingNotes,
-                },
-              },
-            });
-          }, 2000);
-          setIsLoading(false);
-          return response.data;
-        })
-        .catch((error) => {
-          setError("Failed to update survey data. Please try again.");
-          setIsLoading(false);
-          throw error;
-        });
-    } else {
-      const { surveyId, ...payloadWithoutSurveyId } = payload;
-      return apiClient
-        .post(`/surveys/`, payloadWithoutSurveyId)
-        .then((response) => {
-          const newSurveyId = response.data.survey_id;
-          setMessage("Survey created successfully!");
-          setTimeout(() => {
-            navigate(`/survey/${newSurveyId}/survey-summary`, {
-              state: {
-                customerData: { ...data, survey_id: response.data.survey_id },
-                articles: data.articles,
-                vehicles: data.vehicles,
-                pets: data.pets,
-                serviceData: {
-                  general_owner_packed: data.generalOwnerPacked,
-                  general_owner_packed_notes: data.generalOwnerPackedNotes,
-                  general_restriction: data.generalRestriction,
-                  general_restriction_notes: data.generalRestrictionNotes,
-                  general_handyman: data.generalHandyman,
-                  general_handyman_notes: data.generalHandymanNotes,
-                  general_insurance: data.generalInsurance,
-                  general_insurance_notes: data.generalInsuranceNotes,
-                  origin_floor: data.originFloor,
-                  origin_floor_notes: data.originFloorNotes,
-                  origin_lift: data.originLift,
-                  origin_lift_notes: data.originLiftNotes,
-                  origin_parking: data.originParking,
-                  origin_parking_notes: data.originParkingNotes,
-                  origin_storage: data.originStorage,
-                  origin_storage_notes: data.originStorageNotes,
-                  destination_floor: data.destinationFloor,
-                  destination_floor_notes: data.destinationFloorNotes,
-                  destination_lift: data.destinationLift,
-                  destination_lift_notes: data.destinationLiftNotes,
-                  destination_parking: data.destinationParking,
-                  destination_parking_notes: data.destinationParkingNotes,
-                },
-              },
-            });
-          }, 2000);
-          setIsLoading(false);
-          return response.data;
-        })
-        .catch((error) => {
-          setError("Failed to create survey data. Please try again.");
-          setIsLoading(false);
-          throw error;
-        });
-    }
+  const payload = {
+    enquiry: surveyId ? parseInt(surveyId) : null,
+    customer_type: data.customerType || null,
+    is_military: data.isMilitary,
+    salutation: data.salutation,
+    // Include these fields in PUT payload
+    full_name: data.fullName,
+    phone_number: data.phoneNumber,
+    email: data.email,
+    service_type: data.serviceType, // Add service type
+    address: data.address,
+    company: data.company,
+    goods_type: data.goodsType,
+    status: data.status,
+    survey_date: data.surveyDate ? data.surveyDate.toISOString().split("T")[0] : null,
+    survey_start_time: data.surveyStartTime
+      ? data.surveyStartTime.toTimeString().split(" ")[0]
+      : null,
+    survey_end_time: data.surveyEndTime
+      ? data.surveyEndTime.toTimeString().split(" ")[0]
+      : null,
+    work_description: data.workDescription,
+    include_vehicle: data.includeVehicle,
+    include_pet: data.includePet,
+    cost_together_vehicle: data.costTogetherVehicle,
+    cost_together_pet: data.costTogetherPet,
+    same_as_customer_address: data.sameAsCustomerAddress,
+    origin_address: data.originAddress,
+    origin_city: data.originCity,
+    origin_country: data.originCountry,
+    origin_state: data.originState,
+    origin_zip: data.originZip,
+    pod_pol: data.podPol,
+    multiple_addresses: data.multipleAddresses,
+    destination_addresses: data.destinationAddresses.map((addr) => ({
+      address: addr.address,
+      city: addr.city,
+      country: addr.country,
+      state: addr.state,
+      zip: addr.zip,
+      poe: addr.poe,
+    })),
+    packing_date_from: data.packingDateFrom
+      ? data.packingDateFrom.toISOString().split("T")[0]
+      : null,
+    packing_date_to: data.packingDateTo
+      ? data.packingDateTo.toISOString().split("T")[0]
+      : null,
+    loading_date: data.loadingDate
+      ? data.loadingDate.toISOString().split("T")[0]
+      : null,
+    eta: data.eta ? data.eta.toISOString().split("T")[0] : null,
+    etd: data.etd ? data.etd.toISOString().split("T")[0] : null,
+    est_delivery_date: data.estDeliveryDate
+      ? data.estDeliveryDate.toISOString().split("T")[0]
+      : null,
+    storage_start_date: data.storageStartDate
+      ? data.storageStartDate.toISOString().split("T")[0]
+      : null,
+    storage_frequency: data.storageFrequency,
+    storage_duration: data.storageDuration,
+    storage_mode: data.storageMode,
+    transport_mode: data.transportMode,
+    general_owner_packed: data.generalOwnerPacked,
+    general_owner_packed_notes: data.generalOwnerPackedNotes,
+    general_restriction: data.generalRestriction,
+    general_restriction_notes: data.generalRestrictionNotes,
+    general_handyman: data.generalHandyman,
+    general_handyman_notes: data.generalHandymanNotes,
+    general_insurance: data.generalInsurance,
+    general_insurance_notes: data.generalInsuranceNotes,
+    origin_floor: data.originFloor,
+    origin_floor_notes: data.originFloorNotes,
+    origin_lift: data.originLift,
+    origin_lift_notes: data.originLiftNotes,
+    origin_parking: data.originParking,
+    origin_parking_notes: data.originParkingNotes,
+    origin_storage: data.originStorage,
+    origin_storage_notes: data.originStorageNotes,
+    destination_floor: data.destinationFloor,
+    destination_floor_notes: data.destinationFloorNotes,
+    destination_lift: data.destinationLift,
+    destination_lift_notes: data.destinationLiftNotes,
+    destination_parking: data.destinationParking,
+    destination_parking_notes: data.destinationParkingNotes,
+    articles: data.articles.map((article) => ({
+      room: article.room || null,
+      item_name: article.itemName,
+      quantity: article.quantity,
+      volume: article.volume || null,
+      volume_unit: article.volumeUnit || null,
+      weight: article.weight || null,
+      weight_unit: article.weightUnit || null,
+      handyman: article.handyman || null,
+      packing_option: article.packingOption || null,
+      move_status: article.moveStatus,
+      amount: article.amount || null,
+      currency: article.currency || null,
+      remarks: article.remarks,
+    })),
+    vehicles: data.vehicles.map((vehicle) => ({
+      vehicle_type: vehicle.vehicleType || null,
+      make: vehicle.make,
+      model: vehicle.model,
+      insurance: vehicle.insurance || false,
+      remark: vehicle.remark,
+      transport_mode: vehicle.transportMode || null,
+    })),
+    pets: data.pets.map((pet) => ({
+      pet_name: pet.petName,
+      pet_type: pet.petType || null,
+      breed: pet.breed,
+      age: pet.age,
+      weight: pet.weight,
+      special_care: pet.specialCare,
+      transport_requirements: pet.transportRequirements,
+      feeding_instructions: pet.feedingInstructions,
+      medication: pet.medication,
+      vaccination_status: pet.vaccinationStatus,
+      behavior_notes: pet.behaviorNotes,
+    })),
   };
+
+  // Rest of your saveSurveyData function remains the same...
+  if (existingSurvey) {
+    return apiClient
+      .put(`/surveys/${existingSurvey.survey_id}/`, payload)
+      .then((response) => {
+        setMessage("Survey updated successfully!");
+        setTimeout(() => {
+          navigate(`/survey/${existingSurvey.survey_id}/survey-summary`, {
+            state: {
+              customerData: {
+                surveyId: response.data.survey_id,
+                fullName: data.fullName,
+                phoneNumber: data.phoneNumber,
+                email: data.email,
+                serviceType: response.data.service_type_display || response.data.service_type_name || "N/A",
+                surveyDate: data.surveyDate,
+                surveyStartTime: data.surveyStartTime,
+                customer_id: response.data.enquiry?.id || null,
+                enquiry_id: response.data.enquiry || null,
+              },
+              articles: data.articles,
+              vehicles: data.vehicles,
+              pets: data.pets,
+              serviceData: {
+                general_owner_packed: data.generalOwnerPacked,
+                general_owner_packed_notes: data.generalOwnerPackedNotes,
+                general_restriction: data.generalRestriction,
+                general_restriction_notes: data.generalRestrictionNotes,
+                general_handyman: data.generalHandyman,
+                general_handyman_notes: data.generalHandymanNotes,
+                general_insurance: data.generalInsurance,
+                general_insurance_notes: data.generalInsuranceNotes,
+                origin_floor: data.originFloor,
+                origin_floor_notes: data.originFloorNotes,
+                origin_lift: data.originLift,
+                origin_lift_notes: data.originLiftNotes,
+                origin_parking: data.originParking,
+                origin_parking_notes: data.originParkingNotes,
+                origin_storage: data.originStorage,
+                origin_storage_notes: data.originStorageNotes,
+                destination_floor: data.destinationFloor,
+                destination_floor_notes: data.destinationFloorNotes,
+                destination_lift: data.destinationLift,
+                destination_lift_notes: data.destinationLiftNotes,
+                destination_parking: data.destinationParking,
+                destination_parking_notes: data.destinationParkingNotes,
+              },
+            },
+          });
+        }, 2000);
+        setIsLoading(false);
+        return response.data;
+      })
+      .catch((error) => {
+        setError("Failed to update survey data. Please try again.");
+        setIsLoading(false);
+        throw error;
+      });
+  } else {
+    return apiClient
+      .post(`/surveys/`, payload)
+      .then((response) => {
+        const newSurveyId = response.data.survey_id;
+        setMessage("Survey created successfully!");
+        setTimeout(() => {
+          navigate(`/survey/${newSurveyId}/survey-summary`, {
+            state: {
+              customerData: {
+                surveyId: response.data.survey_id,
+                fullName: data.fullName,
+                phoneNumber: data.phoneNumber,
+                email: data.email,
+                serviceType: response.data.service_type_display || response.data.service_type_name || "N/A",
+                surveyDate: data.surveyDate,
+                surveyStartTime: data.surveyStartTime,
+                customer_id: response.data.enquiry?.id || null,
+                enquiry_id: response.data.enquiry || null,
+              },
+              articles: data.articles,
+              vehicles: data.vehicles,
+              pets: data.pets,
+              serviceData: {
+                general_owner_packed: data.generalOwnerPacked,
+                general_owner_packed_notes: data.generalOwnerPackedNotes,
+                general_restriction: data.generalRestriction,
+                general_restriction_notes: data.generalRestrictionNotes,
+                general_handyman: data.generalHandyman,
+                general_handyman_notes: data.generalHandymanNotes,
+                general_insurance: data.generalInsurance,
+                general_insurance_notes: data.generalInsuranceNotes,
+                origin_floor: data.originFloor,
+                origin_floor_notes: data.originFloorNotes,
+                origin_lift: data.originLift,
+                origin_lift_notes: data.originLiftNotes,
+                origin_parking: data.originParking,
+                origin_parking_notes: data.originParkingNotes,
+                origin_storage: data.originStorage,
+                origin_storage_notes: data.originStorageNotes,
+                destination_floor: data.destinationFloor,
+                destination_floor_notes: data.destinationFloorNotes,
+                destination_lift: data.destinationLift,
+                destination_lift_notes: data.destinationLiftNotes,
+                destination_parking: data.destinationParking,
+                destination_parking_notes: data.destinationParkingNotes,
+              },
+            },
+          });
+        }, 2000);
+        setIsLoading(false);
+        return response.data;
+      })
+      .catch((error) => {
+        setError("Failed to create survey data. Please try again.");
+        setIsLoading(false);
+        throw error;
+      });
+  }
+};
 
   const onNext = async (data) => {
     if (activeTab === "customer") {

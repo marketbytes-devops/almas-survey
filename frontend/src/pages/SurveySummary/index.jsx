@@ -69,40 +69,43 @@ const SurveySummary = () => {
       state: {
         customerData: {
           surveyId: survey.survey_id,
-          fullName: survey.full_name || survey.enquiry?.fullName,
-          phoneNumber: survey.mobile_number || survey.enquiry?.phoneNumber,
-          email: survey.email || survey.enquiry?.email,
-          serviceType: survey.service_type_name || survey.enquiry?.serviceType,
+          fullName: survey.full_name || "Not filled",
+          phoneNumber: survey.phone_number || "Not filled", // Use phone_number from API
+          email: survey.email || "Not filled",
+          serviceType: survey.service_type_display || survey.service_type_name || "N/A",
           surveyDate: survey.survey_date ? new Date(survey.survey_date) : null,
-          customer_id: survey.enquiry?.id,
-          enquiry_id: survey.enquiry,
+          surveyStartTime: survey.survey_start_time
+            ? new Date(`1970-01-01T${survey.survey_start_time}`)
+            : null,
+          customer_id: survey.enquiry?.id || null,
+          enquiry_id: survey.enquiry || null,
         },
         articles: survey.articles || [],
         vehicles: survey.vehicles || [],
         pets: survey.pets || [],
         serviceData: {
-          general_owner_packed: survey.general_owner_packed,
-          general_owner_packed_notes: survey.general_owner_packed_notes,
-          general_restriction: survey.general_restriction,
-          general_restriction_notes: survey.general_restriction_notes,
-          general_handyman: survey.general_handyman,
-          general_handyman_notes: survey.general_handyman_notes,
-          general_insurance: survey.general_insurance,
-          general_insurance_notes: survey.general_insurance_notes,
-          origin_floor: survey.origin_floor,
-          origin_floor_notes: survey.origin_floor_notes,
-          origin_lift: survey.origin_lift,
-          origin_lift_notes: survey.origin_lift_notes,
-          origin_parking: survey.origin_parking,
-          origin_parking_notes: survey.origin_parking_notes,
-          origin_storage: survey.origin_storage,
-          origin_storage_notes: survey.origin_storage_notes,
-          destination_floor: survey.destination_floor,
-          destination_floor_notes: survey.destination_floor_notes,
-          destination_lift: survey.destination_lift,
-          destination_lift_notes: survey.destination_lift_notes,
-          destination_parking: survey.destination_parking,
-          destination_parking_notes: survey.destination_parking_notes,
+          general_owner_packed: survey.general_owner_packed || false,
+          general_owner_packed_notes: survey.general_owner_packed_notes || "",
+          general_restriction: survey.general_restriction || false,
+          general_restriction_notes: survey.general_restriction_notes || "",
+          general_handyman: survey.general_handyman || false,
+          general_handyman_notes: survey.general_handyman_notes || "",
+          general_insurance: survey.general_insurance || false,
+          general_insurance_notes: survey.general_insurance_notes || "",
+          origin_floor: survey.origin_floor || false,
+          origin_floor_notes: survey.origin_floor_notes || "",
+          origin_lift: survey.origin_lift || false,
+          origin_lift_notes: survey.origin_lift_notes || "",
+          origin_parking: survey.origin_parking || false,
+          origin_parking_notes: survey.origin_parking_notes || "",
+          origin_storage: survey.origin_storage || false,
+          origin_storage_notes: survey.origin_storage_notes || "",
+          destination_floor: survey.destination_floor || false,
+          destination_floor_notes: survey.destination_floor_notes || "",
+          destination_lift: survey.destination_lift || false,
+          destination_lift_notes: survey.destination_lift_notes || "",
+          destination_parking: survey.destination_parking || false,
+          destination_parking_notes: survey.destination_parking_notes || "",
         },
       },
     });
@@ -122,7 +125,7 @@ const SurveySummary = () => {
         throw new Error("Popup blocked! Please allow popups for printing.");
       }
       const htmlContent = ReactDOMServer.renderToString(
-          <SurveyPrint survey={survey} />
+        <SurveyPrint survey={survey} />
       );
       printWindow.document.open();
       printWindow.document.write(`
@@ -247,9 +250,7 @@ const SurveySummary = () => {
       `);
 
       printWindow.document.close();
-
       printWindow.focus();
-
     } catch (err) {
       console.error("🚨 Print Error:", err);
       setError(`Print failed: ${err.message}. Please allow popups and try again.`);
@@ -261,12 +262,24 @@ const SurveySummary = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "Not filled";
-    return new Date(dateString).toLocaleDateString('en-GB').split('/').reverse().join('/');
+    try {
+      return new Date(dateString).toLocaleDateString('en-GB').split('/').reverse().join('/');
+    } catch {
+      return "Invalid date";
+    }
   };
 
   const formatTime = (timeString) => {
     if (!timeString) return "Not filled";
-    return timeString.slice(0, 5);
+    try {
+      // Assuming timeString is in "HH:mm:ss" format
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12; // Convert to 12-hour format
+      return `${formattedHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch {
+      return "Invalid time";
+    }
   };
 
   const calculateTotalCost = (articles) => {
@@ -286,7 +299,7 @@ const SurveySummary = () => {
     const getCustomerData = (field) => {
       const fieldMap = {
         full_name: 'fullName',
-        mobile_number: 'phoneNumber',
+        phone_number: 'phoneNumber', // Updated to match API field
         email: 'email'
       };
       const enquiryField = fieldMap[field] || field;
@@ -312,7 +325,7 @@ const SurveySummary = () => {
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Customer Type</td><td className="border border-gray-400 px-4 py-2">{survey.customer_type_name || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Salutation</td><td className="border border-gray-400 px-4 py-2">{survey.salutation || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Full Name</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('full_name')}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Mobile Number</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('mobile_number')}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Mobile Number</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('phone_number')}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Email</td><td className="border border-gray-400 px-4 py-2">{getCustomerData('email')}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray-400 px-4 py-2">{survey.address || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 font-medium">Company</td><td className="border border-gray-400 px-4 py-2">{survey.company || "Not filled"}</td></tr>
@@ -661,6 +674,7 @@ const SurveySummary = () => {
                   <div className="space-y-2">
                     <h3 className="text-lg font-medium">{survey.survey_id}</h3>
                     <p className="text-sm">{survey.full_name || survey.enquiry?.fullName || "N/A"}</p>
+                    <p className="text-sm">{survey.phone_number || "Not filled"}</p> {/* Added phone number display */}
                   </div>
                   <div className="text-right space-y-2">
                     <p className="text-sm">{survey.service_type_display || "N/A"}</p>
@@ -684,8 +698,7 @@ const SurveySummary = () => {
                 </Button>
                 <Button
                   onClick={() => handlePrintSurvey(survey)}
-                  className={`bg-green-600 text-white px-3 py-1 text-xs rounded ${printing === survey.survey_id ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
-                    }`}
+                  className={`bg-green-600 text-white px-3 py-1 text-xs rounded ${printing === survey.survey_id ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"}`}
                   disabled={printing === survey.survey_id}
                 >
                   {printing === survey.survey_id ? (

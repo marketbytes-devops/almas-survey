@@ -135,7 +135,11 @@ class SurveySerializer(serializers.ModelSerializer):
     )
     customer_type_name = serializers.CharField(source='customer_type.name', read_only=True, allow_null=True)
     
-    service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)
+    full_name = serializers.CharField(max_length=100, required=False, allow_blank=True, allow_null=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    service_type = serializers.CharField(max_length=50, required=False, allow_blank=True, allow_null=True)
+    
     service_type_display = serializers.SerializerMethodField()
     
     status = serializers.ChoiceField(choices=STATUS_CHOICES, allow_null=True, required=False)
@@ -149,9 +153,12 @@ class SurveySerializer(serializers.ModelSerializer):
         choices=TRANSPORT_MODE_CHOICES, allow_null=True, required=False
     )
 
-    full_name = serializers.CharField(source='enquiry.fullName', read_only=True)
-    phone_number = serializers.CharField(source='enquiry.phoneNumber', read_only=True)
-    email = serializers.EmailField(source='enquiry.email', read_only=True)
+    # Remove the read-only source mappings for these fields
+    # full_name = serializers.CharField(source='enquiry.fullName', read_only=True)  # Remove this
+    # phone_number = serializers.CharField(source='enquiry.phoneNumber', read_only=True)  # Remove this
+    # email = serializers.EmailField(source='enquiry.email', read_only=True)  # Remove this
+    # service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)  # Remove this
+    
     enquiry_service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)
     message = serializers.CharField(source='enquiry.message', read_only=True)
     note = serializers.CharField(source='enquiry.note', read_only=True)
@@ -186,13 +193,14 @@ class SurveySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'survey_id', 'created_at', 'updated_at', 
-            'full_name', 'phone_number', 'email', 'enquiry_service_type', 
-            'message', 'note', 'enquiry_survey_date', 'assigned_user_email',
-            'service_type', 'service_type_display' 
+            'enquiry_service_type', 'message', 'note', 'enquiry_survey_date', 'assigned_user_email',
+            'service_type_display'  # Keep this read-only as it's calculated
         ]
 
     def get_service_type_display(self, obj):
-        """Get display name for service type from Enquiry"""
+        """Get display name for service type - check both Survey and Enquiry"""
+        if obj.service_type:
+            return SERVICE_TYPE_DISPLAY.get(obj.service_type, obj.service_type)
         if obj.enquiry and obj.enquiry.serviceType:
             return SERVICE_TYPE_DISPLAY.get(obj.enquiry.serviceType, obj.enquiry.serviceType)
         return "N/A"
