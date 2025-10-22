@@ -1,0 +1,66 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Nata+Sans:wght@100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Syne:wght@400..800&display=swap");
+
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif; 
+}
+
+textarea {
+  resize: none;
+  overflow: hidden;   
+  height: 37px;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+select {
+  width: 100%;
+  padding: 8px 37px 8px 10px; 
+  font-size: 0.875rem;
+  border: 1px solid #000;
+  border-radius: 0.3rem;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(199, 210, 254, 0.5);
+}
+
+option {
+  background-color: white;
+  color: black;
+  border: 2px solid white;
+}
+
+.react-datepicker {
+  font-family: inherit;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+}
+.react-datepicker__time-list-item {
+  font-size: 0.875rem;
+}
+
+.grecaptcha-badge {
+  visibility: hidden; 
+}

@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: almassurvey_frontend
+    restart: always
+    ports:
+      - "6371:80"
+    networks:
+      - almas_network
+
+networks:
+  almas_network:
+    driver: bridge

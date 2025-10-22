@@ -1,0 +1,121 @@
+##############################
+# FRONTEND (React / Vite)
+##############################
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+
+# Production build
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & system files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+out/
+.tmp/
+*.tmp
+*.temp
+
+# Misc
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Vite specific
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# ESLint cache
+.eslintcache
+
+# Optional: lock files if using only one manager
+# yarn.lock
+# package-lock.json
+# pnpm-lock.yaml
+
+##############################
+# BACKEND (Django REST Framework)
+##############################
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# Environment
+.env
+.env.*        # all environment files
+*.env
+
+# Pytest / Coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+*.hypothesis/
+.pytest_cache/
+
+# VS Code / PyCharm / Editors
+.vscode/
+.idea/
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Migrations (optional, if you don’t want to track initial DB migrations)
+# **/migrations/*.py
+# !**/migrations/__init__.py
+
+
+# End

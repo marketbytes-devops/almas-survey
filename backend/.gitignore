@@ -1,0 +1,60 @@
+# Ignore Django static files
+static/
+!static/.gitkeep  # optional: keep empty folder in repo
+
+# Ignore Django logs
+logs/
+!logs/.gitkeep  # optional: keep the folder structure
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# Environment
+.env
+.env.*        # all environment files
+*.env
+
+# Pytest / Coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+*.hypothesis/
+.pytest_cache/
+
+# VS Code / PyCharm / Editors
+.vscode/
+.idea/
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Migrations (optional, if you don’t want to track initial DB migrations)
+# **/migrations/*.py
+# !**/migrations/__init__.py
+
+
+# End
