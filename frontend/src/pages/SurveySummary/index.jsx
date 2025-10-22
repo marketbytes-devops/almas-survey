@@ -44,10 +44,6 @@ const SurveySummary = () => {
     });
   };
 
-  const handleQuickEdit = (survey) => {
-    setQuickEditSurvey(survey);
-  };
-
   const closeQuickEdit = () => {
     setQuickEditSurvey(null);
   };
@@ -611,7 +607,7 @@ const SurveySummary = () => {
   }
 
   if (surveys.length === 0) {
-    return <div className="text-center py-4 text-red-500">No surveys found.</div>;
+    return <div className="text-left text-gray-700">No surveys are currently available.</div>;
   }
 
   return (
