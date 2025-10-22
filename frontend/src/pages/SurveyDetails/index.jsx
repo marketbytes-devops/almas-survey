@@ -583,7 +583,6 @@ const SurveyDetails = () => {
               type="text"
               rules={{ required: "Full Name is required" }}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Mobile Number"
                 name="phoneNumber"
@@ -596,7 +595,6 @@ const SurveyDetails = () => {
                   },
                 }}
               />
-            </div>
             <Input
               label="Email"
               name="email"
