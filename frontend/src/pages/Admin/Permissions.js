@@ -106,6 +106,33 @@ const Permissions = () => {
     }
   };
 
+  // Select All Handler - toggles ALL permissions for ALL pages
+  const handleSelectAll = () => {
+    setPermissions((prev) => {
+      const allSelected = Object.values(prev).every(
+        (page) => page.view && page.add && page.edit && page.delete
+      );
+      
+      return Object.keys(prev).reduce((acc, page) => {
+        acc[page] = {
+          ...prev[page],
+          view: !allSelected,
+          add: !allSelected,
+          edit: !allSelected,
+          delete: !allSelected,
+        };
+        return acc;
+      }, {});
+    });
+  };
+
+  // Check if all permissions are selected
+  const isAllSelected = () => {
+    return Object.values(permissions).every(
+      (page) => page.view && page.add && page.edit && page.delete
+    );
+  };
+
   const openPermissionsModal = async (role) => {
     if (!hasPermission("permissions", "edit")) {
       setError("You do not have permission to edit permissions.");
@@ -298,6 +325,26 @@ const Permissions = () => {
             onClose={() => setSelectedRole(null)}
             title={`Permissions for ${selectedRole.name}`}
           >
+            {/* FIXED: Select All OUTSIDE FormProvider */}
+            <div className="mb-4 p-2 bg-gray-50 rounded-lg">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected()}
+                  onChange={handleSelectAll}
+                  disabled={!hasPermission("permissions", "edit")}
+                  className={`h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-300 rounded ${
+                    !hasPermission("permissions", "edit")
+                      ? "cursor-not-allowed opacity-50"
+                      : ""
+                  }`}
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">
+                  Select All Permissions
+                </span>
+              </label>
+            </div>
+
             <FormProvider {...permissionsForm}>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">

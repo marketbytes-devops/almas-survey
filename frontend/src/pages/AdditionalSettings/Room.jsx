@@ -178,7 +178,7 @@ const Room = () => {
             <form onSubmit={handleRoomSubmit(onSaveRoom)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Room Name *"
+                  label="Room Name"
                   name="name"
                   type="text"
                   rules={{ required: "Room Name is required" }}
@@ -219,7 +219,7 @@ const Room = () => {
               <form onSubmit={handleItemSubmit(onSaveItem)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Item Name *"
+                    label="Item Name"
                     name="name"
                     type="text"
                     rules={{ required: "Item Name is required" }}
