@@ -70,8 +70,8 @@ const SurveySummary = () => {
         customerData: {
           surveyId: survey.survey_id,
           fullName: survey.full_name || "Not filled",
-          phoneNumber: survey.mobile_number || survey.enquiry?.phoneNumber || "Not filled", // Fixed this line
-          email: survey.email || survey.enquiry?.email || "Not filled",
+          phoneNumber: survey.phone_number || "Not filled",
+          email: survey.email || "Not filled",
           serviceType: survey.service_type || survey.enquiry?.serviceType || "",
           serviceTypeDisplay: survey.service_type_display || survey.service_type_name || "N/A",
           surveyDate: survey.survey_date ? new Date(survey.survey_date) : null,
@@ -108,47 +108,10 @@ const SurveySummary = () => {
           destination_parking: survey.destination_parking || false,
           destination_parking_notes: survey.destination_parking_notes || "",
         },
-        // ADD THESE MISSING FIELDS:
-        moveDetails: {
-          packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
-          packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
-          loadingDate: survey.loading_date ? new Date(survey.loading_date) : null,
-          eta: survey.eta ? new Date(survey.eta) : null,
-          etd: survey.etd ? new Date(survey.etd) : null,
-          estDeliveryDate: survey.est_delivery_date ? new Date(survey.est_delivery_date) : null,
-        },
-        storageDetails: {
-          storageStartDate: survey.storage_start_date ? new Date(survey.storage_start_date) : null,
-          storageFrequency: survey.storage_frequency || "",
-          storageDuration: survey.storage_duration || "",
-          storageMode: survey.storage_mode || "",
-        },
-        originAddress: {
-          originAddress: survey.origin_address || "",
-          originCity: survey.origin_city || "",
-          originCountry: survey.origin_country || "",
-          originState: survey.origin_state || "",
-          originZip: survey.origin_zip || "",
-          podPol: survey.pod_pol || "",
-          sameAsCustomerAddress: survey.same_as_customer_address || false,
-        },
-        customerDetails: {
-          customerType: survey.customer_type || "",
-          salutation: survey.salutation || "",
-          address: survey.address || "",
-          company: survey.company || "",
-          isMilitary: survey.is_military || false,
-          goodsType: survey.goods_type || "",
-          status: survey.status || "pending",
-          workDescription: survey.work_description || "",
-          includeVehicle: survey.include_vehicle || false,
-          includePet: survey.include_pet || false,
-          costTogetherVehicle: survey.cost_together_vehicle || false,
-          costTogetherPet: survey.cost_together_pet || false,
-        }
       },
     });
   };
+
   const handlePrintSurvey = async (survey) => {
     if (printing) return;
 
@@ -193,7 +156,6 @@ const SurveySummary = () => {
               }
               .print-header {
                 text-align: center;
-                border-bottom: 3px solid #4c7085;
                 padding-bottom: 12px;
                 margin-bottom: 20px;
               }
@@ -216,7 +178,6 @@ const SurveySummary = () => {
               .section h3 {
                 font-size: 12pt;
                 color: #4c7085;
-                border-bottom: 2px solid #4c7085;
                 padding-bottom: 6px;
                 margin: 15px 0 10px 0;
                 font-weight: bold;

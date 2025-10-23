@@ -101,7 +101,6 @@ const SurveyPrint = ({ survey }) => {
           /* ✅ HEADER - PERFECT CENTERED */
           .print-header {
             text-align: center;
-            border-bottom: 3px solid #4c7085;
             padding-bottom: 12px;
             margin-bottom: 20px;
             page-break-after: avoid;
@@ -133,7 +132,6 @@ const SurveyPrint = ({ survey }) => {
           .section h3 {
             font-size: 12pt;
             color: #4c7085;
-            border-bottom: 2px solid #4c7085;
             padding-bottom: 6px;
             margin: 15px 0 10px 0;
             font-weight: bold;
