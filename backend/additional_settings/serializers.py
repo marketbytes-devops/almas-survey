@@ -49,15 +49,15 @@ class PetTypeSerializer(serializers.ModelSerializer):
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
-        fields = ['id', 'name', 'description']
-
+        fields = ['id', 'name', 'description',]
+        
 class ItemSerializer(serializers.ModelSerializer):
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
     room_name = serializers.CharField(source='room.name', read_only=True)
 
     class Meta:
         model = Item
-        fields = ['id', 'name', 'room', 'room_name', 'description']
+        fields = ['id', 'name', 'room', 'room_name', 'description', 'width', 'length', 'height']
 
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:

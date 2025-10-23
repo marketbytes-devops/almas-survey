@@ -26,6 +26,9 @@ const Room = () => {
     defaultValues: {
       name: "",
       description: "",
+      width: "",
+      length: "",
+      height: "",
     },
   });
 
@@ -74,7 +77,10 @@ const Room = () => {
     setSavingRoom(true);
     setError(null);
     try {
-      const payload = { name: data.name, description: data.description || "" };
+      const payload = { 
+        name: data.name, 
+        description: data.description || "",
+      };
       const response = await apiClient.post("/rooms/", payload);
       setRooms([...rooms, response.data]);
       resetRoom();
@@ -96,7 +102,10 @@ const Room = () => {
       const payload = { 
         name: data.name, 
         description: data.description || "", 
-        room: selectedRoomForItem 
+        room: selectedRoomForItem,
+        width: data.width ? parseFloat(data.width) : null,
+        length: data.length ? parseFloat(data.length) : null,
+        height: data.height ? parseFloat(data.height) : null
       };
       const response = await apiClient.post("/items/", payload);
       setItems((prev) => {
@@ -160,6 +169,15 @@ const Room = () => {
       setError("Failed to delete item. Please try again.");
       setTimeout(() => setError(null), 3000);
     }
+  };
+
+  // Helper function to format dimensions for items
+  const formatItemDimensions = (item) => {
+    const dimensions = [];
+    if (item.width) dimensions.push(`W: ${item.width}cm`);
+    if (item.length) dimensions.push(`L: ${item.length}cm`);
+    if (item.height) dimensions.push(`H: ${item.height}cm`);
+    return dimensions.length > 0 ? dimensions.join(' × ') : 'No dimensions';
   };
 
   if (loading) return <div className="text-center py-4">Loading...</div>;
@@ -232,6 +250,35 @@ const Room = () => {
                     disabled={savingItem}
                   />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    label="Width (cm)"
+                    name="width"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    disabled={savingItem}
+                  />
+                  <Input
+                    label="Length (cm)"
+                    name="length"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    disabled={savingItem}
+                  />
+                  <Input
+                    label="Height (cm)"
+                    name="height"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    disabled={savingItem}
+                  />
+                </div>
                 <Button
                   type="submit"
                   disabled={!itemMethods.watch("name")?.trim() || savingItem}
@@ -296,6 +343,7 @@ const Room = () => {
                                     <tr>
                                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
                                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dimensions</th>
                                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                   </thead>
@@ -304,6 +352,9 @@ const Room = () => {
                                       <tr key={item.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
                                         <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title={item.description || "No description"}>{item.description || "No description"}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                          {formatItemDimensions(item)}
+                                        </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                                           <Button
                                             onClick={() => handleDeleteItem(item.id, room.id)}
