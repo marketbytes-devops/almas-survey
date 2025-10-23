@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Country, State, City } from "country-state-city"; // Import the library
+import { Country, State, City } from "country-state-city";
 
 const SurveyPrint = ({ survey }) => {
   const contentRef = useRef(null);
@@ -8,7 +8,17 @@ const SurveyPrint = ({ survey }) => {
     return <div className="text-center py-4 text-red-500">No survey data available.</div>;
   }
 
-  // Helper functions to get display names from country-state-city
+  // ADDED: Helper function to format status display
+  const formatStatus = (status) => {
+    const statusMap = {
+      'pending': 'Pending',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
+    };
+    return statusMap[status] || status || "Not filled";
+  };
+
   const getCountryName = (countryCode) => {
     if (!countryCode) return "Not filled";
     try {
@@ -31,7 +41,6 @@ const SurveyPrint = ({ survey }) => {
 
   const getCityName = (countryCode, stateCode, cityName) => {
     if (!countryCode || !stateCode || !cityName) return "Not filled";
-    // For cities, we typically store the name directly, but we can validate if needed
     return cityName;
   };
 
@@ -47,7 +56,6 @@ const SurveyPrint = ({ survey }) => {
 
   const formatBoolean = (value) => (value ? "Yes" : "No");
 
-  // FIXED: ENHANCED getCustomerData FUNCTION
   const getCustomerData = (field) => {
     const fieldMap = {
       full_name: 'full_name',
@@ -58,13 +66,11 @@ const SurveyPrint = ({ survey }) => {
     
     const surveyField = fieldMap[field] || field;
     
-    // 1. Check SURVEY fields FIRST (PRIORITY)
     const surveyValue = survey[surveyField];
     if (surveyValue !== null && surveyValue !== undefined && surveyValue !== '') {
       return surveyValue;
     }
     
-    // 2. Fallback to ENQUIRY fields
     const enquiryField = field === 'full_name' ? 'fullName' : 
                         field === 'mobile_number' ? 'phoneNumber' : 
                         field === 'email' ? 'email' : field;
@@ -77,7 +83,6 @@ const SurveyPrint = ({ survey }) => {
     return "Not filled";
   };
 
-  // ✅ CALCULATE TOTAL COST FOR ARTICLES
   const calculateTotalCost = () => {
     if (!survey.articles?.length) return [];
     const costByCurrency = survey.articles.reduce((acc, article) => {
@@ -98,7 +103,6 @@ const SurveyPrint = ({ survey }) => {
     <div className="print-container" ref={contentRef}>
       <style>
         {`
-          /* ✅ PERFECT A4 PRINT STYLES */
           @page {
             size: A4 portrait;
             margin: 0.5cm 0.5cm 0.5cm 0.5cm;
@@ -126,7 +130,6 @@ const SurveyPrint = ({ survey }) => {
             padding: 0;
           }
 
-          /* ✅ HEADER - PERFECT CENTERED */
           .print-header {
             text-align: center;
             padding-bottom: 12px;
@@ -150,7 +153,6 @@ const SurveyPrint = ({ survey }) => {
             color: #333;
           }
 
-          /* ✅ SECTIONS */
           .section {
             margin-bottom: 20px;
             page-break-inside: avoid;
@@ -174,7 +176,6 @@ const SurveyPrint = ({ survey }) => {
             page-break-after: avoid;
           }
 
-          /* ✅ PERFECT TABLES */
           table {
             width: 100%;
             border-collapse: collapse;
@@ -203,21 +204,17 @@ const SurveyPrint = ({ survey }) => {
           .value-col { width: 70%; }
           .articles-col { font-size: 8pt; }
 
-          /* ✅ TOTAL ROW */
           .total-row {
             background-color: #f0f8ff !important;
             font-weight: bold;
             font-size: 10pt !important;
           }
 
-          /* ✅ PAGE BREAKS */
           .no-break { page-break-inside: avoid; }
           .page-break { page-break-before: always; }
 
-          /* ✅ HIDE ON PRINT */
           .no-print { display: none !important; }
 
-          /* ✅ SCREEN VIEW */
           @media screen {
             .print-container {
               padding: 20px;
@@ -230,7 +227,6 @@ const SurveyPrint = ({ survey }) => {
         `}
       </style>
 
-      {/* ✅ PERFECT A4 HEADER */}
       <div className="print-header">
         <h1>SURVEY REPORT</h1>
         <p className="subtitle">
@@ -242,7 +238,6 @@ const SurveyPrint = ({ survey }) => {
       </div>
 
       <div className="space-y-4">
-        {/* 1. CUSTOMER DETAILS */}
         <div className="section no-break">
           <h3>1. Customer Details</h3>
           <table>
@@ -265,7 +260,6 @@ const SurveyPrint = ({ survey }) => {
           </table>
         </div>
 
-        {/* 2. SURVEY DETAILS */}
         <div className="section no-break">
           <h3>2. Survey Details</h3>
           <table>
@@ -275,7 +269,7 @@ const SurveyPrint = ({ survey }) => {
             <tbody>
               <tr><td className="font-medium">Service Type</td><td>{survey.service_type_display || survey.service_type_name || "Not filled"}</td></tr>
               <tr><td className="font-medium">Goods Type</td><td>{survey.goods_type || "Not filled"}</td></tr>
-              <tr><td className="font-medium">Status</td><td>{survey.status || "Not filled"}</td></tr>
+              <tr><td className="font-medium">Status</td><td>{formatStatus(survey.status)}</td></tr> {/* MODIFIED */}
               <tr><td className="font-medium">Survey Date</td><td>{formatDate(survey.survey_date)}</td></tr>
               <tr><td className="font-medium">Survey Start Time</td><td>{formatTime(survey.survey_start_time)}</td></tr>
               <tr><td className="font-medium">Survey End Time</td><td>{formatTime(survey.survey_end_time)}</td></tr>
@@ -284,7 +278,6 @@ const SurveyPrint = ({ survey }) => {
           </table>
         </div>
 
-        {/* 3. ORIGIN ADDRESS */}
         <div className="section no-break">
           <h3>3. Origin Address</h3>
           <table>
@@ -307,7 +300,6 @@ const SurveyPrint = ({ survey }) => {
           </table>
         </div>
 
-        {/* 4. DESTINATION ADDRESSES */}
         <div className="section">
           <h3>4. Destination Address{survey.destination_addresses?.length > 1 ? 'es' : ''}</h3>
           {survey.destination_addresses?.length > 0 ? (
@@ -336,7 +328,6 @@ const SurveyPrint = ({ survey }) => {
           )}
         </div>
 
-        {/* 5. MOVE DETAILS */}
         <div className="section no-break">
           <h3>5. Move Details</h3>
           <table>
@@ -354,7 +345,6 @@ const SurveyPrint = ({ survey }) => {
           </table>
         </div>
 
-        {/* 6. STORAGE DETAILS */}
         <div className="section no-break">
           <h3>6. Storage Details</h3>
           <table>
@@ -370,7 +360,6 @@ const SurveyPrint = ({ survey }) => {
           </table>
         </div>
 
-        {/* 7. VEHICLE DETAILS */}
         <div className="section no-break">
           <h3>7. Vehicle Details</h3>
           <table>
@@ -408,7 +397,6 @@ const SurveyPrint = ({ survey }) => {
           )}
         </div>
 
-        {/* 8. PET DETAILS */}
         <div className="section no-break">
           <h3>8. Pet Details</h3>
           <table>
@@ -451,7 +439,6 @@ const SurveyPrint = ({ survey }) => {
           )}
         </div>
 
-        {/* 9. ARTICLES - WITH TOTALS */}
         {survey.articles?.length > 0 && (
           <div className="section">
             <h3>9. Articles ({survey.articles.length})</h3>

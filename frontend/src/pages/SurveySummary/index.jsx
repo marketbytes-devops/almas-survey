@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Country, State, City } from "country-state-city"; // Import the library
+import { Country, State, City } from "country-state-city";
 import apiClient from "../../api/apiClient";
 import Button from "../../components/Button";
 import Loading from "../../components/Loading";
@@ -18,6 +18,17 @@ const SurveySummary = () => {
   const [success, setSuccess] = useState(null);
   const [printing, setPrinting] = useState(null);
 
+  // ADDED: Helper function to format status display
+  const formatStatus = (status) => {
+    const statusMap = {
+      'pending': 'Pending',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
+    };
+    return statusMap[status] || status || "Not filled";
+  };
+
   useEffect(() => {
     const fetchSurveys = async () => {
       setLoading(true);
@@ -33,7 +44,6 @@ const SurveySummary = () => {
     fetchSurveys();
   }, []);
 
-  // Helper functions to get display names from country-state-city
   const getCountryName = (countryCode) => {
     if (!countryCode) return "Not filled";
     try {
@@ -56,7 +66,6 @@ const SurveySummary = () => {
 
   const getCityName = (countryCode, stateCode, cityName) => {
     if (!countryCode || !stateCode || !cityName) return "Not filled";
-    // For cities, we typically store the name directly, but we can validate if needed
     return cityName;
   };
 
@@ -300,10 +309,9 @@ const SurveySummary = () => {
   const formatTime = (timeString) => {
     if (!timeString) return "Not filled";
     try {
-      // Assuming timeString is in "HH:mm:ss" format
       const [hours, minutes] = timeString.split(':').map(Number);
       const period = hours >= 12 ? 'PM' : 'AM';
-      const formattedHours = hours % 12 || 12; // Convert to 12-hour format
+      const formattedHours = hours % 12 || 12;
       return `${formattedHours}:${minutes.toString().padStart(2, '0')} ${period}`;
     } catch {
       return "Invalid time";
@@ -338,7 +346,6 @@ const SurveySummary = () => {
       return survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
     };
 
-    // Helper function to get service type display
     const getServiceTypeDisplay = () => {
       return survey.service_type_display || survey.service_type_name || "N/A";
     };
@@ -347,7 +354,6 @@ const SurveySummary = () => {
 
     return (
       <div className="space-y-6 p-6 bg-white rounded-lg shadow-md">
-        {/* CUSTOMER DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Customer Details</h4>
           <div className="overflow-x-auto">
@@ -373,7 +379,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* SURVEY DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Survey Details</h4>
           <div className="overflow-x-auto">
@@ -383,7 +388,7 @@ const SurveySummary = () => {
               <tbody>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.service_type_display || survey.service_type_name || "Not filled"}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Goods Type</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.goods_type || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Status</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.status || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Status</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatStatus(survey.status)}</td></tr> {/* MODIFIED */}
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Survey Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.survey_date)}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Survey Start Time</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatTime(survey.survey_start_time)}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Survey End Time</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatTime(survey.survey_end_time)}</td></tr>
@@ -393,7 +398,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* ORIGIN ADDRESS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Origin Address</h4>
           <div className="overflow-x-auto">
@@ -417,7 +421,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* DESTINATION ADDRESSES */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Destination Address{survey.destination_addresses?.length > 1 ? 'es' : ''}</h4>
           {survey.destination_addresses?.length > 0 ? (
@@ -445,7 +448,6 @@ const SurveySummary = () => {
           )}
         </div>
 
-        {/* MOVE DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Move Details</h4>
           <div className="overflow-x-auto">
@@ -457,14 +459,13 @@ const SurveySummary = () => {
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Packing Date To</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.packing_date_to)}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Loading Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.loading_date)}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">ETA</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.eta)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">ETD</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.etd)}</td></tr>
+                <tr><td className="border border-grey-400 px-4 py-2 whitespace-nowrap font-medium">ETD</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.etd)}</td></tr>
                 <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Est. Delivery Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.est_delivery_date)}</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* STORAGE DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Storage Details</h4>
           <div className="overflow-x-auto">
@@ -481,7 +482,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* VEHICLE DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Vehicle Details</h4>
           <div className="overflow-x-auto">
@@ -522,7 +522,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* PET DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Pet Details</h4>
           <div className="overflow-x-auto">
@@ -568,7 +567,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* ARTICLES */}
         {survey.articles?.length > 0 && (
           <div className="section">
             <h4 className="font-semibold text-gray-800 mb-2">Articles ({survey.articles.length})</h4>
@@ -607,7 +605,6 @@ const SurveySummary = () => {
           </div>
         )}
 
-        {/* SERVICE DETAILS */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Service Details</h4>
           <div className="overflow-x-auto">
@@ -636,7 +633,6 @@ const SurveySummary = () => {
           </div>
         </div>
 
-        {/* TRANSPORT MODE */}
         <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Transport Mode</h4>
           <div className="overflow-x-auto">
@@ -708,7 +704,6 @@ const SurveySummary = () => {
               animate={{ opacity: 1, y: 0 }}
               className="border border-gray-400 rounded-lg overflow-hidden"
             >
-              {/* Summary Card */}
               <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] p-4 text-white">
                 <div className="flex justify-between items-center">
                   <div className="space-y-2">
@@ -719,7 +714,7 @@ const SurveySummary = () => {
                   </div>
                   <div className="text-right space-y-2">
                     <p className="text-sm">{getServiceType()}</p>
-                    <p className="text-xs">{survey.status}</p>
+                    <p className="text-xs">{formatStatus(survey.status)}</p> {/* MODIFIED */}
                     {totalCosts.length > 0 && (
                       <p className="text-sm font-medium">
                         Total: {totalCosts.map(c => `${c.total} ${c.currency}`).join(', ')}
@@ -729,7 +724,6 @@ const SurveySummary = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="p-4 bg-gray-200 flex gap-2 justify-end flex-wrap">
                 <Button
                   onClick={() => handleEditSurvey(survey)}
@@ -758,14 +752,12 @@ const SurveySummary = () => {
                   Delete
                 </Button>
               </div>
-              {/* Expand Toggle */}
               <button
                 onClick={() => toggleSectionExpansion(survey.survey_id)}
                 className="w-full p-3 text-center bg-gray-100 hover:bg-[#6b8ca3] text-sm text-gray-600 hover:text-white transition-colors"
               >
                 {expandedSections.has(survey.survey_id) ? "Hide Details" : "Show All Details"}
               </button>
-              {/* Expandable Detailed View */}
               <AnimatePresence>
                 {expandedSections.has(survey.survey_id) && (
                   <motion.div
@@ -783,7 +775,6 @@ const SurveySummary = () => {
         })}
       </div>
 
-      {/* Quick Edit Modal */}
       <AnimatePresence>
         {quickEditSurvey && (
           <motion.div

@@ -54,7 +54,11 @@ const FollowUps = () => {
         const response = await apiClient.get("/contacts/enquiries/", {
           params: { has_survey: "false" },
         });
-        setEnquiries(response.data);
+        // Sort by created_at in descending order
+        const sortedEnquiries = response.data.sort((a, b) => 
+          new Date(b.created_at) - new Date(a.created_at)
+        );
+        setEnquiries(sortedEnquiries);
       } catch (error) {
         setError("Failed to fetch non-scheduled enquiries. Please try again.");
       } finally {
@@ -112,59 +116,163 @@ const FollowUps = () => {
           No Non-Scheduled Enquiries Found
         </div>
       ) : (
-        <div className="space-y-4">
-          {enquiries.map((enquiry, index) => (
-            <motion.div
-              key={enquiry.id}
-              className="rounded-lg p-5 bg-white shadow-sm"
-              variants={rowVariants}
-              initial="rest"
-              whileHover="hover"
-            >
-              <div className="space-y-2 text-[#2d4a5e] text-sm sm:text-base">
-                <p><strong>Sl No:</strong> {index + 1}</p>
-                <p><strong>Date & Time:</strong> {new Date(enquiry.created_at).toLocaleString()}</p>
-                <p><strong>Customer Name:</strong> {enquiry.fullName || ""}</p>
-                <p className="flex items-center gap-2">
-                  <strong>Phone:</strong>
-                  {enquiry.phoneNumber ? (
-                    <button
-                      onClick={() => openPhoneModal(enquiry)}
-                      className="flex items-center gap-2 text-[#4c7085]"
-                    >
-                      <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                    </button>
-                  ) : (
-                    ""
-                  )}
-                </p>
-                <p className="flex items-center gap-2">
-                  <strong>Email:</strong>
-                  {enquiry.email ? (
-                    <a
-                      href={`mailto:${enquiry.email}`}
-                      className="flex items-center gap-2 text-[#4c7085]"
-                    >
-                      <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                    </a>
-                  ) : (
-                    ""
-                  )}
-                </p>
-                <p>
-                  <strong>Service:</strong>{" "}
-                  {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                    enquiry.serviceType ||
-                    ""}
-                </p>
-                <p><strong>Message:</strong> {enquiry.message || ""}</p>
-                <p><strong>Note:</strong> {enquiry.note || ""}</p>
-                <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || ""}</p>
-                <p><strong>Contact Status:</strong> {enquiry.contact_status || ""}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <>
+          {/* Table for Desktop */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Sl No
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Date & Time
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Customer Name
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Phone
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Email
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Service
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Message
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Note
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Assigned To
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Contact Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {enquiries.map((enquiry, index) => (
+                  <motion.tr
+                    key={enquiry.id}
+                    className="hover:bg-gray-50"
+                    variants={rowVariants}
+                    initial="rest"
+                    whileHover="hover"
+                  >
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {new Date(enquiry.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.fullName || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.phoneNumber ? (
+                        <button
+                          onClick={() => openPhoneModal(enquiry)}
+                          className="flex items-center gap-2 text-[#4c7085]"
+                        >
+                          <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                        </button>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.email ? (
+                        <a
+                          href={`mailto:${enquiry.email}`}
+                          className="flex items-center gap-2 text-[#4c7085]"
+                        >
+                          <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                        enquiry.serviceType ||
+                        "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.message || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.note || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.assigned_user_email || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.contact_status || "-"}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Cards for Mobile */}
+          <div className="md:hidden space-y-4">
+            {enquiries.map((enquiry, index) => (
+              <motion.div
+                key={enquiry.id}
+                className="rounded-lg p-5 bg-white shadow-sm"
+                variants={rowVariants}
+                initial="rest"
+                whileHover="hover"
+              >
+                <div className="space-y-2 text-[#2d4a5e] text-sm sm:text-base">
+                  <p><strong>Sl No:</strong> {index + 1}</p>
+                  <p><strong>Date & Time:</strong> {new Date(enquiry.created_at).toLocaleString()}</p>
+                  <p><strong>Customer Name:</strong> {enquiry.fullName || ""}</p>
+                  <p className="flex items-center gap-2">
+                    <strong>Phone:</strong>
+                    {enquiry.phoneNumber ? (
+                      <button
+                        onClick={() => openPhoneModal(enquiry)}
+                        className="flex items-center gap-2 text-[#4c7085]"
+                      >
+                        <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                      </button>
+                    ) : (
+                      ""
+                    )}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <strong>Email:</strong>
+                    {enquiry.email ? (
+                      <a
+                        href={`mailto:${enquiry.email}`}
+                        className="flex items-center gap-2 text-[#4c7085]"
+                      >
+                        <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                      </a>
+                    ) : (
+                      ""
+                    )}
+                  </p>
+                  <p>
+                    <strong>Service:</strong>{" "}
+                    {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                      enquiry.serviceType ||
+                      ""}
+                  </p>
+                  <p><strong>Message:</strong> {enquiry.message || ""}</p>
+                  <p><strong>Note:</strong> {enquiry.note || ""}</p>
+                  <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || ""}</p>
+                  <p><strong>Contact Status:</strong> {enquiry.contact_status || ""}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
       )}
       <AnimatePresence>
         <Modal

@@ -141,8 +141,11 @@ const Enquiries = () => {
       setIsLoading(true);
       try {
         const response = await apiClient.get("/contacts/enquiries/");
-        setEnquiries(response.data);
-        setFilteredEnquiries(response.data);
+        const sortedEnquiries = response.data.sort((a, b) => 
+          new Date(b.created_at) - new Date(a.created_at)
+        );
+        setEnquiries(sortedEnquiries);
+        setFilteredEnquiries(sortedEnquiries);
       } catch (error) {
         setError("Failed to fetch enquiries. Please try again.");
       } finally {
@@ -267,7 +270,7 @@ const Enquiries = () => {
         recaptchaToken,
         submittedUrl: window.location.href,
       });
-      const updatedEnquiries = [...enquiries, response.data];
+      const updatedEnquiries = [response.data, ...enquiries];
       setEnquiries(updatedEnquiries);
       setFilteredEnquiries(updatedEnquiries);
       setMessage("Enquiry created successfully");
@@ -445,45 +448,55 @@ const Enquiries = () => {
         </motion.div>
       )}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+        <div className="w-full sm:w-auto">
         <button
           onClick={() => setIsAddOpen(true)}
-          className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
         >
           {isAddingEnquiry ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Adding...
+              Adding
             </>
           ) : (
             "Add New Enquiry"
           )}
         </button>
+        </div>
         <FormProvider {...filterForm}>
           <form
             onSubmit={filterForm.handleSubmit(handleFilter)}
             className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
           >
-            <Input
-              label="Filter By"
-              name="filterType"
-              type="select"
-              options={filterOptions}
-              rules={{ required: "Filter type is required" }}
-            />
-            <Input
-              label="From Date"
-              name="fromDate"
-              type="date"
-            />
-            <Input
-              label="To Date"
-              name="toDate"
-              type="date"
-            />
+          <div className="w-full sm:w-auto">
+              <Input
+                label="Filter By *"
+                name="filterType"
+                type="select"
+                options={filterOptions}
+                rules={{ required: "Filter type is required" }}
+              />
+            </div>
+            <div className="w-full sm:w-auto">
+              <Input
+                label="From Date"
+                name="fromDate"
+                type="date"
+                placeholder="dd-mm-yyyy"
+              />
+            </div>
+            <div className="w-full sm:w-auto">
+              <Input
+                label="To Date"
+                name="toDate"
+                type="date"
+                placeholder="dd-mm-yyyy"
+              />
+            </div>
             <button
               type="submit"
-              className="mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+              className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
             >
               Apply Filter
             </button>
@@ -495,104 +508,240 @@ const Enquiries = () => {
           No Enquiries Found
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredEnquiries.map((enquiry, index) => (
-            <motion.div
-              key={enquiry.id}
-              className="rounded-lg p-5 bg-white shadow-sm"
-              variants={rowVariants}
-              initial="rest"
-              whileHover="hover"
-            >
-              <div className="space-y-2 text-[#2d4a5e] text-sm">
-                <p>
-                  <strong>Sl No:</strong> {index + 1}
-                </p>
-                <p>
-                  <strong>Date & Time:</strong>{" "}
-                  {new Date(enquiry.created_at).toLocaleString()}
-                </p>
-                <p>
-                  <strong>Customer Name:</strong> {enquiry.fullName || ""}
-                </p>
-                <p className="flex items-center gap-2">
-                  <strong>Phone:</strong>
-                  {enquiry.phoneNumber ? (
-                    <button
-                      onClick={() => openPhoneModal(enquiry)}
-                      className="flex items-center gap-2 text-[#4c7085]"
-                    >
-                      <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                    </button>
-                  ) : (
-                    ""
-                  )}
-                </p>
-                <p className="flex items-center gap-2">
-                  <strong>Email:</strong>
-                  {enquiry.email ? (
-                    <a
-                      href={`mailto:${enquiry.email}`}
-                      className="flex items-center gap-2 text-[#4c7085]"
-                    >
-                      <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                    </a>
-                  ) : (
-                    ""
-                  )}
-                </p>
-                <p>
-                  <strong>Service:</strong>{" "}
-                  {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                    enquiry.serviceType ||
-                    ""}
-                </p>
-                <p>
-                  <strong>Message:</strong> {enquiry.message || ""}
-                </p>
-                <p>
-                  <strong>Note:</strong> {enquiry.note || ""}
-                </p>
-                <p>
-                  <strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}
-                </p>
-                <div className="flex flex-wrap gap-2 pt-3">
-                  <button
-                    onClick={() => {
-                      setAssigningEnquiryId(enquiry.id);
-                      openAssignModal(enquiry);
-                    }}
-                    className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
+        <>
+          {/* Table for Desktop */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Sl No
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Date & Time
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Customer Name
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Phone
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Email
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Service
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Message
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Note
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Assigned To
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredEnquiries.map((enquiry, index) => (
+                  <motion.tr
+                    key={enquiry.id}
+                    className="hover:bg-gray-50"
+                    variants={rowVariants}
+                    initial="rest"
+                    whileHover="hover"
                   >
-                    {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Assigning...
-                      </>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {new Date(enquiry.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.fullName || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.phoneNumber ? (
+                        <button
+                          onClick={() => openPhoneModal(enquiry)}
+                          className="flex items-center gap-2 text-[#4c7085]"
+                        >
+                          <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                        </button>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.email ? (
+                        <a
+                          href={`mailto:${enquiry.email}`}
+                          className="flex items-center gap-2 text-[#4c7085]"
+                        >
+                          <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                        enquiry.serviceType ||
+                        "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.message || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.note || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.assigned_user_email || "Unassigned"}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setAssigningEnquiryId(enquiry.id);
+                            openAssignModal(enquiry);
+                          }}
+                          className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
+                        >
+                          {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Assigning
+                            </>
+                          ) : (
+                            "Assign"
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openEditModal(enquiry)}
+                          className="bg-gray-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasPermission("enquiries", "edit")}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(enquiry)}
+                          className="bg-red-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasPermission("enquiries", "delete")}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Cards for Mobile */}
+          <div className="md:hidden space-y-4">
+            {filteredEnquiries.map((enquiry, index) => (
+              <motion.div
+                key={enquiry.id}
+                className="rounded-lg p-5 bg-white shadow-sm"
+                variants={rowVariants}
+                initial="rest"
+                whileHover="hover"
+              >
+                <div className="space-y-2 text-[#2d4a5e] text-sm">
+                  <p>
+                    <strong>Sl No:</strong> {index + 1}
+                  </p>
+                  <p>
+                    <strong>Date & Time:</strong>{" "}
+                    {new Date(enquiry.created_at).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Customer Name:</strong> {enquiry.fullName || ""}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <strong>Phone:</strong>
+                    {enquiry.phoneNumber ? (
+                      <button
+                        onClick={() => openPhoneModal(enquiry)}
+                        className="flex items-center gap-2 text-[#4c7085]"
+                      >
+                        <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                      </button>
                     ) : (
-                      "Assign"
+                      ""
                     )}
-                  </button>
-                  <button
-                    onClick={() => openEditModal(enquiry)}
-                    className="bg-gray-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!hasPermission("enquiries", "edit")}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal(enquiry)}
-                    className="bg-red-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!hasPermission("enquiries", "delete")}
-                  >
-                    Delete
-                  </button>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <strong>Email:</strong>
+                    {enquiry.email ? (
+                      <a
+                        href={`mailto:${enquiry.email}`}
+                        className="flex items-center gap-2 text-[#4c7085]"
+                      >
+                        <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                      </a>
+                    ) : (
+                      ""
+                    )}
+                  </p>
+                  <p>
+                    <strong>Service:</strong>{" "}
+                    {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                      enquiry.serviceType ||
+                      ""}
+                  </p>
+                  <p>
+                    <strong>Message:</strong> {enquiry.message || ""}
+                  </p>
+                  <p>
+                    <strong>Note:</strong> {enquiry.note || ""}
+                  </p>
+                  <p>
+                    <strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-3">
+                    <button
+                      onClick={() => {
+                        setAssigningEnquiryId(enquiry.id);
+                        openAssignModal(enquiry);
+                      }}
+                      className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
+                    >
+                      {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Assigning
+                        </>
+                      ) : (
+                        "Assign"
+                      )}
+                    </button>
+                    <button
+                      onClick={() => openEditModal(enquiry)}
+                      className="bg-gray-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!hasPermission("enquiries", "edit")}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => openDeleteModal(enquiry)}
+                      className="bg-red-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!hasPermission("enquiries", "delete")}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
       )}
       <AnimatePresence>
         <Modal
@@ -618,7 +767,7 @@ const Enquiries = () => {
                 {isAddingEnquiry ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Adding...
+                    Adding
                   </>
                 ) : (
                   "Add Enquiry"
@@ -781,7 +930,7 @@ const Enquiries = () => {
                 {isAssigningEnquiry ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Assigning...
+                    Assigning
                   </>
                 ) : (
                   "Assign"
@@ -828,7 +977,7 @@ const Enquiries = () => {
                 {isAssigningEnquiry ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Assigning...
+                    Assigning
                   </>
                 ) : (
                   "Confirm"

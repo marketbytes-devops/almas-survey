@@ -31,6 +31,13 @@ const ScheduledSurveys = () => {
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [rescheduleSurveyData, setRescheduleSurveyData] = useState(null);
   const [cancelSurveyData, setCancelSurveyData] = useState(null);
+  // Loading states
+  const [isStartingSurvey, setIsStartingSurvey] = useState(false);
+  const [startingSurveyId, setStartingSurveyId] = useState(null);
+  const [isReschedulingSurvey, setIsReschedulingSurvey] = useState(false);
+  const [reschedulingSurveyId, setReschedulingSurveyId] = useState(null);
+  const [isCancelingSurvey, setIsCancelingSurvey] = useState(false);
+  const [cancelingSurveyId, setCancelingSurveyId] = useState(null);
   const navigate = useNavigate();
   const rescheduleSurveyForm = useForm();
   const cancelSurveyForm = useForm();
@@ -110,9 +117,16 @@ const ScheduledSurveys = () => {
             }
           })
         );
+
+        // Sort by survey_date in descending order
+        const sortedEnquiries = enquiriesWithSurveyStatus.sort((a, b) => {
+          const dateA = a.survey_date ? new Date(a.survey_date) : new Date(0);
+          const dateB = b.survey_date ? new Date(b.survey_date) : new Date(0);
+          return dateB - dateA;
+        });
         
-        setEnquiries(enquiriesWithSurveyStatus);
-        setFilteredEnquiries(enquiriesWithSurveyStatus);
+        setEnquiries(sortedEnquiries);
+        setFilteredEnquiries(sortedEnquiries);
       } catch (error) {
         setError("Failed to fetch scheduled surveys. Please try again.");
       } finally {
@@ -199,6 +213,8 @@ const ScheduledSurveys = () => {
       return;
     }
 
+    setIsStartingSurvey(true);
+    setStartingSurveyId(enquiry.id);
     try {
       let surveyData;
       let serviceTypeDisplay = enquiry.serviceType;
@@ -238,6 +254,9 @@ const ScheduledSurveys = () => {
     } catch (error) {
       console.error("Failed to start survey:", error);
       setError("Failed to start survey. Please try again.");
+    } finally {
+      setIsStartingSurvey(false);
+      setStartingSurveyId(null);
     }
   };
 
@@ -256,6 +275,8 @@ const ScheduledSurveys = () => {
   };
 
   const confirmRescheduleSurvey = async () => {
+    setIsReschedulingSurvey(true);
+    setReschedulingSurveyId(selectedEnquiry.id);
     try {
       console.log("Sending reschedule request with data:", {
         survey_date: rescheduleSurveyData.surveyDate.toISOString(),
@@ -268,8 +289,14 @@ const ScheduledSurveys = () => {
       const updatedEnquiries = enquiries.map((e) =>
         e.id === selectedEnquiry.id ? response.data : e
       );
-      setEnquiries(updatedEnquiries);
-      setFilteredEnquiries(updatedEnquiries);
+      // Re-sort after updating to maintain survey_date descending order
+      const sortedEnquiries = updatedEnquiries.sort((a, b) => {
+        const dateA = a.survey_date ? new Date(a.survey_date) : new Date(0);
+        const dateB = b.survey_date ? new Date(b.survey_date) : new Date(0);
+        return dateB - dateA;
+      });
+      setEnquiries(sortedEnquiries);
+      setFilteredEnquiries(sortedEnquiries);
       setMessage("Survey rescheduled successfully");
       setIsRescheduleSurveyConfirmOpen(false);
       rescheduleSurveyForm.reset();
@@ -277,6 +304,9 @@ const ScheduledSurveys = () => {
       const errorMessage = error.response?.data?.error || "Failed to reschedule survey. Please try again.";
       console.error("Reschedule error:", errorMessage, error);
       setError(errorMessage);
+    } finally {
+      setIsReschedulingSurvey(false);
+      setReschedulingSurveyId(null);
     }
   };
 
@@ -291,6 +321,8 @@ const ScheduledSurveys = () => {
   };
 
   const confirmCancelSurvey = async () => {
+    setIsCancelingSurvey(true);
+    setCancelingSurveyId(selectedEnquiry.id);
     try {
       console.log("Sending cancel survey request with data:", {
         reason: cancelSurveyData.reason,
@@ -303,8 +335,14 @@ const ScheduledSurveys = () => {
       const updatedEnquiries = enquiries.map((e) =>
         e.id === selectedEnquiry.id ? response.data : e
       );
-      setEnquiries(updatedEnquiries);
-      setFilteredEnquiries(updatedEnquiries);
+      // Re-sort after updating to maintain survey_date descending order
+      const sortedEnquiries = updatedEnquiries.sort((a, b) => {
+        const dateA = a.survey_date ? new Date(a.survey_date) : new Date(0);
+        const dateB = b.survey_date ? new Date(b.survey_date) : new Date(0);
+        return dateB - dateA;
+      });
+      setEnquiries(sortedEnquiries);
+      setFilteredEnquiries(sortedEnquiries);
       setMessage("Survey cancelled successfully");
       setIsCancelSurveyConfirmOpen(false);
       cancelSurveyForm.reset();
@@ -312,6 +350,9 @@ const ScheduledSurveys = () => {
       const errorMessage = error.response?.data?.error || "Failed to cancel survey. Please try again.";
       console.error("Cancel survey error:", errorMessage, error);
       setError(errorMessage);
+    } finally {
+      setIsCancelingSurvey(false);
+      setCancelingSurveyId(null);
     }
   };
 
@@ -353,6 +394,7 @@ const ScheduledSurveys = () => {
             onSubmit={filterForm.handleSubmit(handleFilter)}
             className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
           >
+            <div className="w-full sm:w-auto">
             <Input
               label="Filter By"
               name="filterType"
@@ -360,22 +402,29 @@ const ScheduledSurveys = () => {
               options={filterOptions}
               rules={{ required: "Filter type is required" }}
             />
+            </div>
+            <div className="w-full sm:w-auto">
             <Input
               label="From Date"
               name="fromDate"
               type="date"
             />
+            </div>
+            <div className="w-full sm:w-auto">
             <Input
               label="To Date"
               name="toDate"
               type="date"
             />
+            </div>
+            <div className="w-full sm:w-auto">
             <button
               type="submit"
-              className="mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+              className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
             >
               Apply Filter
             </button>
+            </div>
           </form>
         </FormProvider>
       </div>
@@ -384,114 +433,333 @@ const ScheduledSurveys = () => {
           No Scheduled Surveys Found
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredEnquiries.map((enquiry, index) => (
-            <motion.div
-              key={enquiry.id}
-              className="rounded-lg p-5 bg-white shadow-sm"
-              variants={rowVariants}
-              initial="rest"
-              whileHover="hover"
-            >
-              <div className="space-y-2 text-[#2d4a5e] text-sm">
-                <p><strong>Sl No:</strong> {index + 1}</p>
-                <p>
-                  <strong>Survey Scheduled Date:</strong>{" "}
-                  {enquiry.survey_date
-                    ? new Date(enquiry.survey_date).toLocaleDateString()
-                    : "Not scheduled"}
-                </p>
-                <p>
-                  <strong>Survey Time:</strong>{" "}
-                  {enquiry.survey_date ? formatTime(enquiry.survey_date) : "Not set"}
-                </p>
-                <p><strong>Customer Name:</strong> {enquiry.fullName || ""}</p>
-                <p className="flex items-center gap-2">
-                  <strong>Phone:</strong>
-                  {enquiry.phoneNumber ? (
-                    <button
-                      onClick={() => openPhoneModal(enquiry)}
-                      className="flex items-center gap-2 text-[#4c7085]"
-                    >
-                      <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                    </button>
-                  ) : (
-                    ""
-                  )}
-                </p>
-                <p className="flex items-center gap-2">
-                  <strong>Email:</strong>
-                  {enquiry.email ? (
-                    <a
-                      href={`mailto:${enquiry.email}`}
-                      className="flex items-center gap-2 text-[#4c7085]"
-                    >
-                      <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                    </a>
-                  ) : (
-                    ""
-                  )}
-                </p>
-                <p>
-                  <strong>Service Required:</strong>{" "}
-                  {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                    enquiry.serviceType ||
-                    ""}
-                </p>
-                <p><strong>Message:</strong> {enquiry.message || ""}</p>
-                <p><strong>Note:</strong> {enquiry.note || ""}</p>
-                <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}</p>
-                
-                {/* Survey Status Display */}
-                {isSurveyFinished(enquiry) && (
-                  <p className="text-green-600">
-                    <strong>Survey Status:</strong> {enquiry.survey_status || "Completed"}
+        <>
+          {/* Table for Desktop */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Sl No
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Survey Date
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Survey Time
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Customer Name
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Phone
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Email
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Service Required
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Message
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Note
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Assigned To
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Survey Status
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredEnquiries.map((enquiry, index) => (
+                  <motion.tr
+                    key={enquiry.id}
+                    className="hover:bg-gray-50"
+                    variants={rowVariants}
+                    initial="rest"
+                    whileHover="hover"
+                  >
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.survey_date
+                        ? new Date(enquiry.survey_date).toLocaleDateString()
+                        : "Not scheduled"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.survey_date ? formatTime(enquiry.survey_date) : "Not set"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.fullName || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.phoneNumber ? (
+                        <button
+                          onClick={() => openPhoneModal(enquiry)}
+                          className="flex items-center gap-2 text-[#4c7085]"
+                        >
+                          <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                        </button>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.email ? (
+                        <a
+                          href={`mailto:${enquiry.email}`}
+                          className="flex items-center gap-2 text-[#4c7085]"
+                        >
+                          <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                        enquiry.serviceType ||
+                        "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.message || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.note || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {enquiry.assigned_user_email || "Unassigned"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {isSurveyFinished(enquiry) ? (
+                        <span className="text-green-600">{enquiry.survey_status || "Completed"}</span>
+                      ) : (
+                        "Not Started"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                      <div className="flex gap-2">
+                        {enquiry.survey_date ? (
+                          <>
+                            <button
+                              onClick={() => openRescheduleSurveyModal(enquiry)}
+                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!hasPermission("scheduled_surveys", "edit") || (isReschedulingSurvey && reschedulingSurveyId === enquiry.id)}
+                            >
+                              {isReschedulingSurvey && reschedulingSurveyId === enquiry.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Rescheduling
+                                </>
+                              ) : (
+                                "Re-Schedule"
+                              )}
+                            </button>
+                            <button
+                              onClick={() => openCancelSurveyModal(enquiry)}
+                              className="bg-red-500 text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!hasPermission("scheduled_surveys", "edit") || (isCancelingSurvey && cancelingSurveyId === enquiry.id)}
+                            >
+                              {isCancelingSurvey && cancelingSurveyId === enquiry.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Canceling
+                                </>
+                              ) : (
+                                "Cancel"
+                              )}
+                            </button>
+                            <button
+                              onClick={() => startSurvey(enquiry)}
+                              className={`text-white text-xs py-1 px-2 rounded flex items-center gap-1 ${
+                                isSurveyFinished(enquiry)
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-green-500 hover:bg-green-600"
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              disabled={isSurveyFinished(enquiry) || !hasPermission("scheduled_surveys", "edit") || (isStartingSurvey && startingSurveyId === enquiry.id)}
+                            >
+                              {isStartingSurvey && startingSurveyId === enquiry.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Starting
+                                </>
+                              ) : isSurveyFinished(enquiry) ? (
+                                "Survey Completed"
+                              ) : (
+                                "Start Survey"
+                              )}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => openRescheduleSurveyModal(enquiry)}
+                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!hasPermission("scheduled_surveys", "edit") || (isReschedulingSurvey && reschedulingSurveyId === enquiry.id)}
+                          >
+                            {isReschedulingSurvey && reschedulingSurveyId === enquiry.id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Scheduling
+                              </>
+                            ) : (
+                              "Schedule Survey"
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Cards for Mobile */}
+          <div className="md:hidden space-y-4">
+            {filteredEnquiries.map((enquiry, index) => (
+              <motion.div
+                key={enquiry.id}
+                className="rounded-lg p-5 bg-white shadow-sm"
+                variants={rowVariants}
+                initial="rest"
+                whileHover="hover"
+              >
+                <div className="space-y-2 text-[#2d4a5e] text-sm">
+                  <p><strong>Sl No:</strong> {index + 1}</p>
+                  <p>
+                    <strong>Survey Scheduled Date:</strong>{" "}
+                    {enquiry.survey_date
+                      ? new Date(enquiry.survey_date).toLocaleDateString()
+                      : "Not scheduled"}
                   </p>
-                )}
+                  <p>
+                    <strong>Survey Time:</strong>{" "}
+                    {enquiry.survey_date ? formatTime(enquiry.survey_date) : "Not set"}
+                  </p>
+                  <p><strong>Customer Name:</strong> {enquiry.fullName || ""}</p>
+                  <p className="flex items-center gap-2">
+                    <strong>Phone:</strong>
+                    {enquiry.phoneNumber ? (
+                      <button
+                        onClick={() => openPhoneModal(enquiry)}
+                        className="flex items-center gap-2 text-[#4c7085]"
+                      >
+                        <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                      </button>
+                    ) : (
+                      ""
+                    )}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <strong>Email:</strong>
+                    {enquiry.email ? (
+                      <a
+                        href={`mailto:${enquiry.email}`}
+                        className="flex items-center gap-2 text-[#4c7085]"
+                      >
+                        <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                      </a>
+                    ) : (
+                      ""
+                    )}
+                  </p>
+                  <p>
+                    <strong>Service Required:</strong>{" "}
+                    {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                      enquiry.serviceType ||
+                      ""}
+                  </p>
+                  <p><strong>Message:</strong> {enquiry.message || ""}</p>
+                  <p><strong>Note:</strong> {enquiry.note || ""}</p>
+                  <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}</p>
+                
+                  {isSurveyFinished(enquiry) && (
+                    <p className="text-green-600">
+                      <strong>Survey Status:</strong> {enquiry.survey_status || "Completed"}
+                    </p>
+                  )}
 
-                <div className="flex flex-wrap gap-2 pt-3">
-                  {enquiry.survey_date ? (
-                    <>
+                  <div className="flex flex-wrap gap-2 pt-3">
+                    {enquiry.survey_date ? (
+                      <>
+                        <button
+                          onClick={() => openRescheduleSurveyModal(enquiry)}
+                          className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasPermission("scheduled_surveys", "edit") || (isReschedulingSurvey && reschedulingSurveyId === enquiry.id)}
+                        >
+                          {isReschedulingSurvey && reschedulingSurveyId === enquiry.id ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Rescheduling
+                            </>
+                          ) : (
+                            "Re-Schedule Survey"
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openCancelSurveyModal(enquiry)}
+                          className="bg-red-500 text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasPermission("scheduled_surveys", "edit") || (isCancelingSurvey && cancelingSurveyId === enquiry.id)}
+                        >
+                          {isCancelingSurvey && cancelingSurveyId === enquiry.id ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Canceling
+                            </>
+                          ) : (
+                            "Cancel Survey"
+                          )}
+                        </button>
+                        <button
+                          onClick={() => startSurvey(enquiry)}
+                          className={`text-white text-sm py-2 px-3 rounded flex items-center gap-2 ${
+                            isSurveyFinished(enquiry) 
+                              ? 'bg-gray-400 cursor-not-allowed' 
+                              : 'bg-green-500 hover:bg-green-600'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          disabled={isSurveyFinished(enquiry) || !hasPermission("scheduled_surveys", "edit") || (isStartingSurvey && startingSurveyId === enquiry.id)}
+                        >
+                          {isStartingSurvey && startingSurveyId === enquiry.id ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Starting
+                            </>
+                          ) : isSurveyFinished(enquiry) ? (
+                            "Survey Completed"
+                          ) : (
+                            "Start Survey"
+                          )}
+                        </button>
+                      </>
+                    ) : (
                       <button
                         onClick={() => openRescheduleSurveyModal(enquiry)}
-                        className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded"
-                        disabled={!hasPermission("scheduled_surveys", "edit")}
+                        className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!hasPermission("scheduled_surveys", "edit") || (isReschedulingSurvey && reschedulingSurveyId === enquiry.id)}
                       >
-                        Re-Schedule Survey
+                        {isReschedulingSurvey && reschedulingSurveyId === enquiry.id ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Scheduling
+                          </>
+                        ) : (
+                          "Schedule Survey"
+                        )}
                       </button>
-                      <button
-                        onClick={() => openCancelSurveyModal(enquiry)}
-                        className="bg-red-500 text-white text-sm py-2 px-3 rounded"
-                        disabled={!hasPermission("scheduled_surveys", "edit")}
-                      >
-                        Cancel Survey
-                      </button>
-                      <button
-                        onClick={() => startSurvey(enquiry)}
-                        className={`text-white text-sm py-2 px-3 rounded ${
-                          isSurveyFinished(enquiry) 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-green-500 hover:bg-green-600'
-                        }`}
-                        disabled={isSurveyFinished(enquiry) || !hasPermission("scheduled_surveys", "edit")}
-                      >
-                        {isSurveyFinished(enquiry) ? "Survey Completed" : "Start Survey"}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => openRescheduleSurveyModal(enquiry)}
-                      className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded"
-                      disabled={!hasPermission("scheduled_surveys", "edit")}
-                    >
-                      Schedule Survey
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
       )}
       <AnimatePresence>
         <Modal
@@ -554,10 +822,17 @@ const ScheduledSurveys = () => {
               <button
                 type="submit"
                 form="reschedule-survey-form"
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("scheduled_surveys", "edit")}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("scheduled_surveys", "edit") || isReschedulingSurvey}
               >
-                Submit
+                {isReschedulingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Submitting
+                  </>
+                ) : (
+                  "Submit"
+                )}
               </button>
             </>
           }
@@ -608,10 +883,17 @@ const ScheduledSurveys = () => {
               </button>
               <button
                 onClick={confirmRescheduleSurvey}
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("scheduled_surveys", "edit")}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("scheduled_surveys", "edit") || isReschedulingSurvey}
               >
-                Confirm
+                {isReschedulingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Confirming
+                  </>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </>
           }
@@ -640,10 +922,17 @@ const ScheduledSurveys = () => {
               <button
                 type="submit"
                 form="cancel-survey-form"
-                className="bg-red-500 text-white py-2 px-4 rounded"
-                disabled={!hasPermission("scheduled_surveys", "edit")}
+                className="bg-red-500 text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("scheduled_surveys", "edit") || isCancelingSurvey}
               >
-                Submit
+                {isCancelingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Submitting
+                  </>
+                ) : (
+                  "Submit"
+                )}
               </button>
             </>
           }
@@ -677,10 +966,17 @@ const ScheduledSurveys = () => {
               </button>
               <button
                 onClick={confirmCancelSurvey}
-                className="bg-red-500 text-white py-2 px-4 rounded"
-                disabled={!hasPermission("scheduled_surveys", "edit")}
+                className="bg-red-500 text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("scheduled_surveys", "edit") || isCancelingSurvey}
               >
-                Confirm
+                {isCancelingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Confirming
+                  </>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </>
           }
