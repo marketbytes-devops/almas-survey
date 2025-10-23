@@ -82,8 +82,37 @@ const ScheduledSurveys = () => {
         const response = await apiClient.get("/contacts/enquiries/", {
           params: { has_survey: "true" },
         });
-        setEnquiries(response.data);
-        setFilteredEnquiries(response.data);
+        
+        // Enhanced: Check survey status for each enquiry
+        const enquiriesWithSurveyStatus = await Promise.all(
+          response.data.map(async (enquiry) => {
+            try {
+              const surveyResponse = await apiClient.get(`/surveys/?enquiry_id=${enquiry.id}`);
+              const hasSurvey = surveyResponse.data.length > 0;
+              const surveyData = hasSurvey ? surveyResponse.data[0] : null;
+              
+              return {
+                ...enquiry,
+                has_survey: hasSurvey,
+                survey_id: surveyData?.survey_id || null,
+                survey_status: surveyData?.status || null,
+                survey_data: surveyData
+              };
+            } catch (error) {
+              console.error(`Error fetching survey for enquiry ${enquiry.id}:`, error);
+              return { 
+                ...enquiry, 
+                has_survey: false, 
+                survey_id: null, 
+                survey_status: null,
+                survey_data: null
+              };
+            }
+          })
+        );
+        
+        setEnquiries(enquiriesWithSurveyStatus);
+        setFilteredEnquiries(enquiriesWithSurveyStatus);
       } catch (error) {
         setError("Failed to fetch scheduled surveys. Please try again.");
       } finally {
@@ -153,7 +182,23 @@ const ScheduledSurveys = () => {
     setIsCancelSurveyOpen(true);
   };
 
+  // Updated function to check if survey is completed
+  const isSurveyFinished = (enquiry) => {
+    // Check multiple indicators that survey is completed
+    return enquiry.has_survey || 
+           enquiry.survey_id || 
+           enquiry.survey_status === 'completed' || 
+           enquiry.survey_status === 'in_progress' ||
+           enquiry.survey !== null;
+  };
+
   const startSurvey = async (enquiry) => {
+    // Prevent starting survey if already completed
+    if (isSurveyFinished(enquiry)) {
+      setError("Survey has already been completed for this enquiry.");
+      return;
+    }
+
     try {
       let surveyData;
       let serviceTypeDisplay = enquiry.serviceType;
@@ -270,19 +315,15 @@ const ScheduledSurveys = () => {
     }
   };
 
-  const isSurveyFinished = (enquiry) => {
-    return enquiry.survey !== null;
-  };
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
-  }
-
   const formatTime = (dateTimeString) => {
     if (!dateTimeString) return "Not set";
     const date = new Date(dateTimeString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
+  }
 
   return (
     <div className="container mx-auto">
@@ -339,7 +380,7 @@ const ScheduledSurveys = () => {
         </FormProvider>
       </div>
       {filteredEnquiries.length === 0 ? (
-        <div className="text-center text-[#2d4a5e] text-sm sm:text-base p-5 bg-white shadow-sm rounded-lg">
+        <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
           No Scheduled Surveys Found
         </div>
       ) : (
@@ -352,7 +393,7 @@ const ScheduledSurveys = () => {
               initial="rest"
               whileHover="hover"
             >
-              <div className="space-y-2 text-[#2d4a5e] text-sm sm:text-base">
+              <div className="space-y-2 text-[#2d4a5e] text-sm">
                 <p><strong>Sl No:</strong> {index + 1}</p>
                 <p>
                   <strong>Survey Scheduled Date:</strong>{" "}
@@ -400,6 +441,14 @@ const ScheduledSurveys = () => {
                 <p><strong>Message:</strong> {enquiry.message || ""}</p>
                 <p><strong>Note:</strong> {enquiry.note || ""}</p>
                 <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}</p>
+                
+                {/* Survey Status Display */}
+                {isSurveyFinished(enquiry) && (
+                  <p className="text-green-600">
+                    <strong>Survey Status:</strong> {enquiry.survey_status || "Completed"}
+                  </p>
+                )}
+
                 <div className="flex flex-wrap gap-2 pt-3">
                   {enquiry.survey_date ? (
                     <>
@@ -419,11 +468,14 @@ const ScheduledSurveys = () => {
                       </button>
                       <button
                         onClick={() => startSurvey(enquiry)}
-                        className={`text-white text-sm py-2 px-3 rounded ${isSurveyFinished(enquiry) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
-                          }`}
+                        className={`text-white text-sm py-2 px-3 rounded ${
+                          isSurveyFinished(enquiry) 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
                         disabled={isSurveyFinished(enquiry) || !hasPermission("scheduled_surveys", "edit")}
                       >
-                        {isSurveyFinished(enquiry) ? "Survey Started" : "Start Survey"}
+                        {isSurveyFinished(enquiry) ? "Survey Completed" : "Start Survey"}
                       </button>
                     </>
                   ) : (
@@ -459,7 +511,7 @@ const ScheduledSurveys = () => {
           }
         >
           <div className="space-y-4">
-            <p className="text-[#2d4a5e] text-sm sm:text-base">
+            <p className="text-[#2d4a5e] text-sm">
               Choose how to contact {selectedEnquiry?.fullName || ""}:
             </p>
             <div className="flex flex-col gap-3">
@@ -481,7 +533,7 @@ const ScheduledSurveys = () => {
                   </a>
                 </>
               ) : (
-                <p className="text-[#2d4a5e] text-sm sm:text-base">No phone number available</p>
+                <p className="text-[#2d4a5e] text-sm">No phone number available</p>
               )}
             </div>
           </div>
@@ -564,7 +616,7 @@ const ScheduledSurveys = () => {
             </>
           }
         >
-          <p className="text-[#2d4a5e] text-sm sm:text-base">
+          <p className="text-[#2d4a5e] text-sm">
             Are you sure you want to reschedule the survey for{" "}
             {rescheduleSurveyData?.surveyDate
               ? new Date(rescheduleSurveyData.surveyDate).toLocaleString()
@@ -633,7 +685,7 @@ const ScheduledSurveys = () => {
             </>
           }
         >
-          <p className="text-[#2d4a5e] text-sm sm:text-base">
+          <p className="text-[#2d4a5e] text-sm">
             Are you sure you want to cancel the survey with reason: "{cancelSurveyData?.reason}"?
           </p>
         </Modal>

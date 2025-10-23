@@ -12,7 +12,8 @@ const routeNames = {
   "/processing-enquiries": "Processing Enquiries",
   "/follow-ups": "Follow Ups",
   "/survey/survey-summary": "Survey Summary",
-  "/survey/:surveyId/survey-details": "Survey Details",
+  "/survey-summary": "Survey Summary", // Add this alternative path
+  "/survey-details": "Survey Details", // Base path for survey details
   "/survey/:surveyId/view": "View Survey",
   "/survey/:surveyId/print": "Print Survey",
   "/additional-settings/types": "Types",
@@ -49,19 +50,28 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
     }
 
     const path = location.pathname;
-    let matchedName = "Unknown Page";
+    let matchedName = "Dashboard"; // Default to Dashboard
 
-    for (const [route, name] of Object.entries(routeNames)) {
-      if (route.includes(":surveyId")) {
-        const regex = new RegExp(`^${route.replace(":surveyId", "\\d+")}$`);
-        if (regex.test(path)) {
-          const surveyId = localStorage.getItem("selectedSurveyId");
-          matchedName = surveyId ? `${name} (${surveyId})` : name;
-          break;
+    // Special handling for survey routes
+    if (path.includes("/survey/") && path.includes("/survey-details")) {
+      matchedName = "Survey Details";
+    } else if (path.includes("/survey/") && path.includes("/survey-summary")) {
+      matchedName = "Survey Summary";
+    } else {
+      // Exact match first
+      if (routeNames[path]) {
+        matchedName = routeNames[path];
+      } else {
+        // Fallback: extract the last part of the path for a better display
+        const pathParts = path.split('/').filter(part => part);
+        if (pathParts.length > 0) {
+          const lastPart = pathParts[pathParts.length - 1];
+          // Convert kebab-case to Title Case
+          matchedName = lastPart
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
         }
-      } else if (path === route) {
-        matchedName = name;
-        break;
       }
     }
 
