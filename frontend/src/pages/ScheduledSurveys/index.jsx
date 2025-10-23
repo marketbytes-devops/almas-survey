@@ -156,8 +156,8 @@ const ScheduledSurveys = () => {
   const startSurvey = async (enquiry) => {
     try {
       let surveyData;
-      let serviceTypeDisplay = enquiry.serviceType; 
-      
+      let serviceTypeDisplay = enquiry.serviceType;
+
       try {
         const response = await apiClient.get(`/surveys/?enquiry_id=${enquiry.id}`);
         if (response.data.length > 0) {
@@ -169,9 +169,9 @@ const ScheduledSurveys = () => {
           throw error;
         }
       }
-      const serviceTypeLabel = serviceOptions.find(opt => opt.value === serviceTypeDisplay)?.label || 
-                              serviceTypeDisplay || 
-                              "Not Specified";
+      const serviceTypeLabel = serviceOptions.find(opt => opt.value === serviceTypeDisplay)?.label ||
+        serviceTypeDisplay ||
+        "Not Specified";
 
       localStorage.setItem("selectedSurveyId", enquiry.id);
       localStorage.setItem("currentSurveyData", JSON.stringify(surveyData || {}));
@@ -184,16 +184,17 @@ const ScheduledSurveys = () => {
             email: enquiry.email,
             surveyDate: enquiry.survey_date ? new Date(enquiry.survey_date) : null,
             surveyStartTime: enquiry.survey_date ? new Date(enquiry.survey_date) : null,
+            serviceType: enquiry.serviceType, 
             serviceTypeDisplay: serviceTypeLabel,
             surveyId: enquiry.survey_id || "",
           },
         },
       });
     } catch (error) {
-    console.error("Failed to start survey:", error);
-    setError("Failed to start survey. Please try again.");
-  }
-};
+      console.error("Failed to start survey:", error);
+      setError("Failed to start survey. Please try again.");
+    }
+  };
 
   const onRescheduleSurveySubmit = async (data) => {
     if (!hasPermission("scheduled_surveys", "edit")) {
@@ -278,10 +279,10 @@ const ScheduledSurveys = () => {
   }
 
   const formatTime = (dateTimeString) => {
-  if (!dateTimeString) return "Not set";
-  const date = new Date(dateTimeString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
+    if (!dateTimeString) return "Not set";
+    const date = new Date(dateTimeString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="container mx-auto">
