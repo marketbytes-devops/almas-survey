@@ -274,6 +274,7 @@ const SurveyDetails = () => {
               fullName: survey.full_name || initialCustomerData?.fullName || "",
               phoneNumber: survey.mobile_number || initialCustomerData?.phoneNumber || "",
               email: survey.email || initialCustomerData?.email || "",
+              serviceType: survey.service_type || initialCustomerData?.serviceType || "",
               address: survey.address || "",
               company: survey.company || "",
               goodsType: survey.goods_type || "",
@@ -385,6 +386,7 @@ const SurveyDetails = () => {
               fullName: initialCustomerData?.fullName || "",
               phoneNumber: initialCustomerData?.phoneNumber || "",
               email: initialCustomerData?.email || "",
+              serviceType: initialCustomerData?.serviceType || "",
               surveyDate: initialCustomerData?.surveyDate || null,
               surveyStartTime: initialCustomerData?.surveyStartTime || null,
             });
