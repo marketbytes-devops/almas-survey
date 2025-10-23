@@ -70,9 +70,10 @@ const SurveySummary = () => {
         customerData: {
           surveyId: survey.survey_id,
           fullName: survey.full_name || "Not filled",
-          phoneNumber: survey.phone_number || "Not filled", // Use phone_number from API
+          phoneNumber: survey.phone_number || "Not filled",
           email: survey.email || "Not filled",
-          serviceType: survey.service_type_display || survey.service_type_name || "N/A",
+          serviceType: survey.service_type || survey.enquiry?.serviceType || "",
+          serviceTypeDisplay: survey.service_type_display || survey.service_type_name || "N/A",
           surveyDate: survey.survey_date ? new Date(survey.survey_date) : null,
           surveyStartTime: survey.survey_start_time
             ? new Date(`1970-01-01T${survey.survey_start_time}`)
