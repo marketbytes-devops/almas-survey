@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaPlus, FaMinus } from "react-icons/fa";
+import { FaPlus, FaMinus, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -92,13 +92,12 @@ const QuantityInput = ({ label, name, rules = {}, onChange }) => {
 const ServiceCheckbox = ({ label, name, rules = {}, notesName, notesRules = {} }) => {
   const { watch, setValue, register } = useFormContext();
   const isChecked = watch(name);
-  const notesValue = watch(notesName);
 
   const handleCheckboxChange = (e) => {
     const checked = e.target.checked;
     setValue(name, checked, { shouldValidate: true });
     if (!checked) {
-      setValue(notesName, "");
+      setValue(notesName, "", { shouldValidate: true });
     }
   };
 
@@ -115,24 +114,17 @@ const ServiceCheckbox = ({ label, name, rules = {}, notesName, notesRules = {} }
         />
         <span className="ml-2 text-sm text-gray-700">{label}</span>
       </label>
-      <AnimatePresence>
-        {isChecked && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          >
-            <Input
-              label="Notes"
-              name={notesName}
-              type="textarea"
-              rules={notesRules}
-              placeholder="Enter additional notes..."
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isChecked && (
+        <div>
+          <Input
+            label="Notes"
+            name={notesName}
+            type="textarea"
+            rules={notesRules}
+            placeholder="Enter additional notes..."
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -293,14 +285,14 @@ const SurveyDetails = () => {
               multipleAddresses: survey.multiple_addresses || false,
               destinationAddresses: survey.destination_addresses?.length > 0
                 ? survey.destination_addresses.map((addr) => ({
-                    id: uuidv4(),
-                    address: addr.address || "",
-                    city: addr.city || "",
-                    country: addr.country || "",
-                    state: addr.state || "",
-                    zip: addr.zip || "",
-                    poe: addr.poe || "",
-                  }))
+                  id: uuidv4(),
+                  address: addr.address || "",
+                  city: addr.city || "",
+                  country: addr.country || "",
+                  state: addr.state || "",
+                  zip: addr.zip || "",
+                  poe: addr.poe || "",
+                }))
                 : [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
               packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
               packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
@@ -448,6 +440,7 @@ const SurveyDetails = () => {
           id: room.id,
           value: room.id,
           label: room.name,
+          name: room.name,
         })),
       })),
       apiClient.get("/items/").then((response) => ({
@@ -823,7 +816,7 @@ const SurveyDetails = () => {
                   <button
                     type="button"
                     onClick={addAddress}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-300"
+                    className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded duration-300"
                   >
                     <FaPlus className="w-3 h-3" /> Add Address
                   </button>
@@ -970,6 +963,12 @@ const SurveyDetails = () => {
     const [showRoomDropdown, setShowRoomDropdown] = useState(false);
     const [expandedItems, setExpandedItems] = useState({});
     const [itemQuantities, setItemQuantities] = useState({});
+    const [editingArticleId, setEditingArticleId] = useState(null);
+
+    const getRoomNameById = (roomId) => {
+      const room = apiData.rooms.find(room => room.id === roomId || room.value === roomId);
+      return room ? room.name : 'Unknown Room';
+    };
 
     const toggleExpandedItem = (itemName) => {
       setExpandedItems((prev) => ({
@@ -1001,19 +1000,50 @@ const SurveyDetails = () => {
       };
       const updatedArticles = [...watch("articles"), newArticle];
       setValue("articles", updatedArticles);
-      setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
-      setItemQuantities((prev) => {
-        const newQuantities = { ...prev };
-        delete newQuantities[itemName];
-        return newQuantities;
-      });
       setMessage("Article added successfully!");
       setTimeout(() => setMessage(null), 3000);
+      setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
+    };
+
+    const updateArticle = (articleId, itemData) => {
+      const updatedArticles = watch("articles").map((article) =>
+        article.id === articleId
+          ? {
+            ...article,
+            quantity: itemData.quantity || article.quantity,
+            volume: itemData.volume || "",
+            volumeUnit: itemData.volumeUnit || "",
+            weight: itemData.weight || "",
+            weightUnit: itemData.weightUnit || "",
+            handyman: itemData.handyman || "",
+            packingOption: itemData.packingOption || "",
+            moveStatus: itemData.moveStatus || "",
+            amount: itemData.amount || "",
+            currency: itemData.currency || "",
+            remarks: itemData.remarks || "",
+            room: selectedRoom?.value || article.room,
+          }
+          : article
+      );
+      setValue("articles", updatedArticles);
+      setMessage("Article updated successfully!");
+      setTimeout(() => setMessage(null), 3000);
+      setEditingArticleId(null);
+    };
+
+    const removeArticle = (articleId) => {
+      const updatedArticles = watch("articles").filter((article) => article.id !== articleId);
+      setValue("articles", updatedArticles);
+      setMessage("Article removed successfully!");
+      setTimeout(() => setMessage(null), 3000);
+      setEditingArticleId(null);
     };
 
     const handleRoomSelect = (room) => {
       setSelectedRoom(room);
       setShowRoomDropdown(false);
+      setExpandedItems({});
+      setEditingArticleId(null);
     };
 
     const ItemRow = ({ item }) => {
@@ -1027,7 +1057,7 @@ const SurveyDetails = () => {
           [`packingOption_${item.name}`]: apiData.packingTypes[0]?.value || "",
           [`moveStatus_${item.name}`]: "new",
           [`amount_${item.name}`]: "",
-          [`currency_${item.name}`]: apiData.currencies[0]?.value || "",
+          [`currency_${item.name}`]: apiData.currencies[0]?.value || "INR",
           [`remarks_${item.name}`]: "",
           [`quantity_${item.name}`]: itemQuantities[item.name] || 0,
         },
@@ -1040,9 +1070,10 @@ const SurveyDetails = () => {
           <tr key={`${item.name}-main`} className="border-b border-gray-200">
             <td
               className="text-left py-4 px-4 text-sm text-gray-700 cursor-pointer hover:bg-gray-50"
-              onClick={() => toggleExpandedItem(item.name)}
             >
-              <span className="font-medium">{item.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{item.name}</span>
+              </div>
             </td>
             <td className="text-center py-4 px-4">
               <FormProvider {...itemFormMethods}>
@@ -1053,27 +1084,26 @@ const SurveyDetails = () => {
                 />
               </FormProvider>
             </td>
-            <td className="text-right py-4 px-4">
-              <button
-                type="button"
-                onClick={handleItemSubmit((data) => addArticle(item.name, data))}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-              >
-                Add
-              </button>
+            <td className="flex items-center justify-end py-4 px-8"
+              onClick={() => toggleExpandedItem(item.name)}>
+              {expandedItems[item.name] ? (
+                <FaChevronUp className="w-3 h-3 text-gray-500" />
+              ) : (
+                <FaChevronDown className="w-3 h-3 text-gray-500" />
+              )}
             </td>
           </tr>
-          <AnimatePresence>
-            {expandedItems[item.name] && (
-              <tr key={`${item.name}-details`} className="border border-gray-200">
-                <td colSpan="3">
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="p-4 bg-white"
-                  >
-                    <FormProvider {...itemFormMethods}>
+          {expandedItems[item.name] && (
+            <tr key={`${item.name}-details`} className="border border-gray-200">
+              <td colSpan="3">
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-4 bg-white"
+                >
+                  <FormProvider {...itemFormMethods}>
+                    <div className="grid gap-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <Input
                           label="Volume"
@@ -1122,37 +1152,154 @@ const SurveyDetails = () => {
                           type="select"
                           options={apiData.currencies}
                         />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-6">
                         <Input
                           label="Remarks"
                           name={`remarks_${item.name}`}
                           type="textarea"
                         />
                       </div>
-                      <div className="mt-4 flex gap-3 justify-end">
-                        <button
-                          type="button"
-                          onClick={handleItemSubmit((data) =>
-                            addArticle(item.name, data)
-                          )}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-                        >
-                          Update
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandedItem(item.name)}
-                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </FormProvider>
-                  </motion.div>
-                </td>
-              </tr>
-            )}
-          </AnimatePresence>
+
+                    </div>
+                    <div className="mt-4 flex gap-3 justify-end">
+                      <button
+                        type="button"
+                        onClick={handleItemSubmit((data) =>
+                          addArticle(item.name, data)
+                        )}
+                        className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+                      >
+                        Update
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandedItem(item.name)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </FormProvider>
+                </motion.div>
+              </td>
+            </tr>
+          )}
         </>
+      );
+    };
+
+    const EditArticleRow = ({ article }) => {
+      const editFormMethods = useForm({
+        defaultValues: {
+          volume: article.volume || "",
+          volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
+          weight: article.weight || "",
+          weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
+          handyman: article.handyman || apiData.handymanTypes[0]?.value || "",
+          packingOption: article.packingOption || apiData.packingTypes[0]?.value || "",
+          moveStatus: article.moveStatus || "new",
+          amount: article.amount || "",
+          currency: article.currency || apiData.currencies[0]?.value || "INR",
+          remarks: article.remarks || "",
+          quantity: article.quantity || 0,
+        },
+      });
+
+      const { handleSubmit: handleEditSubmit } = editFormMethods;
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
+        >
+          <FormProvider {...editFormMethods}>
+            <div className="grid gap-6">
+              <div className="grid grid-cols-1 gap-6">
+                <QuantityInput
+                  label="Quantity"
+                  name="quantity"
+                  rules={{ required: "Quantity is required" }}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Input
+                  label="Volume"
+                  name="volume"
+                  type="number"
+                  rules={{ required: "Volume is required" }}
+                />
+                <Input
+                  label="Volume Unit"
+                  name="volumeUnit"
+                  type="select"
+                  options={apiData.volumeUnits}
+                />
+                <Input
+                  label="Weight"
+                  name="weight"
+                  type="number"
+                  rules={{ required: "Weight is required" }}
+                />
+                <Input
+                  label="Weight Unit"
+                  name="weightUnit"
+                  type="select"
+                  options={apiData.weightUnits}
+                />
+                <Input
+                  label="Handyman"
+                  name="handyman"
+                  type="select"
+                  options={apiData.handymanTypes}
+                />
+                <Input
+                  label="Packing Option"
+                  name="packingOption"
+                  type="select"
+                  options={apiData.packingTypes}
+                />
+                <Input
+                  label="Amount"
+                  name="amount"
+                  type="number"
+                />
+                <Input
+                  label="Currency"
+                  name="currency"
+                  type="select"
+                  options={apiData.currencies}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <Input
+                  label="Remarks"
+                  name="remarks"
+                  type="textarea"
+                />
+              </div>
+
+            </div>
+            <div className="mt-4 flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={handleEditSubmit((data) => updateArticle(article.id, data))}
+                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+              >
+                Update
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingArticleId(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </FormProvider>
+        </motion.div>
       );
     };
 
@@ -1188,11 +1335,91 @@ const SurveyDetails = () => {
                 </table>
               </div>
             ) : (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center text-gray-500 py-4">
                 Please select a room to view items.
               </div>
             )}
           </>
+        ),
+      },
+      {
+        id: "added-articles",
+        title: "Added Articles",
+        content: (
+          <div className="">
+            {watch("articles").length > 0 ? (
+              <div className="space-y-4">
+                {watch("articles").map((article, index) => (
+                  <div key={article.id}>
+                    <div
+                      className="flex justify-between items-start mb-3 cursor-pointer rounded"
+                      onClick={() => setEditingArticleId(editingArticleId === article.id ? null : article.id)}
+                    >
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {article.itemName}
+                          <span className="ml-2 text-sm font-normal text-gray-600">
+                            (Room: {getRoomNameById(article.room)})
+                          </span>
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Quantity: {article.quantity}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeArticle(article.id);
+                          }}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                          aria-label={`Remove ${article.itemName}`}
+                        >
+                          <FaMinus className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                        >
+                          {editingArticleId === article.id ? (
+                            <FaChevronUp className="w-3 h-3 text-gray-500" />
+                          ) : (
+                            <FaChevronDown className="w-3 h-3 text-gray-500" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    {editingArticleId === article.id && (
+                      <EditArticleRow article={article} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <svg
+                    className="w-16 h-16 mx-auto"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
+                  </svg>
+                </div>
+                <p className="text-gray-500 text-lg">No articles added yet</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Add articles using the form above
+                </p>
+              </div>
+            )}
+          </div>
         ),
       },
       {
@@ -1243,9 +1470,8 @@ const SurveyDetails = () => {
             >
               <span>{selectedRoom ? selectedRoom.label : "Select a Room"}</span>
               <FaPlus
-                className={`w-3 h-3 transition-transform ${
-                  showRoomDropdown ? "rotate-45" : ""
-                }`}
+                className={`w-3 h-3 transition-transform ${showRoomDropdown ? "rotate-45" : ""
+                  }`}
               />
             </button>
             <AnimatePresence>
@@ -1278,6 +1504,12 @@ const SurveyDetails = () => {
           >
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               {section.title}
+              {section.id === "added-articles" && watch("articles").length > 0 && (
+                <span className="ml-2 bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full text-xs">
+                  {watch("articles").length}{" "}
+                  {watch("articles").length === 1 ? "article" : "articles"}
+                </span>
+              )}
             </h2>
             {section.content}
           </div>
@@ -1520,7 +1752,7 @@ const SurveyDetails = () => {
                         className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
                         aria-label={`Remove ${pet.petName}`}
                       >
-                        <FaMinus className="w-4 h-4" />
+                        <FaMinus className="w-3 h-3" />
                       </button>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -2051,11 +2283,10 @@ const SurveyDetails = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabChange(tab.id)}
-                className={`py-2 px-4 text-sm font-medium ${
-                  activeTab === tab.id
-                    ? "border-b-2 border-indigo-600 text-indigo-600"
-                    : "text-gray-500 hover:text-indigo-600"
-                }`}
+                className={`py-2 px-4 text-sm font-medium ${activeTab === tab.id
+                  ? "border-b-2 border-indigo-600 text-indigo-600"
+                  : "text-gray-500 hover:text-indigo-600"
+                  }`}
               >
                 {tab.label}
               </button>
@@ -2078,13 +2309,13 @@ const SurveyDetails = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-3 w-full sm:w-auto bg-indigo-600 text-white rounded-md hover:bg-indigo-700 hover:shadow-md transition-all duration-300 text-sm disabled:opacity-50"
+              className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
             >
               {isLoading
                 ? "Saving..."
                 : activeTab === "service"
-                ? "Save & Complete Survey"
-                : "Next"}
+                  ? "Save & Complete Survey"
+                  : "Next"}
             </button>
           </div>
         </form>
