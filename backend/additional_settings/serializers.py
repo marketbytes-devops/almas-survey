@@ -57,7 +57,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ['id', 'name', 'room', 'room_name', 'description', 'width', 'length', 'height']
+        fields = ['id', 'name', 'room', 'room_name', 'description', 'width', 'length', 'height', 'volume', 'weight']
 
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:

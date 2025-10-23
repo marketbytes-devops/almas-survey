@@ -6,12 +6,14 @@ import Input from "../../components/Input";
 
 const Room = () => {
   const [rooms, setRooms] = useState([]);
-  const [items, setItems] = useState({}); 
+  const [items, setItems] = useState({});
   const [selectedRoomForItem, setSelectedRoomForItem] = useState(null);
   const [expandedRooms, setExpandedRooms] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [savingRoom, setSavingRoom] = useState(false);
   const [savingItem, setSavingItem] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState(null);
+  const [editingItemId, setEditingItemId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -29,6 +31,8 @@ const Room = () => {
       width: "",
       length: "",
       height: "",
+      volume: "",
+      weight: ""
     },
   });
 
@@ -72,19 +76,45 @@ const Room = () => {
     });
   };
 
+  // **EDIT ROOM**
+  const handleEditRoom = (room) => {
+    setEditingRoomId(room.id);
+    resetRoom({
+      name: room.name,
+      description: room.description || "",
+    });
+  };
+
+  const cancelEditRoom = () => {
+    setEditingRoomId(null);
+    resetRoom();
+  };
+
   const onSaveRoom = async (data) => {
     if (!data.name.trim()) return;
     setSavingRoom(true);
     setError(null);
     try {
-      const payload = { 
-        name: data.name, 
+      const payload = {
+        name: data.name,
         description: data.description || "",
       };
-      const response = await apiClient.post("/rooms/", payload);
-      setRooms([...rooms, response.data]);
-      resetRoom();
-      setSuccess("Room saved successfully!");
+
+      let response;
+      if (editingRoomId) {
+        // UPDATE
+        response = await apiClient.put(`/rooms/${editingRoomId}/`, payload);
+        setRooms(rooms.map(r => r.id === editingRoomId ? response.data : r));
+        cancelEditRoom();
+        setSuccess("Room updated successfully!");
+      } else {
+        // CREATE
+        response = await apiClient.post("/rooms/", payload);
+        setRooms([...rooms, response.data]);
+        resetRoom();
+        setSuccess("Room saved successfully!");
+      }
+
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError("Failed to save room. Please try again.");
@@ -94,31 +124,72 @@ const Room = () => {
     }
   };
 
+  // **EDIT ITEM**
+  const handleEditItem = (item) => {
+    setEditingItemId(item.id);
+    setSelectedRoomForItem(item.room);
+    resetItem({
+      name: item.name,
+      description: item.description || "",
+      width: item.width || "",
+      length: item.length || "",
+      height: item.height || "",
+      volume: item.volume || "",
+      weight: item.weight || "",
+    });
+  };
+
+  const cancelEditItem = () => {
+    setEditingItemId(null);
+    setSelectedRoomForItem(null);
+    resetItem();
+  };
+
   const onSaveItem = async (data) => {
     if (!data.name.trim() || !selectedRoomForItem) return;
     setSavingItem(true);
     setError(null);
     try {
-      const payload = { 
-        name: data.name, 
-        description: data.description || "", 
+      const payload = {
+        name: data.name,
+        description: data.description || "",
         room: selectedRoomForItem,
         width: data.width ? parseFloat(data.width) : null,
         length: data.length ? parseFloat(data.length) : null,
-        height: data.height ? parseFloat(data.height) : null
+        height: data.height ? parseFloat(data.height) : null,
+        volume: data.volume ? parseFloat(data.volume) : null,
+        weight: data.weight ? parseFloat(data.weight) : null
       };
-      const response = await apiClient.post("/items/", payload);
-      setItems((prev) => {
-        const updated = { ...prev };
-        if (!updated[selectedRoomForItem]) {
-          updated[selectedRoomForItem] = [];
-        }
-        updated[selectedRoomForItem].push(response.data);
-        return updated;
-      });
-      resetItem();
-      setSelectedRoomForItem(null);
-      setSuccess("Item saved successfully!");
+
+      let response;
+      if (editingItemId) {
+        // UPDATE
+        response = await apiClient.put(`/items/${editingItemId}/`, payload);
+        setItems((prev) => {
+          const updated = { ...prev };
+          updated[selectedRoomForItem] = updated[selectedRoomForItem].map(item =>
+            item.id === editingItemId ? response.data : item
+          );
+          return updated;
+        });
+        cancelEditItem();
+        setSuccess("Item updated successfully!");
+      } else {
+        // CREATE
+        response = await apiClient.post("/items/", payload);
+        setItems((prev) => {
+          const updated = { ...prev };
+          if (!updated[selectedRoomForItem]) {
+            updated[selectedRoomForItem] = [];
+          }
+          updated[selectedRoomForItem].push(response.data);
+          return updated;
+        });
+        resetItem();
+        setSelectedRoomForItem(null);
+        setSuccess("Item saved successfully!");
+      }
+
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError("Failed to save item. Please try again.");
@@ -177,6 +248,8 @@ const Room = () => {
     if (item.width) dimensions.push(`W: ${item.width}cm`);
     if (item.length) dimensions.push(`L: ${item.length}cm`);
     if (item.height) dimensions.push(`H: ${item.height}cm`);
+    if (item.volume) dimensions.push(`Vol: ${item.volume}m³`);
+    if (item.weight) dimensions.push(`Wt: ${item.weight}kg`);
     return dimensions.length > 0 ? dimensions.join(' × ') : 'No dimensions';
   };
 
@@ -186,12 +259,15 @@ const Room = () => {
     <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg shadow-md">
       {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
-      
+
       <h2 className="text-lg font-semibold mb-6">Manage Rooms and Items</h2>
-      
+
       <div className="space-y-6">
+        {/* ADD/EDIT ROOM FORM */}
         <div className="p-4 border border-gray-200 rounded-lg">
-          <h3 className="text-md font-medium mb-4">Add New Room</h3>
+          <h3 className="text-md font-medium mb-4">
+            {editingRoomId ? "Edit Room" : "Add New Room"}
+          </h3>
           <FormProvider {...roomMethods}>
             <form onSubmit={handleRoomSubmit(onSaveRoom)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -209,23 +285,39 @@ const Room = () => {
                   disabled={savingRoom}
                 />
               </div>
-              <Button
-                type="submit"
-                disabled={!roomMethods.watch("name")?.trim() || savingRoom}
-                className="w-full md:w-auto"
-              >
-                {savingRoom ? "Saving..." : "Save New Room"}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  disabled={!roomMethods.watch("name")?.trim() || savingRoom}
+                  className="w-full md:w-auto"
+                >
+                  {savingRoom ? "Saving..." : editingRoomId ? "Update Room" : "Save New Room"}
+                </Button>
+                {editingRoomId && (
+                  <Button
+                    type="button"
+                    onClick={cancelEditRoom}
+                    variant="secondary"
+                    className="w-full md:w-auto"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </form>
           </FormProvider>
         </div>
+
+        {/* ADD/EDIT ITEM FORM */}
         <div className="p-4 border border-gray-200 rounded-lg">
-          <h3 className="text-md font-medium mb-4">Add New Item to Room</h3>
+          <h3 className="text-md font-medium mb-4">
+            {editingItemId ? "Edit Item" : "Add New Item to Room"}
+          </h3>
           <select
             value={selectedRoomForItem || ""}
             onChange={(e) => setSelectedRoomForItem(e.target.value ? parseInt(e.target.value) : null)}
             className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            disabled={savingItem}
+            disabled={savingItem || editingItemId}
           >
             <option value="">Select a Room</option>
             {rooms.map((room) => (
@@ -250,46 +342,83 @@ const Room = () => {
                     disabled={savingItem}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input
-                    label="Width (cm)"
-                    name="width"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    disabled={savingItem}
-                  />
-                  <Input
-                    label="Length (cm)"
-                    name="length"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    disabled={savingItem}
-                  />
-                  <Input
-                    label="Height (cm)"
-                    name="height"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    disabled={savingItem}
-                  />
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      label="Length (cm)"
+                      name="length"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      disabled={savingItem}
+                    />
+                    <Input
+                      label="Width (cm)"
+                      name="width"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      disabled={savingItem}
+                    />
+                    <Input
+                      label="Height (cm)"
+                      name="height"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      disabled={savingItem}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Volume (m³)"
+                      name="volume"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      disabled={savingItem}
+                    />
+                    <Input
+                      label="Weight (kg)"
+                      name="weight"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      disabled={savingItem}
+                    />
+                  </div>
+
                 </div>
-                <Button
-                  type="submit"
-                  disabled={!itemMethods.watch("name")?.trim() || savingItem}
-                  className="w-full md:w-auto"
-                >
-                  {savingItem ? "Saving..." : "Save New Item"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    disabled={!itemMethods.watch("name")?.trim() || savingItem}
+                    className="w-full md:w-auto"
+                  >
+                    {savingItem ? "Saving..." : editingItemId ? "Update Item" : "Save New Item"}
+                  </Button>
+                  {editingItemId && (
+                    <Button
+                      type="button"
+                      onClick={cancelEditItem}
+                      variant="secondary"
+                      className="w-full md:w-auto"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
               </form>
             </FormProvider>
           )}
         </div>
+
+        {/* ROOMS & ITEMS TABLE */}
         {rooms.length > 0 ? (
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <h3 className="bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
@@ -319,18 +448,28 @@ const Room = () => {
                           {items[room.id]?.length || 0}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                          <Button
-                            onClick={() => handleDeleteRoom(room.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs rounded mr-2"
-                          >
-                            Delete Room
-                          </Button>
-                          <button
-                            onClick={() => toggleRoomExpansion(room.id)}
-                            className="text-indigo-600 hover:text-indigo-900 text-xs font-medium"
-                          >
-                            {expandedRooms.has(room.id) ? "Hide Items" : "Show Items"}
-                          </button>
+                          <div className="flex gap-2 items-center">
+                            <Button
+                              onClick={() => handleEditRoom(room)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs rounded"
+                              size="sm"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              onClick={() => handleDeleteRoom(room.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs rounded"
+                              size="sm"
+                            >
+                              Delete
+                            </Button>
+                            <button
+                              onClick={() => toggleRoomExpansion(room.id)}
+                              className="text-indigo-600 hover:text-indigo-900 text-xs font-medium"
+                            >
+                              {expandedRooms.has(room.id) ? "Hide Items" : "Show Items"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {expandedRooms.has(room.id) && (
@@ -356,12 +495,22 @@ const Room = () => {
                                           {formatItemDimensions(item)}
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                                          <Button
-                                            onClick={() => handleDeleteItem(item.id, room.id)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs rounded"
-                                          >
-                                            Delete
-                                          </Button>
+                                          <div className="flex gap-2 items-center">
+                                            <Button
+                                              onClick={() => handleEditItem(item)}
+                                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 text-xs rounded"
+                                              size="sm"
+                                            >
+                                              Edit
+                                            </Button>
+                                            <Button
+                                              onClick={() => handleDeleteItem(item.id, room.id)}
+                                              className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 text-xs rounded"
+                                              size="sm"
+                                            >
+                                              Delete
+                                            </Button>
+                                          </div>
                                         </td>
                                       </tr>
                                     ))}
