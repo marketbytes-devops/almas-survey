@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Country, State, City } from "country-state-city"; // Import the library
 import apiClient from "../../api/apiClient";
 import Button from "../../components/Button";
 import Loading from "../../components/Loading";
@@ -31,6 +32,33 @@ const SurveySummary = () => {
     };
     fetchSurveys();
   }, []);
+
+  // Helper functions to get display names from country-state-city
+  const getCountryName = (countryCode) => {
+    if (!countryCode) return "Not filled";
+    try {
+      const country = Country.getCountryByCode(countryCode);
+      return country ? country.name : countryCode;
+    } catch {
+      return countryCode;
+    }
+  };
+
+  const getStateName = (countryCode, stateCode) => {
+    if (!countryCode || !stateCode) return "Not filled";
+    try {
+      const state = State.getStateByCodeAndCountry(stateCode, countryCode);
+      return state ? state.name : stateCode;
+    } catch {
+      return stateCode;
+    }
+  };
+
+  const getCityName = (countryCode, stateCode, cityName) => {
+    if (!countryCode || !stateCode || !cityName) return "Not filled";
+    // For cities, we typically store the name directly, but we can validate if needed
+    return cityName;
+  };
 
   const toggleSectionExpansion = (sectionId) => {
     setExpandedSections((prev) => {
@@ -207,6 +235,7 @@ const SurveySummary = () => {
                 font-size: 9pt;
                 word-wrap: break-word;
                 vertical-align: top;
+                white-space: nowrap !important;
               }
               th {
                 background-color: #e8f0f2 !important;
@@ -298,14 +327,14 @@ const SurveySummary = () => {
     const getCustomerData = (field) => {
       const fieldMap = {
         full_name: 'fullName',
-        phone_number: 'phoneNumber', // Updated to match API field
+        phone_number: 'phoneNumber',
         email: 'email'
       };
       const enquiryField = fieldMap[field] || field;
       return survey[field] || survey.enquiry?.[enquiryField] || "Not filled";
     };
 
-        const getPhoneNumber = () => {
+    const getPhoneNumber = () => {
       return survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
     };
 
@@ -319,26 +348,26 @@ const SurveySummary = () => {
     return (
       <div className="space-y-6 p-6 bg-white rounded-lg shadow-md">
         {/* CUSTOMER DETAILS */}
-       <div className="section">
+        <div className="section">
           <h4 className="font-semibold text-gray-800 mb-2">Customer Details</h4>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
                 <tr>
-                  <th className="border border-gray-400 px-4 py-2 text-left">Field</th>
-                  <th className="border border-gray-400 px-4 py-2 text-left">Value</th>
+                  <th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th>
+                  <th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Customer Type</td><td className="border border-gray-400 px-4 py-2">{survey.customer_type_name || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Salutation</td><td className="border border-gray-400 px-4 py-2">{survey.salutation || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Full Name</td><td className="border border-gray-400 px-4 py-2">{survey.full_name || survey.enquiry?.fullName || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Mobile Number</td><td className="border border-gray-400 px-4 py-2">{getPhoneNumber()}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Email</td><td className="border border-gray-400 px-4 py-2">{survey.email || survey.enquiry?.email || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2">{getServiceTypeDisplay()}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray-400 px-4 py-2">{survey.address || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Company</td><td className="border border-gray-400 px-4 py-2">{survey.company || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Is Military</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.is_military)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Customer Type</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.customer_type_name || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Salutation</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.salutation || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Full Name</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.full_name || survey.enquiry?.fullName || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Mobile Number</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getPhoneNumber()}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Email</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.email || survey.enquiry?.email || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getServiceTypeDisplay()}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Address</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.address || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Company</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.company || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Is Military</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.is_military)}</td></tr>
               </tbody>
             </table>
           </div>
@@ -350,15 +379,15 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2">{survey.service_type_display || survey.service_type_name || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Goods Type</td><td className="border border-gray-400 px-4 py-2">{survey.goods_type || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Status</td><td className="border border-gray-400 px-4 py-2">{survey.status || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Survey Date</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.survey_date)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Survey Start Time</td><td className="border border-gray-400 px-4 py-2">{formatTime(survey.survey_start_time)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Survey End Time</td><td className="border border-gray-400 px-4 py-2">{formatTime(survey.survey_end_time)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Work Description</td><td className="border border-gray-400 px-4 py-2">{survey.work_description || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.service_type_display || survey.service_type_name || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Goods Type</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.goods_type || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Status</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.status || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Survey Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.survey_date)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Survey Start Time</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatTime(survey.survey_start_time)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Survey End Time</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatTime(survey.survey_end_time)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Work Description</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.work_description || "Not filled"}</td></tr>
               </tbody>
             </table>
           </div>
@@ -370,19 +399,19 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Same as Customer Address</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.same_as_customer_address)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray-400 px-4 py-2">{survey.origin_address || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">City</td><td className="border border-gray-400 px-4 py-2">{survey.origin_city || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Country</td><td className="border border-gray-400 px-4 py-2">{survey.origin_country || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">State</td><td className="border border-gray-400 px-4 py-2">{survey.origin_state || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">ZIP</td><td className="border border-gray-400 px-4 py-2">{survey.origin_zip || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">POD/POL</td><td className="border border-gray-400 px-4 py-2">{survey.pod_pol || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Floor</td><td className="border border-gray-400 px-4 py-2">{survey.origin_floor ? `${formatBoolean(survey.origin_floor)} ${survey.origin_floor_notes || ''}` : "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Lift</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_lift)} {survey.origin_lift_notes || ''}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Parking</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_parking)} {survey.origin_parking_notes || ''}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Storage</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_storage)} {survey.origin_storage_notes || ''}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Same as Customer Address</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.same_as_customer_address)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Address</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_address || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">City</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Country</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getCountryName(survey.origin_country)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">State</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getStateName(survey.origin_country, survey.origin_state)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">ZIP</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_zip || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">POD/POL</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.pod_pol || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Floor</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_floor ? `${formatBoolean(survey.origin_floor)} ${survey.origin_floor_notes || ''}` : "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Lift</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_lift)} {survey.origin_lift_notes || ''}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Parking</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_parking)} {survey.origin_parking_notes || ''}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Storage</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_storage)} {survey.origin_storage_notes || ''}</td></tr>
               </tbody>
             </table>
           </div>
@@ -398,14 +427,14 @@ const SurveySummary = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border border-gray-400">
                     <thead className="bg-gray-200">
-                      <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                      <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
                     <tbody>
-                      <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray-400 px-4 py-2">{addr.address || "Not filled"}</td></tr>
-                      <tr><td className="border border-gray-400 px-4 py-2 font-medium">City</td><td className="border border-gray-400 px-4 py-2">{addr.city || "Not filled"}</td></tr>
-                      <tr><td className="border border-gray-400 px-4 py-2 font-medium">Country</td><td className="border border-gray-400 px-4 py-2">{addr.country || "Not filled"}</td></tr>
-                      <tr><td className="border border-gray-400 px-4 py-2 font-medium">State</td><td className="border border-gray-400 px-4 py-2">{addr.state || "Not filled"}</td></tr>
-                      <tr><td className="border border-gray-400 px-4 py-2 font-medium">ZIP</td><td className="border border-gray-400 px-4 py-2">{addr.zip || "Not filled"}</td></tr>
-                      <tr><td className="border border-gray-400 px-4 py-2 font-medium">POE</td><td className="border border-gray-400 px-4 py-2">{addr.poe || "Not filled"}</td></tr>
+                      <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Address</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{addr.address || "Not filled"}</td></tr>
+                      <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">City</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getCityName(addr.country, addr.state, addr.city)}</td></tr>
+                      <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Country</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getCountryName(addr.country)}</td></tr>
+                      <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">State</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{getStateName(addr.country, addr.state)}</td></tr>
+                      <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">ZIP</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{addr.zip || "Not filled"}</td></tr>
+                      <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">POE</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{addr.poe || "Not filled"}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -422,14 +451,14 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Packing Date From</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.packing_date_from)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Packing Date To</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.packing_date_to)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Loading Date</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.loading_date)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">ETA</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.eta)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">ETD</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.etd)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Est. Delivery Date</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.est_delivery_date)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Packing Date From</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.packing_date_from)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Packing Date To</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.packing_date_to)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Loading Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.loading_date)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">ETA</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.eta)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">ETD</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.etd)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Est. Delivery Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.est_delivery_date)}</td></tr>
               </tbody>
             </table>
           </div>
@@ -441,12 +470,12 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Start Date</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.storage_start_date)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Frequency</td><td className="border border-gray-400 px-4 py-2">{survey.storage_frequency || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Duration</td><td className="border border-gray-400 px-4 py-2">{survey.storage_duration || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Storage Mode</td><td className="border border-gray-400 px-4 py-2">{survey.storage_mode || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Start Date</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatDate(survey.storage_start_date)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Frequency</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.storage_frequency || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Duration</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.storage_duration || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Storage Mode</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.storage_mode || "Not filled"}</td></tr>
               </tbody>
             </table>
           </div>
@@ -458,10 +487,10 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Include Vehicle</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.include_vehicle)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Cost Together (Vehicle)</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.cost_together_vehicle)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Include Vehicle</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.include_vehicle)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Cost Together (Vehicle)</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.cost_together_vehicle)}</td></tr>
               </tbody>
             </table>
             {survey.vehicles?.length > 0 && (
@@ -469,21 +498,21 @@ const SurveySummary = () => {
                 <table className="w-full text-sm border border-gray-400">
                   <thead className="bg-gray-200">
                     <tr>
-                      <th className="border border-gray-400 px-4 py-2">Vehicle Type</th>
-                      <th className="border border-gray-400 px-4 py-2">Make</th>
-                      <th className="border border-gray-400 px-4 py-2">Model</th>
-                      <th className="border border-gray-400 px-4 py-2">Insurance</th>
-                      <th className="border border-gray-400 px-4 py-2">Remark</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Vehicle Type</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Make</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Model</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Insurance</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Remark</th>
                     </tr>
                   </thead>
                   <tbody>
                     {survey.vehicles.map((v, i) => (
                       <tr key={i}>
-                        <td className="border border-gray-400 px-4 py-2">{v.vehicle_type_name || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{v.make || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{v.model || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{formatBoolean(v.insurance)}</td>
-                        <td className="border border-gray-400 px-4 py-2">{v.remark || "-"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{v.vehicle_type_name || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{v.make || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{v.model || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(v.insurance)}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{v.remark || "-"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -499,11 +528,11 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Include Pet</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.include_pet)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Cost Together (Pet)</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.cost_together_pet)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Number of Pets</td><td className="border border-gray-400 px-4 py-2">{survey.pets?.length || 0}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Include Pet</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.include_pet)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Cost Together (Pet)</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.cost_together_pet)}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Number of Pets</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.pets?.length || 0}</td></tr>
               </tbody>
             </table>
             {survey.pets?.length > 0 && (
@@ -511,25 +540,25 @@ const SurveySummary = () => {
                 <table className="w-full text-sm border border-gray-400">
                   <thead className="bg-gray-200">
                     <tr>
-                      <th className="border border-gray-400 px-4 py-2">Pet Name</th>
-                      <th className="border border-gray-400 px-4 py-2">Pet Type</th>
-                      <th className="border border-gray-400 px-4 py-2">Breed</th>
-                      <th className="border border-gray-400 px-4 py-2">Age</th>
-                      <th className="border border-gray-400 px-4 py-2">Weight</th>
-                      <th className="border border-gray-400 px-4 py-2">Special Care</th>
-                      <th className="border border-gray-400 px-4 py-2">Vaccination</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Pet Name</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Pet Type</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Breed</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Age</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Weight</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Special Care</th>
+                      <th className="border border-gray-400 px-4 py-2 whitespace-nowrap">Vaccination</th>
                     </tr>
                   </thead>
                   <tbody>
                     {survey.pets.map((pet, i) => (
                       <tr key={i}>
-                        <td className="border border-gray-400 px-4 py-2">{pet.pet_name || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{pet.pet_type_name || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{pet.breed || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{pet.age || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{pet.weight || "N/A"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{pet.special_care || "-"}</td>
-                        <td className="border border-gray-400 px-4 py-2">{pet.vaccination_status || "-"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.pet_name || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.pet_type_name || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.breed || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.age || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.weight || "N/A"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.special_care || "-"}</td>
+                        <td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{pet.vaccination_status || "-"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -585,23 +614,23 @@ const SurveySummary = () => {
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
                 <tr>
-                  <th className="border border-gray-400 px-4 py-2 text-left">Service</th>
-                  <th className="border border-gray-400 px-4 py-2 text-left">Status</th>
-                  <th className="border border-gray-400 px-4 py-2 text-left">Notes</th>
+                  <th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Service</th>
+                  <th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Status</th>
+                  <th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Notes</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Owner Packed</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.general_owner_packed)}</td><td className="border border-gray-400 px-4 py-2">{survey.general_owner_packed_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Restriction</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.general_restriction)}</td><td className="border border-gray-400 px-4 py-2">{survey.general_restriction_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Handyman</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.general_handyman)}</td><td className="border border-gray-400 px-4 py-2">{survey.general_handyman_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Insurance</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.general_insurance)}</td><td className="border border-gray-400 px-4 py-2">{survey.general_insurance_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Origin Floor</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_floor)}</td><td className="border border-gray-400 px-4 py-2">{survey.origin_floor_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Origin Lift</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_lift)}</td><td className="border border-gray-400 px-4 py-2">{survey.origin_lift_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Origin Parking</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_parking)}</td><td className="border border-gray-400 px-4 py-2">{survey.origin_parking_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Origin Storage</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.origin_storage)}</td><td className="border border-gray-400 px-4 py-2">{survey.origin_storage_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Destination Floor</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.destination_floor)}</td><td className="border border-gray-400 px-4 py-2">{survey.destination_floor_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Destination Lift</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.destination_lift)}</td><td className="border border-gray-400 px-4 py-2">{survey.destination_lift_notes || "-"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Destination Parking</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(survey.destination_parking)}</td><td className="border border-gray-400 px-4 py-2">{survey.destination_parking_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Owner Packed</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.general_owner_packed)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.general_owner_packed_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Restriction</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.general_restriction)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.general_restriction_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Handyman</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.general_handyman)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.general_handyman_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Insurance</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.general_insurance)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.general_insurance_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Origin Floor</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_floor)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_floor_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Origin Lift</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_lift)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_lift_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Origin Parking</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_parking)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_parking_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Origin Storage</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.origin_storage)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.origin_storage_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Destination Floor</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.destination_floor)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.destination_floor_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Destination Lift</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.destination_lift)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.destination_lift_notes || "-"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Destination Parking</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{formatBoolean(survey.destination_parking)}</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.destination_parking_notes || "-"}</td></tr>
               </tbody>
             </table>
           </div>
@@ -613,9 +642,9 @@ const SurveySummary = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-gray-400">
               <thead className="bg-gray-200">
-                <tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead>
+                <tr><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Field</th><th className="border border-gray-400 px-4 py-2 whitespace-nowrap text-left">Value</th></tr></thead>
               <tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Transport Mode</td><td className="border border-gray-400 px-4 py-2">{survey.transport_mode || "Not filled"}</td></tr>
+                <tr><td className="border border-gray-400 px-4 py-2 whitespace-nowrap font-medium">Transport Mode</td><td className="border border-gray-400 px-4 py-2 whitespace-nowrap">{survey.transport_mode || "Not filled"}</td></tr>
               </tbody>
             </table>
           </div>

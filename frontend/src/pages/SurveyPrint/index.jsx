@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { Country, State, City } from "country-state-city"; // Import the library
 
 const SurveyPrint = ({ survey }) => {
   const contentRef = useRef(null);
@@ -6,6 +7,33 @@ const SurveyPrint = ({ survey }) => {
   if (!survey) {
     return <div className="text-center py-4 text-red-500">No survey data available.</div>;
   }
+
+  // Helper functions to get display names from country-state-city
+  const getCountryName = (countryCode) => {
+    if (!countryCode) return "Not filled";
+    try {
+      const country = Country.getCountryByCode(countryCode);
+      return country ? country.name : countryCode;
+    } catch {
+      return countryCode;
+    }
+  };
+
+  const getStateName = (countryCode, stateCode) => {
+    if (!countryCode || !stateCode) return "Not filled";
+    try {
+      const state = State.getStateByCodeAndCountry(stateCode, countryCode);
+      return state ? state.name : stateCode;
+    } catch {
+      return stateCode;
+    }
+  };
+
+  const getCityName = (countryCode, stateCode, cityName) => {
+    if (!countryCode || !stateCode || !cityName) return "Not filled";
+    // For cities, we typically store the name directly, but we can validate if needed
+    return cityName;
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "Not filled";
@@ -161,6 +189,7 @@ const SurveyPrint = ({ survey }) => {
             text-align: left;
             vertical-align: top;
             word-wrap: break-word;
+            white-space: nowrap !important;
           }
 
           th {
@@ -265,9 +294,9 @@ const SurveyPrint = ({ survey }) => {
             <tbody>
               <tr><td className="font-medium">Same as Customer Address</td><td>{formatBoolean(survey.same_as_customer_address)}</td></tr>
               <tr><td className="font-medium">Address</td><td>{survey.origin_address || "Not filled"}</td></tr>
-              <tr><td className="font-medium">City</td><td>{survey.origin_city || "Not filled"}</td></tr>
-              <tr><td className="font-medium">Country</td><td>{survey.origin_country || "Not filled"}</td></tr>
-              <tr><td className="font-medium">State</td><td>{survey.origin_state || "Not filled"}</td></tr>
+              <tr><td className="font-medium">City</td><td>{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</td></tr>
+              <tr><td className="font-medium">Country</td><td>{getCountryName(survey.origin_country)}</td></tr>
+              <tr><td className="font-medium">State</td><td>{getStateName(survey.origin_country, survey.origin_state)}</td></tr>
               <tr><td className="font-medium">ZIP</td><td>{survey.origin_zip || "Not filled"}</td></tr>
               <tr><td className="font-medium">POD/POL</td><td>{survey.pod_pol || "Not filled"}</td></tr>
               <tr><td className="font-medium">Floor</td><td>{survey.origin_floor ? `${formatBoolean(survey.origin_floor)} ${survey.origin_floor_notes || ''}` : "Not filled"}</td></tr>
@@ -291,9 +320,9 @@ const SurveyPrint = ({ survey }) => {
                   </thead>
                   <tbody>
                     <tr><td className="font-medium">Address</td><td>{addr.address || "Not filled"}</td></tr>
-                    <tr><td className="font-medium">City</td><td>{addr.city || "Not filled"}</td></tr>
-                    <tr><td className="font-medium">Country</td><td>{addr.country || "Not filled"}</td></tr>
-                    <tr><td className="font-medium">State</td><td>{addr.state || "Not filled"}</td></tr>
+                    <tr><td className="font-medium">City</td><td>{getCityName(addr.country, addr.state, addr.city)}</td></tr>
+                    <tr><td className="font-medium">Country</td><td>{getCountryName(addr.country)}</td></tr>
+                    <tr><td className="font-medium">State</td><td>{getStateName(addr.country, addr.state)}</td></tr>
                     <tr><td className="font-medium">ZIP</td><td>{addr.zip || "Not filled"}</td></tr>
                     <tr><td className="font-medium">POE</td><td>{addr.poe || "Not filled"}</td></tr>
                   </tbody>

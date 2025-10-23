@@ -66,7 +66,8 @@ class ArticleSerializer(serializers.ModelSerializer):
             'id', 'room', 'room_name', 'item_name', 'quantity',
             'volume', 'volume_unit', 'volume_unit_name', 'weight', 'weight_unit', 'weight_unit_name',
             'handyman', 'handyman_name', 'packing_option', 'packing_option_name',
-            'move_status', 'amount', 'currency', 'currency_code', 'remarks', 'created_at'
+            'move_status', 'amount', 'currency', 'currency_code', 'remarks', 'created_at',
+            'length', 'width', 'height', 'calculated_volume' 
         ]
         read_only_fields = ['id', 'created_at']
 
@@ -219,6 +220,27 @@ class SurveySerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        if data.get("same_as_customer_address") and not data.get("address"):
+            raise serializers.ValidationError(
+                {"address": "Customer address is required when same_as_customer_address is true"}
+            )
+        if data.get("multiple_addresses") and not data.get("destination_addresses"):
+            raise serializers.ValidationError(
+                {"destination_addresses": "At least one destination address is required when multiple_addresses is true"}
+            )
+        return data
+    
+    def validate(self, data):
+        country_fields = ['origin_country', 'destination_country']
+        for field in country_fields:
+            if data.get(field):
+                pass
+        
+        state_fields = ['origin_state', 'destination_state']
+        for field in state_fields:
+            if data.get(field):
+                pass
+        
         if data.get("same_as_customer_address") and not data.get("address"):
             raise serializers.ValidationError(
                 {"address": "Customer address is required when same_as_customer_address is true"}

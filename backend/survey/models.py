@@ -49,8 +49,6 @@ class Survey(models.Model):
     storage_duration = models.CharField(max_length=50, blank=True, null=True)
     storage_mode = models.CharField(max_length=50, blank=True, null=True)
     transport_mode = models.CharField(max_length=50, blank=True, null=True)
-    
-    # Service fields
     general_owner_packed = models.BooleanField(default=False, blank=True, null=True)
     general_owner_packed_notes = models.TextField(blank=True, null=True)
     general_restriction = models.BooleanField(default=False, blank=True, null=True)
@@ -113,16 +111,21 @@ class Article(models.Model):
     room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
     item_name = models.CharField(max_length=200, blank=True, null=True)
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1, blank=True, null=True)
-    volume = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    volume = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     volume_unit = models.ForeignKey(VolumeUnit, on_delete=models.SET_NULL, null=True, blank=True)
-    weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    weight = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     weight_unit = models.ForeignKey(WeightUnit, on_delete=models.SET_NULL, null=True, blank=True)
     handyman = models.ForeignKey(Handyman, on_delete=models.SET_NULL, null=True, blank=True)
     packing_option = models.ForeignKey(PackingType, on_delete=models.SET_NULL, null=True, blank=True)
     move_status = models.CharField(max_length=50, blank=True, null=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    amount = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     currency = models.ForeignKey(Currency, on_delete=models.SET_NULL, null=True, blank=True)
     remarks = models.TextField(blank=True, null=True)
+    length = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Length in cm")
+    width = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Width in cm")
+    height = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Height in cm")
+    calculated_volume = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Auto-calculated volume (L×W×H/1000000)")
+    
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     class Meta:
@@ -134,6 +137,11 @@ class Article(models.Model):
 
     def __str__(self):
         return f"{self.item_name} (Qty: {self.quantity})"
+    
+    def save(self, *args, **kwargs):
+        if self.length and self.width and self.height:
+            self.calculated_volume = (self.length * self.width * self.height) / 1000000
+        super().save(*args, **kwargs)
 
 class Vehicle(models.Model):
     survey = models.ForeignKey(Survey, related_name='vehicles', on_delete=models.CASCADE, null=True, blank=True)
@@ -160,7 +168,7 @@ class Pet(models.Model):
     pet_type = models.CharField(max_length=100, blank=True, null=True)
     breed = models.CharField(max_length=100, blank=True, null=True)
     age = models.PositiveIntegerField(blank=True, null=True)
-    weight = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    weight = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True)
     special_care = models.TextField(blank=True, null=True)
     transport_requirements = models.TextField(blank=True, null=True)
     feeding_instructions = models.TextField(blank=True, null=True)

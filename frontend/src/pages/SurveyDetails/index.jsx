@@ -9,6 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import Loading from "../../components/Loading";
 import Input from "../../components/Input";
 import apiClient from "../../api/apiClient";
+import { Country, State, City } from "country-state-city";
 
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
   const { setValue, watch, formState: { errors } } = useFormContext();
@@ -342,6 +343,10 @@ const SurveyDetails = () => {
                 currency: article.currency || "",
                 remarks: article.remarks || "",
                 room: article.room || "",
+                length: article.length || "",
+                width: article.width || "",
+                height: article.height || "",
+                calculated_volume: article.calculated_volume || "",
               })) || [],
               vehicles: survey.vehicles?.map((vehicle) => ({
                 vehicleType: vehicle.vehicle_type || "",
@@ -448,6 +453,13 @@ const SurveyDetails = () => {
           id: item.id,
           name: item.name,
           room: item.room,
+          description: item.description,
+          length: item.length,
+          width: item.width,
+          height: item.height,
+          volume: item.volume,
+          weight: item.weight,
+          calculated_volume: item.calculated_volume,
         })),
       })),
       apiClient.get("/currencies/").then((response) => ({
@@ -487,474 +499,533 @@ const SurveyDetails = () => {
     const sameAsCustomerAddress = watch("sameAsCustomerAddress");
     const multipleAddresses = watch("multipleAddresses");
 
+    // Get all countries
+    const countryOptions = Country.getAllCountries().map(country => ({
+        value: country.isoCode,
+        label: country.name
+    }));
+
+    // Get states for a country
+    const getStateOptions = (countryCode) => {
+        if (!countryCode) return [];
+        return State.getStatesOfCountry(countryCode).map(state => ({
+            value: state.isoCode,
+            label: state.name
+        }));
+    };
+
+    // Get cities for a country and state
+    const getCityOptions = (countryCode, stateCode) => {
+        if (!countryCode || !stateCode) return [];
+        return City.getCitiesOfState(countryCode, stateCode).map(city => ({
+            value: city.name,
+            label: city.name
+        }));
+    };
+
+    // Watch for country and state changes to update options
+    const originCountry = watch("originCountry");
+    const originState = watch("originState");
+    
+    const destinationCountry = watch("destinationAddresses[0].country");
+    const destinationState = watch("destinationAddresses[0].state");
+
+    const originStateOptions = getStateOptions(originCountry);
+    const originCityOptions = getCityOptions(originCountry, originState);
+    
+    const destinationStateOptions = getStateOptions(destinationCountry);
+    const destinationCityOptions = getCityOptions(destinationCountry, destinationState);
+
     const serviceTypeOptions = [
-      { value: "localMove", label: "Local Move" },
-      { value: "internationalMove", label: "International Move" },
-      { value: "carExport", label: "Car Import and Export" },
-      { value: "storageServices", label: "Storage Services" },
-      { value: "logistics", label: "Logistics" },
+        { value: "localMove", label: "Local Move" },
+        { value: "internationalMove", label: "International Move" },
+        { value: "carExport", label: "Car Import and Export" },
+        { value: "storageServices", label: "Storage Services" },
+        { value: "logistics", label: "Logistics" },
     ];
 
     const addAddress = () => {
-      const newAddresses = [...destinationAddresses, { id: uuidv4() }];
-      setDestinationAddresses(newAddresses);
-      setValue("destinationAddresses", newAddresses);
+        const newAddresses = [...destinationAddresses, { 
+            id: uuidv4(), 
+            address: "", 
+            city: "", 
+            country: "", 
+            state: "", 
+            zip: "", 
+            poe: "" 
+        }];
+        setDestinationAddresses(newAddresses);
+        setValue("destinationAddresses", newAddresses);
     };
 
     const removeAddress = (index) => {
-      if (destinationAddresses.length > 1) {
-        const newAddresses = destinationAddresses.filter((_, i) => i !== index);
-        setDestinationAddresses(newAddresses);
-        setValue("destinationAddresses", newAddresses);
-      }
+        if (destinationAddresses.length > 1) {
+            const newAddresses = destinationAddresses.filter((_, i) => i !== index);
+            setDestinationAddresses(newAddresses);
+            setValue("destinationAddresses", newAddresses);
+        }
     };
 
     const salutationOptions = [
-      { value: "Mr", label: "Mr" },
-      { value: "Ms", label: "Ms" },
-      { value: "Mrs", label: "Mrs" },
+        { value: "Mr", label: "Mr" },
+        { value: "Ms", label: "Ms" },
+        { value: "Mrs", label: "Mrs" },
     ];
     const goodsTypeOptions = [
-      { value: "article", label: "Article" },
-      { value: "pet", label: "Pet" },
+        { value: "article", label: "Article" },
+        { value: "pet", label: "Pet" },
     ];
     const statusOptions = [
-      { value: "pending", label: "Pending" },
-      { value: "in_progress", label: "In Progress" },
-      { value: "completed", label: "Completed" },
-      { value: "cancelled", label: "Cancelled" },
+        { value: "pending", label: "Pending" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
     ];
     const frequencyOptions = [
-      { value: "weekly", label: "Weekly" },
-      { value: "monthly", label: "Monthly" },
-      { value: "yearly", label: "Yearly" },
+        { value: "weekly", label: "Weekly" },
+        { value: "monthly", label: "Monthly" },
+        { value: "yearly", label: "Yearly" },
     ];
     const storageModeOptions = [
-      { value: "warehouse", label: "Warehouse" },
-      { value: "container", label: "Container" },
-    ];
-    const cityOptions = [
-      { value: "new_york", label: "New York" },
-      { value: "los_angeles", label: "Los Angeles" },
-    ];
-    const countryOptions = [
-      { value: "usa", label: "USA" },
-      { value: "india", label: "India" },
-    ];
-    const stateOptions = [
-      { value: "ny", label: "New York" },
-      { value: "ca", label: "California" },
+        { value: "warehouse", label: "Warehouse" },
+        { value: "container", label: "Container" },
     ];
 
+    // Helper function to get state options for destination addresses
+    const getDestinationStateOptions = (countryCode, index) => {
+        if (!countryCode) return [];
+        return State.getStatesOfCountry(countryCode).map(state => ({
+            value: state.isoCode,
+            label: state.name
+        }));
+    };
+
+    // Helper function to get city options for destination addresses
+    const getDestinationCityOptions = (countryCode, stateCode, index) => {
+        if (!countryCode || !stateCode) return [];
+        return City.getCitiesOfState(countryCode, stateCode).map(city => ({
+            value: city.name,
+            label: city.name
+        }));
+    };
+
     const sections = [
-      {
-        id: "customer-details",
-        title: "Customer Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="Customer Type"
-              name="customerType"
-              type="select"
-              options={apiData.customerTypes}
-              rules={{ required: "Customer Type is required" }}
-            />
-            <Input
-              label="Salutation"
-              name="salutation"
-              type="select"
-              options={salutationOptions}
-              rules={{ required: "Salutation is required" }}
-            />
-            <Input
-              label="Full Name"
-              name="fullName"
-              type="text"
-              rules={{ required: "Full Name is required" }}
-            />
-            <Input
-              label="Mobile Number"
-              name="phoneNumber"
-              type="text"
-              rules={{
-                required: "Mobile Number is required",
-                pattern: {
-                  value: /^\+?[0-9]{7,15}$/,
-                  message: "Enter a valid mobile number (7-15 digits)",
-                },
-              }}
-            />
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              rules={{
-                required: "Email is required",
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: "Enter a valid email",
-                },
-              }}
-            />
-            <Input
-              label="Service Type"
-              name="serviceType"
-              type="select"
-              options={serviceTypeOptions}
-              rules={{ required: "Service Type is required" }}
-            />
-            <Input
-              label="Address"
-              name="address"
-              type="text"
-              rules={{ required: "Address is required" }}
-            />
-            <Input label="Company" name="company" type="text" />
-            <div>
-              <p className="block text-sm font-medium text-gray-700 mb-1 mt-1">
-                (Optional Field)
-              </p>
-              <Input label="Is Military" name="isMilitary" type="checkbox" />
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "survey-details",
-        title: "Survey Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="Goods Type"
-              name="goodsType"
-              type="select"
-              options={goodsTypeOptions}
-              rules={{ required: "Goods Type is required" }}
-            />
-            <Input
-              label="Status"
-              name="status"
-              type="select"
-              options={statusOptions}
-              rules={{ required: "Status is required" }}
-            />
-            <DatePickerInput
-              label="Survey Date"
-              name="surveyDate"
-              rules={{ required: "Survey Date is required" }}
-            />
-            <DatePickerInput
-              label="Survey Start Time"
-              name="surveyStartTime"
-              isTimeOnly
-              rules={{ required: "Survey Start Time is required" }}
-            />
-            <DatePickerInput
-              label="Survey End Time"
-              name="surveyEndTime"
-              isTimeOnly
-              rules={{ required: "Survey End Time is required" }}
-            />
-            <Input
-              label="Work Description"
-              name="workDescription"
-              type="textarea"
-              rules={{ required: "Work Description is required" }}
-            />
-            <Input
-              label="Include Vehicle"
-              name="includeVehicle"
-              type="checkbox"
-            />
-            <Input label="Include Pet" name="includePet" type="checkbox" />
-            <Input
-              label="Cost Together (Vehicle)"
-              name="costTogetherVehicle"
-              type="checkbox"
-            />
-            <Input
-              label="Cost Together (Pet)"
-              name="costTogetherPet"
-              type="checkbox"
-            />
-          </div>
-        ),
-      },
-      {
-        id: "origin-address",
-        title: "Origin Address",
-        content: (
-          <div className="grid grid-cols-1 gap-6">
-            <Input
-              label="Same as Customer Address"
-              name="sameAsCustomerAddress"
-              type="checkbox"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <Input
-                label="Address"
-                name="originAddress"
-                type="text"
-                rules={{
-                  required: !sameAsCustomerAddress && "Address is required",
-                }}
-              />
-              <Input
-                label="City"
-                name="originCity"
-                type="select"
-                options={cityOptions}
-                rules={{ required: !sameAsCustomerAddress && "City is required" }}
-              />
-              <Input
-                label="Country"
-                name="originCountry"
-                type="select"
-                options={countryOptions}
-                rules={{
-                  required: !sameAsCustomerAddress && "Country is required",
-                }}
-              />
-              <Input
-                label="State"
-                name="originState"
-                type="select"
-                options={stateOptions}
-                rules={{
-                  required: !sameAsCustomerAddress && "State is required",
-                }}
-              />
-              <Input
-                label="ZIP"
-                name="originZip"
-                type="text"
-                rules={{ required: !sameAsCustomerAddress && "ZIP is required" }}
-              />
-              <Input
-                label="POD/POL"
-                name="podPol"
-                type="text"
-                rules={{ required: "POD/POL is required" }}
-              />
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "destination-details",
-        title: "Destination Details",
-        content: (
-          <div className="grid grid-cols-1 gap-6">
-            <Input
-              label="Multiple Addresses"
-              name="multipleAddresses"
-              type="checkbox"
-            />
-            {multipleAddresses ? (
-              <>
-                {destinationAddresses.map((address, index) => (
-                  <div key={address.id} className="mt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-sm font-medium text-gray-700">
-                        Address ({index + 1})
-                      </h3>
-                      {destinationAddresses.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeAddress(index)}
-                          className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
-                          aria-label={`Remove Address ${index + 1}`}
-                        >
-                          <FaMinus className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Input
+        {
+            id: "customer-details",
+            title: "Customer Details",
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input
+                        label="Customer Type"
+                        name="customerType"
+                        type="select"
+                        options={apiData.customerTypes}
+                        rules={{ required: "Customer Type is required" }}
+                    />
+                    <Input
+                        label="Salutation"
+                        name="salutation"
+                        type="select"
+                        options={salutationOptions}
+                        rules={{ required: "Salutation is required" }}
+                    />
+                    <Input
+                        label="Full Name"
+                        name="fullName"
+                        type="text"
+                        rules={{ required: "Full Name is required" }}
+                    />
+                    <Input
+                        label="Mobile Number"
+                        name="phoneNumber"
+                        type="text"
+                        rules={{
+                            required: "Mobile Number is required",
+                            pattern: {
+                                value: /^\+?[0-9]{7,15}$/,
+                                message: "Enter a valid mobile number (7-15 digits)",
+                            },
+                        }}
+                    />
+                    <Input
+                        label="Email"
+                        name="email"
+                        type="email"
+                        rules={{
+                            required: "Email is required",
+                            pattern: {
+                                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                message: "Enter a valid email",
+                            },
+                        }}
+                    />
+                    <Input
+                        label="Service Type"
+                        name="serviceType"
+                        type="select"
+                        options={serviceTypeOptions}
+                        rules={{ required: "Service Type is required" }}
+                    />
+                    <Input
                         label="Address"
-                        name={`destinationAddresses[${index}].address`}
+                        name="address"
                         type="text"
                         rules={{ required: "Address is required" }}
-                      />
-                      <Input
-                        label="City"
-                        name={`destinationAddresses[${index}].city`}
-                        type="select"
-                        options={cityOptions}
-                        rules={{ required: "City is required" }}
-                      />
-                      <Input
-                        label="Country"
-                        name={`destinationAddresses[${index}].country`}
-                        type="select"
-                        options={countryOptions}
-                        rules={{ required: "Country is required" }}
-                      />
-                      <Input
-                        label="State"
-                        name={`destinationAddresses[${index}].state`}
-                        type="select"
-                        options={stateOptions}
-                        rules={{ required: "State is required" }}
-                      />
-                      <Input
-                        label="ZIP"
-                        name={`destinationAddresses[${index}].zip`}
-                        type="text"
-                        rules={{ required: "ZIP is required" }}
-                      />
-                      <Input
-                        label="POE"
-                        name={`destinationAddresses[${index}].poe`}
-                        type="text"
-                        rules={{ required: "POE is required" }}
-                      />
+                    />
+                    <Input label="Company" name="company" type="text" />
+                    <div>
+                        <p className="block text-sm font-medium text-gray-700 mb-1 mt-1">
+                            (Optional Field)
+                        </p>
+                        <Input label="Is Military" name="isMilitary" type="checkbox" />
                     </div>
-                  </div>
-                ))}
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={addAddress}
-                    className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded duration-300"
-                  >
-                    <FaPlus className="w-3 h-3" /> Add Address
-                  </button>
                 </div>
-              </>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                <Input
-                  label="Address"
-                  name="destinationAddresses[0].address"
-                  type="text"
-                  rules={{ required: "Address is required" }}
-                />
-                <Input
-                  label="City"
-                  name="destinationAddresses[0].city"
-                  type="select"
-                  options={cityOptions}
-                  rules={{ required: "City is required" }}
-                />
-                <Input
-                  label="Country"
-                  name="destinationAddresses[0].country"
-                  type="select"
-                  options={countryOptions}
-                  rules={{ required: "Country is required" }}
-                />
-                <Input
-                  label="State"
-                  name="destinationAddresses[0].state"
-                  type="select"
-                  options={stateOptions}
-                  rules={{ required: "State is required" }}
-                />
-                <Input
-                  label="ZIP"
-                  name="destinationAddresses[0].zip"
-                  type="text"
-                  rules={{ required: "ZIP is required" }}
-                />
-                <Input
-                  label="POE"
-                  name="destinationAddresses[0].poe"
-                  type="text"
-                  rules={{ required: "POE is required" }}
-                />
-              </div>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "move-details",
-        title: "Move Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DatePickerInput
-              label="Packing Date From"
-              name="packingDateFrom"
-              rules={{ required: "Packing Date From is required" }}
-            />
-            <DatePickerInput
-              label="Packing Date To"
-              name="packingDateTo"
-              rules={{ required: "Packing Date To is required" }}
-            />
-            <DatePickerInput
-              label="Loading Date"
-              name="loadingDate"
-              rules={{ required: "Loading Date is required" }}
-            />
-            <DatePickerInput
-              label="ETA"
-              name="eta"
-              rules={{ required: "ETA is required" }}
-            />
-            <DatePickerInput
-              label="ETD"
-              name="etd"
-              rules={{ required: "ETD is required" }}
-            />
-            <DatePickerInput
-              label="Est. Delivery Date"
-              name="estDeliveryDate"
-              rules={{ required: "Est. Delivery Date is required" }}
-            />
-          </div>
-        ),
-      },
-      {
-        id: "storage-details",
-        title: "Storage Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DatePickerInput
-              label="Start Date"
-              name="storageStartDate"
-              rules={{ required: "Start Date is required" }}
-            />
-            <Input
-              label="Frequency"
-              name="storageFrequency"
-              type="select"
-              options={frequencyOptions}
-              rules={{ required: "Frequency is required" }}
-            />
-            <Input
-              label="Duration"
-              name="storageDuration"
-              type="text"
-              rules={{ required: "Duration is required" }}
-            />
-            <Input
-              label="Storage Mode"
-              name="storageMode"
-              type="select"
-              options={storageModeOptions}
-              rules={{ required: "Storage Mode is required" }}
-            />
-          </div>
-        ),
-      },
+            ),
+        },
+        {
+            id: "survey-details",
+            title: "Survey Details",
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input
+                        label="Goods Type"
+                        name="goodsType"
+                        type="select"
+                        options={goodsTypeOptions}
+                        rules={{ required: "Goods Type is required" }}
+                    />
+                    <Input
+                        label="Status"
+                        name="status"
+                        type="select"
+                        options={statusOptions}
+                        rules={{ required: "Status is required" }}
+                    />
+                    <DatePickerInput
+                        label="Survey Date"
+                        name="surveyDate"
+                        rules={{ required: "Survey Date is required" }}
+                    />
+                    <DatePickerInput
+                        label="Survey Start Time"
+                        name="surveyStartTime"
+                        isTimeOnly
+                        rules={{ required: "Survey Start Time is required" }}
+                    />
+                    <DatePickerInput
+                        label="Survey End Time"
+                        name="surveyEndTime"
+                        isTimeOnly
+                        rules={{ required: "Survey End Time is required" }}
+                    />
+                    <Input
+                        label="Work Description"
+                        name="workDescription"
+                        type="textarea"
+                        rules={{ required: "Work Description is required" }}
+                    />
+                    <Input
+                        label="Include Vehicle"
+                        name="includeVehicle"
+                        type="checkbox"
+                    />
+                    <Input label="Include Pet" name="includePet" type="checkbox" />
+                    <Input
+                        label="Cost Together (Vehicle)"
+                        name="costTogetherVehicle"
+                        type="checkbox"
+                    />
+                    <Input
+                        label="Cost Together (Pet)"
+                        name="costTogetherPet"
+                        type="checkbox"
+                    />
+                </div>
+            ),
+        },
+        {
+            id: "origin-address",
+            title: "Origin Address",
+            content: (
+                <div className="grid grid-cols-1 gap-6">
+                    <Input
+                        label="Same as Customer Address"
+                        name="sameAsCustomerAddress"
+                        type="checkbox"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <Input
+                            label="Address"
+                            name="originAddress"
+                            type="text"
+                            rules={{
+                                required: !sameAsCustomerAddress && "Address is required",
+                            }}
+                        />
+                        <Input
+                            label="Country"
+                            name="originCountry"
+                            type="select"
+                            options={[{ value: "", label: "Select Country" }, ...countryOptions]}
+                            rules={{
+                                required: !sameAsCustomerAddress && "Country is required",
+                            }}
+                        />
+                        <Input
+                            label="State"
+                            name="originState"
+                            type="select"
+                            options={[{ value: "", label: "Select State" }, ...originStateOptions]}
+                            rules={{
+                                required: !sameAsCustomerAddress && "State is required",
+                            }}
+                        />
+                        <Input
+                            label="City"
+                            name="originCity"
+                            type="select"
+                            options={[{ value: "", label: "Select City" }, ...originCityOptions]}
+                            rules={{ required: !sameAsCustomerAddress && "City is required" }}
+                        />
+                        <Input
+                            label="ZIP"
+                            name="originZip"
+                            type="text"
+                            rules={{ required: !sameAsCustomerAddress && "ZIP is required" }}
+                        />
+                        <Input
+                            label="POD/POL"
+                            name="podPol"
+                            type="text"
+                            rules={{ required: "POD/POL is required" }}
+                        />
+                    </div>
+                </div>
+            ),
+        },
+        {
+            id: "destination-details",
+            title: "Destination Details",
+            content: (
+                <div className="grid grid-cols-1 gap-6">
+                    <Input
+                        label="Multiple Addresses"
+                        name="multipleAddresses"
+                        type="checkbox"
+                    />
+                    {multipleAddresses ? (
+                        <>
+                            {destinationAddresses.map((address, index) => {
+                                const destCountry = watch(`destinationAddresses[${index}].country`);
+                                const destState = watch(`destinationAddresses[${index}].state`);
+                                const destStateOptions = getDestinationStateOptions(destCountry, index);
+                                const destCityOptions = getDestinationCityOptions(destCountry, destState, index);
+
+                                return (
+                                    <div key={address.id} className="mt-4">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className="text-sm font-medium text-gray-700">
+                                                Address ({index + 1})
+                                            </h3>
+                                            {destinationAddresses.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAddress(index)}
+                                                    className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+                                                    aria-label={`Remove Address ${index + 1}`}
+                                                >
+                                                    <FaMinus className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <Input
+                                                label="Address"
+                                                name={`destinationAddresses[${index}].address`}
+                                                type="text"
+                                                rules={{ required: "Address is required" }}
+                                            />
+                                            <Input
+                                                label="Country"
+                                                name={`destinationAddresses[${index}].country`}
+                                                type="select"
+                                                options={[{ value: "", label: "Select Country" }, ...countryOptions]}
+                                                rules={{ required: "Country is required" }}
+                                            />
+                                            <Input
+                                                label="State"
+                                                name={`destinationAddresses[${index}].state`}
+                                                type="select"
+                                                options={[{ value: "", label: "Select State" }, ...destStateOptions]}
+                                                rules={{ required: "State is required" }}
+                                            />
+                                            <Input
+                                                label="City"
+                                                name={`destinationAddresses[${index}].city`}
+                                                type="select"
+                                                options={[{ value: "", label: "Select City" }, ...destCityOptions]}
+                                                rules={{ required: "City is required" }}
+                                            />
+                                            <Input
+                                                label="ZIP"
+                                                name={`destinationAddresses[${index}].zip`}
+                                                type="text"
+                                                rules={{ required: "ZIP is required" }}
+                                            />
+                                            <Input
+                                                label="POE"
+                                                name={`destinationAddresses[${index}].poe`}
+                                                type="text"
+                                                rules={{ required: "POE is required" }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={addAddress}
+                                    className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded duration-300"
+                                >
+                                    <FaPlus className="w-3 h-3" /> Add Address
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <Input
+                                label="Address"
+                                name="destinationAddresses[0].address"
+                                type="text"
+                                rules={{ required: "Address is required" }}
+                            />
+                            <Input
+                                label="Country"
+                                name="destinationAddresses[0].country"
+                                type="select"
+                                options={[{ value: "", label: "Select Country" }, ...countryOptions]}
+                                rules={{ required: "Country is required" }}
+                            />
+                            <Input
+                                label="State"
+                                name="destinationAddresses[0].state"
+                                type="select"
+                                options={[{ value: "", label: "Select State" }, ...destinationStateOptions]}
+                                rules={{ required: "State is required" }}
+                            />
+                            <Input
+                                label="City"
+                                name="destinationAddresses[0].city"
+                                type="select"
+                                options={[{ value: "", label: "Select City" }, ...destinationCityOptions]}
+                                rules={{ required: "City is required" }}
+                            />
+                            <Input
+                                label="ZIP"
+                                name="destinationAddresses[0].zip"
+                                type="text"
+                                rules={{ required: "ZIP is required" }}
+                            />
+                            <Input
+                                label="POE"
+                                name="destinationAddresses[0].poe"
+                                type="text"
+                                rules={{ required: "POE is required" }}
+                            />
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        // ... rest of the sections remain the same
+        {
+            id: "move-details",
+            title: "Move Details",
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <DatePickerInput
+                        label="Packing Date From"
+                        name="packingDateFrom"
+                        rules={{ required: "Packing Date From is required" }}
+                    />
+                    <DatePickerInput
+                        label="Packing Date To"
+                        name="packingDateTo"
+                        rules={{ required: "Packing Date To is required" }}
+                    />
+                    <DatePickerInput
+                        label="Loading Date"
+                        name="loadingDate"
+                        rules={{ required: "Loading Date is required" }}
+                    />
+                    <DatePickerInput
+                        label="ETA"
+                        name="eta"
+                        rules={{ required: "ETA is required" }}
+                    />
+                    <DatePickerInput
+                        label="ETD"
+                        name="etd"
+                        rules={{ required: "ETD is required" }}
+                    />
+                    <DatePickerInput
+                        label="Est. Delivery Date"
+                        name="estDeliveryDate"
+                        rules={{ required: "Est. Delivery Date is required" }}
+                    />
+                </div>
+            ),
+        },
+        {
+            id: "storage-details",
+            title: "Storage Details",
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <DatePickerInput
+                        label="Start Date"
+                        name="storageStartDate"
+                        rules={{ required: "Start Date is required" }}
+                    />
+                    <Input
+                        label="Frequency"
+                        name="storageFrequency"
+                        type="select"
+                        options={frequencyOptions}
+                        rules={{ required: "Frequency is required" }}
+                    />
+                    <Input
+                        label="Duration"
+                        name="storageDuration"
+                        type="text"
+                        rules={{ required: "Duration is required" }}
+                    />
+                    <Input
+                        label="Storage Mode"
+                        name="storageMode"
+                        type="select"
+                        options={storageModeOptions}
+                        rules={{ required: "Storage Mode is required" }}
+                    />
+                </div>
+            ),
+        },
     ];
 
     return (
-      <div className="space-y-8">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {section.title}
-            </h2>
-            {section.content}
-          </div>
-        ))}
-      </div>
+        <div className="space-y-8">
+            {sections.map((section) => (
+                <div
+                    key={section.id}
+                    className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+                >
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                        {section.title}
+                    </h2>
+                    {section.content}
+                </div>
+            ))}
+        </div>
     );
   };
 
@@ -981,55 +1052,63 @@ const SurveyDetails = () => {
       setItemQuantities((prev) => ({ ...prev, [itemName]: newQuantity }));
     };
 
-    const addArticle = (itemName, itemData) => {
-      const newArticle = {
-        id: uuidv4(),
-        itemName,
-        quantity: itemQuantities[itemName] || 1,
-        volume: itemData[`volume_${itemName}`] || "",
-        volumeUnit: itemData[`volumeUnit_${itemName}`] || "",
-        weight: itemData[`weight_${itemName}`] || "",
-        weightUnit: itemData[`weightUnit_${itemName}`] || "",
-        handyman: itemData[`handyman_${itemName}`] || "",
-        packingOption: itemData[`packingOption_${itemName}`] || "",
-        moveStatus: itemData[`moveStatus_${itemName}`] || "",
-        amount: itemData[`amount_${itemName}`] || "",
-        currency: itemData[`currency_${itemName}`] || "",
-        remarks: itemData[`remarks_${itemName}`] || "",
-        room: selectedRoom?.value || "",
-      };
-      const updatedArticles = [...watch("articles"), newArticle];
-      setValue("articles", updatedArticles);
-      setMessage("Article added successfully!");
-      setTimeout(() => setMessage(null), 3000);
-      setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
+  const addArticle = (itemName, itemData) => {
+    const newArticle = {
+      id: uuidv4(),
+      itemName,
+      quantity: itemQuantities[itemName] || 1,
+      volume: itemData[`volume_${itemName}`] || "",
+      volumeUnit: itemData[`volumeUnit_${itemName}`] || "",
+      weight: itemData[`weight_${itemName}`] || "",
+      weightUnit: itemData[`weightUnit_${itemName}`] || "",
+      handyman: itemData[`handyman_${itemName}`] || "",
+      packingOption: itemData[`packingOption_${itemName}`] || "",
+      moveStatus: itemData[`moveStatus_${itemName}`] || "",
+      amount: itemData[`amount_${itemName}`] || "",
+      currency: itemData[`currency_${itemName}`] || "",
+      remarks: itemData[`remarks_${itemName}`] || "",
+      room: selectedRoom?.value || "",
+      length: itemData[`length_${itemName}`] || "",
+      width: itemData[`width_${itemName}`] || "",
+      height: itemData[`height_${itemName}`] || "",
+      useManualVolume: itemData[`useManualVolume_${itemName}`] || false,
     };
+    const updatedArticles = [...watch("articles"), newArticle];
+    setValue("articles", updatedArticles);
+    setMessage("Article added successfully!");
+    setTimeout(() => setMessage(null), 3000);
+    setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
+  };
 
-    const updateArticle = (articleId, itemData) => {
-      const updatedArticles = watch("articles").map((article) =>
-        article.id === articleId
-          ? {
-            ...article,
-            quantity: itemData.quantity || article.quantity,
-            volume: itemData.volume || "",
-            volumeUnit: itemData.volumeUnit || "",
-            weight: itemData.weight || "",
-            weightUnit: itemData.weightUnit || "",
-            handyman: itemData.handyman || "",
-            packingOption: itemData.packingOption || "",
-            moveStatus: itemData.moveStatus || "",
-            amount: itemData.amount || "",
-            currency: itemData.currency || "",
-            remarks: itemData.remarks || "",
-            room: selectedRoom?.value || article.room,
-          }
-          : article
-      );
-      setValue("articles", updatedArticles);
-      setMessage("Article updated successfully!");
-      setTimeout(() => setMessage(null), 3000);
-      setEditingArticleId(null);
-    };
+  const updateArticle = (articleId, itemData) => {
+    const updatedArticles = watch("articles").map((article) =>
+      article.id === articleId
+        ? {
+          ...article,
+          quantity: itemData.quantity || article.quantity,
+          volume: itemData.volume || "",
+          volumeUnit: itemData.volumeUnit || "",
+          weight: itemData.weight || "",
+          weightUnit: itemData.weightUnit || "",
+          handyman: itemData.handyman || "",
+          packingOption: itemData.packingOption || "",
+          moveStatus: itemData.moveStatus || "",
+          amount: itemData.amount || "",
+          currency: itemData.currency || "",
+          remarks: itemData.remarks || "",
+          room: selectedRoom?.value || article.room,
+          length: itemData.length || "",
+          width: itemData.width || "",
+          height: itemData.height || "",
+          useManualVolume: itemData.useManualVolume || false,
+        }
+        : article
+    );
+    setValue("articles", updatedArticles);
+    setMessage("Article updated successfully!");
+    setTimeout(() => setMessage(null), 3000);
+    setEditingArticleId(null);
+  };
 
     const removeArticle = (articleId) => {
       const updatedArticles = watch("articles").filter((article) => article.id !== articleId);
@@ -1046,70 +1125,152 @@ const SurveyDetails = () => {
       setEditingArticleId(null);
     };
 
-    const ItemRow = ({ item }) => {
-      const itemFormMethods = useForm({
-        defaultValues: {
-          [`volume_${item.name}`]: "",
-          [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
-          [`weight_${item.name}`]: "",
-          [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
-          [`handyman_${item.name}`]: apiData.handymanTypes[0]?.value || "",
-          [`packingOption_${item.name}`]: apiData.packingTypes[0]?.value || "",
-          [`moveStatus_${item.name}`]: "new",
-          [`amount_${item.name}`]: "",
-          [`currency_${item.name}`]: apiData.currencies[0]?.value || "INR",
-          [`remarks_${item.name}`]: "",
-          [`quantity_${item.name}`]: itemQuantities[item.name] || 0,
-        },
-      });
+  const ItemRow = ({ item }) => {
+    const itemFormMethods = useForm({
+      defaultValues: {
+        [`volume_${item.name}`]: item.volume || item.calculated_volume || "",
+        [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
+        [`weight_${item.name}`]: item.weight || "",
+        [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
+        [`handyman_${item.name}`]: apiData.handymanTypes[0]?.value || "",
+        [`packingOption_${item.name}`]: apiData.packingTypes[0]?.value || "",
+        [`moveStatus_${item.name}`]: "new",
+        [`amount_${item.name}`]: "",
+        [`currency_${item.name}`]: apiData.currencies[0]?.value || "INR",
+        [`remarks_${item.name}`]: "",
+        [`quantity_${item.name}`]: itemQuantities[item.name] || 0,
+        [`length_${item.name}`]: item.length || "",
+        [`width_${item.name}`]: item.width || "",
+        [`height_${item.name}`]: item.height || "",
+        [`useManualVolume_${item.name}`]: !!(item.volume && !item.calculated_volume),
+      },
+    });
 
-      const { handleSubmit: handleItemSubmit } = itemFormMethods;
+    const { handleSubmit: handleItemSubmit, watch, setValue } = itemFormMethods;
+    
+    const length = watch(`length_${item.name}`);
+    const width = watch(`width_${item.name}`);
+    const height = watch(`height_${item.name}`);
+    const useManualVolume = watch(`useManualVolume_${item.name}`);
+    const manualVolume = watch(`volume_${item.name}`);
 
-      return (
-        <>
-          <tr key={`${item.name}-main`} className="border-b border-gray-200">
-            <td
-              className="text-left py-4 px-4 text-sm text-gray-700 cursor-pointer hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{item.name}</span>
-              </div>
-            </td>
-            <td className="text-center py-4 px-4">
-              <FormProvider {...itemFormMethods}>
-                <QuantityInput
-                  label=""
-                  name={`quantity_${item.name}`}
-                  onChange={(newQuantity) => updateQuantity(item.name, newQuantity)}
-                />
-              </FormProvider>
-            </td>
-            <td className="flex items-center justify-end py-4 px-8"
-              onClick={() => toggleExpandedItem(item.name)}>
-              {expandedItems[item.name] ? (
-                <FaChevronUp className="w-3 h-3 text-gray-500" />
-              ) : (
-                <FaChevronDown className="w-3 h-3 text-gray-500" />
+    useEffect(() => {
+      if (!useManualVolume && length && width && height) {
+        const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+        setValue(`volume_${item.name}`, calculatedVolume.toFixed(4));
+        
+        const calculatedWeight = calculatedVolume * 110;
+        setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
+      }
+    }, [length, width, height, useManualVolume, setValue, item.name]);
+
+    useEffect(() => {
+      if (useManualVolume && manualVolume) {
+        const calculatedWeight = parseFloat(manualVolume) * 110;
+        setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
+      }
+    }, [manualVolume, useManualVolume, setValue, item.name]);
+
+    return (
+      <>
+        <tr key={`${item.name}-main`} className="border-b border-gray-200">
+          <td className="text-left py-4 px-4 text-sm text-gray-700 cursor-pointer hover:bg-gray-50">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{item.name}</span>
+              {item.calculated_volume && (
+                <span className="text-xs text-gray-500">
+                  (Auto: {item.calculated_volume} m³)
+                </span>
               )}
-            </td>
-          </tr>
-          {expandedItems[item.name] && (
-            <tr key={`${item.name}-details`} className="border border-gray-200">
-              <td colSpan="3">
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-4 bg-white"
-                >
-                  <FormProvider {...itemFormMethods}>
-                    <div className="grid gap-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            </div>
+            {item.description && (
+              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+            )}
+            {(item.length || item.width || item.height) && (
+              <div className="text-xs text-gray-500 mt-1">
+                {item.length && `L:${item.length}cm`} 
+                {item.width && ` × W:${item.width}cm`}
+                {item.height && ` × H:${item.height}cm`}
+              </div>
+            )}
+          </td>
+          <td className="text-center py-4 px-4">
+            <FormProvider {...itemFormMethods}>
+              <QuantityInput
+                label=""
+                name={`quantity_${item.name}`}
+                onChange={(newQuantity) => updateQuantity(item.name, newQuantity)}
+              />
+            </FormProvider>
+          </td>
+          <td className="flex items-center justify-end py-4 px-8"
+            onClick={() => toggleExpandedItem(item.name)}>
+            {expandedItems[item.name] ? (
+              <FaChevronUp className="w-3 h-3 text-gray-500" />
+            ) : (
+              <FaChevronDown className="w-3 h-3 text-gray-500" />
+            )}
+          </td>
+        </tr>
+        {expandedItems[item.name] && (
+          <tr key={`${item.name}-details`} className="border border-gray-200">
+            <td colSpan="3">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="p-4 bg-white"
+              >
+                <FormProvider {...itemFormMethods}>
+                  <div className="grid gap-6">
+                    <div className="">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                         <Input
-                          label="Volume"
+                          label="Length (cm)"
+                          name={`length_${item.name}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                        <Input
+                          label="Width (cm)"
+                          name={`width_${item.name}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                        <Input
+                          label="Height (cm)"
+                          name={`height_${item.name}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-4 mb-4">
+                        <Input
+                          label="Use Manual Volume"
+                          name={`useManualVolume_${item.name}`}
+                          type="checkbox"
+                        />
+                        <div className="text-xs text-gray-500">
+                          {useManualVolume 
+                            ? "Manual volume input enabled" 
+                            : "Volume auto-calculated from dimensions"
+                          }
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Volume (m³)"
                           name={`volume_${item.name}`}
                           type="number"
+                          step="0.0001"
                           rules={{ required: "Volume is required" }}
+                          disabled={!useManualVolume}
                         />
                         <Input
                           label="Volume Unit"
@@ -1117,119 +1278,199 @@ const SurveyDetails = () => {
                           type="select"
                           options={apiData.volumeUnits}
                         />
-                        <Input
-                          label="Weight"
-                          name={`weight_${item.name}`}
-                          type="number"
-                          rules={{ required: "Weight is required" }}
-                        />
-                        <Input
-                          label="Weight Unit"
-                          name={`weightUnit_${item.name}`}
-                          type="select"
-                          options={apiData.weightUnits}
-                        />
-                        <Input
-                          label="Handyman"
-                          name={`handyman_${item.name}`}
-                          type="select"
-                          options={apiData.handymanTypes}
-                        />
-                        <Input
-                          label="Packing Option"
-                          name={`packingOption_${item.name}`}
-                          type="select"
-                          options={apiData.packingTypes}
-                        />
-                        <Input
-                          label="Amount"
-                          name={`amount_${item.name}`}
-                          type="number"
-                        />
-                        <Input
-                          label="Currency"
-                          name={`currency_${item.name}`}
-                          type="select"
-                          options={apiData.currencies}
-                        />
                       </div>
 
-                      <div className="grid grid-cols-1 gap-6">
-                        <Input
-                          label="Remarks"
-                          name={`remarks_${item.name}`}
-                          type="textarea"
-                        />
-                      </div>
-
+                      {!useManualVolume && length && width && height && (
+                        <div className="mt-2 text-xs text-green-600">
+                          Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
+                          (L×W×H/1,000,000)
+                        </div>
+                      )}
                     </div>
-                    <div className="mt-4 flex gap-3 justify-end">
-                      <button
-                        type="button"
-                        onClick={handleItemSubmit((data) =>
-                          addArticle(item.name, data)
-                        )}
-                        className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                      >
-                        Update
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleExpandedItem(item.name)}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-                      >
-                        Cancel
-                      </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <Input
+                        label="Weight (kg)"
+                        name={`weight_${item.name}`}
+                        type="number"
+                        step="0.01"
+                        rules={{ required: "Weight is required" }}
+                      />
+                      <Input
+                        label="Weight Unit"
+                        name={`weightUnit_${item.name}`}
+                        type="select"
+                        options={apiData.weightUnits}
+                      />
+                      <Input
+                        label="Handyman"
+                        name={`handyman_${item.name}`}
+                        type="select"
+                        options={apiData.handymanTypes}
+                      />
+                      <Input
+                        label="Packing Option"
+                        name={`packingOption_${item.name}`}
+                        type="select"
+                        options={apiData.packingTypes}
+                      />
+                      <Input
+                        label="Amount"
+                        name={`amount_${item.name}`}
+                        type="number"
+                        step="0.01"
+                      />
+                      <Input
+                        label="Currency"
+                        name={`currency_${item.name}`}
+                        type="select"
+                        options={apiData.currencies}
+                      />
                     </div>
-                  </FormProvider>
-                </motion.div>
-              </td>
-            </tr>
-          )}
-        </>
-      );
-    };
 
-    const EditArticleRow = ({ article }) => {
-      const editFormMethods = useForm({
-        defaultValues: {
-          volume: article.volume || "",
-          volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
-          weight: article.weight || "",
-          weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
-          handyman: article.handyman || apiData.handymanTypes[0]?.value || "",
-          packingOption: article.packingOption || apiData.packingTypes[0]?.value || "",
-          moveStatus: article.moveStatus || "new",
-          amount: article.amount || "",
-          currency: article.currency || apiData.currencies[0]?.value || "INR",
-          remarks: article.remarks || "",
-          quantity: article.quantity || 0,
-        },
-      });
+                    <div className="grid grid-cols-1 gap-6">
+                      <Input
+                        label="Remarks"
+                        name={`remarks_${item.name}`}
+                        type="textarea"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={handleItemSubmit((data) =>
+                        addArticle(item.name, data)
+                      )}
+                      className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+                    >
+                      Update
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandedItem(item.name)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </FormProvider>
+              </motion.div>
+            </td>
+          </tr>
+        )}
+      </>
+    );
+  };
 
-      const { handleSubmit: handleEditSubmit } = editFormMethods;
+  const EditArticleRow = ({ article }) => {
+    const editFormMethods = useForm({
+      defaultValues: {
+        volume: article.volume || "",
+        volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
+        weight: article.weight || "",
+        weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
+        handyman: article.handyman || apiData.handymanTypes[0]?.value || "",
+        packingOption: article.packingOption || apiData.packingTypes[0]?.value || "",
+        moveStatus: article.moveStatus || "new",
+        amount: article.amount || "",
+        currency: article.currency || apiData.currencies[0]?.value || "INR",
+        remarks: article.remarks || "",
+        quantity: article.quantity || 0,
+        length: article.length || "",
+        width: article.width || "",
+        height: article.height || "",
+        useManualVolume: !!(article.volume && !article.calculated_volume),
+      },
+    });
 
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
-        >
-          <FormProvider {...editFormMethods}>
-            <div className="grid gap-6">
-              <div className="grid grid-cols-1 gap-6">
-                <QuantityInput
-                  label="Quantity"
-                  name="quantity"
-                  rules={{ required: "Quantity is required" }}
+    const { handleSubmit: handleEditSubmit, watch, setValue } = editFormMethods;
+    
+    const length = watch('length');
+    const width = watch('width');
+    const height = watch('height');
+    const useManualVolume = watch('useManualVolume');
+    const manualVolume = watch('volume');
+
+    useEffect(() => {
+      if (!useManualVolume && length && width && height) {
+        const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+        setValue('volume', calculatedVolume.toFixed(4));
+        
+        const calculatedWeight = calculatedVolume * 110;
+        setValue('weight', calculatedWeight.toFixed(2));
+      }
+    }, [length, width, height, useManualVolume, setValue]);
+
+    useEffect(() => {
+      if (useManualVolume && manualVolume) {
+        const calculatedWeight = parseFloat(manualVolume) * 110;
+        setValue('weight', calculatedWeight.toFixed(2));
+      }
+    }, [manualVolume, useManualVolume, setValue]);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
+      >
+        <FormProvider {...editFormMethods}>
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 gap-6">
+              <QuantityInput
+                label="Quantity"
+                name="quantity"
+                rules={{ required: "Quantity is required" }}
+              />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <Input
+                  label="Length (cm)"
+                  name="length"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Width (cm)"
+                  name="width"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Height (cm)"
+                  name="height"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              
+              <div className="flex items-center gap-4 mb-4">
                 <Input
-                  label="Volume"
+                  label="Use Manual Volume"
+                  name="useManualVolume"
+                  type="checkbox"
+                />
+                <div className="text-xs text-gray-500">
+                  {useManualVolume 
+                    ? "Manual volume input enabled" 
+                    : "Volume auto-calculated from dimensions"
+                  }
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Volume (m³)"
                   name="volume"
                   type="number"
+                  step="0.0001"
                   rules={{ required: "Volume is required" }}
+                  disabled={!useManualVolume}
                 />
                 <Input
                   label="Volume Unit"
@@ -1237,71 +1478,83 @@ const SurveyDetails = () => {
                   type="select"
                   options={apiData.volumeUnits}
                 />
-                <Input
-                  label="Weight"
-                  name="weight"
-                  type="number"
-                  rules={{ required: "Weight is required" }}
-                />
-                <Input
-                  label="Weight Unit"
-                  name="weightUnit"
-                  type="select"
-                  options={apiData.weightUnits}
-                />
-                <Input
-                  label="Handyman"
-                  name="handyman"
-                  type="select"
-                  options={apiData.handymanTypes}
-                />
-                <Input
-                  label="Packing Option"
-                  name="packingOption"
-                  type="select"
-                  options={apiData.packingTypes}
-                />
-                <Input
-                  label="Amount"
-                  name="amount"
-                  type="number"
-                />
-                <Input
-                  label="Currency"
-                  name="currency"
-                  type="select"
-                  options={apiData.currencies}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-6">
-                <Input
-                  label="Remarks"
-                  name="remarks"
-                  type="textarea"
-                />
               </div>
 
+              {!useManualVolume && length && width && height && (
+                <div className="mt-2 text-xs text-green-600">
+                  Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
+                  (L×W×H/1,000,000)
+                </div>
+              )}
             </div>
-            <div className="mt-4 flex gap-3 justify-end">
-              <button
-                type="button"
-                onClick={handleEditSubmit((data) => updateArticle(article.id, data))}
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-              >
-                Update
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingArticleId(null)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Input
+                label="Weight (kg)"
+                name="weight"
+                type="number"
+                step="0.01"
+                rules={{ required: "Weight is required" }}
+              />
+              <Input
+                label="Weight Unit"
+                name="weightUnit"
+                type="select"
+                options={apiData.weightUnits}
+              />
+              <Input
+                label="Handyman"
+                name="handyman"
+                type="select"
+                options={apiData.handymanTypes}
+              />
+              <Input
+                label="Packing Option"
+                name="packingOption"
+                type="select"
+                options={apiData.packingTypes}
+              />
+              <Input
+                label="Amount"
+                name="amount"
+                type="number"
+                step="0.01"
+              />
+              <Input
+                label="Currency"
+                name="currency"
+                type="select"
+                options={apiData.currencies}
+              />
             </div>
-          </FormProvider>
-        </motion.div>
-      );
-    };
+            <div className="grid grid-cols-1 gap-6">
+              <Input
+                label="Remarks"
+                name="remarks"
+                type="textarea"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={handleEditSubmit((data) => updateArticle(article.id, data))}
+              className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+            >
+              Update
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingArticleId(null)}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </FormProvider>
+      </motion.div>
+    );
+  };
 
     const sections = [
       {
@@ -1346,7 +1599,7 @@ const SurveyDetails = () => {
         id: "added-articles",
         title: "Added Articles",
         content: (
-          <div className="">
+          <div>
             {watch("articles").length > 0 ? (
               <div className="space-y-4">
                 {watch("articles").map((article, index) => (
@@ -2064,6 +2317,9 @@ const SurveyDetails = () => {
         amount: article.amount || null,
         currency: article.currency || null,
         remarks: article.remarks,
+        length: article.length || null,
+        width: article.width || null,
+        height: article.height || null,
       })),
       vehicles: data.vehicles.map((vehicle) => ({
         vehicle_type: vehicle.vehicleType || null,
