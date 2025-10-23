@@ -84,6 +84,11 @@ const Enquiries = () => {
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [assignData, setAssignData] = useState(null);
+  
+  // Loading states
+  const [isAddingEnquiry, setIsAddingEnquiry] = useState(false);
+  const [isAssigningEnquiry, setIsAssigningEnquiry] = useState(false);
+  const [assigningEnquiryId, setAssigningEnquiryId] = useState(null);
 
   const addForm = useForm();
   const editForm = useForm();
@@ -249,6 +254,8 @@ const Enquiries = () => {
       setError("You do not have permission to add an enquiry.");
       return;
     }
+    
+    setIsAddingEnquiry(true);
     try {
       const recaptchaToken = await getRecaptchaToken();
       const response = await apiClient.post("/contacts/enquiries/", {
@@ -268,6 +275,8 @@ const Enquiries = () => {
       addForm.reset();
     } catch (error) {
       setError(extractErrorMessage(error));
+    } finally {
+      setIsAddingEnquiry(false);
     }
   };
 
@@ -308,6 +317,7 @@ const Enquiries = () => {
   };
 
   const confirmAssign = async () => {
+    setIsAssigningEnquiry(true);
     try {
       const response = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry?.id}/`, {
         assigned_user_email: assignData.emailReceiver || null,
@@ -323,6 +333,9 @@ const Enquiries = () => {
       assignForm.reset();
     } catch (error) {
       setError(extractErrorMessage(error));
+    } finally {
+      setIsAssigningEnquiry(false);
+      setAssigningEnquiryId(null);
     }
   };
 
@@ -434,10 +447,17 @@ const Enquiries = () => {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
         <button
           onClick={() => setIsAddOpen(true)}
-          className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-          disabled={!hasPermission("enquiries", "add")}
+          className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
         >
-          Add New Enquiry
+          {isAddingEnquiry ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Adding...
+            </>
+          ) : (
+            "Add New Enquiry"
+          )}
         </button>
         <FormProvider {...filterForm}>
           <form
@@ -538,22 +558,32 @@ const Enquiries = () => {
                 </p>
                 <div className="flex flex-wrap gap-2 pt-3">
                   <button
-                    onClick={() => openAssignModal(enquiry)}
-                    className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded"
-                    disabled={!hasPermission("enquiries", "edit")}
+                    onClick={() => {
+                      setAssigningEnquiryId(enquiry.id);
+                      openAssignModal(enquiry);
+                    }}
+                    className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
                   >
-                    Assign
+                    {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Assigning...
+                      </>
+                    ) : (
+                      "Assign"
+                    )}
                   </button>
                   <button
                     onClick={() => openEditModal(enquiry)}
-                    className="bg-gray-500 text-white text-sm py-2 px-3 rounded"
+                    className="bg-gray-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!hasPermission("enquiries", "edit")}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => openDeleteModal(enquiry)}
-                    className="bg-red-500 text-white text-sm py-2 px-3 rounded"
+                    className="bg-red-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!hasPermission("enquiries", "delete")}
                   >
                     Delete
@@ -574,17 +604,25 @@ const Enquiries = () => {
               <button
                 type="button"
                 onClick={closeAddModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isAddingEnquiry}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 form="add-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("enquiries", "add")}
+                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
               >
-                Add Enquiry
+                {isAddingEnquiry ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Adding...
+                  </>
+                ) : (
+                  "Add Enquiry"
+                )}
               </button>
             </>
           }
@@ -729,17 +767,25 @@ const Enquiries = () => {
               <button
                 type="button"
                 onClick={closeAssignModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isAssigningEnquiry}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 form="assign-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("enquiries", "edit")}
+                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("enquiries", "edit") || isAssigningEnquiry}
               >
-                Assign
+                {isAssigningEnquiry ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Assigning...
+                  </>
+                ) : (
+                  "Assign"
+                )}
               </button>
             </>
           }
@@ -769,16 +815,24 @@ const Enquiries = () => {
             <>
               <button
                 onClick={() => setIsAssignConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isAssigningEnquiry}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmAssign}
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("enquiries", "edit")}
+                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("enquiries", "edit") || isAssigningEnquiry}
               >
-                Confirm
+                {isAssigningEnquiry ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Assigning...
+                  </>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </>
           }
@@ -804,7 +858,7 @@ const Enquiries = () => {
               </button>
               <button
                 onClick={onDelete}
-                className="bg-red-500 text-white py-2 px-3 rounded"
+                className="bg-red-500 text-white py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!hasPermission("enquiries", "delete")}
               >
                 Delete

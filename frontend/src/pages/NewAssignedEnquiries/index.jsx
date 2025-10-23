@@ -31,6 +31,12 @@ const NewAssignedEnquiries = () => {
   const [userEmail, setUserEmail] = useState(null);
   const [contactStatusData, setContactStatusData] = useState(null);
   const [scheduleSurveyData, setScheduleSurveyData] = useState(null);
+  
+  // Loading states
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isSchedulingSurvey, setIsSchedulingSurvey] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  const [schedulingSurveyId, setSchedulingSurveyId] = useState(null);
 
   const contactStatusForm = useForm();
   const scheduleSurveyForm = useForm();
@@ -156,6 +162,7 @@ const NewAssignedEnquiries = () => {
   };
 
   const confirmContactStatus = async () => {
+    setIsUpdatingStatus(true);
     try {
       const response = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry.id}/`, {
         contact_status: contactStatusData.status,
@@ -173,6 +180,9 @@ const NewAssignedEnquiries = () => {
       contactStatusForm.reset();
     } catch (error) {
       setError(error.response?.data?.error || "Failed to update contact status. Please try again.");
+    } finally {
+      setIsUpdatingStatus(false);
+      setUpdatingStatusId(null);
     }
   };
 
@@ -191,6 +201,7 @@ const NewAssignedEnquiries = () => {
   };
 
   const confirmScheduleSurvey = async () => {
+    setIsSchedulingSurvey(true);
     try {
       const response = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/schedule/`, {
         survey_date: scheduleSurveyData.surveyDate.toISOString(),
@@ -204,6 +215,9 @@ const NewAssignedEnquiries = () => {
       scheduleSurveyForm.reset();
     } catch (error) {
       setError(error.response?.data?.error || "Failed to schedule survey. Please try again.");
+    } finally {
+      setIsSchedulingSurvey(false);
+      setSchedulingSurveyId(null);
     }
   };
 
@@ -213,6 +227,7 @@ const NewAssignedEnquiries = () => {
       return;
     }
     setSelectedEnquiry(enquiry);
+    setUpdatingStatusId(enquiry.id);
     contactStatusForm.reset({
       status: "",
       contactStatusNote: enquiry.contact_status_note || "",
@@ -228,6 +243,7 @@ const NewAssignedEnquiries = () => {
       return;
     }
     setSelectedEnquiry(enquiry);
+    setSchedulingSurveyId(enquiry.id);
     scheduleSurveyForm.reset();
     setIsScheduleSurveyOpen(true);
   };
@@ -354,10 +370,17 @@ const NewAssignedEnquiries = () => {
                   </span>
                   <button
                     onClick={() => openContactStatusModal(enquiry)}
-                    className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded"
-                    disabled={!hasPermission("new_enquiries", "edit")}
+                    className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!hasPermission("new_enquiries", "edit") || (isUpdatingStatus && updatingStatusId === enquiry.id)}
                   >
-                    Update Status
+                    {isUpdatingStatus && updatingStatusId === enquiry.id ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Status"
+                    )}
                   </button>
                 </p>
                 <p className="flex items-center gap-2">
@@ -373,10 +396,17 @@ const NewAssignedEnquiries = () => {
                   {!enquiry.survey_date && (
                     <button
                       onClick={() => openScheduleSurveyModal(enquiry)}
-                      className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded"
-                      disabled={!hasPermission("new_enquiries", "edit")}
+                      className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!hasPermission("new_enquiries", "edit") || (isSchedulingSurvey && schedulingSurveyId === enquiry.id)}
                     >
-                      Schedule Survey
+                      {isSchedulingSurvey && schedulingSurveyId === enquiry.id ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Scheduling...
+                        </>
+                      ) : (
+                        "Schedule Survey"
+                      )}
                     </button>
                   )}
                 </div>
@@ -395,17 +425,25 @@ const NewAssignedEnquiries = () => {
               <button
                 type="button"
                 onClick={() => setIsContactStatusOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isUpdatingStatus}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 form="contact-status-form"
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("new_enquiries", "edit")}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isUpdatingStatus}
               >
-                Submit
+                {isUpdatingStatus ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Updating...
+                  </>
+                ) : (
+                  "Submit"
+                )}
               </button>
             </>
           }
@@ -476,16 +514,24 @@ const NewAssignedEnquiries = () => {
             <>
               <button
                 onClick={() => setIsContactStatusConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isUpdatingStatus}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmContactStatus}
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("new_enquiries", "edit")}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isUpdatingStatus}
               >
-                Confirm
+                {isUpdatingStatus ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Updating...
+                  </>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </>
           }
@@ -510,17 +556,25 @@ const NewAssignedEnquiries = () => {
               <button
                 type="button"
                 onClick={() => setIsScheduleSurveyOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSchedulingSurvey}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 form="schedule-survey-form"
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("new_enquiries", "edit")}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isSchedulingSurvey}
               >
-                Submit
+                {isSchedulingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Scheduling...
+                  </>
+                ) : (
+                  "Submit"
+                )}
               </button>
             </>
           }
@@ -565,16 +619,24 @@ const NewAssignedEnquiries = () => {
             <>
               <button
                 onClick={() => setIsScheduleSurveyConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSchedulingSurvey}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmScheduleSurvey}
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("new_enquiries", "edit")}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isSchedulingSurvey}
               >
-                Confirm
+                {isSchedulingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Scheduling...
+                  </>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </>
           }

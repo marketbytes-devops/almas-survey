@@ -64,8 +64,11 @@ class PetType(models.Model):
         return self.name  
 
 class Room(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('name',)
 
     def __str__(self):
         return self.name
@@ -74,9 +77,12 @@ class Item(models.Model):
     name = models.CharField(max_length=100)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='items')
     description = models.TextField(blank=True, null=True)
+    width = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    length = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    height = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
     class Meta:
-        unique_together = ('name', 'room') 
+        unique_together = ('name', 'room')
 
     def __str__(self):
         return f"{self.name} ({self.room.name})"
