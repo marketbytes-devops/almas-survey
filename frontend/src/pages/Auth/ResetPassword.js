@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import apiClient from "../../api/apiClient";
-import bgAuth from "../../assets/images/bg-auth.avif";
+import bgAuth from "../../assets/images/bg-auth.webp";
 import Button from "../../components/Button";
 import { FormProvider, useForm } from "react-hook-form";
 import InputField from "../../components/Input";
@@ -64,7 +64,7 @@ const ResetPassword = () => {
       style={{
         backgroundImage: `url(${bgAuth})`,
         backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundPosition: "bottom center",
         backgroundRepeat: "no-repeat",
       }}
       initial={{ opacity: 0 }}

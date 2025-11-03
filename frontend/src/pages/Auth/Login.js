@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import bgAuth from "../../assets/images/bg-auth.avif";
+import bgAuth from "../../assets/images/bg-auth.webp";
 import Button from "../../components/Button";
 import apiClient from "../../api/apiClient";
 import { FormProvider, useForm } from "react-hook-form";
@@ -47,7 +47,7 @@ const Login = ({ setIsAuthenticated }) => {
       style={{
         backgroundImage: `url(${bgAuth})`,
         backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundPosition: "bottom center",
         backgroundRepeat: "no-repeat",
       }}
       initial={{ opacity: 0 }}

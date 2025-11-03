@@ -1,8 +1,8 @@
-# authapp/models.py
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 class CustomUser(AbstractUser):
     name = models.CharField(max_length=255, blank=True)
@@ -12,12 +12,30 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True)
     image = models.ImageField(upload_to="profile_images/", null=True, blank=True)
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
-
+    otp = models.CharField(max_length=6, null=True, blank=True)  
+    otp_expiry = models.DateTimeField(null=True, blank=True)
+    
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = [] 
 
     def __str__(self):
         return self.email
+    
+    def is_otp_valid(self):
+        """Check if OTP is valid and not expired."""
+        if self.otp and self.otp_expiry:
+            return timezone.now() <= self.otp_expiry
+        return False
+
+    def save(self, *args, **kwargs):
+        if not self.username:
+            self.username = self.email.split('@')[0]
+            base_username = self.username
+            counter = 1
+            while CustomUser.objects.filter(username=self.username).exclude(pk=self.pk).exists():
+                self.username = f"{base_username}{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
 
 class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -82,3 +100,15 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 can_edit=perm.get('can_edit', False),
                 can_delete=perm.get('can_delete', False),
             )
+            
+@receiver(post_save, sender=models.signals.ModelSignal)
+def create_default_roles(sender, **kwargs):
+    if sender == Role:
+        return
+    default_roles = [
+        {'name': 'enquiry-user', 'description': 'User role for enquiry application with access to customers and jobs'},
+        {'name': 'enquiry-admin', 'description': 'Admin role for enquiry application with access to enquiries'},
+        {'name': 'enquiry-superadmin', 'description': 'Superadmin role with full access to all features'},
+    ]
+    for role_data in default_roles:
+        Role.objects.get_or_create(name=role_data['name'], defaults={'description': role_data['description']})

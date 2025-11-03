@@ -23,6 +23,8 @@ from .serializers import (
     UserCreateSerializer,
     CustomTokenObtainPairSerializer,
 )
+from django.utils import timezone
+from datetime import timedelta
 
 class HasPermission(BasePermission):
     def has_permission(self, request, view):
@@ -90,7 +92,9 @@ class RequestOTPView(APIView):
                 user = CustomUser.objects.get(email=email)
                 otp = "".join(random.choices(string.digits, k=6))
                 user.otp = otp
+                user.otp_expiry = timezone.now() + timedelta(minutes=10)
                 user.save()
+                
                 send_mail(
                     subject="Your OTP for Password Reset",
                     message=f"Your OTP is {otp}. It is valid for 10 minutes.",
@@ -99,12 +103,13 @@ class RequestOTPView(APIView):
                     fail_silently=False,
                 )
                 return Response(
-                    {"message": "OTP sent to your email"}, status=status.HTTP_200_OK
+                    {"message": "OTP sent to your email"},
+                    status=status.HTTP_200_OK
                 )
             except CustomUser.DoesNotExist:
                 return Response(
                     {"error": "User with this email does not exist"},
-                    status=status.HTTP_404_NOT_FOUND,
+                    status=status.HTTP_404_NOT_FOUND
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -119,23 +124,54 @@ class ResetPasswordView(APIView):
             new_password = serializer.validated_data["new_password"]
             try:
                 user = CustomUser.objects.get(email=email)
-                if user.otp == otp:
+                if user.otp == otp and user.is_otp_valid():
                     user.set_password(new_password)
                     user.otp = None
+                    user.otp_expiry = None
                     user.save()
                     return Response(
                         {"message": "Password reset successfully"},
-                        status=status.HTTP_200_OK,
+                        status=status.HTTP_200_OK
                     )
-                return Response(
-                    {"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
-                )
+                elif not user.is_otp_valid():
+                    return Response(
+                        {"error": "OTP has expired"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                else:
+                    return Response(
+                        {"error": "Invalid OTP"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             except CustomUser.DoesNotExist:
                 return Response(
                     {"error": "User with this email does not exist"},
-                    status=status.HTTP_404_NOT_FOUND,
+                    status=status.HTTP_404_NOT_FOUND
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            if not refresh_token:
+                return Response(
+                    {"error": "Refresh token is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(
+                {"message": "Successfully logged out"},
+                status=status.HTTP_205_RESET_CONTENT
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
