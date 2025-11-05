@@ -1,18 +1,18 @@
 import axios from "axios";
-
+ 
 const apiClient = axios.create({
   baseURL: "http://127.0.0.1:8000/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
-
+ 
 const getAbsoluteImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
   return `http://127.0.0.1:8000${url}`;
 };
-
+ 
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
@@ -28,7 +28,7 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
+ 
 apiClient.interceptors.response.use(
   (response) => {
     if (response.data && response.data.image) {
@@ -68,5 +68,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
+ 
 export default apiClient;

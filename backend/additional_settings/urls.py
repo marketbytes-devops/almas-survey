@@ -1,21 +1,28 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CustomerTypeViewSet, ServiceTypeViewSet, VolumeUnitViewSet, WeightUnitViewSet, PackingTypeViewSet, ManpowerViewSet, HandymanViewSet, VehicleTypeViewSet, PetTypeViewSet, RoomViewSet, ItemViewSet, CurrencyViewSet, TaxViewSet
+from . import views
 
 router = DefaultRouter()
-router.register(r'customer-types', CustomerTypeViewSet)
-router.register(r'service-types', ServiceTypeViewSet)
-router.register(r'volume-units', VolumeUnitViewSet)
-router.register(r'weight-units', WeightUnitViewSet)
-router.register(r'packing-types', PackingTypeViewSet)
-router.register(r'manpower', ManpowerViewSet)
-router.register(r'handyman', HandymanViewSet)
-router.register(r'vehicle-types', VehicleTypeViewSet)
-router.register(r'pet-types', PetTypeViewSet)
-router.register(r'rooms', RoomViewSet)
-router.register(r'items', ItemViewSet)
-router.register(r'currencies', CurrencyViewSet)
-router.register(r'taxes', TaxViewSet)
+router.register(r'customer-types', views.CustomerTypeViewSet)
+router.register(r'service-types', views.ServiceTypeViewSet)
+router.register(r'volume-units', views.VolumeUnitViewSet)
+router.register(r'weight-units', views.WeightUnitViewSet)
+router.register(r'packing-types', views.PackingTypeViewSet)
+router.register(r'manpower', views.ManpowerViewSet)
+router.register(r'handyman', views.HandymanViewSet)
+router.register(r'vehicle-types', views.VehicleTypeViewSet)
+router.register(r'pet-types', views.PetTypeViewSet)
+router.register(r'rooms', views.RoomViewSet)
+router.register(r'items', views.ItemViewSet)
+router.register(r'currencies', views.CurrencyViewSet)
+router.register(r'taxes', views.TaxViewSet)
+
+# New URL patterns for additional settings
+router.register(r'hubs', views.HubViewSet)
+router.register(r'types', views.TypeViewSet)
+router.register(r'tariffs', views.TariffViewSet)
+router.register(r'tariff-ranges', views.TariffRangeViewSet)
+router.register(r'teams', views.TeamViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
