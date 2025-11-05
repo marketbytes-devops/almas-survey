@@ -1,7 +1,7 @@
 import axios from "axios";
  
 const apiClient = axios.create({
-  baseURL: "http://almassurvey.marketbytes.in/api",
+  baseURL: "https://backend.almasintl.com/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -10,7 +10,7 @@ const apiClient = axios.create({
 const getAbsoluteImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
-  return `http://almassurvey.marketbytes.in${url}`;
+  return `https://backend.almasintl.com${url}`;
 };
  
 apiClient.interceptors.request.use(
