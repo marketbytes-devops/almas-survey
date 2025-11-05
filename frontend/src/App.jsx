@@ -25,7 +25,6 @@ import Manpower from "./pages/AdditionalSettings/Manpower";
 import Room from "./pages/AdditionalSettings/Room";
 import SurveySummary from "./pages/SurveySummary";
 import SurveyDetails from "./pages/SurveyDetails";
-import Team from "./pages/AdditionalSettings/Team"; // Add this import
 
 const ProtectedRoute = ({ children, isAuthenticated, requiredPage, requiredAction = "view" }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -226,14 +225,6 @@ function App() {
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="room">
               <Room />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "/additional-settings/team", // Add this route
-          element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="team">
-              <Team />
             </ProtectedRoute>
           ),
         },

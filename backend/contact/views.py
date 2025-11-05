@@ -651,16 +651,30 @@ class EnquiryListCreate(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
+        logger.debug(f"User: {user}, Authenticated: {user.is_authenticated}, Is Superadmin: {user.is_superuser or (hasattr(user, 'role') and user.role.name == 'Superadmin')}")
+        
         if not user.is_authenticated:
+            logger.warning("User not authenticated, returning empty queryset")
             return queryset.none()
+
+        # Superadmin sees all enquiries
+        if user.is_superuser or (hasattr(user, 'role') and user.role.name == "Superadmin"):
+            logger.debug("Superadmin access: returning all enquiries")
+            return queryset
 
         has_survey = self.request.query_params.get("has_survey")
         contact_status = self.request.query_params.get("contact_status")
         unassigned = self.request.query_params.get("unassigned")
         assigned_user_email = self.request.query_params.get("assigned_user_email")
 
+        logger.debug(f"Query Params: has_survey={has_survey}, assigned_user_email={assigned_user_email}, contact_status={contact_status}, unassigned={unassigned}")
+
+        # For non-Superadmins, filter by assigned_user_email or logged-in user
         if assigned_user_email:
             queryset = queryset.filter(assigned_user__email__iexact=assigned_user_email)
+        else:
+            queryset = queryset.filter(assigned_user=user)
+
         if contact_status:
             queryset = queryset.filter(contact_status=contact_status)
         if unassigned == "true":
@@ -670,6 +684,7 @@ class EnquiryListCreate(generics.ListCreateAPIView):
         elif has_survey == "false":
             queryset = queryset.filter(survey_date__isnull=True)
 
+        logger.debug(f"Queryset count: {queryset.count()}")
         return queryset
 
     def create(self, request, *args, **kwargs):

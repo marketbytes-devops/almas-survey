@@ -114,7 +114,4 @@ class TeamViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        hub_id = self.request.query_params.get('hub_id')
-        if hub_id:
-            queryset = queryset.filter(hub_id=hub_id)
         return queryset

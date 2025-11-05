@@ -95,8 +95,6 @@ class Tax(models.Model):
     def __str__(self):
         return self.tax_name
 
-# NEW MODELS FOR ADDITIONAL SETTINGS
-
 class Hub(models.Model):
     name = models.CharField(max_length=100, unique=True, blank=True, null=True)
     code = models.CharField(max_length=50, unique=True, blank=True, null=True)
@@ -182,12 +180,13 @@ class TariffRange(models.Model):
         return f"Range {self.range_number}: {self.min_value}+ ({self.tariff.name})"
 
 class Team(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
+    name  = models.CharField(max_length=100, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
-    role = models.CharField(max_length=100, blank=True, null=True)
+    role  = models.CharField(max_length=100, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)   
     is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.name} ({self.email}) - {self.hub.name}"
+        return f"{self.name} ({self.email})"

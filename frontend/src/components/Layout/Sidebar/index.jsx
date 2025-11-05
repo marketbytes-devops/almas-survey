@@ -6,11 +6,6 @@ import {
   AiOutlineSearch,
   AiOutlineAliwangwang,
   AiOutlineCalendar,
-  AiOutlineFileText,
-  AiOutlineUser,
-  AiOutlineShopping,
-  AiOutlineHeart,
-  AiOutlineSetting,
   AiOutlineBarChart,
   AiOutlineSliders,
   AiOutlineTag,
@@ -25,7 +20,6 @@ import {
   AiOutlineUsergroupAdd,
   AiOutlineKey,
   AiOutlineIdcard,
-  AiOutlineBuild, // Add this icon for Teams
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -35,7 +29,6 @@ const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [isUserRolesOpen, setIsUserRolesOpen] = useState(false);
   const [isadditional_settingsOpen, setIsadditional_settingsOpen] = useState(false);
-  const [isSurveyDetailOpen, setIsSurveyDetailOpen] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,7 +74,6 @@ const Sidebar = ({ toggleSidebar }) => {
     };
     
     window.addEventListener("storage", handleStorageChange);
-    
     window.addEventListener("goodsTypeChanged", handleStorageChange);
     
     return () => {
@@ -103,7 +95,6 @@ const Sidebar = ({ toggleSidebar }) => {
   const toggleUserRoles = () => setIsUserRolesOpen(!isUserRolesOpen);
   const toggleadditional_settings = () =>
     setIsadditional_settingsOpen(!isadditional_settingsOpen);
-  const toggleSurveyDetail = () => setIsSurveyDetailOpen(!isSurveyDetailOpen);
 
   const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
 
@@ -140,59 +131,9 @@ const Sidebar = ({ toggleSidebar }) => {
       page: "scheduled_surveys",
       action: "view",
     },
-    ...(surveyId
-      ? [
-          {
-            id: "survey-detail",
-            label: `Survey Detail ( ${surveyId} )`,
-            icon: <AiOutlineFileText className="w-4 h-4 mr-3" />,
-            page: "survey_detail",
-            action: "view",
-            subItems: [
-              {
-                id: "customer",
-                to: `/survey/${surveyId}/customer`,
-                label: "Customer",
-                icon: <AiOutlineUser className="w-4 h-4 mr-3" />,
-                page: "survey_customer",
-                action: "view",
-              },
-              ...(goodsType === "article"
-                ? [
-                    {
-                      id: "article",
-                      to: `/survey/${surveyId}/article`,
-                      label: "Article",
-                      icon: <AiOutlineShopping className="w-4 h-4 mr-3" />,
-                      page: "survey_article",
-                      action: "view",
-                    },
-                  ]
-                : [
-                    {
-                      id: "pet",
-                      to: `/survey/${surveyId}/pet`,
-                      label: "Pet",
-                      icon: <AiOutlineHeart className="w-4 h-4 mr-3" />,
-                      page: "survey_pet",
-                      action: "view",
-                    },
-                  ]),
-              {
-                id: "service",
-                to: `/survey/${surveyId}/service`,
-                label: "Service",
-                icon: <AiOutlineSetting className="w-4 h-4 mr-3" />,
-                page: "survey_service",
-                action: "view",
-              },
-            ],
-          },
-        ]
-      : []),
     {
       id: "survey_summary",
-      to: "/survey_summary",
+      to: "/survey/survey-summary",
       label: "Survey Summary",
       icon: <AiOutlineBarChart className="w-4 h-4 mr-3" />,
       page: "survey_summary",
@@ -259,14 +200,6 @@ const Sidebar = ({ toggleSidebar }) => {
           label: "Room",
           icon: <AiOutlineHome className="w-4 h-4 mr-3" />,
           page: "room",
-          action: "view",
-        },
-        {
-          id: "team", // Add Teams to Additional Settings
-          to: "/additional-settings/team",
-          label: "Team",
-          icon: <AiOutlineBuild className="w-4 h-4 mr-3" />,
-          page: "team",
           action: "view",
         },
       ],
@@ -337,10 +270,6 @@ const Sidebar = ({ toggleSidebar }) => {
 
       let toggleFunction, isOpen;
       switch (item.id) {
-        case "survey-detail":
-          toggleFunction = toggleSurveyDetail;
-          isOpen = isSurveyDetailOpen;
-          break;
         case "user-roles":
           toggleFunction = toggleUserRoles;
           isOpen = isUserRolesOpen;

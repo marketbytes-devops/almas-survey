@@ -69,8 +69,6 @@ class TaxSerializer(serializers.ModelSerializer):
         model = Tax
         fields = ['id', 'tax_name', 'description']
 
-# NEW SERIALIZERS FOR ADDITIONAL SETTINGS
-
 class HubSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hub
@@ -104,8 +102,6 @@ class TariffSerializer(serializers.ModelSerializer):
         ]
 
 class TeamSerializer(serializers.ModelSerializer):
-    hub_name = serializers.CharField(source='hub.name', read_only=True)
-    
     class Meta:
         model = Team
-        fields = ['id', 'name', 'email', 'hub', 'hub_name', 'role', 'phone', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'email', 'role', 'phone', 'is_active', 'created_at', 'updated_at']
