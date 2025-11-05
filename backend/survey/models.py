@@ -21,7 +21,18 @@ class Survey(models.Model):
     survey_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     service_type = models.CharField(max_length=50, blank=True, null=True)
     goods_type = models.CharField(max_length=100, blank=True, null=True)
-    status = models.CharField(max_length=50, blank=True, null=True)
+    status = models.CharField(
+        max_length=50, 
+        blank=True, 
+        null=True,
+        default='pending', 
+        choices=[
+            ('pending', 'Pending'),
+            ('in_progress', 'In Progress'),
+            ('completed', 'Completed'),
+            ('cancelled', 'Cancelled'),
+        ]
+    )
     survey_date = models.DateField(blank=True, null=True)
     survey_start_time = models.TimeField(blank=True, null=True)
     survey_end_time = models.TimeField(blank=True, null=True)
@@ -83,6 +94,9 @@ class Survey(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        if not self.status:
+            self.status = 'pending'
+            
         if not self.survey_id:
             self.survey_id = f"SURVEY-{self.enquiry.id if self.enquiry else 'TEMP'}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
         super().save(*args, **kwargs)

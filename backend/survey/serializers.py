@@ -143,7 +143,12 @@ class SurveySerializer(serializers.ModelSerializer):
     
     service_type_display = serializers.SerializerMethodField()
     
-    status = serializers.ChoiceField(choices=STATUS_CHOICES, allow_null=True, required=False)
+    status = serializers.ChoiceField(
+        choices=STATUS_CHOICES, 
+        allow_null=True, 
+        required=False,
+        default='pending' 
+    )
     storage_frequency = serializers.ChoiceField(
         choices=STORAGE_FREQUENCY_CHOICES, allow_null=True, required=False
     )
@@ -252,6 +257,9 @@ class SurveySerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        if 'status' not in validated_data or validated_data['status'] is None:
+            validated_data['status'] = 'pending'
+        
         destination_addresses_data = validated_data.pop("destination_addresses", [])
         articles_data = validated_data.pop("articles", [])
         vehicles_data = validated_data.pop("vehicles", [])

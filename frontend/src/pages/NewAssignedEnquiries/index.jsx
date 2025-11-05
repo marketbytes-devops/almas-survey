@@ -63,55 +63,50 @@ const NewAssignedEnquiries = () => {
     { value: "notScheduled", label: "Not Scheduled" },
   ];
 
-  useEffect(() => {
-    const fetchProfileAndPermissions = async () => {
-      try {
-        const response = await apiClient.get("/auth/profile/");
-        const user = response.data;
-        setUserEmail(user.email);
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-        const roleId = user.role?.id;
-        if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
-        } else {
-          setPermissions([]);
-        }
-      } catch (error) {
-        console.error("Unable to fetch user profile:", error);
-        setPermissions([]);
-        setIsSuperadmin(false);
-        setError("Failed to fetch user profile. Please try again.");
-      }
-    };
+useEffect(() => {
+  let isMounted = true;
 
-    const fetchEnquiries = async () => {
-      setIsLoading(true);
-      try {
-        if (!userEmail) return;
-        const response = await apiClient.get("/contacts/enquiries/", {
-          params: { 
-            assigned_user_email: userEmail,
-            has_survey: "false"
-          },
-        });
-        const sortedEnquiries = response.data.sort((a, b) => 
-          new Date(b.created_at) - new Date(a.created_at)
-        );
-        setEnquiries(sortedEnquiries);
-        setFilteredEnquiries(sortedEnquiries);
-      } catch (error) {
-        setError("Failed to fetch assigned enquiries. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const response = await apiClient.get("/auth/profile/");
+      const user = response.data;
+      
+      if (!isMounted) return;
 
-    fetchProfileAndPermissions();
-    if (userEmail) {
-      fetchEnquiries();
+      setUserEmail(user.email);
+      setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+
+      const roleId = user.role?.id;
+      if (roleId) {
+        const res = await apiClient.get(`/auth/roles/${roleId}/`);
+        setPermissions(res.data.permissions || []);
+      }
+
+      // Now fetch enquiries with correct email
+      const enquiryResponse = await apiClient.get("/contacts/enquiries/", {
+        params: { 
+          assigned_user_email: user.email,
+          has_survey: "false"
+        },
+      });
+
+      const sortedEnquiries = enquiryResponse.data.sort((a, b) => 
+        new Date(b.created_at) - new Date(a.created_at)
+      );
+      setEnquiries(sortedEnquiries);
+      setFilteredEnquiries(sortedEnquiries);
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Failed to load data.");
+    } finally {
+      if (isMounted) setIsLoading(false);
     }
-  }, [userEmail]);
+  };
+
+  fetchData();
+
+  return () => { isMounted = false; };
+}, []); 
 
   const handleFilter = (data) => {
     let filtered = [...enquiries];

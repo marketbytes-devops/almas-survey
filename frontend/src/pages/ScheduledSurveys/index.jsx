@@ -196,33 +196,50 @@ const ScheduledSurveys = () => {
     setIsCancelSurveyOpen(true);
   };
 
-  // Updated function to check if survey is completed
   const isSurveyFinished = (enquiry) => {
-    // Check multiple indicators that survey is completed
-    return enquiry.has_survey || 
-           enquiry.survey_id || 
-           enquiry.survey_status === 'completed' || 
-           enquiry.survey_status === 'in_progress' ||
-           enquiry.survey !== null;
+    if (enquiry.survey_data) {
+      const status = enquiry.survey_data.status;
+      return status === 'completed' || status === 'in_progress';
+    }
+    return false;
+  };
+
+  const getSurveyStatus = (enquiry) => {
+  if (enquiry.survey_data && enquiry.survey_data.status) {
+    const statusMap = {
+      'pending': 'Pending',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
+    };
+    return statusMap[enquiry.survey_data.status] || enquiry.survey_data.status;
+  }
+    return 'Not Started';
   };
 
   const startSurvey = async (enquiry) => {
-    // Prevent starting survey if already completed
     if (isSurveyFinished(enquiry)) {
-      setError("Survey has already been completed for this enquiry.");
+      const status = enquiry.survey_data?.status || 'unknown';
+      setError(`Survey is already ${status}. Cannot start again.`);
       return;
     }
 
     setIsStartingSurvey(true);
     setStartingSurveyId(enquiry.id);
     try {
-      let surveyData;
+      let surveyData = null;
       let serviceTypeDisplay = enquiry.serviceType;
 
       try {
         const response = await apiClient.get(`/surveys/?enquiry_id=${enquiry.id}`);
         if (response.data.length > 0) {
           surveyData = response.data[0];
+          
+          if (surveyData.status === 'completed' || surveyData.status === 'in_progress') {
+            setError(`Survey is already ${surveyData.status}. Cannot start again.`);
+            return;
+          }
+          
           serviceTypeDisplay = surveyData.service_type_display || enquiry.serviceType;
         }
       } catch (error) {
@@ -230,6 +247,7 @@ const ScheduledSurveys = () => {
           throw error;
         }
       }
+
       const serviceTypeLabel = serviceOptions.find(opt => opt.value === serviceTypeDisplay)?.label ||
         serviceTypeDisplay ||
         "Not Specified";
@@ -247,7 +265,7 @@ const ScheduledSurveys = () => {
             surveyStartTime: enquiry.survey_date ? new Date(enquiry.survey_date) : null,
             serviceType: enquiry.serviceType, 
             serviceTypeDisplay: serviceTypeLabel,
-            surveyId: enquiry.survey_id || "",
+            surveyId: surveyData?.survey_id || "",
           },
         },
       });
@@ -538,13 +556,17 @@ const ScheduledSurveys = () => {
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                       {enquiry.assigned_user_email || "Unassigned"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {isSurveyFinished(enquiry) ? (
-                        <span className="text-green-600">{enquiry.survey_status || "Completed"}</span>
-                      ) : (
-                        "Not Started"
-                      )}
-                    </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        <span className={`${
+                          enquiry.survey_data?.status === 'completed' ? 'text-green-600' :
+                          enquiry.survey_data?.status === 'in_progress' ? 'text-blue-600' :
+                          enquiry.survey_data?.status === 'pending' ? 'text-yellow-600' :
+                          enquiry.survey_data?.status === 'cancelled' ? 'text-red-600' :
+                          'text-gray-600'
+                        }`}>
+                          {getSurveyStatus(enquiry)}
+                        </span>
+                      </td>
                     <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
                       <div className="flex gap-2">
                         {enquiry.survey_date ? (
@@ -584,7 +606,11 @@ const ScheduledSurveys = () => {
                                   ? "bg-gray-400 cursor-not-allowed"
                                   : "bg-green-500 hover:bg-green-600"
                               } disabled:opacity-50 disabled:cursor-not-allowed`}
-                              disabled={isSurveyFinished(enquiry) || !hasPermission("scheduled_surveys", "edit") || (isStartingSurvey && startingSurveyId === enquiry.id)}
+                              disabled={
+                                isSurveyFinished(enquiry) || 
+                                !hasPermission("scheduled_surveys", "edit") || 
+                                (isStartingSurvey && startingSurveyId === enquiry.id)
+                              }
                             >
                               {isStartingSurvey && startingSurveyId === enquiry.id ? (
                                 <>
@@ -592,7 +618,7 @@ const ScheduledSurveys = () => {
                                   Starting
                                 </>
                               ) : isSurveyFinished(enquiry) ? (
-                                "Survey Completed"
+                                enquiry.survey_data?.status === 'completed' ? 'Completed' : 'In Progress'
                               ) : (
                                 "Start Survey"
                               )}
