@@ -16,13 +16,7 @@ router.register(r'rooms', views.RoomViewSet)
 router.register(r'items', views.ItemViewSet)
 router.register(r'currencies', views.CurrencyViewSet)
 router.register(r'taxes', views.TaxViewSet)
-
-# New URL patterns for additional settings
 router.register(r'hubs', views.HubViewSet)
-router.register(r'types', views.TypeViewSet)
-router.register(r'tariffs', views.TariffViewSet)
-router.register(r'tariff-ranges', views.TariffRangeViewSet)
-router.register(r'teams', views.TeamViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

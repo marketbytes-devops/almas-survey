@@ -1,315 +1,223 @@
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
-import Button from "../../components/Button"; 
-import Input from "../../components/Input"; 
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import Loading from "../../components/Loading";
+
+const CATEGORY_ENDPOINT = {
+  customer: "/customer-types/",
+  service: "/service-types/",
+  vehicle: "/vehicle-types/",
+  pet: "/pet-types/",
+  packing: "/packing-types/",
+  hub: "/hubs/",
+};
+
+const CATEGORY_LABEL = {
+  customer: "Customer Types",
+  service: "Service Types",
+  vehicle: "Vehicle Types",
+  pet: "Pet Types",
+  packing: "Packing Types",
+  hub: "Hub Types",
+};
 
 const SurveyTypes = () => {
-  const [customerTypes, setCustomerTypes] = useState([]);
-  const [serviceTypes, setServiceTypes] = useState([]);
-  const [vehicleTypes, setVehicleTypes] = useState([]);
-  const [petTypes, setPetTypes] = useState([]);
-  const [packingTypes, setPackingTypes] = useState([]);
-  const [hubTypes, setHubTypes] = useState([]);
-  const [quoteTypes, setQuoteTypes] = useState([]);
-  const [tariffTypes, setTariffTypes] = useState([]);
-  const [selectedTypeCategory, setSelectedTypeCategory] = useState("customer");
+  const [types, setTypes] = useState({}); // {customer: [], service: [], ...}
+  const [selectedCategory, setSelectedCategory] = useState("customer");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [msg, setMsg] = useState({ text: "", type: "" });
 
-  const methods = useForm({
-    defaultValues: {
-      name: "",
-      description: "",
-    },
-  });
+  const methods = useForm({ defaultValues: { name: "", description: "" } });
+  const { handleSubmit, reset, watch } = methods;
 
-  const { handleSubmit, reset, setValue } = methods;
-
+  /* -------------------------------------------------- FETCH -------------------------------------------------- */
   useEffect(() => {
-    const fetchTypes = async () => {
+    const fetchAll = async () => {
       try {
-        const [
-          customerResponse, 
-          serviceResponse, 
-          vehicleResponse, 
-          petResponse, 
-          packingResponse,
-          hubResponse,
-          quoteResponse,
-          tariffResponse
-        ] = await Promise.all([
-          apiClient.get("/customer-types/"),
-          apiClient.get("/service-types/"),
-          apiClient.get("/vehicle-types/"),
-          apiClient.get("/pet-types/"),
-          apiClient.get("/packing-types/"),
-          apiClient.get("/types/?category=service"),
-          apiClient.get("/types/?category=package"),
-          apiClient.get("/types/?category=other")
-        ]);
-        
-        setCustomerTypes(customerResponse.data);
-        setServiceTypes(serviceResponse.data);
-        setVehicleTypes(vehicleResponse.data);
-        setPetTypes(petResponse.data);
-        setPackingTypes(packingResponse.data);
-        setHubTypes(hubResponse.data);
-        setQuoteTypes(quoteResponse.data);
-        setTariffTypes(tariffResponse.data);
-      } catch (err) {
-        setError("Failed to fetch types. Please try again.");
+        const responses = await Promise.all(
+          Object.values(CATEGORY_ENDPOINT).map((ep) => apiClient.get(ep))
+        );
+        const data = {};
+        Object.keys(CATEGORY_ENDPOINT).forEach((cat, i) => {
+          data[cat] = responses[i].data;
+        });
+        setTypes(data);
+      } catch (e) {
+        showMsg("Failed to load data", "error");
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
-    fetchTypes();
+    fetchAll();
   }, []);
 
-  const handleTypeCategoryChange = (e) => {
-    const newCategory = e.target.value;
-    setSelectedTypeCategory(newCategory);
+  /* -------------------------------------------------- HELPERS ------------------------------------------------- */
+  const showMsg = (text, type = "success") => {
+    setMsg({ text, type });
+    setTimeout(() => setMsg({ text: "", type: "" }), 3000);
+  };
+
+  const currentList = types[selectedCategory] || [];
+
+  const onCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
     reset();
   };
 
+  /* -------------------------------------------------- CREATE -------------------------------------------------- */
   const onSubmit = async (data) => {
-    if (!data.name.trim()) return;
+    if (!data.name?.trim()) return;
     setSaving(true);
-    setError(null);
     try {
-      const payload = { name: data.name, description: data.description || "" };
-      let response;
-      let updatedTypes;
-      
-      switch (selectedTypeCategory) {
-        case "customer":
-          response = await apiClient.post("/customer-types/", payload);
-          updatedTypes = [...customerTypes, response.data];
-          setCustomerTypes(updatedTypes);
-          break;
-        case "service":
-          response = await apiClient.post("/service-types/", payload);
-          updatedTypes = [...serviceTypes, response.data];
-          setServiceTypes(updatedTypes);
-          break;
-        case "vehicle":
-          response = await apiClient.post("/vehicle-types/", payload);
-          updatedTypes = [...vehicleTypes, response.data];
-          setVehicleTypes(updatedTypes);
-          break;
-        case "pet":
-          response = await apiClient.post("/pet-types/", payload);
-          updatedTypes = [...petTypes, response.data];
-          setPetTypes(updatedTypes);
-          break;
-        case "packing":
-          response = await apiClient.post("/packing-types/", payload);
-          updatedTypes = [...packingTypes, response.data];
-          setPackingTypes(updatedTypes);
-          break;
-        case "hub":
-          response = await apiClient.post("/types/", { ...payload, category: "service" });
-          updatedTypes = [...hubTypes, response.data];
-          setHubTypes(updatedTypes);
-          break;
-        case "quote":
-          response = await apiClient.post("/types/", { ...payload, category: "package" });
-          updatedTypes = [...quoteTypes, response.data];
-          setQuoteTypes(updatedTypes);
-          break;
-        case "tariff":
-          response = await apiClient.post("/types/", { ...payload, category: "other" });
-          updatedTypes = [...tariffTypes, response.data];
-          setTariffTypes(updatedTypes);
-          break;
-        default:
-          throw new Error("Invalid type category selected");
-      }
+      const endpoint = CATEGORY_ENDPOINT[selectedCategory];
+      const resp = await apiClient.post(endpoint, {
+        name: data.name.trim(),
+        description: data.description?.trim() || "",
+      });
+      setTypes((prev) => ({
+        ...prev,
+        [selectedCategory]: [...prev[selectedCategory], resp.data],
+      }));
       reset();
-      setSuccess("Type saved successfully!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError("Failed to save type. Please try again.");
-      setTimeout(() => setError(null), 3000);
+      showMsg("Saved successfully!");
+    } catch (e) {
+      const err = e.response?.data?.name?.[0] || "Failed to save.";
+      showMsg(err, "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteType = async (id, category) => {
-    if (!confirm(`Are you sure you want to delete this ${category} type?`)) return;
-    setError(null);
+  /* -------------------------------------------------- DELETE -------------------------------------------------- */
+  const deleteItem = async (id) => {
+    if (!window.confirm("Delete this item?")) return;
     try {
-      switch (category) {
-        case "customer":
-          await apiClient.delete(`/customer-types/${id}/`);
-          setCustomerTypes(customerTypes.filter((t) => t.id !== id));
-          break;
-        case "service":
-          await apiClient.delete(`/service-types/${id}/`);
-          setServiceTypes(serviceTypes.filter((t) => t.id !== id));
-          break;
-        case "vehicle":
-          await apiClient.delete(`/vehicle-types/${id}/`);
-          setVehicleTypes(vehicleTypes.filter((t) => t.id !== id));
-          break;
-        case "pet":
-          await apiClient.delete(`/pet-types/${id}/`);
-          setPetTypes(petTypes.filter((t) => t.id !== id));
-          break;
-        case "packing":
-          await apiClient.delete(`/packing-types/${id}/`);
-          setPackingTypes(packingTypes.filter((t) => t.id !== id));
-          break;
-        case "hub":
-          await apiClient.delete(`/types/${id}/`);
-          setHubTypes(hubTypes.filter((t) => t.id !== id));
-          break;
-        case "quote":
-          await apiClient.delete(`/types/${id}/`);
-          setQuoteTypes(quoteTypes.filter((t) => t.id !== id));
-          break;
-        case "tariff":
-          await apiClient.delete(`/types/${id}/`);
-          setTariffTypes(tariffTypes.filter((t) => t.id !== id));
-          break;
-        default:
-          throw new Error("Invalid type category for deletion");
-      }
-      setSuccess("Type deleted successfully!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError("Failed to delete type. Please try again.");
-      setTimeout(() => setError(null), 3000);
+      const endpoint = CATEGORY_ENDPOINT[selectedCategory];
+      await apiClient.delete(`${endpoint}${id}/`);
+      setTypes((prev) => ({
+        ...prev,
+        [selectedCategory]: prev[selectedCategory].filter((t) => t.id !== id),
+      }));
+      showMsg("Deleted successfully!");
+    } catch (e) {
+      showMsg("Failed to delete.", "error");
     }
   };
 
-  const getTypesByCategory = () => {
-    switch (selectedTypeCategory) {
-      case "customer": return customerTypes;
-      case "service": return serviceTypes;
-      case "vehicle": return vehicleTypes;
-      case "pet": return petTypes;
-      case "packing": return packingTypes;
-      case "hub": return hubTypes;
-      case "quote": return quoteTypes;
-      case "tariff": return tariffTypes;
-      default: return [];
-    }
-  };
-
-  const currentTypes = getTypesByCategory();
-  const categoryLabels = {
-    customer: "Customer Types",
-    service: "Service Types",
-    vehicle: "Vehicle Types",
-    pet: "Pet Types",
-    packing: "Packing Types",
-    hub: "Hub Types",
-    quote: "Quote Types",
-    tariff: "Tariff Types",
-  };
-
-  if (loading) return <div className="text-center py-4">Loading...</div>;
+  /* -------------------------------------------------- RENDER -------------------------------------------------- */
+  if (loading) return <div><Loading /></div>;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg shadow-md">
-      {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
-      
-      <div className="space-y-6">
-        <div className="p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-lg font-semibold mb-4">Add New Type</h2>
-          <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="flex flex-wrap gap-4 mb-4">
-                {[
-                  { value: "customer", label: "Customer Type" },
-                  { value: "service", label: "Service Type" },
-                  { value: "vehicle", label: "Vehicle Type" },
-                  { value: "pet", label: "Pet Type" },
-                  { value: "packing", label: "Packing Type" },
-                  { value: "hub", label: "Hub Type" },
-                  { value: "quote", label: "Quote Type" },
-                  { value: "tariff", label: "Tariff Type" },
-                ].map((option) => (
-                  <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="typeCategory"
-                      value={option.value}
-                      checked={selectedTypeCategory === option.value}
-                      onChange={handleTypeCategoryChange}
-                      className="form-radio text-indigo-600 h-4 w-4"
-                    />
-                    <span className="text-sm">{option.label}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <Input
-                  label="Name"
-                  name="name"
-                  type="text"
-                  rules={{ required: "Name is required" }}
-                  disabled={saving}
-                />
-                <Input
-                  label="Description (optional)"
-                  name="description"
-                  type="textarea"
-                  disabled={saving}
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={!methods.watch("name")?.trim() || saving}
-                className="w-full md:w-auto"
-              >
-                {saving ? "Saving..." : "Save New Type"}
-              </Button>
-            </form>
-          </FormProvider>
+    <div className="p-4 mx-auto bg-white rounded-lg shadow-md">
+      {msg.text && (
+        <div
+          className={`mb-4 px-4 py-2 rounded border ${msg.type === "error"
+              ? "bg-red-100 border-red-400 text-red-700"
+              : "bg-green-100 border-green-400 text-green-700"
+            }`}
+        >
+          {msg.text}
         </div>
-        {currentTypes.length > 0 ? (
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <h3 className="bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
-              {categoryLabels[selectedTypeCategory]} ({currentTypes.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {currentTypes.map((type) => (
-                    <tr key={type.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{type.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title={type.description || "No description"}>{type.description || "No description"}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        <Button
-                          onClick={() => handleDeleteType(type.id, selectedTypeCategory)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs rounded"
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      )}
+
+      {/* ---------- ADD FORM ---------- */}
+      <div className="p-4 rounded-lg mb-6">
+        <h2 className="text-lg font-semibold mb-3">Add New Type</h2>
+
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Category radios */}
+            <div className="flex flex-wrap gap-4">
+              {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
+                <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="category"
+                    value={value}
+                    checked={selectedCategory === value}
+                    onChange={onCategoryChange}
+                    className="form-radio text-indigo-600"
+                  />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
             </div>
-          </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <Input
+                label="Name"
+                name="name"
+                type="text"
+                rules={{ required: "Name is required" }}
+                disabled={saving}
+              />
+              <Input
+                label="Description (optional)"
+                name="description"
+                type="textarea"
+                disabled={saving}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={saving || !watch("name")?.trim()}
+              className="w-full md:w-auto"
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </form>
+        </FormProvider>
+      </div>
+
+      {/* ---------- LIST ---------- */}
+      <div className="rounded-lg overflow-hidden shadow-md">
+        <h3 className="bg-gray-50 px-4 py-2 text-sm font-semibold">
+          {CATEGORY_LABEL[selectedCategory]} ({currentList.length})
+        </h3>
+
+        {currentList.length ? (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Name
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Description
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {currentList.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 text-sm font-medium">{item.name}</td>
+                  <td className="px-4 py-2 text-sm text-gray-600 max-w-xs truncate" title={item.description}>
+                    {item.description || "—"}
+                  </td>
+                  <td className="px-4 py-2">
+                    <Button
+                      onClick={() => deleteItem(item.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            No {categoryLabels[selectedTypeCategory].toLowerCase()} found. Add one above!
-          </div>
+          <p className="text-center py-6 text-gray-500">
+            No {CATEGORY_LABEL[selectedCategory].toLowerCase()} yet. Add one above!
+          </p>
         )}
       </div>
     </div>
