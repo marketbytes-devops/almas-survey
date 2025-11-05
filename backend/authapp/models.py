@@ -1,8 +1,35 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError(_("The Email field must be set"))
+        email = self.normalize_email(email)
+        extra_fields.setdefault("username", email.split("@")[0])
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("username", email.split("@")[0])
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(email, password, **extra_fields)
+
 
 class CustomUser(AbstractUser):
     name = models.CharField(max_length=255, blank=True)
@@ -12,30 +39,22 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True)
     image = models.ImageField(upload_to="profile_images/", null=True, blank=True)
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
-    otp = models.CharField(max_length=6, null=True, blank=True)  
+    otp = models.CharField(max_length=6, null=True, blank=True)
     otp_expiry = models.DateTimeField(null=True, blank=True)
-    
+
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = [] 
+    REQUIRED_FIELDS = []
+
+    objects = CustomUserManager()
 
     def __str__(self):
         return self.email
-    
+
     def is_otp_valid(self):
-        """Check if OTP is valid and not expired."""
         if self.otp and self.otp_expiry:
             return timezone.now() <= self.otp_expiry
         return False
 
-    def save(self, *args, **kwargs):
-        if not self.username:
-            self.username = self.email.split('@')[0]
-            base_username = self.username
-            counter = 1
-            while CustomUser.objects.filter(username=self.username).exclude(pk=self.pk).exists():
-                self.username = f"{base_username}{counter}"
-                counter += 1
-        super().save(*args, **kwargs)
 
 class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -43,6 +62,7 @@ class Role(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Permission(models.Model):
     role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='permissions')
@@ -57,7 +77,7 @@ class Permission(models.Model):
 
     def __str__(self):
         return f"{self.role.name} - {self.page}"
-
+    
 @receiver(post_save, sender=Role)
 def set_default_permissions(sender, instance, created, **kwargs):
     if created:
