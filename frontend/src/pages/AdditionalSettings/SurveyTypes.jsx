@@ -6,10 +6,13 @@ import Input from "../../components/Input";
 
 const SurveyTypes = () => {
   const [customerTypes, setCustomerTypes] = useState([]);
-  // const [serviceTypes, setServiceTypes] = useState([]);
+  const [serviceTypes, setServiceTypes] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [petTypes, setPetTypes] = useState([]);
   const [packingTypes, setPackingTypes] = useState([]);
+  const [hubTypes, setHubTypes] = useState([]);
+  const [quoteTypes, setQuoteTypes] = useState([]);
+  const [tariffTypes, setTariffTypes] = useState([]);
   const [selectedTypeCategory, setSelectedTypeCategory] = useState("customer");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,20 +31,34 @@ const SurveyTypes = () => {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-
-        // serviceResponse, commented
-        const [customerResponse, vehicleResponse, petResponse, packingResponse] = await Promise.all([
+        const [
+          customerResponse, 
+          serviceResponse, 
+          vehicleResponse, 
+          petResponse, 
+          packingResponse,
+          hubResponse,
+          quoteResponse,
+          tariffResponse
+        ] = await Promise.all([
           apiClient.get("/customer-types/"),
-          // apiClient.get("/service-types/"),
+          apiClient.get("/service-types/"),
           apiClient.get("/vehicle-types/"),
           apiClient.get("/pet-types/"),
           apiClient.get("/packing-types/"),
+          apiClient.get("/types/?category=service"),
+          apiClient.get("/types/?category=package"),
+          apiClient.get("/types/?category=other")
         ]);
+        
         setCustomerTypes(customerResponse.data);
-        // setServiceTypes(serviceResponse.data);
+        setServiceTypes(serviceResponse.data);
         setVehicleTypes(vehicleResponse.data);
         setPetTypes(petResponse.data);
         setPackingTypes(packingResponse.data);
+        setHubTypes(hubResponse.data);
+        setQuoteTypes(quoteResponse.data);
+        setTariffTypes(tariffResponse.data);
       } catch (err) {
         setError("Failed to fetch types. Please try again.");
       } finally {
@@ -65,17 +82,18 @@ const SurveyTypes = () => {
       const payload = { name: data.name, description: data.description || "" };
       let response;
       let updatedTypes;
+      
       switch (selectedTypeCategory) {
         case "customer":
           response = await apiClient.post("/customer-types/", payload);
           updatedTypes = [...customerTypes, response.data];
           setCustomerTypes(updatedTypes);
           break;
-        // case "service":
-        //   response = await apiClient.post("/service-types/", payload);
-        //   updatedTypes = [...serviceTypes, response.data];
-        //   setServiceTypes(updatedTypes);
-        //   break;
+        case "service":
+          response = await apiClient.post("/service-types/", payload);
+          updatedTypes = [...serviceTypes, response.data];
+          setServiceTypes(updatedTypes);
+          break;
         case "vehicle":
           response = await apiClient.post("/vehicle-types/", payload);
           updatedTypes = [...vehicleTypes, response.data];
@@ -90,6 +108,21 @@ const SurveyTypes = () => {
           response = await apiClient.post("/packing-types/", payload);
           updatedTypes = [...packingTypes, response.data];
           setPackingTypes(updatedTypes);
+          break;
+        case "hub":
+          response = await apiClient.post("/types/", { ...payload, category: "service" });
+          updatedTypes = [...hubTypes, response.data];
+          setHubTypes(updatedTypes);
+          break;
+        case "quote":
+          response = await apiClient.post("/types/", { ...payload, category: "package" });
+          updatedTypes = [...quoteTypes, response.data];
+          setQuoteTypes(updatedTypes);
+          break;
+        case "tariff":
+          response = await apiClient.post("/types/", { ...payload, category: "other" });
+          updatedTypes = [...tariffTypes, response.data];
+          setTariffTypes(updatedTypes);
           break;
         default:
           throw new Error("Invalid type category selected");
@@ -114,10 +147,10 @@ const SurveyTypes = () => {
           await apiClient.delete(`/customer-types/${id}/`);
           setCustomerTypes(customerTypes.filter((t) => t.id !== id));
           break;
-        // case "service":
-        //   await apiClient.delete(`/service-types/${id}/`);
-        //   setServiceTypes(serviceTypes.filter((t) => t.id !== id));
-        //   break;
+        case "service":
+          await apiClient.delete(`/service-types/${id}/`);
+          setServiceTypes(serviceTypes.filter((t) => t.id !== id));
+          break;
         case "vehicle":
           await apiClient.delete(`/vehicle-types/${id}/`);
           setVehicleTypes(vehicleTypes.filter((t) => t.id !== id));
@@ -129,6 +162,18 @@ const SurveyTypes = () => {
         case "packing":
           await apiClient.delete(`/packing-types/${id}/`);
           setPackingTypes(packingTypes.filter((t) => t.id !== id));
+          break;
+        case "hub":
+          await apiClient.delete(`/types/${id}/`);
+          setHubTypes(hubTypes.filter((t) => t.id !== id));
+          break;
+        case "quote":
+          await apiClient.delete(`/types/${id}/`);
+          setQuoteTypes(quoteTypes.filter((t) => t.id !== id));
+          break;
+        case "tariff":
+          await apiClient.delete(`/types/${id}/`);
+          setTariffTypes(tariffTypes.filter((t) => t.id !== id));
           break;
         default:
           throw new Error("Invalid type category for deletion");
@@ -144,10 +189,13 @@ const SurveyTypes = () => {
   const getTypesByCategory = () => {
     switch (selectedTypeCategory) {
       case "customer": return customerTypes;
-      // case "service": return serviceTypes;
+      case "service": return serviceTypes;
       case "vehicle": return vehicleTypes;
       case "pet": return petTypes;
       case "packing": return packingTypes;
+      case "hub": return hubTypes;
+      case "quote": return quoteTypes;
+      case "tariff": return tariffTypes;
       default: return [];
     }
   };
@@ -155,10 +203,13 @@ const SurveyTypes = () => {
   const currentTypes = getTypesByCategory();
   const categoryLabels = {
     customer: "Customer Types",
-    // service: "Service Types",
+    service: "Service Types",
     vehicle: "Vehicle Types",
     pet: "Pet Types",
     packing: "Packing Types",
+    hub: "Hub Types",
+    quote: "Quote Types",
+    tariff: "Tariff Types",
   };
 
   if (loading) return <div className="text-center py-4">Loading...</div>;
@@ -176,10 +227,13 @@ const SurveyTypes = () => {
               <div className="flex flex-wrap gap-4 mb-4">
                 {[
                   { value: "customer", label: "Customer Type" },
-                  // { value: "service", label: "Service Type" },
+                  { value: "service", label: "Service Type" },
                   { value: "vehicle", label: "Vehicle Type" },
                   { value: "pet", label: "Pet Type" },
                   { value: "packing", label: "Packing Type" },
+                  { value: "hub", label: "Hub Type" },
+                  { value: "quote", label: "Quote Type" },
+                  { value: "tariff", label: "Tariff Type" },
                 ].map((option) => (
                   <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
                     <input
