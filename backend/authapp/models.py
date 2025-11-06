@@ -1,4 +1,3 @@
-# authapp/models.py
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
@@ -12,7 +11,6 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True)
     image = models.ImageField(upload_to="profile_images/", null=True, blank=True)
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
-
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
@@ -47,18 +45,18 @@ def set_default_permissions(sender, instance, created, **kwargs):
             # User Dashboard and Profile
             {'page': 'Dashboard', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'Profile', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
-            
+
             # Enquiry Related Pages
             {'page': 'enquiries', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'processing_enquiries', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'follow_ups', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'scheduled_surveys', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'new_enquiries', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
-            
+
             # Start Survey Related Pages
             {'page': 'survey_details', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'survey_summary', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
-            
+
             # Additional Settings Pages
             {'page': 'types', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'units', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
@@ -67,11 +65,15 @@ def set_default_permissions(sender, instance, created, **kwargs):
             {'page': 'handyman', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'manpower', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'room', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
-            
+
             # User Role Pages
             {'page': 'users', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'roles', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'permissions', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
+
+            # Pricing Pages
+            {'page': 'local_move', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
+            {'page': 'international_move', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
         ]
         for perm in default_permissions:
             Permission.objects.create(

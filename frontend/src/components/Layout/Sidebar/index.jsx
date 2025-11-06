@@ -30,16 +30,13 @@ const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [isUserRolesOpen, setIsUserRolesOpen] = useState(false);
   const [isadditional_settingsOpen, setIsadditional_settingsOpen] = useState(false);
+  const [isPricingOpen, setIsPricingOpen] = useState(false); // New state for Pricing section
   const [permissions, setPermissions] = useState([]);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [surveyId, setSurveyId] = useState(
-    localStorage.getItem("selectedSurveyId") || null
-  );
-  const [goodsType, setGoodsType] = useState(
-    localStorage.getItem("goodsType") || "article"
-  );
+  const [surveyId, setSurveyId] = useState(localStorage.getItem("selectedSurveyId") || null);
+  const [goodsType, setGoodsType] = useState(localStorage.getItem("goodsType") || "article");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,18 +62,14 @@ const Sidebar = ({ toggleSidebar }) => {
       }
     };
     fetchProfile();
-
     const handleStorageChange = () => {
       const newGoodsType = localStorage.getItem("goodsType") || "article";
       setGoodsType(newGoodsType);
-      
       const newSurveyId = localStorage.getItem("selectedSurveyId") || null;
       setSurveyId(newSurveyId);
     };
-    
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("goodsTypeChanged", handleStorageChange);
-    
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("goodsTypeChanged", handleStorageChange);
@@ -94,8 +87,8 @@ const Sidebar = ({ toggleSidebar }) => {
   };
 
   const toggleUserRoles = () => setIsUserRolesOpen(!isUserRolesOpen);
-  const toggleadditional_settings = () =>
-    setIsadditional_settingsOpen(!isadditional_settingsOpen);
+  const toggleadditional_settings = () => setIsadditional_settingsOpen(!isadditional_settingsOpen);
+  const togglePricing = () => setIsPricingOpen(!isPricingOpen); // Toggle function for Pricing section
 
   const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
 
@@ -265,18 +258,14 @@ const Sidebar = ({ toggleSidebar }) => {
         </div>
       );
     }
-
     if (item.subItems) {
       const filteredSubItems = item.subItems.filter((subItem) =>
         hasPermission(subItem.page, subItem.action)
       );
-
       if (filteredSubItems.length === 0) return null;
-
       const isActiveSubmenu = filteredSubItems.some(
         (subItem) => location.pathname === subItem.to
       );
-
       let toggleFunction, isOpen;
       switch (item.id) {
         case "user-roles":
@@ -287,10 +276,13 @@ const Sidebar = ({ toggleSidebar }) => {
           toggleFunction = toggleadditional_settings;
           isOpen = isadditional_settingsOpen;
           break;
+        case "pricing":
+          toggleFunction = togglePricing;
+          isOpen = isPricingOpen;
+          break;
         default:
           return null;
       }
-
       return (
         <>
           <button
@@ -347,7 +339,6 @@ const Sidebar = ({ toggleSidebar }) => {
       );
     } else {
       if (!hasPermission(item.page, item.action)) return null;
-
       return (
         <NavLink
           to={item.to}
