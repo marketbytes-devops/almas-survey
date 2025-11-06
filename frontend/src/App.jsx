@@ -25,7 +25,9 @@ import Manpower from "./pages/AdditionalSettings/Manpower";
 import Room from "./pages/AdditionalSettings/Room";
 import SurveySummary from "./pages/SurveySummary";
 import SurveyDetails from "./pages/SurveyDetails";
-
+import Pricing from "./pages/SurveyDetails/Pricing"
+import Quotation from "./pages/Quotation";
+import QuotationList from "./pages/QuotationList";
 const ProtectedRoute = ({ children, isAuthenticated, requiredPage, requiredAction = "view" }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
@@ -260,6 +262,25 @@ function App() {
             </ProtectedRoute>
           ),
         },
+        {
+          path:"/pricing",
+          element:(
+            <Pricing />
+          )
+        },
+        {
+     path: "/quotation",
+     element: <Quotation />,  
+       },
+       {
+  path: "/quotation/:id",
+  element: (
+    <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+      <QuotationList />
+    </ProtectedRoute>
+  ),
+},
+       
       ],
     },
   ]);

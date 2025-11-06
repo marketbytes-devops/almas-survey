@@ -20,6 +20,7 @@ import {
   AiOutlineUsergroupAdd,
   AiOutlineKey,
   AiOutlineIdcard,
+  AiOutlineFileText, 
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -138,6 +139,14 @@ const Sidebar = ({ toggleSidebar }) => {
       icon: <AiOutlineBarChart className="w-4 h-4 mr-3" />,
       page: "survey_summary",
       action: "view",
+    },
+    {
+    id: "quotation",
+    to: "/quotation",
+    label: "Quotation",
+    icon: <AiOutlineFileText className="w-4 h-4 mr-3" />,
+    page: "quotation",
+    action: "view",
     },
     {
       id: "additional-settings",
