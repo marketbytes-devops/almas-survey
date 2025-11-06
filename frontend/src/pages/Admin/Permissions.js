@@ -50,6 +50,11 @@ const Permissions = () => {
       apiName: "survey_summary",
       displayName: "Survey Summary",
     },
+    local_move: { apiName: "local_move", displayName: "Local Move" },
+    international_move: {
+      apiName: "international_move",
+      displayName: "International Move",
+    },
 
     // Additional Settings Pages
     types: { apiName: "types", displayName: "Types" },
@@ -112,7 +117,7 @@ const Permissions = () => {
       const allSelected = Object.values(prev).every(
         (page) => page.view && page.add && page.edit && page.delete
       );
-      
+
       return Object.keys(prev).reduce((acc, page) => {
         acc[page] = {
           ...prev[page],

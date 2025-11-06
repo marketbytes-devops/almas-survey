@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.db import models
-from authapp.models import CustomUser
 
 class Enquiry(models.Model):
     fullName = models.CharField(max_length=100)
@@ -12,8 +12,11 @@ class Enquiry(models.Model):
     submittedUrl = models.URLField(max_length=2000, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     assigned_user = models.ForeignKey(
-        CustomUser, on_delete=models.SET_NULL, null=True, blank=True
-    ) 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     note = models.TextField(blank=True, null=True)
     contact_status = models.CharField(
         max_length=20,
