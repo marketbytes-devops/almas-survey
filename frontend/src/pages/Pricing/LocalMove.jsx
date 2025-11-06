@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import Input from "../../components/Input/index";
-import Dropdown from "../../components/Dropdown/index";
 import { FaCopy, FaSave } from "react-icons/fa";
 
 const navItems = [
@@ -18,8 +17,125 @@ const LocalMove = () => {
   const methods = useForm();
   const [activeTab, setActiveTab] = useState("destination");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownData, setDropdownData] = useState({
+    hubs: [],
+    moveTypes: [],
+    tariffTypes: [],
+    currencies: [],
+    volumeUnits: [],
+    weightUnits: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const API_BASE_URL = "http://localhost:8000/api";
+
+  useEffect(() => {
+    fetchDropdownData();
+  }, []);
+
+  const fetchDropdownData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Simple fetch without authentication since endpoints are AllowAny
+      const [
+        hubsResponse,
+        moveTypesResponse,
+        tariffTypesResponse,
+        currenciesResponse,
+        volumeUnitsResponse,
+        weightUnitsResponse
+      ] = await Promise.all([
+        fetch(`${API_BASE_URL}/hub/`),
+        fetch(`${API_BASE_URL}/move-types/`),
+        fetch(`${API_BASE_URL}/tariff-types/`),
+        fetch(`${API_BASE_URL}/currencies/`),
+        fetch(`${API_BASE_URL}/volume-units/`),
+        fetch(`${API_BASE_URL}/weight-units/`)
+      ]);
+
+      // Check if all responses are ok
+      const responses = [
+        hubsResponse, 
+        moveTypesResponse, 
+        tariffTypesResponse, 
+        currenciesResponse, 
+        volumeUnitsResponse, 
+        weightUnitsResponse
+      ];
+      
+      const failedResponse = responses.find(response => !response.ok);
+      
+      if (failedResponse) {
+        throw new Error(`Failed to fetch data: ${failedResponse.status} ${failedResponse.statusText}`);
+      }
+
+      // Parse all responses
+      const [
+        hubsData,
+        moveTypesData,
+        tariffTypesData,
+        currenciesData,
+        volumeUnitsData,
+        weightUnitsData
+      ] = await Promise.all([
+        hubsResponse.json(),
+        moveTypesResponse.json(),
+        tariffTypesResponse.json(),
+        currenciesResponse.json(),
+        volumeUnitsResponse.json(),
+        weightUnitsResponse.json()
+      ]);
+
+      setDropdownData({
+        hubs: Array.isArray(hubsData) ? hubsData : (hubsData.results || []),
+        moveTypes: Array.isArray(moveTypesData) ? moveTypesData : (moveTypesData.results || []),
+        tariffTypes: Array.isArray(tariffTypesData) ? tariffTypesData : (tariffTypesData.results || []),
+        currencies: Array.isArray(currenciesData) ? currenciesData : (currenciesData.results || []),
+        volumeUnits: Array.isArray(volumeUnitsData) ? volumeUnitsData : (volumeUnitsData.results || []),
+        weightUnits: Array.isArray(weightUnitsData) ? weightUnitsData : (weightUnitsData.results || [])
+      });
+
+      // Debug: Log currency data to see what fields are available
+      console.log('Currency data received:', currenciesData);
+      if (currenciesData && currenciesData.length > 0) {
+        console.log('First currency object:', currenciesData[0]);
+      }
+
+    } catch (err) {
+      console.error("Error fetching dropdown data:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  // Transform API data to dropdown options
+  const getDropdownOptions = (data, nameField = 'name', valueField = 'id') => {
+    if (!data || !Array.isArray(data)) return [];
+    
+    return data.map(item => {
+      // Handle different field names across APIs
+      const displayValue = item[nameField] || item.title || item.code || item.symbol || String(item[valueField]);
+      const itemValue = item[valueField] !== undefined ? item[valueField] : item.id;
+      
+      return {
+        value: itemValue,
+        label: displayValue
+      };
+    });
+  };
+
+  // Combine volume and weight units for table unit dropdown
+  const tableUnitOptions = [
+    ...getDropdownOptions(dropdownData.volumeUnits),
+    ...getDropdownOptions(dropdownData.weightUnits),
+    { value: 'items', label: 'Items' }
+  ];
 
   const tableData = [
     { range: "Range 2", min: "10.01", max: "", rate: "625.00", adjustment: "0.00" },
@@ -29,6 +145,34 @@ const LocalMove = () => {
     { range: "Range 6", min: "50.01", max: "70.00", rate: "875.00", adjustment: "0.00" },
     { range: "Range 7", min: "60.01", max: "", rate: "925.00", adjustment: "0.00" },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dropdown data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-600 text-xl mb-4">Error Loading Data</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchDropdownData}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <FormProvider {...methods}>
@@ -70,10 +214,7 @@ const LocalMove = () => {
                 <Input
                   name="hub"
                   type="select"
-                  options={[
-                    { value: "Dukhan", label: "Dukhan" },
-                    { value: "Doha", label: "Doha" },
-                  ]}
+                  options={getDropdownOptions(dropdownData.hubs)}
                   rules={{ required: "Hub is required" }}
                 />
               </div>
@@ -85,11 +226,7 @@ const LocalMove = () => {
                 <Input
                   name="type"
                   type="select"
-                  options={[
-                    { value: "Residential", label: "Residential" },
-                    { value: "Commercial", label: "Commercial" },
-                    { value: "Office", label: "Office" },
-                  ]}
+                  options={getDropdownOptions(dropdownData.moveTypes)}
                 />
               </div>
 
@@ -100,9 +237,7 @@ const LocalMove = () => {
                 <Input
                   name="tariff"
                   type="select"
-                  options={[
-                    { value: "Main Tariff", label: "Main Tariff" },
-                  ]}
+                  options={getDropdownOptions(dropdownData.tariffTypes)}
                 />
               </div>
 
@@ -113,11 +248,7 @@ const LocalMove = () => {
                 <Input
                   name="unit"
                   type="select"
-                  options={[
-                    { value: "CBM", label: "CBM" },
-                    { value: "Weight", label: "Weight" },
-                    { value: "Items", label: "Items" },
-                  ]}
+                  options={tableUnitOptions}
                 />
               </div>
             </div>
@@ -130,11 +261,7 @@ const LocalMove = () => {
                 <Input
                   name="currency"
                   type="select"
-                  options={[
-                    { value: "USD", label: "USD" },
-                    { value: "QAR", label: "QAR" },
-                    { value: "EUR", label: "EUR" },
-                  ]}
+                  options={getDropdownOptions(dropdownData.currencies, 'name', 'id')}
                 />
               </div>
 

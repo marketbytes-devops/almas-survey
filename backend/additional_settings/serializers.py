@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomerType, ServiceType, VolumeUnit, WeightUnit, PackingType, Manpower, Handyman, VehicleType, PetType, Room, Item, Currency, Tax, Hub
+from .models import CustomerType, ServiceType, VolumeUnit, WeightUnit, PackingType, Manpower, Handyman, VehicleType, PetType, Room, Item, Currency, Tax, Hub,MoveType,TariffType
 
 class CustomerTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,3 +73,13 @@ class HubSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hub
         fields = ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at']
+
+class MoveTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MoveType
+        fields = ['id', 'name', 'description']
+
+class TariffTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TariffType
+        fields = ['id', 'name', 'description']

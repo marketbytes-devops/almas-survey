@@ -17,6 +17,8 @@ router.register(r'items', views.ItemViewSet)
 router.register(r'currencies', views.CurrencyViewSet)
 router.register(r'taxes', views.TaxViewSet)
 router.register(r'hub', views.HubViewSet)
+router.register(r'move-types', views.MoveTypeViewSet)
+router.register(r'tariff-types', views.TariffTypeViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

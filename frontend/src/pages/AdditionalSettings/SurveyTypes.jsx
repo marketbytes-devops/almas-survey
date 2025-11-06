@@ -13,6 +13,8 @@ const CATEGORY_ENDPOINT = {
   pet: "/pet-types/",
   packing: "/packing-types/",
   hub: "/hub/",
+  move: "/move-types/",       // New endpoint for Move Type
+  tariff: "/tariff-types/",  // New endpoint for Tariff Type
 };
 
 const CATEGORY_LABEL = {
@@ -22,6 +24,8 @@ const CATEGORY_LABEL = {
   pet: "Pet Types",
   packing: "Packing Types",
   hub: "Hub Types",
+  move: "Move Types",        // New label for Move Type
+  tariff: "Tariff Types",    // New label for Tariff Type
 };
 
 const SurveyTypes = () => {
@@ -30,7 +34,6 @@ const SurveyTypes = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState({ text: "", type: "" });
-
   const methods = useForm({ defaultValues: { name: "", description: "" } });
   const { handleSubmit, reset, watch, setError, clearErrors, formState } = methods;
   const { errors } = formState;
@@ -38,7 +41,6 @@ const SurveyTypes = () => {
   /* -------------------------------------------------- FETCH -------------------------------------------------- */
   useEffect(() => {
     const fetchAll = async () => {
-      // initialise every category with an empty array
       const init = {};
       Object.keys(CATEGORY_ENDPOINT).forEach((c) => (init[c] = []));
 
@@ -59,6 +61,7 @@ const SurveyTypes = () => {
         responses.forEach(({ cat, data }) => {
           init[cat] = data;
         });
+
         setTypes(init);
       } catch (e) {
         showMsg("Failed to load some data", "error");
@@ -77,7 +80,7 @@ const SurveyTypes = () => {
     setTimeout(() => setMsg({ text: "", type: "" }), 3000);
   };
 
-  const currentList = types[selectedCategory] ?? [];
+  const currentList = types[selectedCategory] || [];
 
   const onCategoryChange = (e) => {
     const newCat = e.target.value;
@@ -89,6 +92,7 @@ const SurveyTypes = () => {
   /* -------------------------------------------------- CREATE -------------------------------------------------- */
   const onSubmit = async (data) => {
     if (!data.name?.trim()) return;
+
     setSaving(true);
     clearErrors();
 
@@ -101,7 +105,7 @@ const SurveyTypes = () => {
 
       setTypes((prev) => ({
         ...prev,
-        [selectedCategory]: [...(prev[selectedCategory] ?? []), resp.data],
+        [selectedCategory]: [...(prev[selectedCategory] || []), resp.data],
       }));
 
       reset();
@@ -125,10 +129,12 @@ const SurveyTypes = () => {
     try {
       const endpoint = CATEGORY_ENDPOINT[selectedCategory];
       await apiClient.delete(`${endpoint}${id}/`);
+
       setTypes((prev) => ({
         ...prev,
-        [selectedCategory]: (prev[selectedCategory] ?? []).filter((t) => t.id !== id),
+        [selectedCategory]: (prev[selectedCategory] || []).filter((t) => t.id !== id),
       }));
+
       showMsg("Deleted successfully!");
     } catch (e) {
       showMsg("Failed to delete.", "error");
@@ -136,7 +142,13 @@ const SurveyTypes = () => {
   };
 
   /* -------------------------------------------------- RENDER -------------------------------------------------- */
-  if (loading) return <div className="flex justify-center py-8"><Loading /></div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 mx-auto bg-white rounded-lg shadow-md">
@@ -156,7 +168,6 @@ const SurveyTypes = () => {
       {/* ---------- ADD FORM ---------- */}
       <div className="p-4 border border-gray-200 rounded-lg mb-6">
         <h2 className="text-lg font-semibold mb-4">Add New Type</h2>
-
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Category radios */}
@@ -189,7 +200,6 @@ const SurveyTypes = () => {
                   error={errors.name?.message}
                 />
               </div>
-
               <div>
                 <Input
                   label="Description (optional)"
@@ -217,7 +227,6 @@ const SurveyTypes = () => {
         <h3 className="bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
           {CATEGORY_LABEL[selectedCategory]} ({currentList.length})
         </h3>
-
         {currentList.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
