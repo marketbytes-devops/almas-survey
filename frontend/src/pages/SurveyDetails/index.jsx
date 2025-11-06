@@ -1025,747 +1025,867 @@ const SurveyDetails = () => {
     );
   };
 
-  const Article = () => {
-    const [selectedRoom, setSelectedRoom] = useState(null);
-    const [showRoomDropdown, setShowRoomDropdown] = useState(false);
-    const [expandedItems, setExpandedItems] = useState({});
-    const [itemQuantities, setItemQuantities] = useState({});
-    const [editingArticleId, setEditingArticleId] = useState(null);
+const Article = () => {
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [showRoomDropdown, setShowRoomDropdown] = useState(false);
+  const [expandedItems, setExpandedItems] = useState({});
+  const [itemQuantities, setItemQuantities] = useState({});
+  const [editingArticleId, setEditingArticleId] = useState(null);
+  const [showArticlesPanel, setShowArticlesPanel] = useState(false);
 
-    const getRoomNameById = (roomId) => {
-      const room = apiData.rooms.find(room => room.id === roomId || room.value === roomId);
-      return room ? room.name : 'Unknown Room';
+  const getRoomNameById = (roomId) => {
+    const room = apiData.rooms.find(room => room.id === roomId || room.value === roomId);
+    return room ? room.name : 'Unknown Room';
+  };
+
+  const toggleExpandedItem = (itemName) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [itemName]: !prev[itemName],
+    }));
+  };
+
+  const updateQuantity = (itemName, newQuantity) => {
+    setItemQuantities((prev) => ({ ...prev, [itemName]: newQuantity }));
+  };
+
+  const addArticle = (itemName, itemData) => {
+    const newArticle = {
+      id: uuidv4(),
+      itemName,
+      quantity: itemQuantities[itemName] || 1,
+      volume: itemData[`volume_${itemName}`] || "",
+      volumeUnit: itemData[`volumeUnit_${itemName}`] || "",
+      weight: itemData[`weight_${itemName}`] || "",
+      weightUnit: itemData[`weightUnit_${itemName}`] || "",
+      handyman: itemData[`handyman_${itemName}`] || "",
+      packingOption: itemData[`packingOption_${itemName}`] || "",
+      moveStatus: itemData[`moveStatus_${itemName}`] || "",
+      amount: itemData[`amount_${itemName}`] || "",
+      currency: itemData[`currency_${itemName}`] || "",
+      remarks: itemData[`remarks_${itemName}`] || "",
+      room: selectedRoom?.value || "",
+      length: itemData[`length_${itemName}`] || "",
+      width: itemData[`width_${itemName}`] || "",
+      height: itemData[`height_${itemName}`] || "",
+      useManualVolume: itemData[`useManualVolume_${itemName}`] || false,
     };
+    const updatedArticles = [...watch("articles"), newArticle];
+    setValue("articles", updatedArticles);
+    setMessage("Article added successfully!");
+    setTimeout(() => setMessage(null), 3000);
+    setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
+  };
 
-    const toggleExpandedItem = (itemName) => {
-      setExpandedItems((prev) => ({
-        ...prev,
-        [itemName]: !prev[itemName],
-      }));
-    };
-
-    const updateQuantity = (itemName, newQuantity) => {
-      setItemQuantities((prev) => ({ ...prev, [itemName]: newQuantity }));
-    };
-
-    const addArticle = (itemName, itemData) => {
-      const newArticle = {
-        id: uuidv4(),
-        itemName,
-        quantity: itemQuantities[itemName] || 1,
-        volume: itemData[`volume_${itemName}`] || "",
-        volumeUnit: itemData[`volumeUnit_${itemName}`] || "",
-        weight: itemData[`weight_${itemName}`] || "",
-        weightUnit: itemData[`weightUnit_${itemName}`] || "",
-        handyman: itemData[`handyman_${itemName}`] || "",
-        packingOption: itemData[`packingOption_${itemName}`] || "",
-        moveStatus: itemData[`moveStatus_${itemName}`] || "",
-        amount: itemData[`amount_${itemName}`] || "",
-        currency: itemData[`currency_${itemName}`] || "",
-        remarks: itemData[`remarks_${itemName}`] || "",
-        room: selectedRoom?.value || "",
-        length: itemData[`length_${itemName}`] || "",
-        width: itemData[`width_${itemName}`] || "",
-        height: itemData[`height_${itemName}`] || "",
-        useManualVolume: itemData[`useManualVolume_${itemName}`] || false,
-      };
-      const updatedArticles = [...watch("articles"), newArticle];
-      setValue("articles", updatedArticles);
-      setMessage("Article added successfully!");
-      setTimeout(() => setMessage(null), 3000);
-      setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
-    };
-
-    const updateArticle = (articleId, itemData) => {
-      const updatedArticles = watch("articles").map((article) =>
-        article.id === articleId
-          ? {
-            ...article,
-            quantity: itemData.quantity || article.quantity,
-            volume: itemData.volume || "",
-            volumeUnit: itemData.volumeUnit || "",
-            weight: itemData.weight || "",
-            weightUnit: itemData.weightUnit || "",
-            handyman: itemData.handyman || "",
-            packingOption: itemData.packingOption || "",
-            moveStatus: itemData.moveStatus || "",
-            amount: itemData.amount || "",
-            currency: itemData.currency || "",
-            remarks: itemData.remarks || "",
-            room: selectedRoom?.value || article.room,
-            length: itemData.length || "",
-            width: itemData.width || "",
-            height: itemData.height || "",
-            useManualVolume: itemData.useManualVolume || false,
-          }
-          : article
-      );
-      setValue("articles", updatedArticles);
-      setMessage("Article updated successfully!");
-      setTimeout(() => setMessage(null), 3000);
-      setEditingArticleId(null);
-    };
-
-    const removeArticle = (articleId) => {
-      const updatedArticles = watch("articles").filter((article) => article.id !== articleId);
-      setValue("articles", updatedArticles);
-      setMessage("Article removed successfully!");
-      setTimeout(() => setMessage(null), 3000);
-      setEditingArticleId(null);
-    };
-
-    const handleRoomSelect = (room) => {
-      setSelectedRoom(room);
-      setShowRoomDropdown(false);
-      setExpandedItems({});
-      setEditingArticleId(null);
-    };
-
-    const ItemRow = ({ item }) => {
-      const itemFormMethods = useForm({
-        defaultValues: {
-          [`volume_${item.name}`]: item.volume || item.calculated_volume || "",
-          [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
-          [`weight_${item.name}`]: item.weight || "",
-          [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
-          [`handyman_${item.name}`]: apiData.handymanTypes[0]?.value || "",
-          [`packingOption_${item.name}`]: apiData.packingTypes[0]?.value || "",
-          [`moveStatus_${item.name}`]: "new",
-          [`amount_${item.name}`]: "",
-          [`currency_${item.name}`]: apiData.currencies[0]?.value || "INR",
-          [`remarks_${item.name}`]: "",
-          [`quantity_${item.name}`]: itemQuantities[item.name] || 0,
-          [`length_${item.name}`]: item.length || "",
-          [`width_${item.name}`]: item.width || "",
-          [`height_${item.name}`]: item.height || "",
-          [`useManualVolume_${item.name}`]: !!(item.volume && !item.calculated_volume),
-        },
-      });
-
-      const { handleSubmit: handleItemSubmit, watch, setValue } = itemFormMethods;
-
-      const length = watch(`length_${item.name}`);
-      const width = watch(`width_${item.name}`);
-      const height = watch(`height_${item.name}`);
-      const useManualVolume = watch(`useManualVolume_${item.name}`);
-      const manualVolume = watch(`volume_${item.name}`);
-
-      useEffect(() => {
-        if (!useManualVolume && length && width && height) {
-          const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
-          setValue(`volume_${item.name}`, calculatedVolume.toFixed(4));
-
-          const calculatedWeight = calculatedVolume * 110;
-          setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
+  const updateArticle = (articleId, itemData) => {
+    const updatedArticles = watch("articles").map((article) =>
+      article.id === articleId
+        ? {
+          ...article,
+          quantity: itemData.quantity || article.quantity,
+          volume: itemData.volume || "",
+          volumeUnit: itemData.volumeUnit || "",
+          weight: itemData.weight || "",
+          weightUnit: itemData.weightUnit || "",
+          handyman: itemData.handyman || "",
+          packingOption: itemData.packingOption || "",
+          moveStatus: itemData.moveStatus || "",
+          amount: itemData.amount || "",
+          currency: itemData.currency || "",
+          remarks: itemData.remarks || "",
+          room: selectedRoom?.value || article.room,
+          length: itemData.length || "",
+          width: itemData.width || "",
+          height: itemData.height || "",
+          useManualVolume: itemData.useManualVolume || false,
         }
-      }, [length, width, height, useManualVolume, setValue, item.name]);
+        : article
+    );
+    setValue("articles", updatedArticles);
+    setMessage("Article updated successfully!");
+    setTimeout(() => setMessage(null), 3000);
+    setEditingArticleId(null);
+  };
 
-      useEffect(() => {
-        if (useManualVolume && manualVolume) {
-          const calculatedWeight = parseFloat(manualVolume) * 110;
-          setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
-        }
-      }, [manualVolume, useManualVolume, setValue, item.name]);
+  const removeArticle = (articleId) => {
+    const updatedArticles = watch("articles").filter((article) => article.id !== articleId);
+    setValue("articles", updatedArticles);
+    setMessage("Article removed successfully!");
+    setTimeout(() => setMessage(null), 3000);
+    setEditingArticleId(null);
+  };
 
-      return (
+  const handleRoomSelect = (room) => {
+    setSelectedRoom(room);
+    setShowRoomDropdown(false);
+    setExpandedItems({});
+    setEditingArticleId(null);
+  };
+
+  const ItemRow = ({ item }) => {
+    const itemFormMethods = useForm({
+      defaultValues: {
+        [`volume_${item.name}`]: item.volume || item.calculated_volume || "",
+        [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
+        [`weight_${item.name}`]: item.weight || "",
+        [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
+        [`handyman_${item.name}`]: apiData.handymanTypes[0]?.value || "",
+        [`packingOption_${item.name}`]: apiData.packingTypes[0]?.value || "",
+        [`moveStatus_${item.name}`]: "new",
+        [`amount_${item.name}`]: "",
+        [`currency_${item.name}`]: apiData.currencies[0]?.value || "INR",
+        [`remarks_${item.name}`]: "",
+        [`quantity_${item.name}`]: itemQuantities[item.name] || 0,
+        [`length_${item.name}`]: item.length || "",
+        [`width_${item.name}`]: item.width || "",
+        [`height_${item.name}`]: item.height || "",
+        [`useManualVolume_${item.name}`]: !!(item.volume && !item.calculated_volume),
+      },
+    });
+
+    const { handleSubmit: handleItemSubmit, watch, setValue } = itemFormMethods;
+
+    const length = watch(`length_${item.name}`);
+    const width = watch(`width_${item.name}`);
+    const height = watch(`height_${item.name}`);
+    const useManualVolume = watch(`useManualVolume_${item.name}`);
+    const manualVolume = watch(`volume_${item.name}`);
+
+    useEffect(() => {
+      if (!useManualVolume && length && width && height) {
+        const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+        setValue(`volume_${item.name}`, calculatedVolume.toFixed(4));
+
+        const calculatedWeight = calculatedVolume * 110;
+        setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
+      }
+    }, [length, width, height, useManualVolume, setValue, item.name]);
+
+    useEffect(() => {
+      if (useManualVolume && manualVolume) {
+        const calculatedWeight = parseFloat(manualVolume) * 110;
+        setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
+      }
+    }, [manualVolume, useManualVolume, setValue, item.name]);
+
+    return (
+      <>
+        <tr key={`${item.name}-main`} className="w-full border-b border-gray-200">
+          <td className="text-left py-4 px-4 text-sm text-gray-700 cursor-pointer hover:bg-gray-50">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{item.name}</span>
+              {item.calculated_volume && (
+                <span className="text-xs text-gray-500">
+                  (Auto: {item.calculated_volume} m³)
+                </span>
+              )}
+            </div>
+            {item.description && (
+              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+            )}
+            {(item.length || item.width || item.height) && (
+              <div className="text-xs text-gray-500 mt-1">
+                {item.length && `L:${item.length}cm`}
+                {item.width && ` × W:${item.width}cm`}
+                {item.height && ` × H:${item.height}cm`}
+              </div>
+            )}
+          </td>
+          <td className="text-center py-4 px-4">
+            <FormProvider {...itemFormMethods}>
+              <QuantityInput
+                label=""
+                name={`quantity_${item.name}`}
+                onChange={(newQuantity) => updateQuantity(item.name, newQuantity)}
+              />
+            </FormProvider>
+          </td>
+          <td className="flex items-center justify-end py-4 px-8"
+            onClick={() => toggleExpandedItem(item.name)}>
+            {expandedItems[item.name] ? (
+              <FaChevronUp className="w-3 h-3 text-gray-500" />
+            ) : (
+              <FaChevronDown className="w-3 h-3 text-gray-500" />
+            )}
+          </td>
+        </tr>
+        {expandedItems[item.name] && (
+          <tr key={`${item.name}-details`} className="border border-gray-200">
+            <td colSpan="3">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="p-4 bg-white"
+              >
+                <FormProvider {...itemFormMethods}>
+                  <div className="grid gap-6">
+                    <div className="">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <Input
+                          label="Length (cm)"
+                          name={`length_${item.name}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                        <Input
+                          label="Width (cm)"
+                          name={`width_${item.name}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                        <Input
+                          label="Height (cm)"
+                          name={`height_${item.name}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-4 mb-4">
+                        <Input
+                          label="Use Manual Volume"
+                          name={`useManualVolume_${item.name}`}
+                          type="checkbox"
+                        />
+                        <div className="text-xs text-gray-500">
+                          {useManualVolume
+                            ? "Manual volume input enabled"
+                            : "Volume auto-calculated from dimensions"
+                          }
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Volume (m³)"
+                          name={`volume_${item.name}`}
+                          type="number"
+                          step="0.0001"
+                          rules={{ required: "Volume is required" }}
+                          disabled={!useManualVolume}
+                        />
+                        <Input
+                          label="Volume Unit"
+                          name={`volumeUnit_${item.name}`}
+                          type="select"
+                          options={apiData.volumeUnits}
+                        />
+                      </div>
+
+                      {!useManualVolume && length && width && height && (
+                        <div className="mt-2 text-xs text-green-600">
+                          Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
+                          (L×W×H/1,000,000)
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <Input
+                        label="Weight (kg)"
+                        name={`weight_${item.name}`}
+                        type="number"
+                        step="0.01"
+                        rules={{ required: "Weight is required" }}
+                      />
+                      <Input
+                        label="Weight Unit"
+                        name={`weightUnit_${item.name}`}
+                        type="select"
+                        options={apiData.weightUnits}
+                      />
+                      <Input
+                        label="Handyman"
+                        name={`handyman_${item.name}`}
+                        type="select"
+                        options={apiData.handymanTypes}
+                      />
+                      <Input
+                        label="Packing Option"
+                        name={`packingOption_${item.name}`}
+                        type="select"
+                        options={apiData.packingTypes}
+                      />
+                      <Input
+                        label="Amount"
+                        name={`amount_${item.name}`}
+                        type="number"
+                        step="0.01"
+                      />
+                      <Input
+                        label="Currency"
+                        name={`currency_${item.name}`}
+                        type="select"
+                        options={apiData.currencies}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                      <Input
+                        label="Remarks"
+                        name={`remarks_${item.name}`}
+                        type="textarea"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={handleItemSubmit((data) =>
+                        addArticle(item.name, data)
+                      )}
+                      className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+                    >
+                      Update
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandedItem(item.name)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </FormProvider>
+              </motion.div>
+            </td>
+          </tr>
+        )}
+      </>
+    );
+  };
+
+  const EditArticleRow = ({ article }) => {
+    const editFormMethods = useForm({
+      defaultValues: {
+        volume: article.volume || "",
+        volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
+        weight: article.weight || "",
+        weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
+        handyman: article.handyman || apiData.handymanTypes[0]?.value || "",
+        packingOption: article.packingOption || apiData.packingTypes[0]?.value || "",
+        moveStatus: article.moveStatus || "new",
+        amount: article.amount || "",
+        currency: article.currency || apiData.currencies[0]?.value || "INR",
+        remarks: article.remarks || "",
+        quantity: article.quantity || 0,
+        length: article.length || "",
+        width: article.width || "",
+        height: article.height || "",
+        useManualVolume: !!(article.volume && !article.calculated_volume),
+      },
+    });
+
+    const { handleSubmit: handleEditSubmit, watch, setValue } = editFormMethods;
+
+    const length = watch('length');
+    const width = watch('width');
+    const height = watch('height');
+    const useManualVolume = watch('useManualVolume');
+    const manualVolume = watch('volume');
+
+    useEffect(() => {
+      if (!useManualVolume && length && width && height) {
+        const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+        setValue('volume', calculatedVolume.toFixed(4));
+
+        const calculatedWeight = calculatedVolume * 110;
+        setValue('weight', calculatedWeight.toFixed(2));
+      }
+    }, [length, width, height, useManualVolume, setValue]);
+
+    useEffect(() => {
+      if (useManualVolume && manualVolume) {
+        const calculatedWeight = parseFloat(manualVolume) * 110;
+        setValue('weight', calculatedWeight.toFixed(2));
+      }
+    }, [manualVolume, useManualVolume, setValue]);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
+      >
+        <FormProvider {...editFormMethods}>
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 gap-6">
+              <QuantityInput
+                label="Quantity"
+                name="quantity"
+                rules={{ required: "Quantity is required" }}
+              />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <Input
+                  label="Length (cm)"
+                  name="length"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Width (cm)"
+                  name="width"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Height (cm)"
+                  name="height"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="grid items-center gap-4 mb-4">
+                <Input
+                  label="Use Manual Volume"
+                  name="useManualVolume"
+                  type="checkbox"
+                />
+                <div className="text-xs text-gray-500">
+                  {useManualVolume
+                    ? "Manual volume input enabled"
+                    : "Volume auto-calculated from dimensions"
+                  }
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Volume (m³)"
+                  name="volume"
+                  type="number"
+                  step="0.0001"
+                  rules={{ required: "Volume is required" }}
+                  disabled={!useManualVolume}
+                />
+                <Input
+                  label="Volume Unit"
+                  name="volumeUnit"
+                  type="select"
+                  options={apiData.volumeUnits}
+                />
+              </div>
+
+              {!useManualVolume && length && width && height && (
+                <div className="mt-2 text-xs text-green-600">
+                  Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
+                  (L×W×H/1,000,000)
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Input
+                label="Weight (kg)"
+                name="weight"
+                type="number"
+                step="0.01"
+                rules={{ required: "Weight is required" }}
+              />
+              <Input
+                label="Weight Unit"
+                name="weightUnit"
+                type="select"
+                options={apiData.weightUnits}
+              />
+              <Input
+                label="Handyman"
+                name="handyman"
+                type="select"
+                options={apiData.handymanTypes}
+              />
+              <Input
+                label="Packing Option"
+                name="packingOption"
+                type="select"
+                options={apiData.packingTypes}
+              />
+              <Input
+                label="Currency"
+                name="currency"
+                type="select"
+                options={apiData.currencies}
+              />
+              <Input
+                label="Remarks"
+                name="remarks"
+                type="textarea"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={handleEditSubmit((data) => updateArticle(article.id, data))}
+              className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+            >
+              Update
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingArticleId(null)}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </FormProvider>
+      </motion.div>
+    );
+  };
+
+  const AddedArticlesPanel = () => {
+    const articles = watch("articles");
+    
+    return (
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: showArticlesPanel ? 0 : "100%" }}
+        transition={{ type: "spring", damping: 25 }}
+        className="fixed inset-y-0 right-0 w-full sm:w-1/3 h-screen bg-white shadow-2xl z-50 flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between py-3 px-5 border-b border-gray-200 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
+          <h2 className="text-sm font-light">
+            Added Articles
+            <span className="ml-2 bg-white text-[#4c7085] bg-opacity-20 px-2 py-1 rounded-full text-xs">
+              {articles.length} {articles.length === 1 ? 'article' : 'articles'}
+            </span>
+          </h2>
+          <button
+            onClick={() => setShowArticlesPanel(false)}
+            className="group p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+            aria-label="Close panel"
+          >
+            <FaMinus className="w-4 h-4 group-hover:text-[#4c7085]" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {articles.length > 0 ? (
+            <div className="p-4 space-y-4">
+              {articles.map((article, index) => (
+                <div
+                  key={article.id}
+                  className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-sm">
+                        {article.itemName}
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Room: {getRoomNameById(article.room)}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          Qty: {article.quantity}
+                        </span>
+                        {article.volume && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            Vol: {article.volume} m³
+                          </span>
+                        )}
+                        {article.weight && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                            Wt: {article.weight} kg
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeArticle(article.id);
+                      }}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors ml-2"
+                      aria-label={`Remove ${article.itemName}`}
+                    >
+                      <FaMinus className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Edit button */}
+                  <button
+                    type="button"
+                    onClick={() => setEditingArticleId(
+                      editingArticleId === article.id ? null : article.id
+                    )}
+                    className="w-full mt-2 py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-md text-sm text-gray-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {editingArticleId === article.id ? (
+                      <>
+                        <FaChevronUp className="w-3 h-3" />
+                        Cancel Edit
+                      </>
+                    ) : (
+                      <>
+                        <FaChevronDown className="w-3 h-3" />
+                        Edit Article
+                      </>
+                    )}
+                  </button>
+
+                  {/* Edit Form */}
+                  {editingArticleId === article.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3"
+                    >
+                      <EditArticleRow article={article} />
+                    </motion.div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <div className="text-gray-400 mb-4">
+                <svg
+                  className="w-16 h-16 mx-auto"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg mb-2">No articles added yet</p>
+              <p className="text-gray-400 text-sm">
+                Add articles using the form above
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  const sections = [
+    {
+      id: "master-article",
+      title: "Master Article",
+      content: (
         <>
-          <tr key={`${item.name}-main`} className="grid grid-cols-3 border-b border-gray-200">
-            <td className="text-left py-4 px-4 text-sm text-gray-700 cursor-pointer hover:bg-gray-50">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{item.name}</span>
-                {item.calculated_volume && (
-                  <span className="text-xs text-gray-500">
-                    (Auto: {item.calculated_volume} m³)
+          {/* Floating button for mobile */}
+          <div className="sm:hidden fixed bottom-6 right-6 z-40">
+            <button
+              type="button"
+              onClick={() => setShowArticlesPanel(true)}
+              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              aria-label="View added articles"
+            >
+              <div className="relative">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                {watch("articles").length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {watch("articles").length}
                   </span>
                 )}
               </div>
-              {item.description && (
-                <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-              )}
-              {(item.length || item.width || item.height) && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {item.length && `L:${item.length}cm`}
-                  {item.width && ` × W:${item.width}cm`}
-                  {item.height && ` × H:${item.height}cm`}
-                </div>
-              )}
-            </td>
-            <td className="text-center py-4 px-4">
-              <FormProvider {...itemFormMethods}>
-                <QuantityInput
-                  label=""
-                  name={`quantity_${item.name}`}
-                  onChange={(newQuantity) => updateQuantity(item.name, newQuantity)}
-                />
-              </FormProvider>
-            </td>
-            <td className="flex items-center justify-end py-4 px-8"
-              onClick={() => toggleExpandedItem(item.name)}>
-              {expandedItems[item.name] ? (
-                <FaChevronUp className="w-3 h-3 text-gray-500" />
-              ) : (
-                <FaChevronDown className="w-3 h-3 text-gray-500" />
-              )}
-            </td>
-          </tr>
-          {expandedItems[item.name] && (
-            <tr key={`${item.name}-details`} className="border border-gray-200">
-              <td colSpan="3">
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-4 bg-white"
-                >
-                  <FormProvider {...itemFormMethods}>
-                    <div className="grid gap-6">
-                      <div className="">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                          <Input
-                            label="Length (cm)"
-                            name={`length_${item.name}`}
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                          />
-                          <Input
-                            label="Width (cm)"
-                            name={`width_${item.name}`}
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                          />
-                          <Input
-                            label="Height (cm)"
-                            name={`height_${item.name}`}
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-4 mb-4">
-                          <Input
-                            label="Use Manual Volume"
-                            name={`useManualVolume_${item.name}`}
-                            type="checkbox"
-                          />
-                          <div className="text-xs text-gray-500">
-                            {useManualVolume
-                              ? "Manual volume input enabled"
-                              : "Volume auto-calculated from dimensions"
-                            }
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Input
-                            label="Volume (m³)"
-                            name={`volume_${item.name}`}
-                            type="number"
-                            step="0.0001"
-                            rules={{ required: "Volume is required" }}
-                            disabled={!useManualVolume}
-                          />
-                          <Input
-                            label="Volume Unit"
-                            name={`volumeUnit_${item.name}`}
-                            type="select"
-                            options={apiData.volumeUnits}
-                          />
-                        </div>
-
-                        {!useManualVolume && length && width && height && (
-                          <div className="mt-2 text-xs text-green-600">
-                            Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
-                            (L×W×H/1,000,000)
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <Input
-                          label="Weight (kg)"
-                          name={`weight_${item.name}`}
-                          type="number"
-                          step="0.01"
-                          rules={{ required: "Weight is required" }}
-                        />
-                        <Input
-                          label="Weight Unit"
-                          name={`weightUnit_${item.name}`}
-                          type="select"
-                          options={apiData.weightUnits}
-                        />
-                        <Input
-                          label="Handyman"
-                          name={`handyman_${item.name}`}
-                          type="select"
-                          options={apiData.handymanTypes}
-                        />
-                        <Input
-                          label="Packing Option"
-                          name={`packingOption_${item.name}`}
-                          type="select"
-                          options={apiData.packingTypes}
-                        />
-                        <Input
-                          label="Amount"
-                          name={`amount_${item.name}`}
-                          type="number"
-                          step="0.01"
-                        />
-                        <Input
-                          label="Currency"
-                          name={`currency_${item.name}`}
-                          type="select"
-                          options={apiData.currencies}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-6">
-                        <Input
-                          label="Remarks"
-                          name={`remarks_${item.name}`}
-                          type="textarea"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-4 flex gap-3 justify-end">
-                      <button
-                        type="button"
-                        onClick={handleItemSubmit((data) =>
-                          addArticle(item.name, data)
-                        )}
-                        className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                      >
-                        Update
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleExpandedItem(item.name)}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </FormProvider>
-                </motion.div>
-              </td>
-            </tr>
-          )}
-        </>
-      );
-    };
-
-    const EditArticleRow = ({ article }) => {
-      const editFormMethods = useForm({
-        defaultValues: {
-          volume: article.volume || "",
-          volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
-          weight: article.weight || "",
-          weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
-          handyman: article.handyman || apiData.handymanTypes[0]?.value || "",
-          packingOption: article.packingOption || apiData.packingTypes[0]?.value || "",
-          moveStatus: article.moveStatus || "new",
-          amount: article.amount || "",
-          currency: article.currency || apiData.currencies[0]?.value || "INR",
-          remarks: article.remarks || "",
-          quantity: article.quantity || 0,
-          length: article.length || "",
-          width: article.width || "",
-          height: article.height || "",
-          useManualVolume: !!(article.volume && !article.calculated_volume),
-        },
-      });
-
-      const { handleSubmit: handleEditSubmit, watch, setValue } = editFormMethods;
-
-      const length = watch('length');
-      const width = watch('width');
-      const height = watch('height');
-      const useManualVolume = watch('useManualVolume');
-      const manualVolume = watch('volume');
-
-      useEffect(() => {
-        if (!useManualVolume && length && width && height) {
-          const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
-          setValue('volume', calculatedVolume.toFixed(4));
-
-          const calculatedWeight = calculatedVolume * 110;
-          setValue('weight', calculatedWeight.toFixed(2));
-        }
-      }, [length, width, height, useManualVolume, setValue]);
-
-      useEffect(() => {
-        if (useManualVolume && manualVolume) {
-          const calculatedWeight = parseFloat(manualVolume) * 110;
-          setValue('weight', calculatedWeight.toFixed(2));
-        }
-      }, [manualVolume, useManualVolume, setValue]);
-
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
-        >
-          <FormProvider {...editFormMethods}>
-            <div className="grid gap-6">
-              <div className="grid grid-cols-1 gap-6">
-                <QuantityInput
-                  label="Quantity"
-                  name="quantity"
-                  rules={{ required: "Quantity is required" }}
-                />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <Input
-                    label="Length (cm)"
-                    name="length"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                  <Input
-                    label="Width (cm)"
-                    name="width"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                  <Input
-                    label="Height (cm)"
-                    name="height"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="flex items-center gap-4 mb-4">
-                  <Input
-                    label="Use Manual Volume"
-                    name="useManualVolume"
-                    type="checkbox"
-                  />
-                  <div className="text-xs text-gray-500">
-                    {useManualVolume
-                      ? "Manual volume input enabled"
-                      : "Volume auto-calculated from dimensions"
-                    }
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Volume (m³)"
-                    name="volume"
-                    type="number"
-                    step="0.0001"
-                    rules={{ required: "Volume is required" }}
-                    disabled={!useManualVolume}
-                  />
-                  <Input
-                    label="Volume Unit"
-                    name="volumeUnit"
-                    type="select"
-                    options={apiData.volumeUnits}
-                  />
-                </div>
-
-                {!useManualVolume && length && width && height && (
-                  <div className="mt-2 text-xs text-green-600">
-                    Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
-                    (L×W×H/1,000,000)
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Input
-                  label="Weight (kg)"
-                  name="weight"
-                  type="number"
-                  step="0.01"
-                  rules={{ required: "Weight is required" }}
-                />
-                <Input
-                  label="Weight Unit"
-                  name="weightUnit"
-                  type="select"
-                  options={apiData.weightUnits}
-                />
-                <Input
-                  label="Handyman"
-                  name="handyman"
-                  type="select"
-                  options={apiData.handymanTypes}
-                />
-                <Input
-                  label="Packing Option"
-                  name="packingOption"
-                  type="select"
-                  options={apiData.packingTypes}
-                />
-                <Input
-                  label="Amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                />
-                <Input
-                  label="Currency"
-                  name="currency"
-                  type="select"
-                  options={apiData.currencies}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-6">
-                <Input
-                  label="Remarks"
-                  name="remarks"
-                  type="textarea"
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex gap-3 justify-end">
-              <button
-                type="button"
-                onClick={handleEditSubmit((data) => updateArticle(article.id, data))}
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-              >
-                Update
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingArticleId(null)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </FormProvider>
-        </motion.div>
-      );
-    };
-
-    const sections = [
-      {
-        id: "master-article",
-        title: "Master Article",
-        content: (
-          <>
-            {selectedRoom ? (
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-left">
-                        Item
-                      </th>
-                      <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-center">
-                        Quantity
-                      </th>
-                      <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-right">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {apiData.items
-                      .filter((item) => item.room === selectedRoom.id)
-                      .map((itemData) => (
-                        <ItemRow key={itemData.id} item={itemData} />
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center text-gray-500 py-4">
-                Please select a room to view items.
-              </div>
-            )}
-          </>
-        ),
-      },
-      {
-        id: "added-articles",
-        title: "Added Articles",
-        content: (
-          <div>
-            {watch("articles").length > 0 ? (
-              <div className="space-y-4">
-                {watch("articles").map((article, index) => (
-                  <div key={article.id}>
-                    <div
-                      className="flex justify-between items-start mb-3 cursor-pointer rounded"
-                      onClick={() => setEditingArticleId(editingArticleId === article.id ? null : article.id)}
-                    >
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {article.itemName}
-                          <span className="ml-2 text-sm font-normal text-gray-600">
-                            (Room: {getRoomNameById(article.room)})
-                          </span>
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {article.quantity}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeArticle(article.id);
-                          }}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                          aria-label={`Remove ${article.itemName}`}
-                        >
-                          <FaMinus className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          className="p-2 hover:bg-red-50 rounded-full transition-colors"
-                        >
-                          {editingArticleId === article.id ? (
-                            <FaChevronUp className="w-3 h-3 text-gray-500" />
-                          ) : (
-                            <FaChevronDown className="w-3 h-3 text-gray-500" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    {editingArticleId === article.id && (
-                      <EditArticleRow article={article} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-gray-400 mb-2">
-                  <svg
-                    className="w-16 h-16 mx-auto"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1"
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                </div>
-                <p className="text-gray-500 text-lg">No articles added yet</p>
-                <p className="text-gray-400 text-sm mt-1">
-                  Add articles using the form above
-                </p>
-              </div>
-            )}
+            </button>
           </div>
-        ),
-      },
-      {
-        id: "vehicle",
-        title: "Vehicle",
-        content: (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4">
-            <Input
-              label="Vehicle Type"
-              name="vehicles[0].vehicleType"
-              type="select"
-              options={apiData.vehicleTypes}
-              rules={{ required: "Vehicle Type is required" }}
-            />
-            <Input
-              label="Make"
-              name="vehicles[0].make"
-              type="text"
-              rules={{ required: "Make is required" }}
-            />
-            <Input
-              label="Model"
-              name="vehicles[0].model"
-              type="text"
-              rules={{ required: "Model is required" }}
-            />
-            <Input
-              label="Remark"
-              name="vehicles[0].remark"
-              type="textarea"
-            />
-          </div>
-        ),
-      },
-    ];
 
-    return (
-      <div className="space-y-8">
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Select Room
-          </h2>
-          <div className="relative">
+          {/* Sidebar button for desktop */}
+          <div className="hidden sm:block fixed top-1/2 right-0 transform -translate-y-1/2 z-30">
             <button
               type="button"
-              onClick={() => setShowRoomDropdown(!showRoomDropdown)}
-              className="w-full px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex justify-between items-center"
+              onClick={() => setShowArticlesPanel(true)}
+              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-4 rounded-l-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 group"
+              aria-label="View added articles"
             >
-              <span>{selectedRoom ? selectedRoom.label : "Select a Room"}</span>
-              <FaPlus
-                className={`w-3 h-3 transition-transform ${showRoomDropdown ? "rotate-45" : ""
-                  }`}
-              />
-            </button>
-            <AnimatePresence>
-              {showRoomDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute z-10 w-full mt-2 bg-white border rounded-md shadow-lg"
+              <div className="relative">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {apiData.rooms.map((room) => (
-                    <button
-                      key={room.id}
-                      type="button"
-                      onClick={() => handleRoomSelect(room)}
-                      className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100"
-                    >
-                      {room.label}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                {watch("articles").length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {watch("articles").length}
+                  </span>
+                )}
+              </div>
+              <span className="text-sm font-medium group-hover:block hidden">
+                Articles ({watch("articles").length})
+              </span>
+            </button>
           </div>
+
+          {selectedRoom ? (
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-left">
+                      Item
+                    </th>
+                    <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-center">
+                      Quantity
+                    </th>
+                    <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-right">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {apiData.items
+                    .filter((item) => item.room === selectedRoom.id)
+                    .map((itemData) => (
+                      <ItemRow key={itemData.id} item={itemData} />
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-4">
+              Please select a room to view items.
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "vehicle",
+      title: "Vehicle",
+      content: (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4">
+          <Input
+            label="Vehicle Type"
+            name="vehicles[0].vehicleType"
+            type="select"
+            options={apiData.vehicleTypes}
+            rules={{ required: "Vehicle Type is required" }}
+          />
+          <Input
+            label="Make"
+            name="vehicles[0].make"
+            type="text"
+            rules={{ required: "Make is required" }}
+          />
+          <Input
+            label="Model"
+            name="vehicles[0].model"
+            type="text"
+            rules={{ required: "Model is required" }}
+          />
+          <Input
+            label="Remark"
+            name="vehicles[0].remark"
+            type="textarea"
+          />
         </div>
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-8 relative">
+      {/* Articles Panel */}
+      <AddedArticlesPanel />
+      
+      {/* Overlay for mobile when panel is open */}
+      {showArticlesPanel && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+          onClick={() => setShowArticlesPanel(false)}
+        />
+      )}
+
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          Select Room
+        </h2>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowRoomDropdown(!showRoomDropdown)}
+            className="w-full px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex justify-between items-center"
           >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {section.title}
-              {section.id === "added-articles" && watch("articles").length > 0 && (
-                <span className="ml-2 bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full text-xs">
-                  {watch("articles").length}{" "}
-                  {watch("articles").length === 1 ? "article" : "articles"}
-                </span>
-              )}
-            </h2>
-            {section.content}
-          </div>
-        ))}
+            <span>{selectedRoom ? selectedRoom.label : "Select a Room"}</span>
+            <FaPlus
+              className={`w-3 h-3 transition-transform ${showRoomDropdown ? "rotate-45" : ""
+                }`}
+            />
+          </button>
+          <AnimatePresence>
+            {showRoomDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-10 w-full mt-2 bg-white border rounded-md shadow-lg"
+              >
+                {apiData.rooms.map((room) => (
+                  <button
+                    key={room.id}
+                    type="button"
+                    onClick={() => handleRoomSelect(room)}
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100"
+                  >
+                    {room.label}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    );
-  };
+      
+      {sections.map((section) => (
+        <div
+          key={section.id}
+          className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+        >
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            {section.title}
+          </h2>
+          {section.content}
+        </div>
+      ))}
+    </div>
+  );
+};
 
   const Pet = () => {
     const breedOptions = {
@@ -2501,7 +2621,7 @@ const SurveyDetails = () => {
   };
 
   return (
-    <div className="p-6">
+    <>
       {isLoading && (
         <div className="flex justify-center items-center min-h-screen">
           <Loading />
@@ -2572,7 +2692,7 @@ const SurveyDetails = () => {
           </div>
         </form>
       </FormProvider>
-    </div>
+    </>
   );
 };
 

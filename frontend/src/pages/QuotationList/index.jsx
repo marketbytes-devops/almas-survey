@@ -1,4 +1,3 @@
-// src/pages/QuotationPage.jsx
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -79,11 +78,11 @@ export default function QuotationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white p-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">QUOTATION</h2>
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-8 flex justify-between items-center">
+          <h2 className="text-lg font-light">Quotation</h2>
           <button
             onClick={() => navigate(-1)}
             className="text-4xl hover:opacity-80 transition"
@@ -96,7 +95,7 @@ export default function QuotationPage() {
           {/* Quotation No. + Date + Logo */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block font-semibold text-gray-700">Quotation No.</label>
+              <label className="block font-normal text-gray-700">Quotation No.</label>
               <input
                 type="text"
                 value={form.serialNo}
@@ -105,7 +104,7 @@ export default function QuotationPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-gray-700">Date</label>
+              <label className="block font-normal text-gray-700">Date</label>
               <input
                 type="date"
                 value={form.date}
@@ -113,15 +112,12 @@ export default function QuotationPage() {
                 className="w-full mt-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="text-right">
-              <img src="/logo.webp" alt="Almas Movers" className="h-16 inline-block" />
-            </div>
           </div>
 
           {/* Client Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block font-semibold text-gray-700">Client Name</label>
+              <label className="block font-normal text-gray-700">Client Name</label>
               <input
                 type="text"
                 value={form.client}
@@ -130,7 +126,7 @@ export default function QuotationPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-gray-700">Mobile</label>
+              <label className="block font-normal text-gray-700">Mobile</label>
               <input
                 type="text"
                 value={form.mobile}
@@ -139,7 +135,7 @@ export default function QuotationPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-gray-700">Email</label>
+              <label className="block font-normal text-gray-700">Email</label>
               <input
                 type="email"
                 value={form.email}
@@ -151,7 +147,7 @@ export default function QuotationPage() {
 
           {/* Service Required */}
           <div>
-            <label className="block font-semibold text-gray-700">Service Required</label>
+            <label className="block font-normal text-gray-700">Service Required</label>
             <input
               type="text"
               value={form.serviceRequired}
@@ -163,7 +159,7 @@ export default function QuotationPage() {
           {/* Move Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block font-semibold text-gray-700">Moving From</label>
+              <label className="block font-normal text-gray-700">Moving From</label>
               <input
                 type="text"
                 value={form.movingFrom}
@@ -172,7 +168,7 @@ export default function QuotationPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-gray-700">Building / Floor</label>
+              <label className="block font-normal text-gray-700">Building / Floor</label>
               <input
                 type="text"
                 value={form.buildingFrom}
@@ -181,7 +177,7 @@ export default function QuotationPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-gray-700">Moving To</label>
+              <label className="block font-normal text-gray-700">Moving To</label>
               <input
                 type="text"
                 value={form.movingTo}
@@ -190,7 +186,7 @@ export default function QuotationPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-gray-700">Date of Move</label>
+              <label className="block font-normal text-gray-700">Date of Move</label>
               <input
                 type="date"
                 value={form.moveDate}
@@ -199,7 +195,7 @@ export default function QuotationPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block font-semibold text-gray-700">Kind of Job</label>
+              <label className="block font-normal text-gray-700">Kind of Job</label>
               <select
                 value={form.jobType}
                 onChange={e => setForm({ ...form, jobType: e.target.value })}
@@ -214,8 +210,8 @@ export default function QuotationPage() {
 
           {/* Items & Volume */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-800">Items & Volume</h3>
-            <div className="overflow-x-auto rounded-lg border">
+            <h3 className="font-medium text-xl mb-3">Items & Volume</h3>
+            <div className="overflow-x-auto rounded-lg shadow-md">
               <table className="w-full">
                 <thead className="bg-gray-100">
                   <tr>
@@ -237,14 +233,14 @@ export default function QuotationPage() {
                 </tbody>
               </table>
             </div>
-            <div className="text-right mt-4 font-bold text-xl text-blue-700">
-              Total Volume: {totalVolume} cbm
+            <div className="text-right mt-4 font-semibold text-xl text-[#4c7085]">
+              Total Volume: {totalVolume} CBM
             </div>
           </div>
 
           {/* Additional Services */}
           <div>
-            <h3 className="font-bold text-lg mb-3 text-gray-800">Additional Services</h3>
+            <h3 className="font-medium text-xl mb-3">Additional Services</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Object.keys(form.services).map(key => (
                 <label key={key} className="flex items-center space-x-2">
@@ -270,7 +266,7 @@ export default function QuotationPage() {
                 type="number"
                 value={form.amount}
                 onChange={e => setForm({ ...form, amount: e.target.value })}
-                className="w-full mt-2 border-2 border-gray-300 rounded-lg px-4 py-3 text-lg font-semibold focus:border-blue-500"
+                className="w-full mt-2 border-2 border-gray-300 rounded-lg px-4 py-3 text-lg font-normal focus:border-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -280,7 +276,7 @@ export default function QuotationPage() {
                 type="number"
                 value={form.advance}
                 onChange={e => setForm({ ...form, advance: e.target.value })}
-                className="w-full mt-2 border-2 border-gray-300 rounded-lg px-4 py-3 text-lg font-semibold focus:border-blue-500"
+                className="w-full mt-2 border-2 border-gray-300 rounded-lg px-4 py-3 text-lg font-normal focus:border-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -296,10 +292,10 @@ export default function QuotationPage() {
           </div>
 
           {/* Generate Button */}
-          <div className="text-center pt-8">
+          <div className="text-center">
             <button
               onClick={handleSubmit}
-              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white font-bold text-xl px-16 py-5 rounded-xl shadow-lg transform hover:scale-105 transition duration-200"
+              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white text-lg px-4 py-2 rounded-xl shadow-lg transform hover:scale-105 transition duration-200"
             >
               Generate Quotation
             </button>

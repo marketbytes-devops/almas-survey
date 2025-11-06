@@ -25,10 +25,18 @@ import Manpower from "./pages/AdditionalSettings/Manpower";
 import Room from "./pages/AdditionalSettings/Room";
 import SurveySummary from "./pages/SurveySummary";
 import SurveyDetails from "./pages/SurveyDetails";
-import Pricing from "./pages/SurveyDetails/Pricing"
-import Quotation from "./pages/Quotation";
-import QuotationList from "./pages/QuotationList";
-const ProtectedRoute = ({ children, isAuthenticated, requiredPage, requiredAction = "view" }) => {
+import LocalMove from "./pages/Pricing/LocalMove";
+import InternationalMove from "./pages/Pricing/InternationalMove";
+import QuotationList from "./pages/Quotation";
+import QuotationPage from "./pages/QuotationList";
+
+
+const ProtectedRoute = ({
+  children,
+  isAuthenticated,
+  requiredPage,
+  requiredAction = "view",
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
 
@@ -230,6 +238,22 @@ function App() {
             </ProtectedRoute>
           ),
         },
+        {
+          path: "/quotation",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+              <QuotationList />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/quotation/:id",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+              <QuotationPage />
+            </ProtectedRoute>
+          ),
+        },
 
         {
           path: "/additional-settings/types",
@@ -355,25 +379,6 @@ function App() {
             </ProtectedRoute>
           ),
         },
-        {
-          path:"/pricing",
-          element:(
-            <Pricing />
-          )
-        },
-        {
-     path: "/quotation",
-     element: <Quotation />,  
-       },
-       {
-  path: "/quotation/:id",
-  element: (
-    <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
-      <QuotationList />
-    </ProtectedRoute>
-  ),
-},
-       
       ],
     },
   ]);

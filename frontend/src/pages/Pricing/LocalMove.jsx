@@ -39,7 +39,6 @@ const LocalMove = () => {
       setLoading(true);
       setError(null);
 
-      // Simple fetch without authentication since endpoints are AllowAny
       const [
         hubsResponse,
         moveTypesResponse,
@@ -58,16 +57,16 @@ const LocalMove = () => {
 
       // Check if all responses are ok
       const responses = [
-        hubsResponse, 
-        moveTypesResponse, 
-        tariffTypesResponse, 
-        currenciesResponse, 
-        volumeUnitsResponse, 
+        hubsResponse,
+        moveTypesResponse,
+        tariffTypesResponse,
+        currenciesResponse,
+        volumeUnitsResponse,
         weightUnitsResponse
       ];
-      
+
       const failedResponse = responses.find(response => !response.ok);
-      
+
       if (failedResponse) {
         throw new Error(`Failed to fetch data: ${failedResponse.status} ${failedResponse.statusText}`);
       }
@@ -117,12 +116,12 @@ const LocalMove = () => {
   // Transform API data to dropdown options
   const getDropdownOptions = (data, nameField = 'name', valueField = 'id') => {
     if (!data || !Array.isArray(data)) return [];
-    
+
     return data.map(item => {
       // Handle different field names across APIs
       const displayValue = item[nameField] || item.title || item.code || item.symbol || String(item[valueField]);
       const itemValue = item[valueField] !== undefined ? item[valueField] : item.id;
-      
+
       return {
         value: itemValue,
         label: displayValue
@@ -138,13 +137,15 @@ const LocalMove = () => {
   ];
 
   const tableData = [
-    { range: "Range 2", min: "10.01", max: "", rate: "625.00", adjustment: "0.00" },
-    { range: "Range 3", min: "20.01", max: "40.00", rate: "675.00", adjustment: "0.00" },
-    { range: "Range 4", min: "30.01", max: "50.00", rate: "775.00", adjustment: "0.00" },
-    { range: "Range 5", min: "40.01", max: "60.00", rate: "825.00", adjustment: "0.00" },
-    { range: "Range 6", min: "50.01", max: "70.00", rate: "875.00", adjustment: "0.00" },
-    { range: "Range 7", min: "60.01", max: "", rate: "925.00", adjustment: "0.00" },
-  ];
+    { range: "Range 1", min: "00.01", max: "10.00", rate: "625.00", adjustment: "0.00" },
+    { range: "Range 2", min: "10.01", max: "20.00", rate: "625.00", adjustment: "0.00" },
+    { range: "Range 3", min: "20.01", max: "30.00", rate: "675.00", adjustment: "0.00" },
+    { range: "Range 4", min: "30.01", max: "40.00", rate: "775.00", adjustment: "0.00" },
+    { range: "Range 5", min: "40.01", max: "50.00", rate: "825.00", adjustment: "0.00" },
+    { range: "Range 6", min: "50.01", max: "60.00", rate: "875.00", adjustment: "0.00" },
+    { range: "Range 7", min: "60.01", max: "70.01", rate: "925.00", adjustment: "0.00" }
+  ]
+    ;
 
   if (loading) {
     return (
@@ -163,7 +164,7 @@ const LocalMove = () => {
         <div className="text-center max-w-md">
           <div className="text-red-600 text-xl mb-4">Error Loading Data</div>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={fetchDropdownData}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >
@@ -178,18 +179,17 @@ const LocalMove = () => {
     <FormProvider {...methods}>
       <div className="min-h-screen bg-gray-50">
         {/* Top Navigation */}
-        <div className="bg-gradient-to-r from-[#1e40af] to-[#3b82f6] text-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <nav className="flex flex-wrap gap-2 py-3 text-sm">
+        <div className="bg-gray-100 shadow-md rounded-lg text-white">
+          <div className="mx-auto px-4">
+            <nav className="grid grid-cols-1 sm:grid-cols-4 gap-2 py-3 text-sm">
               {navItems.map((item) => (
                 <button
                   key={item.to}
                   onClick={() => setActiveTab(item.to.slice(1))}
-                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                    activeTab === item.to.slice(1)
-                      ? "bg-white/20 shadow-md"
-                      : "hover:bg-white/10"
-                  }`}
+                  className={`w-full px-4 py-2 rounded-md font-medium transition-colors ${activeTab === item.to.slice(1)
+                      ? "text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+                      : "text-sm bg-gray-400 text-white py-2 px-4 rounded"
+                    }`}
                 >
                   {item.label}
                 </button>
@@ -199,14 +199,14 @@ const LocalMove = () => {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold text-[#1e40af] text-center mb-8">
-            LOCAL MOVE RATES
+        <div className="max-w-full mx-auto py-8">
+          <h1 className="text-2xl font-bold text-[#4c7085] text-center mb-8">
+            Local Move Rates
           </h1>
 
           {/* Controls Bar */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Select A Hub
@@ -251,9 +251,6 @@ const LocalMove = () => {
                   options={tableUnitOptions}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Table Currency
@@ -264,13 +261,15 @@ const LocalMove = () => {
                   options={getDropdownOptions(dropdownData.currencies, 'name', 'id')}
                 />
               </div>
+            </div>
 
+            <div className="grid gap-4 mt-4">
               <div className="flex items-end gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                <button className="flex items-center gap-2 text-sm bg-gray-400 text-white py-2 px-4 rounded">
                   <FaCopy />
                   COPY
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                <button className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded">
                   <FaSave />
                   SAVE
                 </button>

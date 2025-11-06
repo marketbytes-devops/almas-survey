@@ -20,7 +20,6 @@ import {
   AiOutlineUsergroupAdd,
   AiOutlineKey,
   AiOutlineIdcard,
-  AiOutlineFileText, 
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -134,12 +133,37 @@ const Sidebar = ({ toggleSidebar }) => {
       action: "view",
     },
     {
-    id: "quotation",
-    to: "/quotation",
-    label: "Quotation",
-    icon: <AiOutlineFileText className="w-4 h-4 mr-3" />,
-    page: "quotation",
-    action: "view",
+      id: "pricing",
+      label: "Pricing",
+      icon: <AiOutlineDollar className="w-4 h-4 mr-3" />,
+      page: "pricing",
+      action: "view",
+      subItems: [
+        {
+          id: "local-move",
+          to: "/pricing/local-move",
+          label: "Local Move",
+          icon: <AiOutlineHome className="w-4 h-4 mr-3" />,
+          page: "local_move",
+          action: "view",
+        },
+        {
+          id: "international-move",
+          to: "/pricing/international-move",
+          label: "International Move",
+          icon: <AiOutlineTool className="w-4 h-4 mr-3" />,
+          page: "international_move",
+          action: "view",
+        },
+      ],
+    },
+    {
+      id: "quotation",
+      to: "/quotation",
+      label: "Quotation",
+      icon: <AiOutlineBarChart className="w-4 h-4 mr-3" />,
+      page: "quotation",
+      action: "view",
     },
     {
       id: "additional-settings",
@@ -287,11 +311,10 @@ const Sidebar = ({ toggleSidebar }) => {
         <>
           <button
             onClick={toggleFunction}
-            className={`flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${
-              isOpen || isActiveSubmenu
+            className={`flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isOpen || isActiveSubmenu
                 ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
                 : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-            }`}
+              }`}
           >
             <span className="flex items-center">
               {item.icon}
@@ -317,10 +340,9 @@ const Sidebar = ({ toggleSidebar }) => {
                     <NavLink
                       to={subItem.to}
                       className={({ isActive }) =>
-                        `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${
-                          isActive
-                            ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isActive
+                          ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                         }`
                       }
                       onClick={() => isMobile() && toggleSidebar()}
@@ -343,10 +365,9 @@ const Sidebar = ({ toggleSidebar }) => {
         <NavLink
           to={item.to}
           className={({ isActive }) =>
-            `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${
-              isActive
-                ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+            `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isActive
+              ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
             }`
           }
           onClick={() => isMobile() && toggleSidebar()}
