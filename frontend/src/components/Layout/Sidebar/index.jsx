@@ -29,7 +29,7 @@ const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [isUserRolesOpen, setIsUserRolesOpen] = useState(false);
   const [isadditional_settingsOpen, setIsadditional_settingsOpen] = useState(false);
-  const [isPricingOpen, setIsPricingOpen] = useState(false); // New state for Pricing section
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +87,7 @@ const Sidebar = ({ toggleSidebar }) => {
 
   const toggleUserRoles = () => setIsUserRolesOpen(!isUserRolesOpen);
   const toggleadditional_settings = () => setIsadditional_settingsOpen(!isadditional_settingsOpen);
-  const togglePricing = () => setIsPricingOpen(!isPricingOpen); // Toggle function for Pricing section
+  const togglePricing = () => setIsPricingOpen(!isPricingOpen);
 
   const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
 
@@ -159,7 +159,7 @@ const Sidebar = ({ toggleSidebar }) => {
     },
     {
       id: "quotation",
-      to: "/quotation",
+      to: "/quotation-list",
       label: "Quotation",
       icon: <AiOutlineBarChart className="w-4 h-4 mr-3" />,
       page: "quotation",
@@ -312,8 +312,8 @@ const Sidebar = ({ toggleSidebar }) => {
           <button
             onClick={toggleFunction}
             className={`flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isOpen || isActiveSubmenu
-                ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
               }`}
           >
             <span className="flex items-center">

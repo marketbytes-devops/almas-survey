@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'contact',
     'documentation',
     'survey',
+    'quotation',
     'additional_settings',
 
 ]

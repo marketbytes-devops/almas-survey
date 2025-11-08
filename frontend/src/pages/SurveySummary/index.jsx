@@ -18,7 +18,6 @@ const SurveySummary = () => {
   const [success, setSuccess] = useState(null);
   const [printing, setPrinting] = useState(null);
 
-  // ADDED: Helper function to format status display
   const formatStatus = (status) => {
     const statusMap = {
       'pending': 'Pending',

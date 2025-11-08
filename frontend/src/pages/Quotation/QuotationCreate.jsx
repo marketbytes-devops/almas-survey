@@ -1,0 +1,330 @@
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import apiClient from "../../api/apiClient";
+import Loading from "../../components/Loading";
+
+const SERVICE_TYPE_DISPLAY = {
+  localMove: "Local Move",
+  internationalMove: "International Move",
+  carExport: "Car Import and Export",
+  storageServices: "Storage Services",
+  logistics: "Logistics",
+};
+
+export default function QuotationCreate() {
+  const { id } = useParams();              
+  const navigate = useNavigate();
+
+  const [survey, setSurvey] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const [form, setForm] = useState({
+    serialNo: "1001",
+    date: today,
+    client: "",
+    mobile: "",
+    email: "",
+    serviceRequired: "",
+    movingFrom: "",
+    buildingFrom: "",
+    movingTo: "",
+    moveDate: today,
+    jobType: "Local",
+    rooms: [],                       
+    services: {
+      wallInstallation: false,
+      curtainInstallation: false,
+      kitchenPacking: false,
+      clothesPacking: false,
+      clothesUnpacking: false,
+      miscBoxPacking: false,
+      miscBoxUnpacking: false,
+    },
+    amount: "",
+    advance: "",
+  });
+
+  useEffect(() => {
+    const fetchSurvey = async () => {
+      try {
+        const res = await apiClient.get(`/surveys/${id}/`);
+        const s = res.data;
+        setSurvey(s);
+
+        const rooms = (s.articles || []).map(a => {
+          const vol = a.volume ? parseFloat(a.volume) : 0;
+          return {
+            room: a.room_name || "—",
+            item: a.item_name || "—",
+            qty: a.quantity || 0,
+            volume: vol.toFixed(2),             
+          };
+        });
+
+        const get = (primary, fallback) => primary ?? fallback ?? "—";
+
+        setForm(prev => ({
+          ...prev,
+          client: get(s.full_name, s.enquiry?.fullName),
+          mobile: get(s.phone_number, s.enquiry?.phoneNumber),
+          email: get(s.email, s.enquiry?.email),
+          serviceRequired:
+            SERVICE_TYPE_DISPLAY[s.service_type] ||
+            SERVICE_TYPE_DISPLAY[s.enquiry?.serviceType] ||
+            "—",
+          movingFrom: get(s.origin_address),
+          buildingFrom: [
+            s.origin_floor ? "Floor" : "",
+            s.origin_lift ? "Lift" : "",
+          ].filter(Boolean).join(" + ") || "—",
+          movingTo: s.destination_addresses?.[0]?.address || "—",
+          moveDate: s.packing_date_from || today,
+          jobType: s.service_type === "localMove" ? "Local" : "International",
+          rooms,
+          services: {
+            wallInstallation: !!s.general_handyman,
+            curtainInstallation: !!s.general_handyman,
+            kitchenPacking: !!s.general_owner_packed,
+            clothesPacking: !!s.general_owner_packed,
+            clothesUnpacking: false,
+            miscBoxPacking: !!s.general_owner_packed,
+            miscBoxUnpacking: false,
+          },
+        }));
+      } catch (err) {
+        setError("Failed to load survey data. Please try again.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSurvey();
+  }, [id, today]);
+
+  const totalVolume = form.rooms
+    .reduce((sum, r) => {
+      const vol = parseFloat(r.volume) || 0;
+      const qty = r.qty || 0;
+      return sum + vol * qty;
+    }, 0)
+    .toFixed(2);
+
+  const handleCreate = async () => {
+    if (!form.amount) {
+      alert("Please enter the total amount.");
+      return;
+    }
+
+    const payload = {
+      survey: parseInt(survey.id),  
+      serial_no: form.serialNo,
+      date: form.date,
+      amount: parseFloat(form.amount),
+      advance: form.advance ? parseFloat(form.advance) : 0,
+    };
+
+    try {
+      await apiClient.post("/quotation-create/", payload);
+      alert("Quotation created successfully!");
+      navigate("/quotation-list");
+    } catch (err) {
+      const msg =
+        err.response?.data?.detail ||
+        Object.values(err.response?.data || {})[0] ||
+        "Failed to create quotation.";
+      alert("Error: " + msg);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="text-center text-red-600 p-5">{error}</div>;
+  }
+
+  return (
+    <div className="bg-gray-50">
+      <div className="mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-8 flex justify-between items-center">
+          <h2 className="text-lg font-light">Create Quotation</h2>
+          <button
+            onClick={() => navigate(-1)}
+            className="text-4xl hover:opacity-80 transition"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-normal text-black text-sm">Quotation No.</label>
+              <input
+                type="text"
+                value={form.serialNo}
+                onChange={e => setForm({ ...form, serialNo: e.target.value })}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block font-normal text-black text-sm">Date</label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={e => setForm({ ...form, date: e.target.value })}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block font-normal text-black text-sm">Client Name</label>
+              <input type="text" value={form.client} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="block font-normal text-black text-sm">Mobile</label>
+              <input type="text" value={form.mobile} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="block font-normal text-black text-sm">Email</label>
+              <input type="email" value={form.email} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block font-normal text-black text-sm">Service Required</label>
+            <input type="text" value={form.serviceRequired} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-normal text-black text-sm">Moving From</label>
+              <input type="text" value={form.movingFrom} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="block font-normal text-black text-sm">Building / Floor</label>
+              <input type="text" value={form.buildingFrom} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="block font-normal text-black text-sm">Moving To</label>
+              <input type="text" value={form.movingTo} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="block font-normal text-black text-sm">Date of Move</label>
+              <input type="date" value={form.moveDate} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block font-normal text-black text-sm">Kind of Job</label>
+              <input type="text" value={form.jobType} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
+            </div>
+          </div>
+          <div>
+            <h3 className="font-medium text-lg mb-3">Items & Volume</h3>
+            <div className="overflow-x-auto rounded-lg shadow-md">
+              <table className="w-full">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Room</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Item</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Qty</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Volume (cbm)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {form.rooms.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                        No items found.
+                      </td>
+                    </tr>
+                  ) : (
+                    form.rooms.map((row, i) => (
+                      <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                        <td className="px-4 py-3 text-sm font-medium">{row.room}</td>
+                        <td className="px-4 py-3 text-sm">{row.item}</td>
+                        <td className="px-4 py-3 text-sm text-center">{row.qty}</td>
+                        <td className="px-4 py-3 text-sm text-center">{row.volume}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-right mt-4 font-normal text-lg text-[#4c7085]">
+              Total Volume - {totalVolume} CBM
+            </div>
+          </div>
+          <div>
+            <h3 className="font-medium text-lg mb-3">Additional Services</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(form.services).map(([key, value]) => (
+                <label key={key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    readOnly
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm">
+                    {key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block font-medium text-black text-sm">Total Amount (QAR)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={form.amount}
+                onChange={e => setForm({ ...form, amount: e.target.value })}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-black text-sm">Advance</label>
+              <input
+                type="number"
+                step="0.01"
+                value={form.advance}
+                onChange={e => setForm({ ...form, advance: e.target.value })}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-black text-sm">Balance</label>
+              <input
+                type="text"
+                readOnly
+                value={
+                  form.amount && form.advance
+                    ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)
+                    : ""
+                }
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="text-center">
+            <button
+              onClick={handleCreate}
+              className="w-full text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded-xl shadow-lg transform transition duration-200"
+            >
+              Create Quotation
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

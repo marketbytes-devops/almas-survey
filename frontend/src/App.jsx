@@ -27,9 +27,10 @@ import SurveySummary from "./pages/SurveySummary";
 import SurveyDetails from "./pages/SurveyDetails";
 import LocalMove from "./pages/Pricing/LocalMove";
 import InternationalMove from "./pages/Pricing/InternationalMove";
-import QuotationList from "./pages/Quotation";
-import QuotationPage from "./pages/QuotationList";
-
+import QuotationList from "./pages/Quotation/QuotationList";
+import QuotationCreate from "./pages/Quotation/QuotationCreate";
+import QuotationEdit from "./pages/Quotation/QuotationEdit";
+import QuotationView from "./pages/Quotation/QuotationView";
 
 const ProtectedRoute = ({
   children,
@@ -239,7 +240,7 @@ function App() {
           ),
         },
         {
-          path: "/quotation",
+          path: "/quotation-list",
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
               <QuotationList />
@@ -247,14 +248,29 @@ function App() {
           ),
         },
         {
-          path: "/quotation/:id",
+          path: "/quotation-create/:id",
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
-              <QuotationPage />
+              <QuotationCreate />
             </ProtectedRoute>
           ),
         },
-
+        {
+          path: "/quotation-edit/:id",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+              <QuotationEdit />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/quotation-view/:id",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+              <QuotationView />
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "/additional-settings/types",
           element: (
