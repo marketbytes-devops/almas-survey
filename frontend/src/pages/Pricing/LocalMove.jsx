@@ -242,20 +242,11 @@ const LocalMove = () => {
             </div>
 
             <div className="flex gap-4 mt-6">
-              <button className="flex items-center gap-2 px-5 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+              <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
                 <FaCopy /> COPY
               </button>
-              <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:from-[#3a586d] hover:to-[#54738a] transition shadow-md">
+              <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:from-[#3a586d] hover:to-[#54738a] transition shadow-md">
                 <FaSave /> SAVE
-              </button>
-
-              {/* Add Row button – placed on the right */}
-              <button
-                type="button"
-                onClick={addRow}
-                className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-              >
-                <FaPlus /> Add Row
               </button>
             </div>
           </div>
@@ -315,9 +306,8 @@ const LocalMove = () => {
                           value={row.flatRate}
                           disabled={isVariable}
                           onChange={(e) => handleInputChange(row.id, "flatRate", e.target.value)}
-                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition font-medium ${
-                            isVariable ? "bg-gray-300 cursor-not-allowed" : ""
-                          }`}
+                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition font-medium ${isVariable ? "bg-gray-300 cursor-not-allowed" : ""
+                            }`}
                         />
                       </td>
 
@@ -327,9 +317,8 @@ const LocalMove = () => {
                           type="text"
                           value={variableRate}
                           readOnly
-                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg outline-none transition ${
-                            isFlat ? "bg-gray-300 cursor-not-allowed" : ""
-                          }`}
+                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg outline-none transition ${isFlat ? "bg-gray-300 cursor-not-allowed" : ""
+                            }`}
                         />
                       </td>
 
@@ -385,6 +374,15 @@ const LocalMove = () => {
                 })}
               </tbody>
             </table>
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={addRow}
+                className="my-4 mx-6 w-full whitespace-nowrap flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
+              >
+                <FaPlus /> Add Row
+              </button>
+            </div>
           </div>
         </div>
       </div>
