@@ -3,6 +3,7 @@ from django.utils import timezone
 from survey.models import Survey
 from additional_settings.models import Currency
 from django.core.validators import MinValueValidator
+import json
 
 
 class Quotation(models.Model):
@@ -35,6 +36,19 @@ class Quotation(models.Model):
         Currency, on_delete=models.SET_NULL, null=True, blank=True
     )
     notes = models.TextField(null=True, blank=True)
+
+    # NEW FIELDS - Service Includes & Excludes
+    included_services = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of included services (e.g., ['Packing Service', 'Loading'])"
+    )
+    excluded_services = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of excluded services (e.g., ['Insurance', 'Storage'])"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
@@ -57,5 +71,11 @@ class Quotation(models.Model):
         if not self.serial_no:
             last = Quotation.objects.order_by("-id").first()
             self.serial_no = str(int(last.serial_no or "1000") + 1) if last else "1001"
+
+        # Ensure JSON fields are lists
+        if not isinstance(self.included_services, list):
+            self.included_services = []
+        if not isinstance(self.excluded_services, list):
+            self.excluded_services = []
 
         super().save(*args, **kwargs)

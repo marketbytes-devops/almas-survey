@@ -5,8 +5,8 @@ from contact.models import Enquiry
 from additional_settings.models import CustomerType, ServiceType, Room, VolumeUnit, WeightUnit, PackingType, Handyman, Currency, VehicleType
 
 class Survey(models.Model):
-    enquiry = models.OneToOneField(
-        Enquiry, on_delete=models.CASCADE, related_name="survey", null=True, blank=True
+    enquiry = models.ForeignKey(
+        Enquiry, on_delete=models.CASCADE, related_name="surveys", null=True, blank=True
     )
     customer_type = models.ForeignKey(
         CustomerType, on_delete=models.SET_NULL, null=True, blank=True, related_name="surveys"

@@ -11,15 +11,67 @@ const SERVICE_TYPE_DISPLAY = {
   logistics: "Logistics",
 };
 
+const SERVICE_INCLUDES = [
+  "Packing Service",
+  "Customer packed boxes collection",
+  "Miscellaneous items packing",
+  "Furniture dismantling and packing",
+  "Loading",
+  "Transportation",
+  "Unloading , unpacking",
+  "Furniture assembly",
+  "Debris removal on same day",
+];
+
+const SERVICE_EXCLUDES = [
+  "Insurance",
+  "Storage",
+  "Cleaning service, plumbing service , electrical works if any",
+  "Chandelier removal / installation/ Plan soil removal, Wall installation",
+];
+
 export default function QuotationCreate() {
-  const { id } = useParams();              
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const today = new Date().toISOString().split("T")[0];
+
+  // Pricing ranges from LocalMove page (you can fetch from API later)
+// REPLACE THE OLD LINE WITH THESE 2 LINES
+const [pricingRanges, setPricingRanges] = useState([]);
+
+// ADD THIS useEffect (ANYWHERE AFTER ALL useState)
+useEffect(() => {
+  const fetchLivePricing = async () => {
+    try {
+      const res = await apiClient.get("/api/price/active/");
+      const liveRates = res.data.map(item => ({
+        min: parseFloat(item.min_volume),
+        max: parseFloat(item.max_volume),
+        rate: parseFloat(item.rate),
+        type: item.rate_type
+      }));
+      setPricingRanges(liveRates);
+    } catch (err) {
+      console.log("Using backup rates");
+      // fallback only if API fails
+      setPricingRanges([
+        { min: 0.01, max: 10.00, rate: 625.00, type: "variable" },
+        { min: 10.01, max: 20.00, rate: 625.00, type: "flat" },
+        { min: 20.01, max: 30.00, rate: 675.00, type: "flat" },
+        { min: 30.01, max: 40.00, rate: 775.00, type: "flat" },
+        { min: 40.01, max: 50.00, rate: 825.00, type: "flat" },
+        { min: 50.01, max: 60.00, rate: 875.00, type: "flat" },
+        { min: 60.01, max: 70.00, rate: 925.00, type: "flat" },
+      ]);
+    }
+  };
+  fetchLivePricing();
+}, []);
+
 
   const [form, setForm] = useState({
     serialNo: "1001",
@@ -33,18 +85,12 @@ export default function QuotationCreate() {
     movingTo: "",
     moveDate: today,
     jobType: "Local",
-    rooms: [],                       
-    services: {
-      wallInstallation: false,
-      curtainInstallation: false,
-      kitchenPacking: false,
-      clothesPacking: false,
-      clothesUnpacking: false,
-      miscBoxPacking: false,
-      miscBoxUnpacking: false,
-    },
+    rooms: [],
+    pricingMode: "variable", // default
     amount: "",
     advance: "",
+    includedServices: SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
+    excludedServices: SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
   });
 
   useEffect(() => {
@@ -54,15 +100,12 @@ export default function QuotationCreate() {
         const s = res.data;
         setSurvey(s);
 
-        const rooms = (s.articles || []).map(a => {
-          const vol = a.volume ? parseFloat(a.volume) : 0;
-          return {
-            room: a.room_name || "—",
-            item: a.item_name || "—",
-            qty: a.quantity || 0,
-            volume: vol.toFixed(2),             
-          };
-        });
+        const rooms = (s.articles || []).map(a => ({
+          room: a.room_name || "—",
+          item: a.item_name || "—",
+          qty: a.quantity || 0,
+          volume: parseFloat(a.volume || 0).toFixed(2),
+        }));
 
         const get = (primary, fallback) => primary ?? fallback ?? "—";
 
@@ -84,18 +127,9 @@ export default function QuotationCreate() {
           moveDate: s.packing_date_from || today,
           jobType: s.service_type === "localMove" ? "Local" : "International",
           rooms,
-          services: {
-            wallInstallation: !!s.general_handyman,
-            curtainInstallation: !!s.general_handyman,
-            kitchenPacking: !!s.general_owner_packed,
-            clothesPacking: !!s.general_owner_packed,
-            clothesUnpacking: false,
-            miscBoxPacking: !!s.general_owner_packed,
-            miscBoxUnpacking: false,
-          },
         }));
       } catch (err) {
-        setError("Failed to load survey data. Please try again.");
+        setError("Failed to load survey data.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -105,26 +139,53 @@ export default function QuotationCreate() {
     fetchSurvey();
   }, [id, today]);
 
+  // Calculate Total Volume
   const totalVolume = form.rooms
-    .reduce((sum, r) => {
-      const vol = parseFloat(r.volume) || 0;
-      const qty = r.qty || 0;
-      return sum + vol * qty;
-    }, 0)
+    .reduce((sum, r) => sum + (parseFloat(r.volume) || 0) * (r.qty || 0), 0)
     .toFixed(2);
+
+  // Auto-calculate amount based on pricing mode
+  useEffect(() => {
+    if (!totalVolume || totalVolume <= 0) return;
+
+    const volume = parseFloat(totalVolume);
+
+    // Find applicable range
+    const applicableRange = pricingRanges.find(r =>
+      volume >= r.min && volume <= r.max
+    );
+
+    if (!applicableRange) {
+      setForm(prev => ({ ...prev, amount: "" }));
+      return;
+    }
+
+    let calculatedAmount = 0;
+
+    if (form.pricingMode === "variable") {
+      calculatedAmount = applicableRange.rate * volume;
+    } else {
+      calculatedAmount = applicableRange.rate;
+    }
+
+    setForm(prev => ({ ...prev, amount: calculatedAmount.toFixed(2) }));
+  }, [totalVolume, form.pricingMode, pricingRanges]);
 
   const handleCreate = async () => {
     if (!form.amount) {
-      alert("Please enter the total amount.");
+      alert("Amount is not calculated. Check volume or pricing.");
       return;
     }
 
     const payload = {
-      survey: parseInt(survey.id),  
+      survey: parseInt(survey.id),
       serial_no: form.serialNo,
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
+      included_services: Object.keys(form.includedServices).filter(k => form.includedServices[k]),
+      excluded_services: Object.keys(form.excludedServices).filter(k => form.excludedServices[k]),
+      pricing_mode: form.pricingMode, // optional: save mode
     };
 
     try {
@@ -132,195 +193,202 @@ export default function QuotationCreate() {
       alert("Quotation created successfully!");
       navigate("/quotation-list");
     } catch (err) {
-      const msg =
-        err.response?.data?.detail ||
-        Object.values(err.response?.data || {})[0] ||
-        "Failed to create quotation.";
-      alert("Error: " + msg);
+      alert("Error: " + (err.response?.data?.detail || "Failed to create quotation."));
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
-  if (error) {
-    return <div className="text-center text-red-600 p-5">{error}</div>;
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
+  if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
 
   return (
-    <div className="bg-gray-50">
-      <div className="mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-8 flex justify-between items-center">
-          <h2 className="text-lg font-light">Create Quotation</h2>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-4xl hover:opacity-80 transition"
-          >
-            ×
-          </button>
+    <div className="bg-gray-50 min-h-screen py-8">
+      <div className="mx-auto max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center">
+          <h2 className="text-xl font-light">Create Quotation</h2>
+          <button onClick={() => navigate(-1)} className="text-4xl hover:opacity-80">×</button>
         </div>
-        <div className="p-8 space-y-8">
+
+        <div className="p-8 space-y-10">
+
+          {/* Quotation No & Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block font-normal text-black text-sm">Quotation No.</label>
-              <input
-                type="text"
-                value={form.serialNo}
-                onChange={e => setForm({ ...form, serialNo: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700">Quotation No.</label>
+              <input type="text" value={form.serialNo} onChange={e => setForm({ ...form, serialNo: e.target.value })}
+                className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:border-blue-500" />
             </div>
             <div>
-              <label className="block font-normal text-black text-sm">Date</label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={e => setForm({ ...form, date: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700">Date</label>
+              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+                className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:border-blue-500" />
             </div>
           </div>
+
+          {/* Client Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block font-normal text-black text-sm">Client Name</label>
-              <input type="text" value={form.client} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Mobile</label>
-              <input type="text" value={form.mobile} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Email</label>
-              <input type="email" value={form.email} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
+            {["Client Name", "Mobile", "Email"].map((label, i) => (
+              <div key={i}>
+                <label className="block text-sm font-medium text-gray-700">{label}</label>
+                <input type="text" value={[form.client, form.mobile, form.email][i]} readOnly
+                  className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 bg-gray-50" />
+              </div>
+            ))}
           </div>
+
+          {/* Moving Details */}
+          {["Service Required", "Moving From", "Building / Floor", "Moving To", "Date of Move"].map((label, i) => {
+            const value = [form.serviceRequired, form.movingFrom, form.buildingFrom, form.movingTo, form.moveDate][i];
+            return (
+              <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">{label}</label>
+                  <input type="text" value={value} readOnly
+                    className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 bg-gray-50" />
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Items & Volume */}
           <div>
-            <label className="block font-normal text-black text-sm">Service Required</label>
-            <input type="text" value={form.serviceRequired} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block font-normal text-black text-sm">Moving From</label>
-              <input type="text" value={form.movingFrom} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Building / Floor</label>
-              <input type="text" value={form.buildingFrom} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Moving To</label>
-              <input type="text" value={form.movingTo} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Date of Move</label>
-              <input type="date" value={form.moveDate} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block font-normal text-black text-sm">Kind of Job</label>
-              <input type="text" value={form.jobType} readOnly className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500" />
-            </div>
-          </div>
-          <div>
-            <h3 className="font-medium text-lg mb-3">Items & Volume</h3>
-            <div className="overflow-x-auto rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold mb-4">Items & Volume</h3>
+            <div className="overflow-x-auto rounded-lg border">
               <table className="w-full">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Room</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Item</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Qty</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Volume (cbm)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Room</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Item</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase">Qty</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase">Volume (cbm)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {form.rooms.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                        No items found.
-                      </td>
+                  {form.rooms.map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                      <td className="px-6 py-4 text-sm">{row.room}</td>
+                      <td className="px-6 py-4 text-sm">{row.item}</td>
+                      <td className="px-6 py-4 text-sm text-center">{row.qty}</td>
+                      <td className="px-6 py-4 text-sm text-center">{row.volume}</td>
                     </tr>
-                  ) : (
-                    form.rooms.map((row, i) => (
-                      <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                        <td className="px-4 py-3 text-sm font-medium">{row.room}</td>
-                        <td className="px-4 py-3 text-sm">{row.item}</td>
-                        <td className="px-4 py-3 text-sm text-center">{row.qty}</td>
-                        <td className="px-4 py-3 text-sm text-center">{row.volume}</td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
-            <div className="text-right mt-4 font-normal text-lg text-[#4c7085]">
-              Total Volume - {totalVolume} CBM
+            <div className="text-right mt-4 text-xl font-bold text-[#4c7085]">
+              Total Volume: {totalVolume} CBM
             </div>
           </div>
-          <div>
-            <h3 className="font-medium text-lg mb-3">Additional Services</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(form.services).map(([key, value]) => (
-                <label key={key} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    readOnly
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm">
-                    {key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}
-                  </span>
-                </label>
-              ))}
+
+          {/* PRICING MODE SELECTION */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
+            <h3 className="text-lg font-bold mb-4 text-gray-800">Pricing Mode</h3>
+            <div className="flex gap-8 justify-center">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pricingMode"
+                  value="variable"
+                  checked={form.pricingMode === "variable"}
+                  onChange={(e) => setForm({ ...form, pricingMode: e.target.value })}
+                  className="w-5 h-5 text-blue-600"
+                />
+                <span className="text-lg font-medium">Variable (Rate × Volume)</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pricingMode"
+                  value="fixed"
+                  checked={form.pricingMode === "fixed"}
+                  onChange={(e) => setForm({ ...form, pricingMode: e.target.value })}
+                  className="w-5 h-5 text-purple-600"
+                />
+                <span className="text-lg font-medium">Fixed (Flat Rate)</span>
+              </label>
+            </div>
+            <div className="mt-4 text-center text-2xl font-bold text-[#4c7085]">
+              Total Amount: <span className="text-3xl">{form.amount || "0.00"}</span> QAR
+            </div>
+            <p className="text-center text-sm text-gray-600 mt-2">
+              {form.pricingMode === "variable"
+                ? `Calculation: ${form.amount} = Rate × ${totalVolume} CBM`
+                : `Flat Rate applied for volume ${totalVolume} CBM`}
+            </p>
+          </div>
+
+          {/* Includes / Excludes */}
+          <div className="rounded-xl overflow-hidden border-2 border-gray-300">
+            <div className="grid grid-cols-2 text-white font-bold text-lg">
+              <div className="bg-gradient-to-r from-gray-600 to-gray-700 py-4 text-center">SERVICE INCLUDES</div>
+              <div className="bg-gradient-to-r from-red-600 to-red-700 py-4 text-center">SERVICE EXCLUDES</div>
+            </div>
+            <div className="grid grid-cols-2 bg-gray-50">
+              <div className="p-6 space-y-4">
+                {SERVICE_INCLUDES.map((service) => (
+                  <label key={service} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.includedServices[service] || false}
+                      onChange={(e) => setForm({
+                        ...form,
+                        includedServices: { ...form.includedServices, [service]: e.target.checked }
+                      })}
+                      className="w-5 h-5 text-blue-600 rounded"
+                    />
+                    <span className="text-sm text-gray-800 font-medium">{service}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200">
+                {SERVICE_EXCLUDES.map((service) => (
+                  <label key={service} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.excludedServices[service] || false}
+                      onChange={(e) => setForm({
+                        ...form,
+                        excludedServices: { ...form.excludedServices, [service]: e.target.checked }
+                      })}
+                      className="w-5 h-5 text-red-600 rounded"
+                    />
+                    <span className="text-sm text-gray-800 font-medium">{service}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          {/* Advance */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block font-medium text-black text-sm">Total Amount (QAR)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.amount}
-                onChange={e => setForm({ ...form, amount: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-black text-sm">Advance</label>
+              <label className="block text-sm font-medium text-gray-700">Advance</label>
               <input
                 type="number"
                 step="0.01"
                 value={form.advance}
                 onChange={e => setForm({ ...form, advance: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:border-blue-500"
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="block font-medium text-black text-sm">Balance</label>
+              <label className="block text-sm font-medium text-gray-700">Balance</label>
               <input
                 type="text"
                 readOnly
-                value={
-                  form.amount && form.advance
-                    ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)
-                    : ""
-                }
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                value={form.amount && form.advance ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2) : ""}
+                className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 bg-green-50 text-green-700 font-bold"
               />
             </div>
           </div>
-          <div className="text-center">
+
+          {/* Submit */}
+          <div className="text-center pt-6">
             <button
               onClick={handleCreate}
-              className="w-full text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded-xl shadow-lg transform transition duration-200"
+              className="w-full max-w-md mx-auto bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white font-bold py-4 px-8 rounded-xl shadow-2xl transform transition hover:scale-105 text-xl"
             >
-              Create Quotation
+              CREATE QUOTATION
             </button>
           </div>
         </div>

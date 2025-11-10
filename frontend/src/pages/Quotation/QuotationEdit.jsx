@@ -11,6 +11,25 @@ const SERVICE_TYPE_DISPLAY = {
   logistics: "Logistics",
 };
 
+const SERVICE_INCLUDES = [
+  "Packing Service",
+  "Customer packed boxes collection",
+  "Miscellaneous items packing",
+  "Furniture dismantling and packing",
+  "Loading",
+  "Transportation",
+  "Unloading , unpacking",
+  "Furniture assembly",
+  "Debris removal on same day",
+];
+
+const SERVICE_EXCLUDES = [
+  "Insurance",
+  "Storage",
+  "Cleaning service, plumbing service , electrical works if any",
+  "Chandelier removal / installation/ Plan soil removal, Wall installation",
+];
+
 export default function QuotationEdit() {
   const { id } = useParams(); // survey_id
   const navigate = useNavigate();
@@ -44,6 +63,8 @@ export default function QuotationEdit() {
       miscBoxPacking: false,
       miscBoxUnpacking: false,
     },
+    includedServices: SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
+    excludedServices: SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
     amount: "",
     advance: "",
   });
@@ -83,6 +104,17 @@ export default function QuotationEdit() {
 
         const get = (primary, fallback) => primary ?? fallback ?? "—";
 
+        // Initialize includes/excludes from backend
+        const includedObj = SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {});
+        const excludedObj = SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {});
+
+        (q.included_services || []).forEach(service => {
+          if (SERVICE_INCLUDES.includes(service)) includedObj[service] = true;
+        });
+        (q.excluded_services || []).forEach(service => {
+          if (SERVICE_EXCLUDES.includes(service)) excludedObj[service] = true;
+        });
+
         setForm({
           serialNo: q.serial_no || "1001",
           date: q.date || today,
@@ -111,6 +143,8 @@ export default function QuotationEdit() {
             miscBoxPacking: !!s.general_owner_packed,
             miscBoxUnpacking: false,
           },
+          includedServices: includedObj,
+          excludedServices: excludedObj,
           amount: q.amount != null ? q.amount.toString() : "",
           advance: q.advance != null ? q.advance.toString() : "",
         });
@@ -153,6 +187,8 @@ export default function QuotationEdit() {
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
+      included_services: Object.keys(form.includedServices).filter(k => form.includedServices[k]),
+      excluded_services: Object.keys(form.excludedServices).filter(k => form.excludedServices[k]),
     };
 
     try {
@@ -363,6 +399,52 @@ export default function QuotationEdit() {
                   </span>
                 </label>
               ))}
+            </div>
+          </div>
+
+          {/* SERVICE INCLUDES & EXCLUDES - ADDED HERE */}
+          <div className="rounded-xl overflow-hidden border-2 border-gray-300">
+            <div className="grid grid-cols-2 text-white font-bold text-lg">
+              <div className="bg-gradient-to-r from-gray-600 to-gray-700 py-4 text-center">SERVICE INCLUDES</div>
+              <div className="bg-gradient-to-r from-red-600 to-red-700 py-4 text-center">SERVICE EXCLUDES</div>
+            </div>
+
+            <div className="grid grid-cols-2 bg-gray-50">
+              {/* Includes */}
+              <div className="p-6 space-y-4">
+                {SERVICE_INCLUDES.map((service) => (
+                  <label key={service} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.includedServices[service] || false}
+                      onChange={(e) => setForm({
+                        ...form,
+                        includedServices: { ...form.includedServices, [service]: e.target.checked }
+                      })}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-800 font-medium">{service}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Excludes */}
+              <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200">
+                {SERVICE_EXCLUDES.map((service) => (
+                  <label key={service} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.excludedServices[service] || false}
+                      onChange={(e) => setForm({
+                        ...form,
+                        excludedServices: { ...form.excludedServices, [service]: e.target.checked }
+                      })}
+                      className="w-5 h-5 text-red-600 rounded focus:ring-red-500"
+                    />
+                    <span className="text-sm text-gray-800 font-medium">{service}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
