@@ -1,5 +1,5 @@
-# price/models.py
 from django.db import models
+from additional_settings import models as additional_settings
 
 class Price(models.Model):
     RATE_TYPE_CHOICES = [
@@ -26,7 +26,9 @@ class Price(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    hub = models.ForeignKey(additional_settings.Hub, on_delete=models.SET_NULL, null=True, blank=True)
+    move_type = models.ForeignKey(additional_settings.MoveType, on_delete=models.SET_NULL, null=True, blank=True)
+    
     class Meta:
         ordering = ['min_volume']
         verbose_name = "Price Range"

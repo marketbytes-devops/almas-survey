@@ -14,7 +14,6 @@ class QuotationSerializer(serializers.ModelSerializer):
     )
     currency_code = serializers.CharField(source='currency.name', read_only=True, allow_null=True)
 
-    # Add these for frontend
     included_services = serializers.ListField(
         child=serializers.CharField(max_length=200),
         required=False,
@@ -48,7 +47,6 @@ class QuotationSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        # Ensure lists are always returned (not null)
         ret['included_services'] = instance.included_services or []
         ret['excluded_services'] = instance.excluded_services or []
         return ret
