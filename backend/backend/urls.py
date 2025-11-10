@@ -33,6 +33,7 @@ urlpatterns = [
     
     # Quotation API's
     path('api/', include('quotation.urls')),
+    path('api/', include('price.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
