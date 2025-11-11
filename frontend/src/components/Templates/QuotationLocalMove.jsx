@@ -1,4 +1,5 @@
-import { FileText, Ship, MapPin, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import Logo from '../../assets/images/logo-quotation.webp';
 
 const QuotationLocalMove = () => {
   return (
@@ -6,13 +7,7 @@ const QuotationLocalMove = () => {
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center">
-              <Ship className="w-10 h-10 text-blue-900" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-semibold text-blue-900">ALMAS</h1>
-              <p className="text-lg font-semibold text-blue-900">MOVERS INTL</p>
-            </div>
+            <img src={Logo} className='w-' alt="Logo" />
           </div>
           <div className="text-right space-y-1 text-sm">
             <p><span className="font-semibold">Quote #</span> D-A</p>
