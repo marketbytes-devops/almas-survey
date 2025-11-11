@@ -1,9 +1,12 @@
 import logging
 from django.db import transaction
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Quotation
 from .serializers import QuotationSerializer
 from survey.models import Survey
@@ -12,12 +15,14 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(csrf_exempt, name='dispatch')  # ADD THIS LINE
 class QuotationViewSet(viewsets.ModelViewSet):
     queryset = Quotation.objects.select_related("survey", "currency").all()
     serializer_class = QuotationSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]  # ADD THIS LINE
     lookup_field = "quotation_id"
-
+    
     def get_queryset(self):
         qs = super().get_queryset()
         survey_id = self.request.query_params.get("survey_id")
