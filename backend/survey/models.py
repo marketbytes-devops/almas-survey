@@ -81,10 +81,17 @@ class Survey(models.Model):
     destination_lift = models.BooleanField(default=False, blank=True, null=True)
     destination_lift_notes = models.TextField(blank=True, null=True)
     destination_parking = models.BooleanField(default=False, blank=True, null=True)
+    signature = models.FileField(
+        upload_to='signatures/',
+        null=True,
+        blank=True,
+        help_text='Customer signature file'
+    )
     destination_parking_notes = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
 
     class Meta:
         indexes = [
