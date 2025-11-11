@@ -1827,7 +1827,7 @@ const Article = () => {
       {/* Overlay for mobile when panel is open */}
       {showArticlesPanel && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+          className="fixed inset-0 backdrop-brightness-50 z-40 sm:hidden"
           onClick={() => setShowArticlesPanel(false)}
         />
       )}

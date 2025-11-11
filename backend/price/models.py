@@ -34,11 +34,5 @@ class Price(models.Model):
         help_text="Additional adjustment to the rate"
     )
     
-    class Meta:
-        ordering = ['min_volume']
-        verbose_name = "Price Range"
-        verbose_name_plural = "Price Ranges"
-        unique_together = ['min_volume', 'max_volume']
-
     def __str__(self):
         return f"{self.min_volume} - {self.max_volume} CBM → {self.rate} QAR ({self.rate_type})"
