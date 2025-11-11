@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import SignatureModal from "../../components/SignatureModal/SignatureModal";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -37,41 +38,45 @@ export default function QuotationCreate() {
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSignatureUploading, setIsSignatureUploading] = useState(false);
+  
+  // Signature modal state
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+
   const today = new Date().toISOString().split("T")[0];
 
-  // Pricing ranges from LocalMove page (you can fetch from API later)
-// REPLACE THE OLD LINE WITH THESE 2 LINES
-const [pricingRanges, setPricingRanges] = useState([]);
+  // Pricing ranges from LocalMove page
+  const [pricingRanges, setPricingRanges] = useState([]);
 
-// ADD THIS useEffect (ANYWHERE AFTER ALL useState)
-useEffect(() => {
-  const fetchLivePricing = async () => {
-    try {
-      const res = await apiClient.get("/api/price/active/");
-      const liveRates = res.data.map(item => ({
-        min: parseFloat(item.min_volume),
-        max: parseFloat(item.max_volume),
-        rate: parseFloat(item.rate),
-        type: item.rate_type
-      }));
-      setPricingRanges(liveRates);
-    } catch (err) {
-      console.log("Using backup rates");
-      // fallback only if API fails
-      setPricingRanges([
-        { min: 0.01, max: 10.00, rate: 625.00, type: "variable" },
-        { min: 10.01, max: 20.00, rate: 625.00, type: "flat" },
-        { min: 20.01, max: 30.00, rate: 675.00, type: "flat" },
-        { min: 30.01, max: 40.00, rate: 775.00, type: "flat" },
-        { min: 40.01, max: 50.00, rate: 825.00, type: "flat" },
-        { min: 50.01, max: 60.00, rate: 875.00, type: "flat" },
-        { min: 60.01, max: 70.00, rate: 925.00, type: "flat" },
-      ]);
-    }
-  };
-  fetchLivePricing();
-}, []);
-
+  // ADD THIS useEffect (ANYWHERE AFTER ALL useState)
+  useEffect(() => {
+    const fetchLivePricing = async () => {
+      try {
+        const res = await apiClient.get("/api/price/active/");
+        const liveRates = res.data.map(item => ({
+          min: parseFloat(item.min_volume),
+          max: parseFloat(item.max_volume),
+          rate: parseFloat(item.rate),
+          type: item.rate_type
+        }));
+        setPricingRanges(liveRates);
+      } catch (err) {
+        console.log("Using backup rates");
+        // fallback only if API fails
+        setPricingRanges([
+          { min: 0.01, max: 10.00, rate: 625.00, type: "variable" },
+          { min: 10.01, max: 20.00, rate: 625.00, type: "flat" },
+          { min: 20.01, max: 30.00, rate: 675.00, type: "flat" },
+          { min: 30.01, max: 40.00, rate: 775.00, type: "flat" },
+          { min: 40.01, max: 50.00, rate: 825.00, type: "flat" },
+          { min: 50.01, max: 60.00, rate: 875.00, type: "flat" },
+          { min: 60.01, max: 70.00, rate: 925.00, type: "flat" },
+        ]);
+      }
+    };
+    fetchLivePricing();
+  }, []);
 
   const [form, setForm] = useState({
     serialNo: "1001",
@@ -171,6 +176,38 @@ useEffect(() => {
     setForm(prev => ({ ...prev, amount: calculatedAmount.toFixed(2) }));
   }, [totalVolume, form.pricingMode, pricingRanges]);
 
+  // Open signature modal
+  const openSignatureModal = () => {
+    setIsSignatureModalOpen(true);
+  };
+
+  // Handle signature save from modal
+  const handleSignatureSave = async (file) => {
+    if (!survey || !file) return;
+    
+    const formData = new FormData();
+    formData.append("signature", file);
+    setIsSignatureUploading(true);
+    
+    try {
+      await apiClient.post(
+        `/surveys/${survey.survey_id}/upload-signature/`, 
+        formData, 
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      setMessage("Digital signature uploaded successfully");
+      // Update local state to reflect signature upload
+      setSurvey(prev => ({ ...prev, signature_uploaded: true }));
+    } catch (err) {
+      setError("Signature upload failed.");
+    } finally {
+      setIsSignatureUploading(false);
+      setIsSignatureModalOpen(false);
+    }
+  };
+
   const handleCreate = async () => {
     if (!form.amount) {
       alert("Amount is not calculated. Check volume or pricing.");
@@ -202,11 +239,31 @@ useEffect(() => {
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">
+      {/* Signature Modal */}
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSignatureSave}
+        customerName={form.client}
+      />
+
       <div className="mx-auto max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center">
           <h2 className="text-xl font-light">Create Quotation</h2>
           <button onClick={() => navigate(-1)} className="text-4xl hover:opacity-80">×</button>
         </div>
+
+        {/* Messages */}
+        {error && (
+          <div className="m-4 p-4 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="m-4 p-4 bg-green-100 text-green-700 rounded">
+            {message}
+          </div>
+        )}
 
         <div className="p-8 space-y-10">
 
@@ -358,27 +415,60 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Advance */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Amount, Advance, Balance */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Advance</label>
+              <label className="block font-medium text-black text-sm">Advance</label>
               <input
                 type="number"
                 step="0.01"
                 value={form.advance}
-                onChange={e => setForm({ ...form, advance: e.target.value })}
-                className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:border-blue-500"
+                onChange={(e) => setForm({ ...form, advance: e.target.value })}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Balance</label>
+              <label className="block font-medium text-black text-sm">Balance</label>
               <input
                 type="text"
                 readOnly
                 value={form.amount && form.advance ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2) : ""}
-                className="mt-1 block w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 bg-green-50 text-green-700 font-bold"
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-green-50 text-green-700"
               />
+            </div>
+          </div>
+
+          {/* Digital Signature Section */}
+          <div className="border-t pt-6">
+            <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {survey?.signature_uploaded 
+                      ? "Signature has been uploaded for this quotation."
+                      : "Add digital signature to this quotation."}
+                  </p>
+                </div>
+                <button
+                  onClick={openSignatureModal}
+                  disabled={isSignatureUploading || survey?.signature_uploaded}
+                  className={`px-4 py-2 rounded text-sm font-medium transition ${
+                    survey?.signature_uploaded
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : isSignatureUploading
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                  }`}
+                >
+                  {isSignatureUploading
+                    ? "Uploading..."
+                    : survey?.signature_uploaded
+                    ? "Signature Uploaded"
+                    : "Sign Digital"}
+                </button>
+              </div>
             </div>
           </div>
 

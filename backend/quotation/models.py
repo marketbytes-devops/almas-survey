@@ -16,6 +16,12 @@ class Quotation(models.Model):
     )
     quotation_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
     serial_no = models.CharField(max_length=20, default="1001", null=True, blank=True)
+    pricing_mode = models.CharField(
+        max_length=20,
+        choices=[('variable', 'Variable'), ('fixed', 'Fixed')],
+        default='variable',
+        help_text="How the amount was calculated"
+    )
     date = models.DateField(default=timezone.now, null=True, blank=True)
     amount = models.DecimalField(
         max_digits=12,

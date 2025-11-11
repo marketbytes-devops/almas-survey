@@ -124,7 +124,6 @@ class PetSerializer(serializers.ModelSerializer):
             'medication', 'vaccination_status', 'behavior_notes', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
-
 class SurveySerializer(serializers.ModelSerializer):
     destination_addresses = DestinationAddressSerializer(many=True, required=False)
     articles = ArticleSerializer(many=True, required=False)
@@ -159,12 +158,6 @@ class SurveySerializer(serializers.ModelSerializer):
         choices=TRANSPORT_MODE_CHOICES, allow_null=True, required=False
     )
 
-    # Remove the read-only source mappings for these fields
-    # full_name = serializers.CharField(source='enquiry.fullName', read_only=True)  # Remove this
-    # phone_number = serializers.CharField(source='enquiry.phoneNumber', read_only=True)  # Remove this
-    # email = serializers.EmailField(source='enquiry.email', read_only=True)  # Remove this
-    # service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)  # Remove this
-    
     enquiry_service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)
     message = serializers.CharField(source='enquiry.message', read_only=True)
     note = serializers.CharField(source='enquiry.note', read_only=True)
@@ -174,6 +167,8 @@ class SurveySerializer(serializers.ModelSerializer):
     enquiry = serializers.PrimaryKeyRelatedField(
         queryset=Enquiry.objects.all(), required=False, allow_null=True
     )
+    signature_url = serializers.SerializerMethodField()
+    signature_uploaded = serializers.SerializerMethodField()
     
     class Meta:
         model = Survey
@@ -195,12 +190,13 @@ class SurveySerializer(serializers.ModelSerializer):
             'destination_floor', 'destination_floor_notes', 'destination_lift', 
             'destination_lift_notes', 'destination_parking', 'destination_parking_notes', 
             'articles', 'vehicles', 'pets', 'enquiry_service_type', 'message', 'note', 
-            'enquiry_survey_date', 'assigned_user_email', 'created_at', 'updated_at', 'signature'
+            'enquiry_survey_date', 'assigned_user_email', 'created_at', 'updated_at', 'signature',
+            'signature_url', 'signature_uploaded'  # ADD THESE TWO FIELDS HERE
         ]
         read_only_fields = [
             'id', 'survey_id', 'created_at', 'updated_at', 
             'enquiry_service_type', 'message', 'note', 'enquiry_survey_date', 'assigned_user_email',
-            'service_type_display'
+            'service_type_display', 'signature_url', 'signature_uploaded'  # ADD THEM HERE TOO
         ]
 
     def get_phone_number(self, obj):
@@ -218,6 +214,19 @@ class SurveySerializer(serializers.ModelSerializer):
         if obj.enquiry and obj.enquiry.serviceType:
             return SERVICE_TYPE_DISPLAY.get(obj.enquiry.serviceType, obj.enquiry.serviceType)
         return "N/A"
+    
+    def get_signature_url(self, obj):
+        """Get absolute URL for signature file"""
+        if obj.signature:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.signature.url)
+            return obj.signature.url
+        return None
+    
+    def get_signature_uploaded(self, obj):
+        """Check if signature has been uploaded"""
+        return bool(obj.signature)
 
     def validate_customer_type(self, value):
         if value is not None and not CustomerType.objects.filter(id=value.id).exists():
@@ -278,13 +287,6 @@ class SurveySerializer(serializers.ModelSerializer):
                 Pet.objects.create(survey=survey, **pet_data)
 
         return survey
-    def get_signature_url(self, obj):
-        if obj.signature:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.signature.url)
-            return obj.signature.url
-        return None
 
     def update(self, instance, validated_data):
         destination_addresses_data = validated_data.pop("destination_addresses", None)

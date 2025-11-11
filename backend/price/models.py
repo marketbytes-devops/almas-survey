@@ -28,6 +28,11 @@ class Price(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     hub = models.ForeignKey(additional_settings.Hub, on_delete=models.SET_NULL, null=True, blank=True)
     move_type = models.ForeignKey(additional_settings.MoveType, on_delete=models.SET_NULL, null=True, blank=True)
+    adjustment_rate = models.DecimalField(
+        max_digits=12, decimal_places=2, 
+        default=0,
+        help_text="Additional adjustment to the rate"
+    )
     
     class Meta:
         ordering = ['min_volume']

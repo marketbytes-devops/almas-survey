@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { FaSignature, FaEye, FaPlus } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import SignatureModal from "../../components/SignatureModal/SignatureModal";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -218,14 +220,63 @@ export default function QuotationEdit() {
 
     try {
       await apiClient.patch(`/quotation-create/${quotation.quotation_id}/`, payload);
-      alert("Quotation updated successfully!");
-      navigate("/quotation-list");
+      setMessage("Quotation updated successfully!");
+      setTimeout(() => {
+        setMessage("");
+        navigate("/quotation-list"); // Redirect after success
+      }, 1500);
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
         Object.values(err.response?.data || {})[0] ||
         "Update failed.";
-      alert("Error: " + msg);
+      setError("Error: " + msg);
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  // Open signature upload modal (for adding/updating)
+  const openSignatureUploadModal = () => {
+    setIsSignatureModalOpen(true);
+  };
+
+  // View signature
+  const viewSignature = async () => {
+    if (!survey) return;
+    
+    try {
+      const signatureRes = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+      setCurrentSignature(signatureRes.data.signature_url);
+      setIsSignatureViewModalOpen(true);
+    } catch (err) {
+      setError("Failed to load signature");
+    }
+  };
+
+  // Handle signature save from modal
+  const handleSignatureSave = async (file) => {
+    if (!survey || !file) return;
+    
+    const formData = new FormData();
+    formData.append("signature", file);
+    setIsSignatureUploading(true);
+    
+    try {
+      await apiClient.post(
+        `/surveys/${survey.survey_id}/upload-signature/`, 
+        formData, 
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      setMessage("Digital signature updated successfully");
+      // Re-check signature existence
+      await checkSignatureExists(survey.survey_id);
+    } catch (err) {
+      setError("Signature upload failed.");
+    } finally {
+      setIsSignatureUploading(false);
+      setIsSignatureModalOpen(false);
     }
   };
 
