@@ -114,7 +114,6 @@ Website: www.almasintl.com
     except Exception as e:
         logger.error(f"Failed to send survey submission email: {str(e)}", exc_info=True)
 
-
 @method_decorator(csrf_exempt, name='dispatch')
 class SurveyViewSet(viewsets.ModelViewSet):
     queryset = Survey.objects.all()
@@ -148,6 +147,64 @@ class SurveyViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         survey = serializer.save()
         send_survey_submission_email(survey)
+
+    # ADD THIS NEW METHOD
+    @action(detail=True, methods=['post'], url_path='upload-signature')
+    def upload_signature(self, request, survey_id=None):
+        """Upload customer signature for a survey"""
+        try:
+            survey = self.get_object()
+            
+            # Check if file was uploaded
+            if 'signature' not in request.FILES:
+                return Response(
+                    {'error': 'No signature file provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            signature_file = request.FILES['signature']
+            
+            # Validate file type
+            allowed_types = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+            if signature_file.content_type not in allowed_types:
+                return Response(
+                    {'error': 'Invalid file type. Only PNG, JPEG, and PDF are allowed.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate file size (max 5MB)
+            max_size = 5 * 1024 * 1024  # 5MB in bytes
+            if signature_file.size > max_size:
+                return Response(
+                    {'error': 'File size exceeds 5MB limit'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Save the signature to the survey
+            survey.signature = signature_file
+            survey.save()
+            
+            logger.info(f"Signature uploaded for survey {survey.survey_id}")
+            
+            return Response(
+                {
+                    'message': 'Signature uploaded successfully',
+                    'signature_url': survey.signature.url if survey.signature else None
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Survey.DoesNotExist:
+            return Response(
+                {'error': 'Survey not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error uploading signature: {str(e)}", exc_info=True)
+            return Response(
+                {'error': f'Failed to upload signature: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class DestinationAddressViewSet(viewsets.ModelViewSet):
     queryset = DestinationAddress.objects.all()

@@ -203,3 +203,7 @@ LOGGING = {
         },
     },
 }
+# In settings.py (add these if not present)
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

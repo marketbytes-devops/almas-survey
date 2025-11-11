@@ -195,7 +195,7 @@ class SurveySerializer(serializers.ModelSerializer):
             'destination_floor', 'destination_floor_notes', 'destination_lift', 
             'destination_lift_notes', 'destination_parking', 'destination_parking_notes', 
             'articles', 'vehicles', 'pets', 'enquiry_service_type', 'message', 'note', 
-            'enquiry_survey_date', 'assigned_user_email', 'created_at', 'updated_at',
+            'enquiry_survey_date', 'assigned_user_email', 'created_at', 'updated_at', 'signature'
         ]
         read_only_fields = [
             'id', 'survey_id', 'created_at', 'updated_at', 
@@ -278,6 +278,13 @@ class SurveySerializer(serializers.ModelSerializer):
                 Pet.objects.create(survey=survey, **pet_data)
 
         return survey
+    def get_signature_url(self, obj):
+        if obj.signature:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.signature.url)
+            return obj.signature.url
+        return None
 
     def update(self, instance, validated_data):
         destination_addresses_data = validated_data.pop("destination_addresses", None)
