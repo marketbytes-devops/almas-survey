@@ -32,6 +32,7 @@ const LocalMove = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [hasAutoSelectedHub, setHasAutoSelectedHub] = useState(false);
 
   const API_BASE_URL = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
@@ -57,14 +58,23 @@ const LocalMove = () => {
           weightUnitsRes,
         ] = responses;
 
+        const hubs = Array.isArray(hubsRes.data) ? hubsRes.data : hubsRes.data.results || [];
+        const activeHubs = hubs.filter(h => h.is_active !== false);
+
         setDropdownData({
-          hubs: Array.isArray(hubsRes.data) ? hubsRes.data : hubsRes.data.results || [],
+          hubs,
           moveTypes: Array.isArray(moveTypesRes.data) ? moveTypesRes.data : moveTypesRes.data.results || [],
           tariffTypes: Array.isArray(tariffTypesRes.data) ? tariffTypesRes.data : tariffTypesRes.data.results || [],
           currencies: Array.isArray(currenciesRes.data) ? currenciesRes.data : currenciesRes.data.results || [],
           volumeUnits: Array.isArray(volumeUnitsRes.data) ? volumeUnitsRes.data : volumeUnitsRes.data.results || [],
           weightUnits: Array.isArray(weightUnitsRes.data) ? weightUnitsRes.data : weightUnitsRes.data.results || [],
         });
+
+        if (activeHubs.length > 0 && !hasAutoSelectedHub) {
+          const firstHub = activeHubs[0];
+          setSelectedHub(String(firstHub.id));
+          setHasAutoSelectedHub(true);
+        }
       } catch (err) {
         console.error(err);
         setError(err.response?.data?.detail || err.message || "Failed to load data");
@@ -73,7 +83,7 @@ const LocalMove = () => {
       }
     };
     fetchDropdownData();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, hasAutoSelectedHub]);
 
   useEffect(() => {
     const fetchPricing = async () => {
@@ -161,7 +171,7 @@ const LocalMove = () => {
       max: "00.00",
       flatRate: "",
       variableRate: "0.00",
-      rateType: "variable", 
+      rateType: "variable",
     };
     setTableData((prev) => [...prev, newRow]);
     setNextId((prev) => prev + 1);
@@ -199,7 +209,7 @@ const LocalMove = () => {
         rate_type: row.rateType,
         hub: parseInt(selectedHub),
         move_type: parseInt(selectedMoveType),
-        currency: selectedCurrency,
+        currency: dropdownData.currencies.find(c => c.id == selectedCurrency)?.name || "QAR",
       };
 
       if (row.rateType === "flat") {
@@ -216,7 +226,6 @@ const LocalMove = () => {
     });
 
     try {
-      let res;
       if (isUpdateMode) {
         const updates = payload.filter((p) => p.id);
         const creates = payload.filter((p) => !p.id);
@@ -228,7 +237,7 @@ const LocalMove = () => {
           await apiClient.post(`${API_BASE_URL}/price/bulk-update/`, creates);
         }
       } else {
-        res = await apiClient.post(`${API_BASE_URL}/price/bulk-update/`, payload);
+        await apiClient.post(`${API_BASE_URL}/price/bulk-update/`, payload);
       }
 
       alert("Pricing saved successfully!");
