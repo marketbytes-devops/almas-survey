@@ -33,24 +33,45 @@ const SERVICE_EXCLUDES = [
 ];
 
 export default function QuotationEdit() {
-  const { id } = useParams(); // survey_id
+  const { id } = useParams();
   const navigate = useNavigate();
-
   const [survey, setSurvey] = useState(null);
   const [quotation, setQuotation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSignatureUploading, setIsSignatureUploading] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
-  
-  // Signature modal states
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [isSignatureViewModalOpen, setIsSignatureViewModalOpen] = useState(false);
-  const [currentSignature, setCurrentSignature] = useState(null);
-
   const today = new Date().toISOString().split("T")[0];
 
+  // === PRICING RANGES ===
+  const [pricingRanges, setPricingRanges] = useState([]);
+
+  useEffect(() => {
+    const fetchLivePricing = async () => {
+      try {
+        const res = await apiClient.get("/api/price/active/");
+        const liveRates = res.data.map((item) => ({
+          min: parseFloat(item.min_volume),
+          max: parseFloat(item.max_volume),
+          rate: parseFloat(item.rate),
+          type: item.rate_type,
+        }));
+        setPricingRanges(liveRates);
+      } catch (err) {
+        console.log("Using backup rates");
+        setPricingRanges([
+          { min: 0.01, max: 10.00, rate: 625.00, type: "variable" },
+          { min: 10.01, max: 20.00, rate: 625.00, type: "flat" },
+          { min: 20.01, max: 30.00, rate: 675.00, type: "flat" },
+          { min: 30.01, max: 40.00, rate: 775.00, type: "flat" },
+          { min: 40.01, max: 50.00, rate: 825.00, type: "flat" },
+          { min: 50.01, max: 60.00, rate: 875.00, type: "flat" },
+          { min: 60.01, max: 70.00, rate: 925.00, type: "flat" },
+        ]);
+      }
+    };
+    fetchLivePricing();
+  }, []);
+
+  // === FORM STATE ===
   const [form, setForm] = useState({
     serialNo: "",
     date: today,
@@ -64,44 +85,21 @@ export default function QuotationEdit() {
     moveDate: today,
     jobType: "Local",
     rooms: [],
-    services: {
-      wallInstallation: false,
-      curtainInstallation: false,
-      kitchenPacking: false,
-      clothesPacking: false,
-      clothesUnpacking: false,
-      miscBoxPacking: false,
-      miscBoxUnpacking: false,
-    },
-    includedServices: SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
-    excludedServices: SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
+    pricingMode: "variable",
     amount: "",
     advance: "",
+    includedServices: SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
+    excludedServices: SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
   });
 
-  // Check if signature exists
-  const checkSignatureExists = async (surveyId) => {
-    try {
-      const signatureRes = await apiClient.get(`/surveys/${surveyId}/signature/`);
-      setHasSignature(!!signatureRes.data.signature_url);
-      setCurrentSignature(signatureRes.data.signature_url);
-    } catch (err) {
-      setHasSignature(false);
-    }
-  };
-
+  // === LOAD DATA ===
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 1. Fetch survey
         const surveyRes = await apiClient.get(`/surveys/${id}/`);
         const s = surveyRes.data;
         setSurvey(s);
 
-        // Check signature existence
-        await checkSignatureExists(s.survey_id);
-
-        // 2. Check if quotation exists
         const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${id}`);
         if (!checkRes.data.exists) {
           setError("No quotation found for this survey.");
@@ -109,13 +107,11 @@ export default function QuotationEdit() {
           return;
         }
 
-        // 3. Fetch quotation
         const qRes = await apiClient.get(`/quotation-create/${checkRes.data.quotation_id}/`);
         const q = qRes.data;
         setQuotation(q);
 
-        // Safely parse volume
-        const rooms = (s.articles || []).map(a => {
+        const rooms = (s.articles || []).map((a) => {
           const vol = a.volume != null ? parseFloat(a.volume) : 0;
           const volume = isNaN(vol) ? "0.00" : vol.toFixed(2);
           return {
@@ -128,14 +124,13 @@ export default function QuotationEdit() {
 
         const get = (primary, fallback) => primary ?? fallback ?? "—";
 
-        // Initialize includes/excludes from backend
         const includedObj = SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {});
         const excludedObj = SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {});
 
-        (q.included_services || []).forEach(service => {
+        (q.included_services || []).forEach((service) => {
           if (SERVICE_INCLUDES.includes(service)) includedObj[service] = true;
         });
-        (q.excluded_services || []).forEach(service => {
+        (q.excluded_services || []).forEach((service) => {
           if (SERVICE_EXCLUDES.includes(service)) excludedObj[service] = true;
         });
 
@@ -158,19 +153,11 @@ export default function QuotationEdit() {
           moveDate: s.packing_date_from || today,
           jobType: s.service_type === "localMove" ? "Local" : "International",
           rooms,
-          services: {
-            wallInstallation: !!s.general_handyman,
-            curtainInstallation: !!s.general_handyman,
-            kitchenPacking: !!s.general_owner_packed,
-            clothesPacking: !!s.general_owner_packed,
-            clothesUnpacking: false,
-            miscBoxPacking: !!s.general_owner_packed,
-            miscBoxUnpacking: false,
-          },
-          includedServices: includedObj,
-          excludedServices: excludedObj,
+          pricingMode: q.pricing_mode || "variable",
           amount: q.amount != null ? q.amount.toString() : "",
           advance: q.advance != null ? q.advance.toString() : "",
+          includedServices: includedObj,
+          excludedServices: excludedObj,
         });
       } catch (err) {
         setError("Failed to load quotation data.");
@@ -179,28 +166,43 @@ export default function QuotationEdit() {
         setLoading(false);
       }
     };
-
     loadData();
   }, [id, today]);
 
+  // === TOTAL VOLUME ===
   const totalVolume = form.rooms
-    .reduce((sum, r) => {
-      const vol = parseFloat(r.volume) || 0;
-      const qty = r.qty || 0;
-      return sum + vol * qty;
-    }, 0)
+    .reduce((sum, r) => sum + (parseFloat(r.volume) || 0) * (r.qty || 0), 0)
     .toFixed(2);
 
+  // === AUTO-CALCULATE AMOUNT ===
+  useEffect(() => {
+    if (!totalVolume || totalVolume <= 0) return;
+    const volume = parseFloat(totalVolume);
+    const applicableRange = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
+    if (!applicableRange) {
+      setForm((prev) => ({ ...prev, amount: "" }));
+      return;
+    }
+    let calculated = 0;
+    if (form.pricingMode === "variable") {
+      calculated = applicableRange.rate * volume;
+    } else {
+      calculated = applicableRange.rate;
+    }
+    setForm((prev) => ({ ...prev, amount: calculated.toFixed(2) }));
+  }, [totalVolume, form.pricingMode, pricingRanges]);
+
+  // === BALANCE ===
   const balance = form.amount && form.advance
     ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)
     : "";
 
+  // === UPDATE HANDLER ===
   const handleUpdate = async () => {
     if (!form.amount) {
-      alert("Please enter the total amount.");
+      alert("Amount is required.");
       return;
     }
-
     if (!quotation?.quotation_id) {
       alert("Quotation ID missing.");
       return;
@@ -211,8 +213,9 @@ export default function QuotationEdit() {
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
-      included_services: Object.keys(form.includedServices).filter(k => form.includedServices[k]),
-      excluded_services: Object.keys(form.excludedServices).filter(k => form.excludedServices[k]),
+      included_services: Object.keys(form.includedServices).filter((k) => form.includedServices[k]),
+      excluded_services: Object.keys(form.excludedServices).filter((k) => form.excludedServices[k]),
+      pricing_mode: form.pricingMode,
     };
 
     try {
@@ -277,402 +280,238 @@ export default function QuotationEdit() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
-
-  if (error && !message) {
-    return <div className="text-center text-red-600 p-5">{error}</div>;
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
+  if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
 
   return (
-    <div className="bg-gray-50">
-      {/* Signature Upload Modal */}
-      <SignatureModal
-        isOpen={isSignatureModalOpen}
-        onClose={() => setIsSignatureModalOpen(false)}
-        onSave={handleSignatureSave}
-        customerName={form.client}
-      />
-
-      {/* Signature View Modal */}
-      {isSignatureViewModalOpen && currentSignature && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Digital Signature</h3>
-              <button
-                onClick={() => {
-                  setIsSignatureViewModalOpen(false);
-                  setCurrentSignature(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
-              <img 
-                src={currentSignature} 
-                alt="Digital Signature" 
-                className="w-full h-auto max-h-64 object-contain"
-                onError={(e) => {
-                  e.target.src = "https://via.placeholder.com/300x150?text=Signature+Not+Found";
-                }}
-              />
-            </div>
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => {
-                  setIsSignatureViewModalOpen(false);
-                  setCurrentSignature(null);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+    <div className="bg-gray-50 min-h-auto">
+      <div className="max-w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-8 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6 flex justify-between items-center">
           <h2 className="text-lg font-light">Edit Quotation</h2>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-4xl hover:opacity-80 transition"
-          >
-            ×
-          </button>
+          <button onClick={() => navigate(-1)} className="text-3xl hover:opacity-80 transition">×</button>
         </div>
 
-        {/* Messages */}
-        {error && (
-          <div className="m-4 p-4 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-        {message && (
-          <div className="m-4 p-4 bg-green-100 text-green-700 rounded">
-            {message}
-          </div>
-        )}
+        <div className="p-6 space-y-8">
 
-        <div className="p-8 space-y-8">
-          {/* Quotation No. & Date */}
+          {/* 1. Quotation No & Date → 2 Columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block font-normal text-black text-sm">Quotation No.</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quotation No.</label>
               <input
                 type="text"
                 value={form.serialNo}
                 onChange={(e) => setForm({ ...form, serialNo: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#4c7085] focus:ring-1 focus:ring-[#4c7085]"
               />
             </div>
             <div>
-              <label className="block font-normal text-black text-sm">Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#4c7085] focus:ring-1 focus:ring-[#4c7085]"
               />
             </div>
           </div>
 
-          {/* Client Info */}
+          {/* 2. Client Info → 3 Columns */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block font-normal text-black text-sm">Client Name</label>
-              <input
-                type="text"
-                value={form.client}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+              <input type="text" value={form.client} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block font-normal text-black text-sm">Mobile</label>
-              <input
-                type="text"
-                value={form.mobile}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
+              <input type="text" value={form.mobile} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block font-normal text-black text-sm">Email</label>
-              <input
-                type="email"
-                value={form.email}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" value={form.email} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
             </div>
           </div>
 
-          {/* Service */}
+          {/* 3. Moving Details → 2 Columns */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Service Required</label>
+                <input type="text" value={form.serviceRequired} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Moving From</label>
+                <input type="text" value={form.movingFrom} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Building / Floor</label>
+                <input type="text" value={form.buildingFrom} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Moving To</label>
+                <input type="text" value={form.movingTo} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Move</label>
+                <input type="date" value={form.moveDate} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kind of Job</label>
+                <input type="text" value={form.jobType} readOnly className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50" />
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Items & Volume */}
           <div>
-            <label className="block font-normal text-black text-sm">Service Required</label>
-            <input
-              type="text"
-              value={form.serviceRequired}
-              readOnly
-              className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-            />
-          </div>
-
-          {/* Moving Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block font-normal text-black text-sm">Moving From</label>
-              <input
-                type="text"
-                value={form.movingFrom}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Building / Floor</label>
-              <input
-                type="text"
-                value={form.buildingFrom}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Moving To</label>
-              <input
-                type="text"
-                value={form.movingTo}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block font-normal text-black text-sm">Date of Move</label>
-              <input
-                type="date"
-                value={form.moveDate}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block font-normal text-black text-sm">Kind of Job</label>
-              <input
-                type="text"
-                value={form.jobType}
-                readOnly
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-gray-100"
-              />
-            </div>
-          </div>
-
-          {/* Items & Volume */}
-          <div>
-            <h3 className="font-medium text-lg mb-3">Items & Volume</h3>
-            <div className="overflow-x-auto rounded-lg shadow-md">
-              <table className="w-full">
+            <h3 className="text-lg font-semibold mb-3">Items & Volume</h3>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Room</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Item</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Qty</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Volume (cbm)</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Room</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Item</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase">Qty</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase">Volume (cbm)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {form.rooms.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                        No items found.
-                      </td>
+                  {form.rooms.map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                      <td className="px-4 py-2 text-sm">{row.room}</td>
+                      <td className="px-4 py-2 text-sm">{row.item}</td>
+                      <td className="px-4 py-2 text-sm text-center">{row.qty}</td>
+                      <td className="px-4 py-2 text-sm text-center">{row.volume}</td>
                     </tr>
-                  ) : (
-                    form.rooms.map((row, i) => (
-                      <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                        <td className="px-4 py-3 text-sm font-medium">{row.room}</td>
-                        <td className="px-4 py-3 text-sm">{row.item}</td>
-                        <td className="px-4 py-3 text-sm text-center">{row.qty}</td>
-                        <td className="px-4 py-3 text-sm text-center">{row.volume}</td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
-            <div className="text-right mt-4 font-normal text-lg text-[#4c7085]">
-              Total Volume - {totalVolume} CBM
+            <div className="mt-3 text-right text-lg font-bold text-[#4c7085]">
+              Total Volume: {totalVolume} CBM
             </div>
           </div>
 
-          {/* Additional Services */}
-          <div>
-            <h3 className="font-medium text-lg mb-3">Additional Services</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(form.services).map(([key, value]) => (
-                <label key={key} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    readOnly
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm">
-                    {key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
-                  </span>
-                </label>
-              ))}
+          {/* 5. Pricing Mode */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-5 rounded-xl border border-blue-200">
+            <h3 className="text-lg font-bold mb-4 text-gray-800">Pricing Mode</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pricingMode"
+                  value="variable"
+                  checked={form.pricingMode === "variable"}
+                  onChange={(e) => setForm({ ...form, pricingMode: e.target.value })}
+                  className="w-5 h-5 text-blue-600"
+                />
+                <span className="text-sm font-medium">Variable (Rate × Volume)</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pricingMode"
+                  value="fixed"
+                  checked={form.pricingMode === "fixed"}
+                  onChange={(e) => setForm({ ...form, pricingMode: e.target.value })}
+                  className="w-5 h-5 text-purple-600"
+                />
+                <span className="text-sm font-medium">Fixed (Flat Rate)</span>
+              </label>
             </div>
+            <div className="mt-4 text-center text-2xl font-medium text-[#4c7085]">
+              Total Amount: <span className="text-3xl">{form.amount || "0.00"}</span> QAR
+            </div>
+            <p className="text-center text-xs text-gray-600 mt-1">
+              {form.pricingMode === "variable"
+                ? `Calculation: ${form.amount} = Rate × ${totalVolume} CBM`
+                : `Flat Rate applied for volume ${totalVolume} CBM`}
+            </p>
           </div>
 
-          {/* SERVICE INCLUDES & EXCLUDES */}
-          <div className="rounded-xl overflow-hidden border-2 border-gray-300">
-            <div className="grid grid-cols-2 text-white font-bold text-lg">
-              <div className="bg-gradient-to-r from-gray-600 to-gray-700 py-4 text-center">SERVICE INCLUDES</div>
-              <div className="bg-gradient-to-r from-red-600 to-red-700 py-4 text-center">SERVICE EXCLUDES</div>
+          {/* 6. Includes / Excludes → 2 Columns */}
+          <div className="rounded-xl overflow-hidden border border-gray-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 text-white font-bold text-base">
+              <div className="bg-gradient-to-r from-gray-600 to-gray-700 py-3 text-center">SERVICE INCLUDES</div>
+              <div className="bg-gradient-to-r from-red-600 to-red-700 py-3 text-center">SERVICE EXCLUDES</div>
             </div>
-
-            <div className="grid grid-cols-2 bg-gray-50">
-              {/* Includes */}
-              <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 bg-gray-50">
+              <div className="p-5 space-y-3">
                 {SERVICE_INCLUDES.map((service) => (
-                  <label key={service} className="flex items-center space-x-3 cursor-pointer">
+                  <label key={service} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={form.includedServices[service] || false}
-                      onChange={(e) => setForm({
-                        ...form,
-                        includedServices: { ...form.includedServices, [service]: e.target.checked }
-                      })}
-                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          includedServices: { ...form.includedServices, [service]: e.target.checked },
+                        })
+                      }
+                      className="w-5 h-5 text-blue-600 rounded"
                     />
-                    <span className="text-sm text-gray-800 font-medium">{service}</span>
+                    <span className="text-sm text-gray-800">{service}</span>
                   </label>
                 ))}
               </div>
-
-              {/* Excludes */}
-              <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200">
+              <div className="p-5 space-y-3 bg-red-50 border-t md:border-t-0 md:border-l border-red-200">
                 {SERVICE_EXCLUDES.map((service) => (
-                  <label key={service} className="flex items-center space-x-3 cursor-pointer">
+                  <label key={service} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={form.excludedServices[service] || false}
-                      onChange={(e) => setForm({
-                        ...form,
-                        excludedServices: { ...form.excludedServices, [service]: e.target.checked }
-                      })}
-                      className="w-5 h-5 text-red-600 rounded focus:ring-red-500"
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          excludedServices: { ...form.excludedServices, [service]: e.target.checked },
+                        })
+                      }
+                      className="w-5 h-5 text-red-600 rounded"
                     />
-                    <span className="text-sm text-gray-800 font-medium">{service}</span>
+                    <span className="text-sm text-gray-800">{service}</span>
                   </label>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Amount, Advance, Balance */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 7. Advance & Balance → 2 Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block font-medium text-black text-sm">Total Amount (QAR)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-black text-sm">Advance</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Advance</label>
               <input
                 type="number"
                 step="0.01"
                 value={form.advance}
                 onChange={(e) => setForm({ ...form, advance: e.target.value })}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal focus:border-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#4c7085] focus:ring-1 focus:ring-[#4c7085]"
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="block font-medium text-black text-sm">Balance</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Balance</label>
               <input
                 type="text"
                 readOnly
                 value={balance}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-green-50 text-green-700"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-green-50 text-green-700 font-medium"
               />
             </div>
           </div>
 
-          {/* Digital Signature Section */}
-          <div className="border-t pt-6">
-            <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              {hasSignature ? (
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <FaSignature className="text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-green-800">Digitally Signed</p>
-                      <p className="text-sm text-green-600">Signature has been uploaded for this quotation.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={viewSignature}
-                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-                    >
-                      <FaEye /> View Signature
-                    </button>
-                    <button
-                      onClick={openSignatureUploadModal}
-                      disabled={isSignatureUploading}
-                      className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"
-                    >
-                      <FaPlus /> Change
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <FaSignature className="text-gray-500 text-xl" />
-                  </div>
-                  <p className="text-gray-600 mb-2">No digital signature uploaded yet.</p>
-                  <button
-                    onClick={openSignatureUploadModal}
-                    disabled={isSignatureUploading}
-                    className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
-                  >
-                    <FaPlus /> Add Signature
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Update Button */}
-          <div className="text-center">
+          {/* 8. Update Button */}
+          <div className="pt-4 text-center">
             <button
               onClick={handleUpdate}
-              className="w-full text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded-xl shadow-lg transform transition duration-200"
+              className="w-full max-w-xs mx-auto bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white font-normal py-2 px-4 rounded-lg transform transition hover:scale-105 text-sm"
             >
-              Update Quotation
+              UPDATE QUOTATION
             </button>
           </div>
         </div>
