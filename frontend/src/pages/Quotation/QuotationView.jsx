@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaCheck } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
@@ -249,41 +249,42 @@ export default function QuotationView() {
           </table>
         </div>
 
-        {/* SERVICE INCLUDES & EXCLUDES - NEW SECTION */}
+        {/* SERVICE INCLUDES & EXCLUDES – ONLY CHECKED ITEMS */}
         <div className="p-6 border-b">
           <div className="rounded-xl overflow-hidden border-2 border-gray-300">
-            <div className="grid grid-cols-2 text-white font-bold text-lg">
+            <div className="grid grid-cols-2 text-white font-medium text-lg">
               <div className="bg-gradient-to-r from-gray-600 to-gray-700 py-4 text-center">SERVICE INCLUDES</div>
               <div className="bg-gradient-to-r from-red-600 to-red-700 py-4 text-center">SERVICE EXCLUDES</div>
             </div>
             <div className="grid grid-cols-2 bg-gray-50">
+              {/* INCLUDES – only checked */}
               <div className="p-6 space-y-3">
-                {SERVICE_INCLUDES.map(s => (
+                {SERVICE_INCLUDES.filter(s => quotation.included_services?.includes(s)).map(s => (
                   <div key={s} className="flex items-center space-x-3">
-                    <div className={`w-5 h-5 rounded ${quotation.included_services?.includes(s) ? "bg-blue-600" : "border-2 border-gray-400"}`}>
-                      {quotation.included_services?.includes(s) && 
-                        <span className="text-white text-xs flex justify-center items-center h-full">Check</span>
-                      }
+                    <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center">
+                      <FaCheck className="text-white text-xs" />
                     </div>
-                    <span className={`text-sm font-medium ${quotation.included_services?.includes(s) ? "text-gray-800" : "text-gray-500"}`}>
-                      {s}
-                    </span>
+                    <span className="text-sm font-medium text-gray-800">{s}</span>
                   </div>
                 ))}
+                {SERVICE_INCLUDES.filter(s => quotation.included_services?.includes(s)).length === 0 && (
+                  <p className="text-gray-500 text-sm italic">No services included</p>
+                )}
               </div>
+
+              {/* EXCLUDES – only checked */}
               <div className="p-6 space-y-3 bg-red-50 border-l-2 border-red-200">
-                {SERVICE_EXCLUDES.map(s => (
+                {SERVICE_EXCLUDES.filter(s => quotation.excluded_services?.includes(s)).map(s => (
                   <div key={s} className="flex items-center space-x-3">
-                    <div className={`w-5 h-5 rounded ${quotation.excluded_services?.includes(s) ? "bg-red-600" : "border-2 border-gray-400"}`}>
-                      {quotation.excluded_services?.includes(s) && 
-                        <span className="text-white text-xs flex justify-center items-center h-full">X</span>
-                      }
+                    <div className="w-5 h-5 bg-red-600 rounded flex items-center justify-center">
+                      <FaCheck className="text-white text-xs" />
                     </div>
-                    <span className={`text-sm font-medium ${quotation.excluded_services?.includes(s) ? "text-gray-800" : "text-gray-500"}`}>
-                      {s}
-                    </span>
+                    <span className="text-sm font-medium text-gray-800">{s}</span>
                   </div>
                 ))}
+                {SERVICE_EXCLUDES.filter(s => quotation.excluded_services?.includes(s)).length === 0 && (
+                  <p className="text-gray-500 text-sm italic">No services excluded</p>
+                )}
               </div>
             </div>
           </div>
