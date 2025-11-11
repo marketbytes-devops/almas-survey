@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaSignature, FaEye } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
@@ -40,6 +40,22 @@ export default function QuotationView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(new Set());
+  const [hasSignature, setHasSignature] = useState(false);
+  
+  // Signature modal state
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [currentSignature, setCurrentSignature] = useState(null);
+
+  // Check if signature exists
+  const checkSignatureExists = async (surveyId) => {
+    try {
+      const signatureRes = await apiClient.get(`/surveys/${surveyId}/signature/`);
+      setHasSignature(!!signatureRes.data.signature_url);
+      setCurrentSignature(signatureRes.data.signature_url);
+    } catch (err) {
+      setHasSignature(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,6 +67,8 @@ export default function QuotationView() {
         if (quot.survey_id) {
           const surveyRes = await apiClient.get(`/surveys/${quot.survey_id}/`);
           setSurvey(surveyRes.data);
+          // Check signature existence
+          await checkSignatureExists(quot.survey_id);
         }
       } catch (err) {
         setError("Failed to load quotation.");
@@ -68,6 +86,19 @@ export default function QuotationView() {
       newSet.has(section) ? newSet.delete(section) : newSet.add(section);
       return newSet;
     });
+  };
+
+  // View signature
+  const viewSignature = async () => {
+    if (!survey) return;
+    
+    try {
+      const signatureRes = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+      setCurrentSignature(signatureRes.data.signature_url);
+      setIsSignatureModalOpen(true);
+    } catch (err) {
+      setError("Failed to load signature");
+    }
   };
 
   const get = (primary, fallback) => primary ?? fallback ?? "Not filled";
@@ -120,6 +151,47 @@ export default function QuotationView() {
 
   return (
     <div className="container mx-auto">
+      {/* Signature View Modal */}
+      {isSignatureModalOpen && currentSignature && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Digital Signature</h3>
+              <button
+                onClick={() => {
+                  setIsSignatureModalOpen(false);
+                  setCurrentSignature(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
+              <img 
+                src={currentSignature} 
+                alt="Digital Signature" 
+                className="w-full h-auto max-h-64 object-contain"
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/300x150?text=Signature+Not+Found";
+                }}
+              />
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => {
+                  setIsSignatureModalOpen(false);
+                  setCurrentSignature(null);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium">Quotation Details</h2>
         <button
@@ -249,7 +321,7 @@ export default function QuotationView() {
           </table>
         </div>
 
-        {/* SERVICE INCLUDES & EXCLUDES - NEW SECTION */}
+        {/* SERVICE INCLUDES & EXCLUDES */}
         <div className="p-6 border-b">
           <div className="rounded-xl overflow-hidden border-2 border-gray-300">
             <div className="grid grid-cols-2 text-white font-bold text-lg">
@@ -286,6 +358,39 @@ export default function QuotationView() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Digital Signature Section */}
+        <div className="p-6 border-b">
+          <h3 className="font-semibold text-gray-800 mb-3">Digital Signature</h3>
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            {hasSignature ? (
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <FaSignature className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-800">Digitally Signed</p>
+                    <p className="text-sm text-green-600">This quotation has been digitally signed by the customer.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={viewSignature}
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                >
+                  <FaEye /> View Signature
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <FaSignature className="text-gray-500 text-xl" />
+                </div>
+                <p className="text-gray-600">No digital signature uploaded.</p>
+              </div>
+            )}
           </div>
         </div>
 

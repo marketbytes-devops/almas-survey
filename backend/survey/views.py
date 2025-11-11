@@ -205,6 +205,38 @@ class SurveyViewSet(viewsets.ModelViewSet):
                 {'error': f'Failed to upload signature: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    @action(detail=True, methods=['get'], url_path='signature')
+    def get_signature(self, request, survey_id=None):
+            """Get signature URL for a survey"""
+            try:
+                survey = self.get_object()
+                
+                if survey.signature:
+                    return Response(
+                        {
+                            'has_signature': True,
+                            'signature_url': request.build_absolute_uri(survey.signature.url)
+                        },
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    return Response(
+                        {'has_signature': False, 'signature_url': None},
+                        status=status.HTTP_200_OK
+                    )
+                    
+            except Survey.DoesNotExist:
+                return Response(
+                    {'error': 'Survey not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except Exception as e:
+                logger.error(f"Error fetching signature: {str(e)}", exc_info=True)
+                return Response(
+                    {'error': f'Failed to fetch signature: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
 
 class DestinationAddressViewSet(viewsets.ModelViewSet):
     queryset = DestinationAddress.objects.all()

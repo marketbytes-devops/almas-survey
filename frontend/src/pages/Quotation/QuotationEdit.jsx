@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { FaSignature, FaEye, FaPlus } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import SignatureModal from "../../components/SignatureModal/SignatureModal";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -38,6 +40,14 @@ export default function QuotationEdit() {
   const [quotation, setQuotation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSignatureUploading, setIsSignatureUploading] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  
+  // Signature modal states
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [isSignatureViewModalOpen, setIsSignatureViewModalOpen] = useState(false);
+  const [currentSignature, setCurrentSignature] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -69,6 +79,17 @@ export default function QuotationEdit() {
     advance: "",
   });
 
+  // Check if signature exists
+  const checkSignatureExists = async (surveyId) => {
+    try {
+      const signatureRes = await apiClient.get(`/surveys/${surveyId}/signature/`);
+      setHasSignature(!!signatureRes.data.signature_url);
+      setCurrentSignature(signatureRes.data.signature_url);
+    } catch (err) {
+      setHasSignature(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -76,6 +97,9 @@ export default function QuotationEdit() {
         const surveyRes = await apiClient.get(`/surveys/${id}/`);
         const s = surveyRes.data;
         setSurvey(s);
+
+        // Check signature existence
+        await checkSignatureExists(s.survey_id);
 
         // 2. Check if quotation exists
         const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${id}`);
@@ -193,14 +217,63 @@ export default function QuotationEdit() {
 
     try {
       await apiClient.patch(`/quotation-create/${quotation.quotation_id}/`, payload);
-      alert("Quotation updated successfully!");
-      navigate("/quotation-list");
+      setMessage("Quotation updated successfully!");
+      setTimeout(() => {
+        setMessage("");
+        navigate("/quotation-list"); // Redirect after success
+      }, 1500);
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
         Object.values(err.response?.data || {})[0] ||
         "Update failed.";
-      alert("Error: " + msg);
+      setError("Error: " + msg);
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  // Open signature upload modal (for adding/updating)
+  const openSignatureUploadModal = () => {
+    setIsSignatureModalOpen(true);
+  };
+
+  // View signature
+  const viewSignature = async () => {
+    if (!survey) return;
+    
+    try {
+      const signatureRes = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+      setCurrentSignature(signatureRes.data.signature_url);
+      setIsSignatureViewModalOpen(true);
+    } catch (err) {
+      setError("Failed to load signature");
+    }
+  };
+
+  // Handle signature save from modal
+  const handleSignatureSave = async (file) => {
+    if (!survey || !file) return;
+    
+    const formData = new FormData();
+    formData.append("signature", file);
+    setIsSignatureUploading(true);
+    
+    try {
+      await apiClient.post(
+        `/surveys/${survey.survey_id}/upload-signature/`, 
+        formData, 
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      setMessage("Digital signature updated successfully");
+      // Re-check signature existence
+      await checkSignatureExists(survey.survey_id);
+    } catch (err) {
+      setError("Signature upload failed.");
+    } finally {
+      setIsSignatureUploading(false);
+      setIsSignatureModalOpen(false);
     }
   };
 
@@ -212,12 +285,61 @@ export default function QuotationEdit() {
     );
   }
 
-  if (error) {
+  if (error && !message) {
     return <div className="text-center text-red-600 p-5">{error}</div>;
   }
 
   return (
     <div className="bg-gray-50">
+      {/* Signature Upload Modal */}
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSignatureSave}
+        customerName={form.client}
+      />
+
+      {/* Signature View Modal */}
+      {isSignatureViewModalOpen && currentSignature && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Digital Signature</h3>
+              <button
+                onClick={() => {
+                  setIsSignatureViewModalOpen(false);
+                  setCurrentSignature(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
+              <img 
+                src={currentSignature} 
+                alt="Digital Signature" 
+                className="w-full h-auto max-h-64 object-contain"
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/300x150?text=Signature+Not+Found";
+                }}
+              />
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => {
+                  setIsSignatureViewModalOpen(false);
+                  setCurrentSignature(null);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-8 flex justify-between items-center">
@@ -229,6 +351,18 @@ export default function QuotationEdit() {
             ×
           </button>
         </div>
+
+        {/* Messages */}
+        {error && (
+          <div className="m-4 p-4 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="m-4 p-4 bg-green-100 text-green-700 rounded">
+            {message}
+          </div>
+        )}
 
         <div className="p-8 space-y-8">
           {/* Quotation No. & Date */}
@@ -402,7 +536,7 @@ export default function QuotationEdit() {
             </div>
           </div>
 
-          {/* SERVICE INCLUDES & EXCLUDES - ADDED HERE */}
+          {/* SERVICE INCLUDES & EXCLUDES */}
           <div className="rounded-xl overflow-hidden border-2 border-gray-300">
             <div className="grid grid-cols-2 text-white font-bold text-lg">
               <div className="bg-gradient-to-r from-gray-600 to-gray-700 py-4 text-center">SERVICE INCLUDES</div>
@@ -480,6 +614,55 @@ export default function QuotationEdit() {
                 value={balance}
                 className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-green-50 text-green-700"
               />
+            </div>
+          </div>
+
+          {/* Digital Signature Section */}
+          <div className="border-t pt-6">
+            <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              {hasSignature ? (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <FaSignature className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-green-800">Digitally Signed</p>
+                      <p className="text-sm text-green-600">Signature has been uploaded for this quotation.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={viewSignature}
+                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                    >
+                      <FaEye /> View Signature
+                    </button>
+                    <button
+                      onClick={openSignatureUploadModal}
+                      disabled={isSignatureUploading}
+                      className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"
+                    >
+                      <FaPlus /> Change
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <FaSignature className="text-gray-500 text-xl" />
+                  </div>
+                  <p className="text-gray-600 mb-2">No digital signature uploaded yet.</p>
+                  <button
+                    onClick={openSignatureUploadModal}
+                    disabled={isSignatureUploading}
+                    className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
+                  >
+                    <FaPlus /> Add Signature
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
