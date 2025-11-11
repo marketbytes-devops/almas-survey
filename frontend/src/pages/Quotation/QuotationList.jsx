@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { FaPhoneAlt, FaEnvelope, FaEye, FaEdit } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import SignatureModal from "../../components/SignatureModal/SignatureModal"; // Import the modal
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -27,6 +28,10 @@ export default function QuotationList() {
   const [message, setMessage] = useState("");
   const [isSignatureUploading, setIsSignatureUploading] = useState(false);
   const [uploadingSurveyId, setUploadingSurveyId] = useState(null);
+  
+  // Signature modal state
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [currentSurvey, setCurrentSurvey] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -60,7 +65,6 @@ export default function QuotationList() {
 
   const handleCreateQuotation = async (surveyId) => {
     try {
-
       const surveyRes = await apiClient.get(`/surveys/${surveyId}/`);
       const survey = surveyRes.data;
 
@@ -126,7 +130,55 @@ export default function QuotationList() {
     }
   };
 
-  const handleSignature = async (surveyId, file) => {
+  // Open signature modal
+  const openSignatureModal = (survey) => {
+    setCurrentSurvey(survey);
+    setIsSignatureModalOpen(true);
+  };
+
+  // Handle signature save from modal
+  const handleSignatureSave = async (file) => {
+    if (!currentSurvey || !file) return;
+    
+    const form = new FormData();
+    form.append("signature", file);
+    setIsSignatureUploading(true);
+    setUploadingSurveyId(currentSurvey.survey_id);
+    
+    try {
+      await apiClient.post(
+        `/surveys/${currentSurvey.survey_id}/upload-signature/`, 
+        form, 
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      setMessage(`Digital signature uploaded successfully`);
+      setSurveys((prev) =>
+        prev.map((s) =>
+          s.survey_id === currentSurvey.survey_id 
+            ? { ...s, signature_uploaded: true } 
+            : s
+        )
+      );
+      setFilteredSurveys((prev) =>
+        prev.map((s) =>
+          s.survey_id === currentSurvey.survey_id 
+            ? { ...s, signature_uploaded: true } 
+            : s
+        )
+      );
+    } catch (err) {
+      setError("Signature upload failed.");
+    } finally {
+      setIsSignatureUploading(false);
+      setUploadingSurveyId(null);
+      setCurrentSurvey(null);
+    }
+  };
+
+  // Legacy file upload handler (optional - keep if you want both options)
+  const handleSignatureFileUpload = async (surveyId, file) => {
     if (!file) return;
     const form = new FormData();
     form.append("signature", file);
@@ -167,6 +219,17 @@ export default function QuotationList() {
 
   return (
     <div className="container mx-auto">
+      {/* Signature Modal */}
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => {
+          setIsSignatureModalOpen(false);
+          setCurrentSurvey(null);
+        }}
+        onSave={handleSignatureSave}
+        customerName={currentSurvey?.full_name || currentSurvey?.enquiry?.fullName}
+      />
+
       {error && (
         <motion.div
           className="mb-4 p-4 bg-red-100 text-red-700 rounded"
@@ -262,29 +325,24 @@ export default function QuotationList() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <label
-                          htmlFor={`sig-${s.survey_id}`}
-                          className={`cursor-pointer inline-flex items-center px-3 py-1 rounded text-xs font-medium transition ${s.signature_uploaded
-                            ? "bg-gray-400 text-white cursor-not-allowed"
-                            : "bg-red-600 hover:bg-red-700 text-white"
-                            }`}
-                        >
-                          {s.signature_uploaded ? "Uploaded" : "Upload"}
-                        </label>
-                        <input
-                          id={`sig-${s.survey_id}`}
-                          type="file"
-                          accept="image/*,.pdf"
-                          className="hidden"
+                        <button
+                          onClick={() => openSignatureModal(s)}
                           disabled={
                             s.signature_uploaded ||
                             (isSignatureUploading && uploadingSurveyId === s.survey_id)
                           }
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f && !s.signature_uploaded) handleSignature(s.survey_id, f);
-                          }}
-                        />
+                          className={`inline-flex items-center px-3 py-1 rounded text-xs font-medium transition ${
+                            s.signature_uploaded
+                              ? "bg-gray-400 text-white cursor-not-allowed"
+                              : "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                          }`}
+                        >
+                          {isSignatureUploading && uploadingSurveyId === s.survey_id
+                            ? "Uploading..."
+                            : s.signature_uploaded
+                            ? "Uploaded"
+                            : "Sign Digital"}
+                        </button>
                       </td>
                     </motion.tr>
                   );
@@ -353,29 +411,24 @@ export default function QuotationList() {
                       )}
                     </div>
 
-                    <label
-                      htmlFor={`sig-m-${s.survey_id}`}
-                      className={`block mt-3 text-center text-xs py-1 rounded cursor-pointer ${s.signature_uploaded
-                        ? "bg-gray-400 text-white"
-                        : "bg-red-600 hover:bg-red-700 text-white"
-                        }`}
-                    >
-                      {s.signature_uploaded ? "Uploaded" : "Upload Signature"}
-                    </label>
-                    <input
-                      id={`sig-m-${s.survey_id}`}
-                      type="file"
-                      accept="image/*,.pdf"
-                      className="hidden"
+                    <button
+                      onClick={() => openSignatureModal(s)}
                       disabled={
                         s.signature_uploaded ||
                         (isSignatureUploading && uploadingSurveyId === s.survey_id)
                       }
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f && !s.signature_uploaded) handleSignature(s.survey_id, f);
-                      }}
-                    />
+                      className={`block w-full mt-3 text-center text-xs py-2 rounded transition ${
+                        s.signature_uploaded
+                          ? "bg-gray-400 text-white cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                      }`}
+                    >
+                      {isSignatureUploading && uploadingSurveyId === s.survey_id
+                        ? "Uploading..."
+                        : s.signature_uploaded
+                        ? "Signature Uploaded"
+                        : "Sign Digital"}
+                    </button>
                   </div>
                 </motion.div>
               );
