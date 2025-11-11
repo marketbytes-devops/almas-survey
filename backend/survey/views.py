@@ -10,6 +10,9 @@ from .models import Survey, DestinationAddress, Article, Vehicle, Pet
 from .serializers import SurveySerializer, DestinationAddressSerializer, ArticleSerializer, VehicleSerializer, PetSerializer
 from contact.models import Enquiry
 from additional_settings.models import Item
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -111,10 +114,13 @@ Website: www.almasintl.com
     except Exception as e:
         logger.error(f"Failed to send survey submission email: {str(e)}", exc_info=True)
 
+
+@method_decorator(csrf_exempt, name='dispatch')
 class SurveyViewSet(viewsets.ModelViewSet):
     queryset = Survey.objects.all()
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication] 
     lookup_field = "survey_id"
 
     def get_queryset(self):
