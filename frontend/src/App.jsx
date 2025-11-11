@@ -31,6 +31,7 @@ import QuotationList from "./pages/Quotation/QuotationList";
 import QuotationCreate from "./pages/Quotation/QuotationCreate";
 import QuotationEdit from "./pages/Quotation/QuotationEdit";
 import QuotationView from "./pages/Quotation/QuotationView";
+import QuotationLocalMove from "./components/Templates/QuotationLocalMove";
 
 const ProtectedRoute = ({
   children,
@@ -268,6 +269,14 @@ function App() {
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
               <QuotationView />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/quotation-template-local-move",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+              <QuotationLocalMove />
             </ProtectedRoute>
           ),
         },
