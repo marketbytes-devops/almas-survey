@@ -34,26 +34,11 @@ class PriceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
-    # 🔥 NEW: Bulk update endpoint
-    @action(detail=False, methods=['post'], url_path='bulk-update')
+    @action(detail=False, methods=['post', 'patch'], url_path='bulk-update')
     def bulk_update(self, request):
         """
-        POST /api/price/bulk-update/
-        Saves/updates entire pricing table at once
-        
-        Expected payload:
-        [
-            {
-                "min_volume": 0.01,
-                "max_volume": 10.00,
-                "rate": 625.00,
-                "rate_type": "variable",
-                "hub": 1,  # optional
-                "move_type": 2,  # optional
-                "currency": "QAR"
-            },
-            ...
-        ]
+        POST  → Create new pricing entries
+        PATCH → Update existing entries (by ID)
         """
         if not isinstance(request.data, list):
             return Response(
@@ -65,30 +50,47 @@ class PriceViewSet(viewsets.ModelViewSet):
         move_type_id = request.data[0].get('move_type') if request.data else None
 
         with transaction.atomic():
-            # Option 1: Delete old prices for this hub/move_type and create new ones
-            filters = {}
-            if hub_id:
-                filters['hub_id'] = hub_id
-            if move_type_id:
-                filters['move_type_id'] = move_type_id
-            
-            # Deactivate old prices (safer than deleting)
-            Price.objects.filter(**filters, is_active=True).update(is_active=False)
-            
-            # Create new prices
-            serializer = self.get_serializer(data=request.data, many=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+            if request.method == 'POST':
+                filters = {}
+                if hub_id:
+                    filters['hub_id'] = hub_id
+                if move_type_id:
+                    filters['move_type_id'] = move_type_id
+                Price.objects.filter(**filters, is_active=True).update(is_active=False)
 
-        return Response(
-            {
-                "detail": f"Successfully updated {len(request.data)} pricing entries",
-                "data": serializer.data
-            },
-            status=status.HTTP_200_OK
-        )
+            to_create = [item for item in request.data if 'id' not in item or not item['id']]
+            to_update = [item for item in request.data if 'id' in item and item['id']]
 
-    # 🔥 NEW: Delete specific pricing range
+            response_data = []
+
+            if to_create:
+                create_serializer = self.get_serializer(data=to_create, many=True)
+                create_serializer.is_valid(raise_exception=True)
+                created = create_serializer.save()
+                response_data.extend(create_serializer.data)
+
+            if to_update and request.method in ['PATCH', 'PUT']:
+                updated_instances = []
+                update_serializer_data = []
+                for item in to_update:
+                    try:
+                        instance = Price.objects.get(id=item['id'], is_active=True)
+                        serializer = self.get_serializer(instance, data=item, partial=True)
+                        serializer.is_valid(raise_exception=True)
+                        updated_instances.append(serializer.save())
+                        update_serializer_data.append(serializer.data)
+                    except Price.DoesNotExist:
+                        continue 
+                response_data.extend(update_serializer_data)
+
+            return Response(
+                {
+                    "detail": f"Processed {len(to_create)} created, {len(to_update)} updated",
+                    "data": response_data
+                },
+                status=status.HTTP_200_OK
+            )
+
     @action(detail=False, methods=['delete'], url_path='bulk-delete')
     def bulk_delete(self, request):
         """DELETE /api/price/bulk-delete/?ids=1,2,3"""

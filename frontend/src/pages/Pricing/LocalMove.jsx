@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { useForm, FormProvider } from "react-hook-form";
 import Input from "../../components/Input/index";
 import { FaCopy, FaSave, FaPlus, FaTrash } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
@@ -18,23 +18,25 @@ const LocalMove = () => {
     weightUnits: [],
   });
 
-  const [tableRows, setTableRows] = useState([]);
-  const nextLocalId = useRef(1); 
-
   const [selectedHub, setSelectedHub] = useState("");
   const [selectedMoveType, setSelectedMoveType] = useState("");
   const [selectedTariff, setSelectedTariff] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState("");
 
+  const [tableData, setTableData] = useState([]);
+  const [nextId, setNextId] = useState(1);
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [existingIds, setExistingIds] = useState(new Set());
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const API_BASE_URL = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
   useEffect(() => {
-    const fetchDropdowns = async () => {
+    const fetchDropdownData = async () => {
       try {
         setLoading(true);
         const endpoints = [
@@ -45,9 +47,7 @@ const LocalMove = () => {
           `${API_BASE_URL}/volume-units/`,
           `${API_BASE_URL}/weight-units/`,
         ];
-        const responses = await Promise.all(
-          endpoints.map((url) => apiClient.get(url))
-        );
+        const responses = await Promise.all(endpoints.map((url) => apiClient.get(url)));
         const [
           hubsRes,
           moveTypesRes,
@@ -58,258 +58,285 @@ const LocalMove = () => {
         ] = responses;
 
         setDropdownData({
-          hubs: hubsRes.data?.results || hubsRes.data || [],
-          moveTypes: moveTypesRes.data?.results || moveTypesRes.data || [],
-          tariffTypes: tariffTypesRes.data?.results || tariffTypesRes.data || [],
-          currencies: currenciesRes.data?.results || currenciesRes.data || [],
-          volumeUnits: volumeUnitsRes.data?.results || volumeUnitsRes.data || [],
-          weightUnits: weightUnitsRes.data?.results || weightUnitsRes.data || [],
+          hubs: Array.isArray(hubsRes.data) ? hubsRes.data : hubsRes.data.results || [],
+          moveTypes: Array.isArray(moveTypesRes.data) ? moveTypesRes.data : moveTypesRes.data.results || [],
+          tariffTypes: Array.isArray(tariffTypesRes.data) ? tariffTypesRes.data : tariffTypesRes.data.results || [],
+          currencies: Array.isArray(currenciesRes.data) ? currenciesRes.data : currenciesRes.data.results || [],
+          volumeUnits: Array.isArray(volumeUnitsRes.data) ? volumeUnitsRes.data : volumeUnitsRes.data.results || [],
+          weightUnits: Array.isArray(weightUnitsRes.data) ? weightUnitsRes.data : weightUnitsRes.data.results || [],
         });
       } catch (err) {
         console.error(err);
-        setError(err.response?.data?.detail || err.message);
+        setError(err.response?.data?.detail || err.message || "Failed to load data");
       } finally {
         setLoading(false);
       }
     };
-    fetchDropdowns();
+    fetchDropdownData();
   }, [API_BASE_URL]);
 
   useEffect(() => {
-    const fetchLive = async () => {
+    const fetchPricing = async () => {
       if (!selectedHub && !selectedMoveType) {
-        setTableRows([]); 
+        setTableData([]);
+        setIsUpdateMode(false);
+        setExistingIds(new Set());
         return;
       }
+
       try {
         const params = new URLSearchParams();
         if (selectedHub) params.append("hub", selectedHub);
         if (selectedMoveType) params.append("move_type", selectedMoveType);
 
         const res = await apiClient.get(`${API_BASE_URL}/price/active/?${params}`);
-        const apiRows = (res.data || []).map((r, i) => ({
-          localId: i + 1000,
-          id: r.id,
-          min_volume: String(r.min_volume).padStart(5, "0"),
-          max_volume: String(r.max_volume).padStart(5, "0"),
-          flat_rate: String(r.rate),
-          variable_rate: "0.00",
-          rate_type: r.rate_type,
-        }));
-        setTableRows(apiRows.length ? apiRows : []);
+        const apiRows = (res.data || []).map((r, i) => {
+          const isFirst = i === 0;
+          return {
+            id: r.id,
+            range: `Range ${i + 1}`,
+            min: String(r.min_volume).padStart(5, "0"),
+            max: String(r.max_volume).padStart(5, "0"),
+            flatRate: String(r.rate),
+            variableRate: "0.00",
+            rateType: isFirst ? "flat" : "variable",
+          };
+        });
+
+        setTableData(apiRows);
+        setNextId(apiRows.length ? Math.max(...apiRows.map((x) => x.id)) + 1 : 1);
+        setExistingIds(new Set(apiRows.map((r) => r.id)));
         setIsUpdateMode(apiRows.length > 0);
-      } catch {
-        setTableRows([]);
+      } catch (err) {
+        console.error(err);
+        setTableData([]);
         setIsUpdateMode(false);
+        setExistingIds(new Set());
       }
     };
-    fetchLive();
+
+    fetchPricing();
   }, [selectedHub, selectedMoveType, API_BASE_URL]);
 
-  const getOptions = (data, label = "name", value = "id") =>
-    Array.isArray(data)
-      ? data.map((item) => ({
-          value: item[value] ?? item.id,
-          label:
-            item[label] ||
-            item.title ||
-            item.code ||
-            item.symbol ||
-            String(item.id),
-        }))
-      : [];
+  const getDropdownOptions = (data, nameField = "name", valueField = "id") => {
+    if (!Array.isArray(data)) return [];
+    return data.map((item) => ({
+      value: item[valueField] ?? item.id,
+      label: item[nameField] || item.title || item.code || item.symbol || String(item.id),
+    }));
+  };
 
-  const unitOptions = [
-    ...getOptions(dropdownData.volumeUnits),
-    ...getOptions(dropdownData.weightUnits),
+  const tableUnitOptions = [
+    ...getDropdownOptions(dropdownData.volumeUnits),
+    ...getDropdownOptions(dropdownData.weightUnits),
     { value: "items", label: "Items" },
   ];
 
+  const handleInputChange = (id, field, value) => {
+    setTableData((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const handleRateTypeChange = (id, type) => {
+    setTableData((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              rateType: type,
+              flatRate: type === "flat" ? row.flatRate : "",
+              variableRate: type === "variable" ? row.variableRate : "",
+            }
+          : row
+      )
+    );
+  };
+
   const addRow = () => {
-    const isFirstRow = tableRows.length === 0;
     const newRow = {
-      localId: nextLocalId.current++,
-      min_volume: "00.01",
-      max_volume: "00.00",
-      flat_rate: "0.00",
-      variable_rate: "0.00",
-      rate_type: isFirstRow ? "flat" : "variable",
+      id: nextId,
+      range: `Range ${tableData.length + 1}`,
+      min: "00.00",
+      max: "00.00",
+      flatRate: "",
+      variableRate: "0.00",
+      rateType: "variable", 
     };
-    setTableRows((prev) => [...prev, newRow]);
+    setTableData((prev) => [...prev, newRow]);
+    setNextId((prev) => prev + 1);
   };
 
-  const deleteRow = async (localId) => {
-    const row = tableRows.find((r) => r.localId === localId);
-    if (row?.id) {
-      try {
-        await apiClient.delete(
-          `${API_BASE_URL}/price/bulk-delete/?ids=${row.id}`
-        );
-      } catch (e) {
-        console.warn("Failed to delete on server", e);
-      }
+  const deleteRow = (id) => {
+    setTableData((prev) => prev.filter((row) => row.id !== id));
+    if (existingIds.has(id)) {
+      setExistingIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(id);
+        return updated;
+      });
     }
-    setTableRows((prev) => prev.filter((r) => r.localId !== localId));
-  };
-
-  const updateField = (localId, field, value) => {
-    setTableRows((prev) =>
-      prev.map((r) =>
-        r.localId === localId ? { ...r, [field]: value } : r
-      )
-    );
-  };
-
-  const setRateType = (localId, type) => {
-    setTableRows((prev) =>
-      prev.map((r) =>
-        r.localId === localId ? { ...r, rate_type: type } : r
-      )
-    );
   };
 
   const handleSave = async () => {
-    const payload = tableRows.map((row) => ({
-      ...(row.id && { id: row.id }), 
-      min_volume: parseFloat(row.min_volume) || 0,
-      max_volume: parseFloat(row.max_volume) || 0,
-      rate:
-        row.rate_type === "flat"
-          ? parseFloat(row.flat_rate) || 0
-          : parseFloat(row.variable_rate) || 0,
-      rate_type: row.rate_type,
-      hub: selectedHub || null,
-      move_type: selectedMoveType || null,
-      currency: selectedCurrency || "QAR",
-    }));
+    if (!selectedHub || !selectedMoveType || !selectedTariff || !selectedUnit || !selectedCurrency) {
+      alert("Please select all filters: Location, Move Type, Tariff, Unit, Currency");
+      return;
+    }
+
+    if (tableData.length === 0) {
+      alert("Add at least one row");
+      return;
+    }
+
+    setSaving(true);
+
+    const payload = tableData.map((row) => {
+      const base = {
+        min_volume: parseFloat(row.min) || 0,
+        max_volume: parseFloat(row.max) || 0,
+        rate: 0,
+        rate_type: row.rateType,
+        hub: parseInt(selectedHub),
+        move_type: parseInt(selectedMoveType),
+        currency: selectedCurrency,
+      };
+
+      if (row.rateType === "flat") {
+        base.rate = parseFloat(row.flatRate) || 0;
+      } else {
+        base.rate = parseFloat(row.variableRate) || 0;
+      }
+
+      if (existingIds.has(row.id)) {
+        base.id = row.id;
+      }
+
+      return base;
+    });
 
     try {
-      const res = await apiClient.post(
-        `${API_BASE_URL}/price/bulk-update/`,
-        payload
-      );
-      const saved = res.data.data.map((sv, i) => ({
-        ...tableRows[i],
-        id: sv.id,
-      }));
-      setTableRows(saved);
+      let res;
+      if (isUpdateMode) {
+        const updates = payload.filter((p) => p.id);
+        const creates = payload.filter((p) => !p.id);
+
+        if (updates.length > 0) {
+          await apiClient.patch(`${API_BASE_URL}/price/bulk-update/`, updates);
+        }
+        if (creates.length > 0) {
+          await apiClient.post(`${API_BASE_URL}/price/bulk-update/`, creates);
+        }
+      } else {
+        res = await apiClient.post(`${API_BASE_URL}/price/bulk-update/`, payload);
+      }
+
+      alert("Pricing saved successfully!");
       setIsUpdateMode(true);
-      alert("Pricing table saved successfully!");
+      const savedIds = payload.map((p) => p.id).filter(Boolean);
+      setExistingIds(new Set([...existingIds, ...savedIds]));
     } catch (err) {
       console.error(err);
-      alert(
-        err.response?.data?.detail ||
-          "Failed to save pricing table. Check console."
-      );
+      alert(err.response?.data?.detail || "Failed to save pricing");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleCopy = () => {
-    const json = JSON.stringify(tableRows, null, 2);
-    navigator.clipboard.writeText(json);
-    alert("Table copied to clipboard!");
-  };
-
-  if (loading) return <Loading />;
-  if (error)
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-600 text-xl mb-4">Error</div>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
           </button>
         </div>
       </div>
     );
+  }
 
   return (
     <FormProvider {...methods}>
       <div className="bg-gray-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-8">
-            Local Move Rates
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-800 mb-8">Local Move Rates</h1>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
                 <Input
                   name="hub"
                   type="select"
-                  options={getOptions(dropdownData.hubs)}
+                  options={getDropdownOptions(dropdownData.hubs)}
                   onChange={(e) => setSelectedHub(e.target.value)}
+                  value={selectedHub}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Move Type
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Move Type *</label>
                 <Input
                   name="move_type"
                   type="select"
-                  options={getOptions(dropdownData.moveTypes)}
+                  options={getDropdownOptions(dropdownData.moveTypes)}
                   onChange={(e) => setSelectedMoveType(e.target.value)}
+                  value={selectedMoveType}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tariff
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tariff *</label>
                 <Input
                   name="tariff"
                   type="select"
-                  options={getOptions(dropdownData.tariffTypes)}
+                  options={getDropdownOptions(dropdownData.tariffTypes)}
                   onChange={(e) => setSelectedTariff(e.target.value)}
+                  value={selectedTariff}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Table Unit is
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Table Unit is *</label>
                 <Input
                   name="unit"
                   type="select"
-                  options={unitOptions}
+                  options={tableUnitOptions}
                   onChange={(e) => setSelectedUnit(e.target.value)}
+                  value={selectedUnit}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Table Currency
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Table Currency *</label>
                 <Input
                   name="currency"
                   type="select"
-                  options={getOptions(dropdownData.currencies)}
+                  options={getDropdownOptions(dropdownData.currencies, "name", "id")}
                   onChange={(e) => setSelectedCurrency(e.target.value)}
+                  value={selectedCurrency}
                 />
               </div>
             </div>
 
             <div className="flex gap-4 mt-6">
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-              >
+              <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
                 <FaCopy /> COPY
               </button>
               <button
-                type="button"
                 onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:from-[#3a586d] hover:to-[#54738a] transition shadow-md"
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:from-[#3a586d] hover:to-[#54738a] transition shadow-md disabled:opacity-50"
               >
-                <FaSave /> {isUpdateMode ? "UPDATE" : "SAVE"}
+                <FaSave /> {saving ? "Saving..." : isUpdateMode ? "UPDATE" : "SAVE"}
               </button>
             </div>
           </div>
@@ -317,122 +344,98 @@ const LocalMove = () => {
             <table className="w-full text-sm">
               <thead className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-300">
                 <tr>
-                  <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                    Range #
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                    Min. Value
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                    Max
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                    Flat Rate
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                    Variable Rate
-                  </th>
-                  <th className="px-6 py-4 text-center font-semibold text-gray-700">
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 whitespace-nowrap">Range #</th>
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 whitespace-nowrap">Min. Value</th>
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 whitespace-nowrap">Max</th>
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 whitespace-nowrap">Flat Rate</th>
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 whitespace-nowrap">Variable Rate</th>
+                  <th className="px-6 py-4 text-center font-semibold text-gray-700" colSpan="2">
                     Rate Type
                   </th>
-                  <th className="px-6 py-4 text-left font-semibold text-gray-700">
-                    Action
-                  </th>
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {tableRows.map((row, idx) => {
-                  const isFlat = row.rate_type === "flat";
-                  const isVariable = row.rate_type === "variable";
+                {tableData.map((row, index) => {
+                  const isFlat = row.rateType === "flat";
+                  const isVariable = row.rateType === "variable";
 
                   return (
-                    <tr key={row.localId} className="hover:bg-blue-50">
-                      <td className="px-6 py-4 font-medium text-gray-800">
-                        Range {idx + 1}
-                      </td>
+                    <tr key={row.id} className="hover:bg-blue-50 transition">
+                      <td className="px-6 py-4 font-medium text-gray-800">{row.range}</td>
+
                       <td className="px-6 py-4">
                         <input
                           type="text"
-                          value={row.min_volume}
-                          onChange={(e) =>
-                            updateField(row.localId, "min_volume", e.target.value)
-                          }
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                          value={row.min}
+                          onChange={(e) => handleInputChange(row.id, "min", e.target.value)}
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                         />
                       </td>
+
                       <td className="px-6 py-4">
                         <input
                           type="text"
-                          value={row.max_volume}
-                          onChange={(e) =>
-                            updateField(row.localId, "max_volume", e.target.value)
-                          }
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                          value={row.max}
+                          onChange={(e) => handleInputChange(row.id, "max", e.target.value)}
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                         />
                       </td>
+
                       <td className="px-6 py-4">
                         <input
                           type="text"
-                          value={row.flat_rate}
+                          value={row.flatRate}
                           disabled={!isFlat}
-                          onChange={(e) =>
-                            updateField(row.localId, "flat_rate", e.target.value)
-                          }
-                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none font-medium ${
+                          onChange={(e) => handleInputChange(row.id, "flatRate", e.target.value)}
+                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition font-medium ${
                             !isFlat ? "bg-gray-200 cursor-not-allowed" : ""
                           }`}
                         />
                       </td>
+
                       <td className="px-6 py-4">
                         <input
                           type="text"
-                          value={row.variable_rate}
+                          value={row.variableRate}
                           disabled={!isVariable}
-                          onChange={(e) =>
-                            updateField(
-                              row.localId,
-                              "variable_rate",
-                              e.target.value
-                            )
-                          }
-                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none font-medium ${
+                          onChange={(e) => handleInputChange(row.id, "variableRate", e.target.value)}
+                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition font-medium ${
                             !isVariable ? "bg-gray-200 cursor-not-allowed" : ""
                           }`}
                         />
                       </td>
-                      <td className="px-6 py-4">
+
+                      <td className="px-6 py-4" colSpan="2">
                         <div className="flex items-center justify-center gap-6">
                           <label className="flex items-center cursor-pointer">
                             <input
                               type="radio"
-                              name={`rate_${row.localId}`}
+                              name={`rateType_${row.id}`}
                               checked={isVariable}
-                              onChange={() => setRateType(row.localId, "variable")}
+                              onChange={() => handleRateTypeChange(row.id, "variable")}
                               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="ml-2 text-sm font-medium text-gray-700">
-                              Variable
-                            </span>
+                            <span className="ml-2 text-sm font-medium text-gray-700">Variable</span>
                           </label>
                           <label className="flex items-center cursor-pointer">
                             <input
                               type="radio"
-                              name={`rate_${row.localId}`}
+                              name={`rateType_${row.id}`}
                               checked={isFlat}
-                              onChange={() => setRateType(row.localId, "flat")}
+                              onChange={() => handleRateTypeChange(row.id, "flat")}
                               className="w-4 h-4 text-purple-600 focus:ring-purple-500"
                             />
-                            <span className="ml-2 text-sm font-medium text-gray-700">
-                              Flat
-                            </span>
+                            <span className="ml-2 text-sm font-medium text-gray-700">Flat</span>
                           </label>
                         </div>
                       </td>
+
                       <td className="px-6 py-4">
                         <button
                           type="button"
-                          onClick={() => deleteRow(row.localId)}
-                          className="text-red-600 hover:text-red-800"
+                          onClick={() => deleteRow(row.id)}
+                          className="text-red-600 hover:text-red-800 transition"
                         >
                           <FaTrash />
                         </button>
@@ -443,11 +446,11 @@ const LocalMove = () => {
               </tbody>
             </table>
 
-            <div className="p-4">
+            <div className="p-4 border-t">
               <button
                 type="button"
                 onClick={addRow}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
               >
                 <FaPlus /> Add Row
               </button>
