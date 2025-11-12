@@ -46,37 +46,15 @@ export default function QuotationCreate() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Pricing ranges from LocalMove page
+  // Pricing ranges from price board
   const [pricingRanges, setPricingRanges] = useState([]);
-
-  // ADD THIS useEffect (ANYWHERE AFTER ALL useState)
-  useEffect(() => {
-    const fetchLivePricing = async () => {
-      try {
-        const res = await apiClient.get("/api/price/active/");
-        const liveRates = res.data.map(item => ({
-          min: parseFloat(item.min_volume),
-          max: parseFloat(item.max_volume),
-          rate: parseFloat(item.rate),
-          type: item.rate_type
-        }));
-        setPricingRanges(liveRates);
-      } catch (err) {
-        console.log("Using backup rates");
-        // fallback only if API fails
-        setPricingRanges([
-          { min: 0.01, max: 10.00, rate: 625.00, type: "variable" },
-          { min: 10.01, max: 20.00, rate: 625.00, type: "flat" },
-          { min: 20.01, max: 30.00, rate: 675.00, type: "flat" },
-          { min: 30.01, max: 40.00, rate: 775.00, type: "flat" },
-          { min: 40.01, max: 50.00, rate: 825.00, type: "flat" },
-          { min: 50.01, max: 60.00, rate: 875.00, type: "flat" },
-          { min: 60.01, max: 70.00, rate: 925.00, type: "flat" },
-        ]);
-      }
-    };
-    fetchLivePricing();
-  }, []);
+  const [priceError, setPriceError] = useState("");
+  const [calculationDetails, setCalculationDetails] = useState({
+    range: "",
+    rateType: "",
+    rateValue: 0,
+    formula: ""
+  });
 
   const [form, setForm] = useState({
     serialNo: "1001",
@@ -91,13 +69,35 @@ export default function QuotationCreate() {
     moveDate: today,
     jobType: "Local",
     rooms: [],
-    pricingMode: "variable", // default
     amount: "",
     advance: "",
     includedServices: SERVICE_INCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
     excludedServices: SERVICE_EXCLUDES.reduce((acc, item) => ({ ...acc, [item]: false }), {}),
   });
 
+  // Fetch live pricing from price board
+  useEffect(() => {
+    const fetchLivePricing = async () => {
+      try {
+        const res = await apiClient.get("/price/active/");
+        const liveRates = res.data.map(item => ({
+          min: parseFloat(item.min_volume),
+          max: parseFloat(item.max_volume),
+          rate: parseFloat(item.rate),
+          rateType: item.rate_type // 'flat' or 'variable'
+        }));
+        setPricingRanges(liveRates);
+        setPriceError("");
+      } catch (err) {
+        console.error("Failed to fetch pricing:", err);
+        setPriceError("Failed to load pricing data. Please contact administrator.");
+        setPricingRanges([]);
+      }
+    };
+    fetchLivePricing();
+  }, []);
+
+  // Fetch survey data
   useEffect(() => {
     const fetchSurvey = async () => {
       try {
@@ -149,32 +149,71 @@ export default function QuotationCreate() {
     .reduce((sum, r) => sum + (parseFloat(r.volume) || 0) * (r.qty || 0), 0)
     .toFixed(2);
 
-  // Auto-calculate amount based on pricing mode
+  // Auto-calculate amount based on volume and price board
   useEffect(() => {
-    if (!totalVolume || totalVolume <= 0) return;
+    if (!totalVolume || totalVolume <= 0) {
+      setForm(prev => ({ ...prev, amount: "" }));
+      setPriceError("");
+      setCalculationDetails({
+        range: "",
+        rateType: "",
+        rateValue: 0,
+        formula: ""
+      });
+      return;
+    }
+
+    if (pricingRanges.length === 0) {
+      setPriceError("No pricing data available. Please contact administrator.");
+      setForm(prev => ({ ...prev, amount: "" }));
+      return;
+    }
 
     const volume = parseFloat(totalVolume);
 
-    // Find applicable range
+    // Find applicable range from price board
     const applicableRange = pricingRanges.find(r =>
       volume >= r.min && volume <= r.max
     );
 
     if (!applicableRange) {
+      setPriceError(
+        `No pricing range found for volume ${volume} CBM. Please contact administrator to add pricing for this volume range.`
+      );
       setForm(prev => ({ ...prev, amount: "" }));
+      setCalculationDetails({
+        range: "",
+        rateType: "",
+        rateValue: 0,
+        formula: ""
+      });
       return;
     }
 
+    // Calculate amount based on rate type from price board
     let calculatedAmount = 0;
+    let formula = "";
 
-    if (form.pricingMode === "variable") {
-      calculatedAmount = applicableRange.rate * volume;
-    } else {
+    if (applicableRange.rateType === "flat") {
+      // Fixed/Flat Rate: Use rate directly
       calculatedAmount = applicableRange.rate;
+      formula = `Flat Rate: ${applicableRange.rate.toFixed(2)} QAR (Fixed amount for ${applicableRange.min.toFixed(2)}-${applicableRange.max.toFixed(2)} CBM range)`;
+    } else {
+      // Variable Rate: Multiply rate by volume
+      calculatedAmount = applicableRange.rate * volume;
+      formula = `${calculatedAmount.toFixed(2)} = ${applicableRange.rate.toFixed(2)} × ${volume} CBM`;
     }
 
     setForm(prev => ({ ...prev, amount: calculatedAmount.toFixed(2) }));
-  }, [totalVolume, form.pricingMode, pricingRanges]);
+    setPriceError("");
+    setCalculationDetails({
+      range: `${applicableRange.min.toFixed(2)}-${applicableRange.max.toFixed(2)} CBM`,
+      rateType: applicableRange.rateType === "flat" ? "Fixed" : "Variable",
+      rateValue: applicableRange.rate.toFixed(2),
+      formula: formula
+    });
+
+  }, [totalVolume, pricingRanges]);
 
   // Open signature modal
   const openSignatureModal = () => {
@@ -198,7 +237,6 @@ export default function QuotationCreate() {
         }
       );
       setMessage("Digital signature uploaded successfully");
-      // Update local state to reflect signature upload
       setSurvey(prev => ({ ...prev, signature_uploaded: true }));
     } catch (err) {
       setError("Signature upload failed.");
@@ -210,7 +248,12 @@ export default function QuotationCreate() {
 
   const handleCreate = async () => {
     if (!form.amount) {
-      alert("Amount is not calculated. Check volume or pricing.");
+      alert("Amount is not calculated. Please check volume or contact administrator about pricing.");
+      return;
+    }
+
+    if (priceError) {
+      alert(priceError);
       return;
     }
 
@@ -222,7 +265,6 @@ export default function QuotationCreate() {
       advance: form.advance ? parseFloat(form.advance) : 0,
       included_services: Object.keys(form.includedServices).filter(k => form.includedServices[k]),
       excluded_services: Object.keys(form.excludedServices).filter(k => form.excludedServices[k]),
-      pricing_mode: form.pricingMode, // optional: save mode
     };
 
     try {
@@ -336,41 +378,54 @@ export default function QuotationCreate() {
             </div>
           </div>
 
-          {/* PRICING MODE SELECTION */}
+          {/* PRICING DISPLAY - Auto-calculated from Price Board */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-            <h3 className="text-lg font-bold mb-4 text-gray-800">Pricing Mode</h3>
-            <div className="flex gap-8 justify-center">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pricingMode"
-                  value="variable"
-                  checked={form.pricingMode === "variable"}
-                  onChange={(e) => setForm({ ...form, pricingMode: e.target.value })}
-                  className="w-5 h-5 text-blue-600"
-                />
-                <span className="text-lg font-medium">Variable (Rate × Volume)</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pricingMode"
-                  value="fixed"
-                  checked={form.pricingMode === "fixed"}
-                  onChange={(e) => setForm({ ...form, pricingMode: e.target.value })}
-                  className="w-5 h-5 text-purple-600"
-                />
-                <span className="text-lg font-medium">Fixed (Flat Rate)</span>
-              </label>
-            </div>
-            <div className="mt-4 text-center text-2xl font-bold text-[#4c7085]">
-              Total Amount: <span className="text-3xl">{form.amount || "0.00"}</span> QAR
-            </div>
-            <p className="text-center text-sm text-gray-600 mt-2">
-              {form.pricingMode === "variable"
-                ? `Calculation: ${form.amount} = Rate × ${totalVolume} CBM`
-                : `Flat Rate applied for volume ${totalVolume} CBM`}
-            </p>
+            <h3 className="text-lg font-bold mb-4 text-gray-800">Quotation Amount</h3>
+            
+            {priceError ? (
+              <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 mb-4">
+                <p className="text-red-700 font-medium text-center">{priceError}</p>
+              </div>
+            ) : (
+              <>
+                {calculationDetails.range && (
+                  <div className="mb-4 p-4 bg-white rounded-lg border border-blue-300">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Volume Range:</p>
+                        <p className="font-bold text-gray-800">{calculationDetails.range}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Rate Type:</p>
+                        <p className="font-bold text-gray-800">{calculationDetails.rateType}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Rate Value:</p>
+                        <p className="font-bold text-gray-800">{calculationDetails.rateValue} QAR</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-2">Total Amount</p>
+                  <div className="text-4xl font-bold text-[#4c7085] mb-3">
+                    {form.amount || "0.00"} <span className="text-2xl">QAR</span>
+                  </div>
+                  {calculationDetails.formula && (
+                    <p className="text-sm text-gray-700 bg-white rounded-lg py-2 px-4 inline-block">
+                      <span className="font-medium">Calculation:</span> {calculationDetails.formula}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500 italic">
+                    * Amount is auto-calculated from live pricing rates based on volume
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Includes / Excludes */}
@@ -418,6 +473,15 @@ export default function QuotationCreate() {
           {/* Amount, Advance, Balance */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
+              <label className="block font-medium text-black text-sm">Total Amount</label>
+              <input
+                type="text"
+                readOnly
+                value={form.amount ? `${form.amount} QAR` : ""}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-bold bg-blue-50 text-blue-700"
+              />
+            </div>
+            <div>
               <label className="block font-medium text-black text-sm">Advance</label>
               <input
                 type="number"
@@ -433,8 +497,8 @@ export default function QuotationCreate() {
               <input
                 type="text"
                 readOnly
-                value={form.amount && form.advance ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2) : ""}
-                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-normal bg-green-50 text-green-700"
+                value={form.amount && form.advance ? `${(parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)} QAR` : ""}
+                className="text-sm w-full mt-1 border-2 border-gray-300 rounded-lg px-4 py-2 outline-none font-bold bg-green-50 text-green-700"
               />
             </div>
           </div>
@@ -476,10 +540,20 @@ export default function QuotationCreate() {
           <div className="text-center pt-6">
             <button
               onClick={handleCreate}
-              className="w-full max-w-md mx-auto bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white font-bold py-4 px-8 rounded-xl shadow-2xl transform transition hover:scale-105 text-xl"
+              disabled={!form.amount || priceError}
+              className={`w-full max-w-md mx-auto font-bold py-4 px-8 rounded-xl shadow-2xl transform transition text-xl ${
+                !form.amount || priceError
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white hover:scale-105"
+              }`}
             >
               CREATE QUOTATION
             </button>
+            {priceError && (
+              <p className="mt-3 text-sm text-red-600">
+                Cannot create quotation: {priceError}
+              </p>
+            )}
           </div>
         </div>
       </div>

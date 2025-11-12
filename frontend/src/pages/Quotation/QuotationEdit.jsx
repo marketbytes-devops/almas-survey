@@ -49,6 +49,16 @@ export default function QuotationEdit() {
   const [isSignatureViewModalOpen, setIsSignatureViewModalOpen] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
 
+  // Pricing calculation states
+  const [pricingRanges, setPricingRanges] = useState([]);
+  const [priceError, setPriceError] = useState("");
+  const [calculationDetails, setCalculationDetails] = useState({
+    range: "",
+    rateType: "",
+    rateValue: 0,
+    formula: ""
+  });
+
   const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -79,6 +89,28 @@ export default function QuotationEdit() {
     advance: "",
   });
 
+  // Fetch live pricing from price board
+  useEffect(() => {
+    const fetchLivePricing = async () => {
+      try {
+        const res = await apiClient.get("/price/active/");
+        const liveRates = res.data.map(item => ({
+          min: parseFloat(item.min_volume),
+          max: parseFloat(item.max_volume),
+          rate: parseFloat(item.rate),
+          rateType: item.rate_type // 'flat' or 'variable'
+        }));
+        setPricingRanges(liveRates);
+        setPriceError("");
+      } catch (err) {
+        console.error("Failed to fetch pricing:", err);
+        setPriceError("Failed to load pricing data. Please contact administrator.");
+        setPricingRanges([]);
+      }
+    };
+    fetchLivePricing();
+  }, []);
+
   // Check if signature exists
   const checkSignatureExists = async (surveyId) => {
     try {
@@ -89,6 +121,83 @@ export default function QuotationEdit() {
       setHasSignature(false);
     }
   };
+
+  // Calculate Total Volume
+  const totalVolume = form.rooms
+    .reduce((sum, r) => {
+      const vol = parseFloat(r.volume) || 0;
+      const qty = r.qty || 0;
+      return sum + vol * qty;
+    }, 0)
+    .toFixed(2);
+
+  // Auto-calculate amount based on volume and price board
+  useEffect(() => {
+    if (!totalVolume || totalVolume <= 0) {
+      setPriceError("");
+      setCalculationDetails({
+        range: "",
+        rateType: "",
+        rateValue: 0,
+        formula: ""
+      });
+      return;
+    }
+
+    if (pricingRanges.length === 0) {
+      setPriceError("No pricing data available. Please contact administrator.");
+      return;
+    }
+
+    const volume = parseFloat(totalVolume);
+
+    // Find applicable range from price board
+    const applicableRange = pricingRanges.find(r =>
+      volume >= r.min && volume <= r.max
+    );
+
+    if (!applicableRange) {
+      setPriceError(
+        `No pricing range found for volume ${volume} CBM. Please contact administrator to add pricing for this volume range.`
+      );
+      setCalculationDetails({
+        range: "",
+        rateType: "",
+        rateValue: 0,
+        formula: ""
+      });
+      return;
+    }
+
+    // Calculate amount based on rate type from price board
+    let calculatedAmount = 0;
+    let formula = "";
+
+    if (applicableRange.rateType === "flat") {
+      // Fixed/Flat Rate: Use rate directly
+      calculatedAmount = applicableRange.rate;
+      formula = `Flat Rate: ${applicableRange.rate.toFixed(2)} QAR (Fixed amount for ${applicableRange.min.toFixed(2)}-${applicableRange.max.toFixed(2)} CBM range)`;
+    } else {
+      // Variable Rate: Multiply rate by volume
+      calculatedAmount = applicableRange.rate * volume;
+      formula = `${calculatedAmount.toFixed(2)} = ${applicableRange.rate.toFixed(2)} × ${volume} CBM`;
+    }
+
+    // Only auto-update amount if it's not manually set or if it matches the calculated value
+    const currentAmount = parseFloat(form.amount) || 0;
+    if (currentAmount === 0 || Math.abs(currentAmount - calculatedAmount) < 0.01) {
+      setForm(prev => ({ ...prev, amount: calculatedAmount.toFixed(2) }));
+    }
+
+    setPriceError("");
+    setCalculationDetails({
+      range: `${applicableRange.min.toFixed(2)}-${applicableRange.max.toFixed(2)} CBM`,
+      rateType: applicableRange.rateType === "flat" ? "Fixed" : "Variable",
+      rateValue: applicableRange.rate.toFixed(2),
+      formula: formula
+    });
+
+  }, [totalVolume, pricingRanges]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -182,14 +291,6 @@ export default function QuotationEdit() {
 
     loadData();
   }, [id, today]);
-
-  const totalVolume = form.rooms
-    .reduce((sum, r) => {
-      const vol = parseFloat(r.volume) || 0;
-      const qty = r.qty || 0;
-      return sum + vol * qty;
-    }, 0)
-    .toFixed(2);
 
   const balance = form.amount && form.advance
     ? (parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)
@@ -514,6 +615,56 @@ export default function QuotationEdit() {
             <div className="text-right mt-4 font-normal text-lg text-[#4c7085]">
               Total Volume - {totalVolume} CBM
             </div>
+          </div>
+
+          {/* PRICING DISPLAY - Auto-calculated from Price Board */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
+            <h3 className="text-lg font-bold mb-4 text-gray-800">Quotation Amount Calculation</h3>
+            
+            {priceError ? (
+              <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 mb-4">
+                <p className="text-red-700 font-medium text-center">{priceError}</p>
+              </div>
+            ) : (
+              <>
+                {calculationDetails.range && (
+                  <div className="mb-4 p-4 bg-white rounded-lg border border-blue-300">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Volume Range:</p>
+                        <p className="font-bold text-gray-800">{calculationDetails.range}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Rate Type:</p>
+                        <p className="font-bold text-gray-800">{calculationDetails.rateType}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Rate Value:</p>
+                        <p className="font-bold text-gray-800">{calculationDetails.rateValue} QAR</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-2">Calculated Amount</p>
+                  <div className="text-4xl font-bold text-[#4c7085] mb-3">
+                    {form.amount || "0.00"} <span className="text-2xl">QAR</span>
+                  </div>
+                  {calculationDetails.formula && (
+                    <p className="text-sm text-gray-700 bg-white rounded-lg py-2 px-4 inline-block">
+                      <span className="font-medium">Calculation:</span> {calculationDetails.formula}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500 italic">
+                    * Amount is auto-calculated from live pricing rates based on volume
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Additional Services */}
