@@ -46,6 +46,82 @@ export default function QuotationView() {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
 
+  // Pricing calculation states
+  const [pricingRanges, setPricingRanges] = useState([]);
+  const [calculationDetails, setCalculationDetails] = useState({
+    range: "",
+    rateType: "",
+    rateValue: 0,
+    formula: ""
+  });
+
+  // Fetch live pricing from price board
+  useEffect(() => {
+    const fetchLivePricing = async () => {
+      try {
+        const res = await apiClient.get("/price/active/");
+        const liveRates = res.data.map(item => ({
+          min: parseFloat(item.min_volume),
+          max: parseFloat(item.max_volume),
+          rate: parseFloat(item.rate),
+          rateType: item.rate_type // 'flat' or 'variable'
+        }));
+        setPricingRanges(liveRates);
+      } catch (err) {
+        console.error("Failed to fetch pricing:", err);
+        setPricingRanges([]);
+      }
+    };
+    fetchLivePricing();
+  }, []);
+
+  // Calculate pricing details for display
+  useEffect(() => {
+    if (!quotation || !survey || pricingRanges.length === 0) return;
+
+    const rooms = (survey.articles || []).map(a => ({
+      volume: a.volume ? parseFloat(a.volume) : 0,
+      qty: a.quantity || 0,
+    }));
+
+    const totalVolume = rooms
+      .reduce((sum, r) => sum + (parseFloat(r.volume) || 0) * (r.qty || 0), 0)
+      .toFixed(2);
+
+    const volume = parseFloat(totalVolume);
+
+    if (!volume || volume <= 0) return;
+
+    // Find applicable range from price board
+    const applicableRange = pricingRanges.find(r =>
+      volume >= r.min && volume <= r.max
+    );
+
+    if (!applicableRange) return;
+
+    // Calculate amount based on rate type from price board
+    let calculatedAmount = 0;
+    let formula = "";
+
+    if (applicableRange.rateType === "flat") {
+      // Fixed/Flat Rate: Use rate directly
+      calculatedAmount = applicableRange.rate;
+      formula = `Flat Rate: ${applicableRange.rate.toFixed(2)} QAR (Fixed amount for ${applicableRange.min.toFixed(2)}-${applicableRange.max.toFixed(2)} CBM range)`;
+    } else {
+      // Variable Rate: Multiply rate by volume
+      calculatedAmount = applicableRange.rate * volume;
+      formula = `${calculatedAmount.toFixed(2)} = ${applicableRange.rate.toFixed(2)} × ${volume} CBM`;
+    }
+
+    setCalculationDetails({
+      range: `${applicableRange.min.toFixed(2)}-${applicableRange.max.toFixed(2)} CBM`,
+      rateType: applicableRange.rateType === "flat" ? "Fixed" : "Variable",
+      rateValue: applicableRange.rate.toFixed(2),
+      formula: formula
+    });
+
+  }, [quotation, survey, pricingRanges]);
+
   // Check if signature exists
   const checkSignatureExists = async (surveyId) => {
     try {
@@ -295,6 +371,40 @@ export default function QuotationView() {
             </div>
           )}
         </div>
+
+        {/* PRICING CALCULATION DISPLAY */}
+        {calculationDetails.range && (
+          <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+            <h3 className="font-semibold text-gray-800 mb-3">Quotation Amount Calculation</h3>
+            <div className="bg-white rounded-lg border border-blue-300 p-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Volume Range:</p>
+                  <p className="font-bold text-gray-800">{calculationDetails.range}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Rate Type:</p>
+                  <p className="font-bold text-gray-800">{calculationDetails.rateType}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Rate Value:</p>
+                  <p className="font-bold text-gray-800">{calculationDetails.rateValue} QAR</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-2">Calculated Amount</p>
+              <div className="text-3xl font-bold text-[#4c7085] mb-3">
+                {quotation.amount ? `${quotation.amount} QAR` : "—"}
+              </div>
+              {calculationDetails.formula && (
+                <p className="text-sm text-gray-700 bg-white rounded-lg py-2 px-4 inline-block">
+                  <span className="font-medium">Calculation:</span> {calculationDetails.formula}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Additional Services */}
         <div className="p-6 border-b">
