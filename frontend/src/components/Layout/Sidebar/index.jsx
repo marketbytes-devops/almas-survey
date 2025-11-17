@@ -20,6 +20,8 @@ import {
   AiOutlineUsergroupAdd,
   AiOutlineKey,
   AiOutlineIdcard,
+  AiOutlineUser,
+  AiOutlineLogout,
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -34,14 +36,16 @@ const Sidebar = ({ toggleSidebar }) => {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [surveyId, setSurveyId] = useState(localStorage.getItem("selectedSurveyId") || null);
-  const [goodsType, setGoodsType] = useState(localStorage.getItem("goodsType") || "article");
+  const [userData, setUserData] = useState({ username: "User", image: null });
+
+  const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await apiClient.get("/auth/profile/");
         const user = response.data;
+        setUserData({ username: user.username || "User", image: user.image });
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
         const roleId = user.role?.id;
         if (roleId) {
@@ -61,35 +65,22 @@ const Sidebar = ({ toggleSidebar }) => {
       }
     };
     fetchProfile();
-    const handleStorageChange = () => {
-      const newGoodsType = localStorage.getItem("goodsType") || "article";
-      setGoodsType(newGoodsType);
-      const newSurveyId = localStorage.getItem("selectedSurveyId") || null;
-      setSurveyId(newSurveyId);
-    };
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("goodsTypeChanged", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("goodsTypeChanged", handleStorageChange);
-    };
   }, []);
 
   const hasPermission = (page, action) => {
     if (isSuperadmin) return true;
     const perm = permissions.find((p) => p.page === page);
-    const hasPerm = perm && perm[`can_${action}`];
-    if (!hasPerm) {
-      console.log(`No permission for page: ${page}, action: ${action}`);
-    }
-    return hasPerm;
+    return perm && perm[`can_${action}`];
   };
 
   const toggleUserRoles = () => setIsUserRolesOpen(!isUserRolesOpen);
   const toggleadditional_settings = () => setIsadditional_settingsOpen(!isadditional_settingsOpen);
   const togglePricing = () => setIsPricingOpen(!isPricingOpen);
 
-  const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
 
   const menuItems = [
     {
@@ -172,62 +163,13 @@ const Sidebar = ({ toggleSidebar }) => {
       page: "additional_settings",
       action: "view",
       subItems: [
-        {
-          id: "types",
-          to: "/additional-settings/types",
-          label: "Types",
-          icon: <AiOutlineTag className="w-4 h-4 mr-3" />,
-          page: "types",
-          action: "view",
-        },
-        {
-          id: "units",
-          to: "/additional-settings/units",
-          label: "Units",
-          icon: <AiOutlineLineHeight className="w-4 h-4 mr-3" />,
-          page: "units",
-          action: "view",
-        },
-        {
-          id: "currency",
-          to: "/additional-settings/currency",
-          label: "Currency",
-          icon: <AiOutlineDollar className="w-4 h-4 mr-3" />,
-          page: "currency",
-          action: "view",
-        },
-        {
-          id: "tax",
-          to: "/additional-settings/tax",
-          label: "Tax",
-          icon: <AiOutlinePercentage className="w-4 h-4 mr-3" />,
-          page: "tax",
-          action: "view",
-        },
-        {
-          id: "handyman",
-          to: "/additional-settings/handyman",
-          label: "Handyman",
-          icon: <AiOutlineTool className="w-4 h-4 mr-3" />,
-          page: "handyman",
-          action: "view",
-        },
-        {
-          id: "manpower",
-          to: "/additional-settings/manpower",
-          label: "Manpower",
-          icon: <AiOutlineTeam className="w-4 h-4 mr-3" />,
-          page: "manpower",
-          action: "view",
-        },
-        {
-          id: "room",
-          to: "/additional-settings/room",
-          label: "Room",
-          icon: <AiOutlineHome className="w-4 h-4 mr-3" />,
-          page: "room",
-          action: "view",
-        },
+        { id: "types", to: "/additional-settings/types", label: "Types", icon: <AiOutlineTag className="w-4 h-4 mr-3" />, page: "types", action: "view" },
+        { id: "units", to: "/additional-settings/units", label: "Units", icon: <AiOutlineLineHeight className="w-4 h-4 mr-3" />, page: "units", action: "view" },
+        { id: "currency", to: "/additional-settings/currency", label: "Currency", icon: <AiOutlineDollar className="w-4 h-4 mr-3" />, page: "currency", action: "view" },
+        { id: "tax", to: "/additional-settings/tax", label: "Tax", icon: <AiOutlinePercentage className="w-4 h-4 mr-3" />, page: "tax", action: "view" },
+        { id: "handyman", to: "/additional-settings/handyman", label: "Handyman", icon: <AiOutlineTool className="w-4 h-4 mr-3" />, page: "handyman", action: "view" },
+        { id: "manpower", to: "/additional-settings/manpower", label: "Manpower", icon: <AiOutlineTeam className="w-4 h-4 mr-3" />, page: "manpower", action: "view" },
+        { id: "room", to: "/additional-settings/room", label: "Room", icon: <AiOutlineHome className="w-4 h-4 mr-3" />, page: "room", action: "view" },
       ],
     },
     {
@@ -237,30 +179,9 @@ const Sidebar = ({ toggleSidebar }) => {
       page: "users",
       action: "view",
       subItems: [
-        {
-          id: "roles",
-          to: "/user-roles/roles",
-          label: "Roles",
-          icon: <AiOutlineLock className="w-4 h-4 mr-3" />,
-          page: "roles",
-          action: "view",
-        },
-        {
-          id: "users",
-          to: "/user-roles/users",
-          label: "Users",
-          icon: <AiOutlineUsergroupAdd className="w-4 h-4 mr-3" />,
-          page: "users",
-          action: "view",
-        },
-        {
-          id: "permissions",
-          to: "/user-roles/permissions",
-          label: "Permissions",
-          icon: <AiOutlineKey className="w-4 h-4 mr-3" />,
-          page: "permissions",
-          action: "view",
-        },
+        { id: "roles", to: "/user-roles/roles", label: "Roles", icon: <AiOutlineLock className="w-4 h-4 mr-3" />, page: "roles", action: "view" },
+        { id: "users", to: "/user-roles/users", label: "Users", icon: <AiOutlineUsergroupAdd className="w-4 h-4 mr-3" />, page: "users", action: "view" },
+        { id: "permissions", to: "/user-roles/permissions", label: "Permissions", icon: <AiOutlineKey className="w-4 h-4 mr-3" />, page: "permissions", action: "view" },
       ],
     },
     {
@@ -311,10 +232,11 @@ const Sidebar = ({ toggleSidebar }) => {
         <>
           <button
             onClick={toggleFunction}
-            className={`flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isOpen || isActiveSubmenu
-              ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
+            className={`flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${
+              isOpen || isActiveSubmenu
+                ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+            }`}
           >
             <span className="flex items-center">
               {item.icon}
@@ -340,9 +262,10 @@ const Sidebar = ({ toggleSidebar }) => {
                     <NavLink
                       to={subItem.to}
                       className={({ isActive }) =>
-                        `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isActive
-                          ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${
+                          isActive
+                            ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                         }`
                       }
                       onClick={() => isMobile() && toggleSidebar()}
@@ -365,9 +288,10 @@ const Sidebar = ({ toggleSidebar }) => {
         <NavLink
           to={item.to}
           className={({ isActive }) =>
-            `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${isActive
-              ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+            `flex items-center justify-between w-full text-sm py-3 px-3 rounded rounded-bl-xl transition-colors duration-200 ${
+              isActive
+                ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
             }`
           }
           onClick={() => isMobile() && toggleSidebar()}
@@ -396,16 +320,238 @@ const Sidebar = ({ toggleSidebar }) => {
       animate={{ opacity: 1, x: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="p-4 flex items-center justify-center border-b border-gray-200">
-        <img src={logo} className="w-full" alt="Prime Logo" />
-      </div>
+      {isMobile() && (
+        <div className="p-5 bg-gradient-to-br from-[#4c7085] to-[#6b8ca3] text-white border-b border-white/20">
+          <div className="flex items-center gap-4">
+            {userData.image ? (
+              <img src={userData.image} alt="Profile" className="w-14 h-14 rounded-full object-cover ring-4 ring-white/30" />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-white/30 flex items-center justify-center">
+                <AiOutlineUser className="w-8 h-8" />
+              </div>
+            )}
+            <div>
+              <h3 className="font-semibold text-lg">Hello!</h3>
+              <p className="text-sm opacity-90">@{userData.username}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {!isMobile() && (
+        <div className="p-4 flex items-center justify-center border-b border-gray-200">
+          <img src={logo} className="w-full" alt="Prime Logo" />
+        </div>
+      )}
+
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-1">
-          {menuItems.map((item) => (
-            <li key={item.id}>{renderMenuItem(item)}</li>
-          ))}
-        </ul>
+        {isMobile() ? (
+          <ul className="space-y-2">
+            {hasPermission("pricing", "view") && (
+              <li>
+                <button
+                  onClick={togglePricing}
+                  className={`w-full flex items-center justify-between text-sm py-4 px-4 rounded-lg transition-colors ${
+                    isPricingOpen || location.pathname.startsWith("/pricing")
+                      ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <AiOutlineDollar className="w-5 h-5 mr-3" />
+                    Pricing
+                  </span>
+                  {isPricingOpen ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                <AnimatePresence>
+                  {isPricingOpen && (
+                    <motion.ul initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="ml-2 mt-2 space-y-1">
+                      {hasPermission("local_move", "view") && (
+                        <li>
+                          <NavLink
+                            to="/pricing/local-move"
+                            className={({ isActive }) =>
+                              `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`
+                            }
+                            onClick={() => toggleSidebar()}
+                          >
+                            Local Move
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("international_move", "view") && (
+                        <li>
+                          <NavLink
+                            to="/pricing/international-move"
+                            className={({ isActive }) =>
+                              `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`
+                            }
+                            onClick={() => toggleSidebar()}
+                          >
+                            International Move
+                          </NavLink>
+                        </li>
+                      )}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
+              </li>
+            )}
+            {hasPermission("additional_settings", "view") && (
+              <li>
+                <button
+                  onClick={toggleadditional_settings}
+                  className={`w-full flex items-center justify-between text-sm py-4 px-4 rounded-lg transition-colors ${
+                    isadditional_settingsOpen || location.pathname.startsWith("/additional-settings")
+                      ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <AiOutlineSliders className="w-5 h-5 mr-3" />
+                    Additional Settings
+                  </span>
+                  {isadditional_settingsOpen ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                <AnimatePresence>
+                  {isadditional_settingsOpen && (
+                    <motion.ul initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="ml-2 mt-2 space-y-1">
+                      {hasPermission("types", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/types" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Types
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("units", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/units" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Units
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("currency", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/currency" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Currency
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("tax", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/tax" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Tax
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("handyman", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/handyman" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Handyman
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("manpower", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/manpower" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Manpower
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("room", "view") && (
+                        <li>
+                          <NavLink to="/additional-settings/room" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Room
+                          </NavLink>
+                        </li>
+                      )}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
+              </li>
+            )}
+            {hasPermission("users", "view") && (
+              <li>
+                <button
+                  onClick={toggleUserRoles}
+                  className={`w-full flex items-center justify-between text-sm py-4 px-4 rounded-lg transition-colors ${
+                    isUserRolesOpen || location.pathname.startsWith("/user-roles")
+                      ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <AiOutlineSafety className="w-5 h-5 mr-3" />
+                    User Roles
+                  </span>
+                  {isUserRolesOpen ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                <AnimatePresence>
+                  {isUserRolesOpen && (
+                    <motion.ul initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="ml-2 mt-2 space-y-1">
+                      {hasPermission("roles", "view") && (
+                        <li>
+                          <NavLink to="/user-roles/roles" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Roles
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("users", "view") && (
+                        <li>
+                          <NavLink to="/user-roles/users" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Users
+                          </NavLink>
+                        </li>
+                      )}
+                      {hasPermission("permissions", "view") && (
+                        <li>
+                          <NavLink to="/user-roles/permissions" className={({ isActive }) => `block py-3 px-4 rounded text-sm ${isActive ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`} onClick={() => toggleSidebar()}>
+                            Permissions
+                          </NavLink>
+                        </li>
+                      )}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
+              </li>
+            )}
+            {hasPermission("Profile", "view") && (
+              <li>
+                <NavLink
+                  to="/profile"
+                  className={({ isActive }) =>
+                    `flex items-center text-sm py-4 px-4 rounded-lg transition-colors ${
+                      isActive
+                        ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    }`
+                  }
+                  onClick={() => toggleSidebar()}
+                >
+                  <AiOutlineIdcard className="w-5 h-5 mr-3" />
+                  Profile
+                </NavLink>
+              </li>
+            )}
+          </ul>
+        ) : (
+          <ul className="space-y-1">
+            {menuItems.map((item) => (
+              <li key={item.id}>{renderMenuItem(item)}</li>
+            ))}
+          </ul>
+        )}
       </nav>
+      {isMobile() && (
+        <div className="p-4 border-t border-gray-200 relative bottom-20">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-3 py-4 text-[#4c7085] hover:text-[#6b8ca3] rounded-lg font-semibold transition"
+          >
+            <AiOutlineLogout className="w-5 h-5" />
+            Logout
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 };

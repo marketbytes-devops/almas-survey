@@ -153,11 +153,11 @@ const LocalMove = () => {
       prev.map((row) =>
         row.id === id
           ? {
-              ...row,
-              rateType: type,
-              flatRate: type === "flat" ? row.flatRate : "",
-              variableRate: type === "variable" ? row.variableRate : "",
-            }
+            ...row,
+            rateType: type,
+            flatRate: type === "flat" ? row.flatRate : "",
+            variableRate: type === "variable" ? row.variableRate : "",
+          }
           : row
       )
     );
@@ -279,7 +279,7 @@ const LocalMove = () => {
 
   return (
     <FormProvider {...methods}>
-      <div className="bg-gray-50 min-h-screen">
+      <div className="bg-gray-50 min-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <h1 className="text-2xl font-semibold text-gray-800 mb-8">Local Move Rates</h1>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -397,9 +397,8 @@ const LocalMove = () => {
                           value={row.flatRate}
                           disabled={!isFlat}
                           onChange={(e) => handleInputChange(row.id, "flatRate", e.target.value)}
-                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition font-medium ${
-                            !isFlat ? "bg-gray-200 cursor-not-allowed" : ""
-                          }`}
+                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition font-medium ${!isFlat ? "bg-gray-200 cursor-not-allowed" : ""
+                            }`}
                         />
                       </td>
 
@@ -409,9 +408,8 @@ const LocalMove = () => {
                           value={row.variableRate}
                           disabled={!isVariable}
                           onChange={(e) => handleInputChange(row.id, "variableRate", e.target.value)}
-                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition font-medium ${
-                            !isVariable ? "bg-gray-200 cursor-not-allowed" : ""
-                          }`}
+                          className={`w-28 px-3 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition font-medium ${!isVariable ? "bg-gray-200 cursor-not-allowed" : ""
+                            }`}
                         />
                       </td>
 

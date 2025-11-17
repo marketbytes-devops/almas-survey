@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom"; // Fixed: was "react-router"
 import { motion } from "framer-motion";
 import bgAuth from "../../assets/images/bg-auth.webp";
 import Button from "../../components/Button";
@@ -28,6 +28,7 @@ const Login = ({ setIsAuthenticated }) => {
         email: data.email,
         password: data.password,
       });
+
       localStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("access_token", response.data.access);
       localStorage.setItem("refresh_token", response.data.refresh);
@@ -43,32 +44,42 @@ const Login = ({ setIsAuthenticated }) => {
 
   return (
     <motion.div
-      className="min-h-screen bg-gray-100 flex items-center justify-end p-6"
+      className="min-h-screen bg-gray-100 flex items-center justify-center lg:justify-end p-4 sm:p-6 lg:p-12"
       style={{
         backgroundImage: `url(${bgAuth})`,
         backgroundSize: "cover",
-        backgroundPosition: "bottom center",
+        backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="bg-white bg-opacity-90 p-6 rounded-lg shadow-md w-full max-w-sm">
-        <div className="flex flex-col justify-center items-center mb-4">
-          <h3 className="text-xl font-semibold text-[#4c7085] mb-2 opacity-90">
+      {/* Card - responsive width */}
+      <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md mx-auto lg:mx-0 lg:mr-12 p-6 sm:p-8 lg:p-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h3 className="text-2xl sm:text-3xl font-bold text-[#4c7085] mb-2">
             Welcome Back!
           </h3>
-          <p className="text-gray-600 text-center opacity-75">
+          <p className="text-gray-600 text-sm sm:text-base">
             Log in to access your profile and manage your account securely.
           </p>
         </div>
-        <h2 className="text-2xl text-[#4c7085] font-semibold mb-4 text-center">
+
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#4c7085] text-center mb-6">
           Login
         </h2>
-        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
+
+        {/* Error message */}
+        {error && (
+          <p className="text-red-600 bg-red-50 px-4 py-3 rounded-lg text-sm text-center mb-6">
+            {error}
+          </p>
+        )}
+
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <InputField
               label="Email"
               name="email"
@@ -82,6 +93,7 @@ const Login = ({ setIsAuthenticated }) => {
               }}
               placeholder="Enter your email"
             />
+
             <InputField
               label="Password"
               name="password"
@@ -89,13 +101,15 @@ const Login = ({ setIsAuthenticated }) => {
               rules={{ required: "Password is required" }}
               placeholder="Enter your password"
             />
-            <Button type="submit" className="w-full">
+
+            <Button type="submit" className="w-full text-lg py-3">
               Login
             </Button>
-            <div className="text-center">
+
+            <div className="text-center pt-4">
               <Link
                 to="/reset-password"
-                className="text-sm text-gray-600 hover:text-[#4c7085]"
+                className="text-sm sm:text-base text-gray-600 hover:text-[#4c7085] underline transition-colors"
               >
                 Forgot Password?
               </Link>
