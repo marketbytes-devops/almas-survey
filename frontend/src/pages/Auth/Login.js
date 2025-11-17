@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Fixed: was "react-router"
+import { Link, useNavigate } from "react-router"; 
 import { motion } from "framer-motion";
 import bgAuth from "../../assets/images/bg-auth.webp";
 import Button from "../../components/Button";
@@ -59,7 +59,7 @@ const Login = ({ setIsAuthenticated }) => {
       <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md mx-auto lg:mx-0 lg:mr-12 p-6 sm:p-8 lg:p-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h3 className="text-2xl sm:text-3xl font-bold text-[#4c7085] mb-2">
+          <h3 className="text-2xl font-medium text-[#4c7085] mb-2">
             Welcome Back!
           </h3>
           <p className="text-gray-600 text-sm sm:text-base">
@@ -67,7 +67,7 @@ const Login = ({ setIsAuthenticated }) => {
           </p>
         </div>
 
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#4c7085] text-center mb-6">
+        <h2 className="text-xl font-medium text-[#4c7085] text-center mb-6">
           Login
         </h2>
 
