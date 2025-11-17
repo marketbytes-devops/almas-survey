@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { FaBars, FaSignOutAlt, FaCamera } from "react-icons/fa";
+import { FaBars, FaSignOutAlt, FaCamera, FaUser } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 import { useNavigate, useLocation } from "react-router-dom";
+
+import fallbackProfile from "../../../assets/images/profile-icon.png";
 
 const routeNames = {
   "/": "Dashboard",
@@ -27,7 +29,7 @@ const routeNames = {
 
 const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthenticated, user: initialUser }) => {
   const [user, setUser] = useState(initialUser);
-  const [imagePreview, setImagePreview] = useState(initialUser?.image || null);
+  const [imagePreview, setImagePreview] = useState(initialUser?.image || fallbackProfile);
   const [isUploading, setIsUploading] = useState(false);
   const [feedback, setFeedback] = useState({ show: false, type: "", msg: "" });
   const fileInputRef = useRef(null);
@@ -58,6 +60,8 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
   useEffect(() => {
     if (initialUser?.image) {
       setImagePreview(initialUser.image);
+    } else {
+      setImagePreview(fallbackProfile);
     }
   }, [initialUser?.image]);
 
@@ -74,12 +78,13 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
 
     try {
       const res = await apiClient.put("/auth/profile/", formData);
-      setImagePreview(res.data.image || previewUrl);
-      setUser(prev => ({ ...prev, image: res.data.image }));
+      const newImage = res.data.image || previewUrl;
+      setImagePreview(newImage);
+      setUser(prev => ({ ...prev, image: newImage }));
       showFeedback("success", "Profile picture updated!");
     } catch (err) {
       console.error("Upload failed:", err);
-      setImagePreview(initialUser?.image || null);
+      setImagePreview(initialUser?.image || fallbackProfile);
       showFeedback("error", "Failed to update image");
     } finally {
       setIsUploading(false);
@@ -89,60 +94,70 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
 
   const showFeedback = (type, msg) => {
     setFeedback({ show: true, type, msg });
-    setTimeout(() => setFeedback({ show: false, type: "", msg: "" }), 3000);
+    setTimeout(() => setFeedback({ show: false, type: "", msg: "" }), 4000);
   };
 
   const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to logout?")) return;
+
     const refreshToken = localStorage.getItem("refresh_token");
     try {
       if (refreshToken) await apiClient.post("/auth/logout/", { refresh: refreshToken });
-    } catch (err) { console.error(err); }
-    finally {
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
       localStorage.clear();
       setIsAuthenticated(false);
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   };
 
   return (
     <>
       <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white shadow-md sticky top-0 z-20">
-        <div className="px-4 py-7 md:py-3 flex items-center justify-between">
+        <div className="px-4 py-6.5 md:py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-white/20 transition shrink-0"
+              className="p-3 rounded-xl hover:bg-white/20 transition-all duration-200 backdrop-blur-sm shrink-0"
               aria-label="Toggle menu"
             >
-              <FaBars className="w-4 h-4 md:w-5 md:h-5" />
+              <FaBars className="w-5 h-5" />
             </button>
-            <h1 className="text-sm font-medium truncate">{activePage}</h1>
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:block w-2 h-2 bg-white/70 rounded-full animate-pulse"></div>
+              <h1 className="text-sm font-medium">
+                {activePage}
+              </h1>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {user?.username && (
-              <span className="hidden xs:block text-sm font-light truncate max-w-[100px]">
-                {user.username}
-              </span>
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-xs font-medium">
+                  {user.username}
+                </span>
+                <span className="text-xs opacity-80">
+                  {user.role?.name || "User"}
+                </span>
+              </div>
             )}
             <div className="relative group">
               <label className="cursor-pointer block">
                 <div className="relative">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-white/30"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
-                      <FaCamera className="w-5 h-5 text-white/70" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <FaCamera className="w-5 h-5" />
+                  <img
+                    src={imagePreview}
+                    alt="Profile"
+                    className="w-11 h-11 rounded-full object-cover ring-4 ring-white/30 shadow-lg transition-all group-hover:ring-white/50"
+                    onError={(e) => {
+                      e.target.src = fallbackProfile;
+                    }}
+                  />
+                  <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                    <FaCamera className="w-5 h-5 text-white" />
                   </div>
                   {isUploading && (
-                    <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <div className="absolute inset-0 rounded-full border-4 border-white/30 border-t-white animate-spin" />
                   )}
                 </div>
                 <input
@@ -157,30 +172,34 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className="hidden sm:flex items-center gap-2 text-sm hover:text-red-200 transition"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 backdrop-blur-sm font-medium text-sm"
               >
-                <FaSignOutAlt />
-                <span className="hidden md:inline">Logout</span>
+                <FaSignOutAlt className="w-4 h-4" />
+                <span className="hidden lg:inline">Logout</span>
               </button>
             )}
           </div>
         </div>
       </div>
       <motion.div
-        initial={{ y: -50, opacity: 0 }}
+        initial={{ y: -100, opacity: 0 }}
         animate={{
-          y: feedback.show ? 80 : -50,
+          y: feedback.show ? 80 : -100,
           opacity: feedback.show ? 1 : 0,
         }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
       >
         {feedback.show && (
           <div
-            className={`px-6 py-3 rounded-full shadow-2xl font-medium text-white ${
-              feedback.type === "success" ? "bg-green-600" : "bg-red-600"
+            className={`px-8 py-4 rounded-2xl shadow-2xl font-bold text-white flex items-center gap-3 backdrop-blur-xl border ${
+              feedback.type === "success"
+                ? "bg-gradient-to-r from-green-500 to-emerald-600 border-green-300"
+                : "bg-gradient-to-r from-red-500 to-rose-600 border-red-300"
             }`}
           >
-            {feedback.msg}
+            {feedback.type === "success" ? "Success" : "Error"}
+            <span className="font-medium">{feedback.msg}</span>
           </div>
         )}
       </motion.div>

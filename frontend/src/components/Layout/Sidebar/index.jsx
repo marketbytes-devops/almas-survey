@@ -26,6 +26,7 @@ import {
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
 import apiClient from "../../../api/apiClient";
+import fallbackProfile from "../../../assets/images/profile-icon.png";
 
 const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
@@ -36,7 +37,10 @@ const Sidebar = ({ toggleSidebar }) => {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userData, setUserData] = useState({ username: "User", image: null });
+    const [userData, setUserData] = useState({ 
+    username: "User", 
+    image: fallbackProfile 
+  });
 
   const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
 
@@ -45,7 +49,10 @@ const Sidebar = ({ toggleSidebar }) => {
       try {
         const response = await apiClient.get("/auth/profile/");
         const user = response.data;
-        setUserData({ username: user.username || "User", image: user.image });
+        setUserData({ 
+          username: user.username || "User", 
+          image: user.image || fallbackProfile 
+        });
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
         const roleId = user.role?.id;
         if (roleId) {
@@ -324,7 +331,12 @@ const Sidebar = ({ toggleSidebar }) => {
         <div className="p-5 bg-gradient-to-br from-[#4c7085] to-[#6b8ca3] text-white border-b border-white/20">
           <div className="flex items-center gap-4">
             {userData.image ? (
-              <img src={userData.image} alt="Profile" className="w-14 h-14 rounded-full object-cover ring-4 ring-white/30" />
+              <img 
+                src={userData.image} 
+                alt="Profile" 
+                className="w-14 h-14 rounded-full object-cover ring-4 ring-white/30"
+                onError={(e) => { e.target.src = fallbackProfile; }}
+              />
             ) : (
               <div className="w-14 h-14 rounded-full bg-white/30 flex items-center justify-center">
                 <AiOutlineUser className="w-8 h-8" />

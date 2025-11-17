@@ -5,7 +5,7 @@ import apiClient from "../../api/apiClient";
 import Loading from "../Loading";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
-import BottomNav from "./BottomNav"; 
+import BottomNav from "./BottomNav";
 
 const routeNames = {
   "/": "Dashboard",
@@ -30,18 +30,15 @@ const routeNames = {
 };
 
 const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(window.innerWidth >= 768);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(true);
-      } else {
-        setSidebarOpen(false);
-      }
+      const isDesktop = window.innerWidth >= 768;
+      setIsOpen(isDesktop);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -60,7 +57,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
       .get("/auth/profile/")
       .then((res) => {
         setUser({
-          username: res.data.username,
+          username: res.data.username || "User",
           image: res.data.image || null,
         });
       })
@@ -70,6 +67,12 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
       })
       .finally(() => setLoading(false));
   }, [isAuthenticated]);
+
+  const toggleSidebar = () => {
+    if (window.innerWidth < 768) {
+      setIsOpen(!isOpen);
+    }
+  };
 
   const getActivePage = () => {
     const path = location.pathname;
@@ -88,30 +91,34 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <motion.aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-          md:translate-x-0 md:relative md:shadow-lg`}
+        className="fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl"
         initial={false}
+        animate={{ x: isOpen ? 0 : -288 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <Sidebar toggleSidebar={() => setSidebarOpen(false)} />
+        <Sidebar toggleSidebar={toggleSidebar} />
       </motion.aside>
-      {sidebarOpen && (
+      {isOpen && window.innerWidth < 768 && (
         <div
           className="fixed inset-0 z-30 backdrop-brightness-50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={toggleSidebar}
         />
       )}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out
+          ${isOpen ? "md:ml-72" : "md:ml-0"}`}
+      >
         <Topbar
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          sidebarOpen={sidebarOpen}
+          toggleSidebar={toggleSidebar}
+          isOpen={isOpen}
           user={user}
           activePage={activePage}
           isAuthenticated={isAuthenticated}
           setIsAuthenticated={setIsAuthenticated}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8 bg-gray-50">
+
+        <main className="flex-1 pb-20 md:pb-6 pt-4 px-4 sm:px-6 lg:px-8 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center min-h-screen">
               <Loading />
@@ -120,7 +127,9 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
             <Outlet />
           )}
         </main>
-        <BottomNav isAuthenticated={isAuthenticated} activePage={activePage} />
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+          <BottomNav activePage={activePage} />
+        </div>
       </div>
     </div>
   );
