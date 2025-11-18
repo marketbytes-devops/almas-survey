@@ -66,17 +66,17 @@ export default function QuotationList() {
       const survey = surveyRes.data;
 
       const res = await apiClient.post("/quotation-create/create-draft/", {
-        survey_id: survey.id,
+        survey_id: survey.id, 
       });
 
       setSurveys((prev) =>
         prev.map((s) =>
           s.survey_id === surveyId
             ? {
-              ...s,
-              hasQuotation: true,
-              quotation_id: res.data.quotation_id,
-            }
+                ...s,
+                hasQuotation: true,
+                quotation_id: res.data.quotation_id,
+              }
             : s
         )
       );
@@ -84,15 +84,17 @@ export default function QuotationList() {
         prev.map((s) =>
           s.survey_id === surveyId
             ? {
-              ...s,
-              hasQuotation: true,
-              quotation_id: res.data.quotation_id,
-            }
+                ...s,
+                hasQuotation: true,
+                quotation_id: res.data.quotation_id,
+              }
             : s
         )
       );
 
-      navigate(`/quotation-edit/${surveyId}`);
+      navigate(`/quotation-create/${surveyId}`);
+      
+      setMessage("Draft quotation created! Opening editor...");
     } catch (err) {
       const msg = err.response?.data?.detail || "Failed to create draft quotation";
       setError(msg);
@@ -344,13 +346,13 @@ export default function QuotationList() {
                             to={`/quotation-view/${s.quotation_id}`}
                             className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            <FaEye /> View
+                            View
                           </Link>
                           <Link
-                            to={`/quotation-edit/${s.survey_id}`}
+                            to={`/quotation-create/${s.survey_id}`} 
                             className="inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            <FaEdit /> Edit
+                            Edit
                           </Link>
                           <button
                             onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}

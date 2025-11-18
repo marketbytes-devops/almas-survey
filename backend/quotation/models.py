@@ -43,7 +43,6 @@ class Quotation(models.Model):
     )
     notes = models.TextField(null=True, blank=True)
 
-    # NEW FIELDS - Service Includes & Excludes
     included_services = models.JSONField(
         default=list,
         blank=True,
@@ -78,7 +77,6 @@ class Quotation(models.Model):
             last = Quotation.objects.order_by("-id").first()
             self.serial_no = str(int(last.serial_no or "1000") + 1) if last else "1001"
 
-        # Ensure JSON fields are lists
         if not isinstance(self.included_services, list):
             self.included_services = []
         if not isinstance(self.excluded_services, list):
