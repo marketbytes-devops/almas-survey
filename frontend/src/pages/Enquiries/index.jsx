@@ -11,7 +11,14 @@ const rowVariants = {
   rest: { backgroundColor: "#ffffff" },
 };
 
-const Input = ({ label, name, type = "text", options = [], rules = {}, ...props }) => {
+const Input = ({
+  label,
+  name,
+  type = "text",
+  options = [],
+  rules = {},
+  ...props
+}) => {
   const {
     register,
     formState: { errors },
@@ -84,8 +91,9 @@ const Enquiries = () => {
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [assignData, setAssignData] = useState(null);
-  
-  // Loading states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
   const [isAddingEnquiry, setIsAddingEnquiry] = useState(false);
   const [isAssigningEnquiry, setIsAssigningEnquiry] = useState(false);
   const [assigningEnquiryId, setAssigningEnquiryId] = useState(null);
@@ -100,6 +108,28 @@ const Enquiries = () => {
       toDate: "",
     },
   });
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEnquiries = filteredEnquiries.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
+
+  // Toggle expand/collapse
+  const toggleEnquiryExpand = (enquiryId) => {
+    setExpandedEnquiries((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(enquiryId)) {
+        newSet.delete(enquiryId);
+      } else {
+        newSet.add(enquiryId);
+      }
+      return newSet;
+    });
+  };
 
   const serviceOptions = [
     { value: "localMove", label: "Local Move" },
@@ -141,8 +171,8 @@ const Enquiries = () => {
       setIsLoading(true);
       try {
         const response = await apiClient.get("/contacts/enquiries/");
-        const sortedEnquiries = response.data.sort((a, b) => 
-          new Date(b.created_at) - new Date(a.created_at)
+        const sortedEnquiries = response.data.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
         );
         setEnquiries(sortedEnquiries);
         setFilteredEnquiries(sortedEnquiries);
@@ -173,7 +203,9 @@ const Enquiries = () => {
       );
       if (!existingScript) {
         const script = document.createElement("script");
-        script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
+        script.src = `https://www.google.com/recaptcha/api.js?render=${
+          import.meta.env.VITE_RECAPTCHA_SITE_KEY
+        }`;
         script.async = true;
         document.body.appendChild(script);
       }
@@ -187,6 +219,7 @@ const Enquiries = () => {
 
   const handleFilter = (data) => {
     let filtered = [...enquiries];
+    setCurrentPage(1);
 
     if (data.filterType === "assigned") {
       filtered = filtered.filter((enquiry) => enquiry.assigned_user_email);
@@ -230,7 +263,9 @@ const Enquiries = () => {
           })
           .then(resolve)
           .catch(() =>
-            reject(new Error("Failed to obtain reCAPTCHA token. Please try again."))
+            reject(
+              new Error("Failed to obtain reCAPTCHA token. Please try again.")
+            )
           );
       });
     });
@@ -257,7 +292,7 @@ const Enquiries = () => {
       setError("You do not have permission to add an enquiry.");
       return;
     }
-    
+
     setIsAddingEnquiry(true);
     try {
       const recaptchaToken = await getRecaptchaToken();
@@ -289,13 +324,16 @@ const Enquiries = () => {
       return;
     }
     try {
-      const response = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry?.id}/`, {
-        fullName: data.fullName,
-        phoneNumber: data.phoneNumber,
-        email: data.email,
-        serviceType: data.serviceType,
-        message: data.message,
-      });
+      const response = await apiClient.patch(
+        `/contacts/enquiries/${selectedEnquiry?.id}/`,
+        {
+          fullName: data.fullName,
+          phoneNumber: data.phoneNumber,
+          email: data.email,
+          serviceType: data.serviceType,
+          message: data.message,
+        }
+      );
       const updatedEnquiries = enquiries.map((enquiry) =>
         enquiry.id === selectedEnquiry?.id ? response.data : enquiry
       );
@@ -322,16 +360,21 @@ const Enquiries = () => {
   const confirmAssign = async () => {
     setIsAssigningEnquiry(true);
     try {
-      const response = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry?.id}/`, {
-        assigned_user_email: assignData.emailReceiver || null,
-        note: assignData.note || null,
-      });
+      const response = await apiClient.patch(
+        `/contacts/enquiries/${selectedEnquiry?.id}/`,
+        {
+          assigned_user_email: assignData.emailReceiver || null,
+          note: assignData.note || null,
+        }
+      );
       const updatedEnquiries = enquiries.map((enquiry) =>
         enquiry.id === selectedEnquiry?.id ? response.data : enquiry
       );
       setEnquiries(updatedEnquiries);
       setFilteredEnquiries(updatedEnquiries);
-      setMessage("Enquiry assigned successfully and email sent to assigned user");
+      setMessage(
+        "Enquiry assigned successfully and email sent to assigned user"
+      );
       setIsAssignConfirmOpen(false);
       assignForm.reset();
     } catch (error) {
@@ -348,8 +391,12 @@ const Enquiries = () => {
       return;
     }
     try {
-      await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/delete/`);
-      const updatedEnquiries = enquiries.filter((enquiry) => enquiry.id !== selectedEnquiry?.id);
+      await apiClient.delete(
+        `/contacts/enquiries/${selectedEnquiry?.id}/delete/`
+      );
+      const updatedEnquiries = enquiries.filter(
+        (enquiry) => enquiry.id !== selectedEnquiry?.id
+      );
       setEnquiries(updatedEnquiries);
       setFilteredEnquiries(updatedEnquiries);
       setMessage("Enquiry deleted successfully");
@@ -449,27 +496,27 @@ const Enquiries = () => {
       )}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
         <div className="w-full sm:w-auto">
-        <button
-          onClick={() => setIsAddOpen(true)}
-          className="w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
-        >
-          {isAddingEnquiry ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Adding
-            </>
-          ) : (
-            "Add New Enquiry"
-          )}
-        </button>
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
+          >
+            {isAddingEnquiry ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Adding
+              </>
+            ) : (
+              "Add New Enquiry"
+            )}
+          </button>
         </div>
         <FormProvider {...filterForm}>
           <form
             onSubmit={filterForm.handleSubmit(handleFilter)}
             className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
           >
-          <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-auto">
               <Input
                 label="Filter By *"
                 name="filterType"
@@ -547,202 +594,388 @@ const Enquiries = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEnquiries.map((enquiry, index) => (
-                  <motion.tr
-                    key={enquiry.id}
-                    className="hover:bg-gray-50"
-                    variants={rowVariants}
-                    initial="rest"
-                    whileHover="hover"
-                  >
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {new Date(enquiry.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.fullName || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.phoneNumber ? (
-                        <button
-                          onClick={() => openPhoneModal(enquiry)}
-                          className="flex items-center gap-2 text-[#4c7085]"
-                        >
-                          <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                        </button>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.email ? (
-                        <a
-                          href={`mailto:${enquiry.email}`}
-                          className="flex items-center gap-2 text-[#4c7085]"
-                        >
-                          <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                        enquiry.serviceType ||
-                        "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.message || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.note || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.assigned_user_email || "Unassigned"}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setAssigningEnquiryId(enquiry.id);
-                            openAssignModal(enquiry);
-                          }}
-                          className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
-                        >
-                          {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              Assigning
-                            </>
-                          ) : (
-                            "Assign"
-                          )}
-                        </button>
-                        <button
-                          onClick={() => openEditModal(enquiry)}
-                          className="bg-gray-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={!hasPermission("enquiries", "edit")}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(enquiry)}
-                          className="bg-red-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={!hasPermission("enquiries", "delete")}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                {currentEnquiries.map((enquiry, index) => {
+                  const globalIndex =
+                    filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
+                  return (
+                    <motion.tr
+                      key={enquiry.id}
+                      className="hover:bg-gray-50"
+                      variants={rowVariants}
+                      initial="rest"
+                      whileHover="hover"
+                    >
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {globalIndex}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {new Date(enquiry.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.fullName || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.phoneNumber ? (
+                          <button
+                            onClick={() => openPhoneModal(enquiry)}
+                            className="flex items-center gap-2 text-[#4c7085]"
+                          >
+                            <FaPhoneAlt className="w-3 h-3" />{" "}
+                            {enquiry.phoneNumber}
+                          </button>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.email ? (
+                          <a
+                            href={`mailto:${enquiry.email}`}
+                            className="flex items-center gap-2 text-[#4c7085]"
+                          >
+                            <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {serviceOptions.find(
+                          (opt) => opt.value === enquiry.serviceType
+                        )?.label ||
+                          enquiry.serviceType ||
+                          "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.message || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.note || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.assigned_user_email || "Unassigned"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setAssigningEnquiryId(enquiry.id);
+                              openAssignModal(enquiry);
+                            }}
+                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={
+                              !hasPermission("enquiries", "edit") ||
+                              (isAssigningEnquiry &&
+                                assigningEnquiryId === enquiry.id)
+                            }
+                          >
+                            {isAssigningEnquiry &&
+                            assigningEnquiryId === enquiry.id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Assigning
+                              </>
+                            ) : (
+                              "Assign"
+                            )}
+                          </button>
+                          <button
+                            onClick={() => openEditModal(enquiry)}
+                            className="bg-gray-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!hasPermission("enquiries", "edit")}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(enquiry)}
+                            className="bg-red-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!hasPermission("enquiries", "delete")}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination for Desktop */}
+          {filteredEnquiries.length > 0 && (
+            <div className="hidden md:flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-700">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-700 whitespace-nowrap">
+                  enquiries per page
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Previous
+                </button>
+
+                <span className="text-sm text-gray-700">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-700">
+                Showing {indexOfFirstItem + 1}-
+                {Math.min(indexOfLastItem, filteredEnquiries.length)} of{" "}
+                {filteredEnquiries.length} enquiries
+              </div>
+            </div>
+          )}
           {/* Cards for Mobile */}
-          <div className="md:hidden space-y-4">
-            {filteredEnquiries.map((enquiry, index) => (
-              <motion.div
-                key={enquiry.id}
-                className="rounded-lg p-5 bg-white shadow-sm"
-                variants={rowVariants}
-                initial="rest"
-                whileHover="hover"
-              >
-                <div className="space-y-2 text-[#2d4a5e] text-sm">
-                  <p>
-                    <strong>Sl No:</strong> {index + 1}
-                  </p>
-                  <p>
-                    <strong>Date & Time:</strong>{" "}
-                    {new Date(enquiry.created_at).toLocaleString()}
-                  </p>
-                  <p>
-                    <strong>Customer Name:</strong> {enquiry.fullName || ""}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <strong>Phone:</strong>
-                    {enquiry.phoneNumber ? (
-                      <button
-                        onClick={() => openPhoneModal(enquiry)}
-                        className="flex items-center gap-2 text-[#4c7085]"
-                      >
-                        <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                      </button>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <strong>Email:</strong>
-                    {enquiry.email ? (
-                      <a
-                        href={`mailto:${enquiry.email}`}
-                        className="flex items-center gap-2 text-[#4c7085]"
-                      >
-                        <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                      </a>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p>
-                    <strong>Service:</strong>{" "}
-                    {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                      enquiry.serviceType ||
-                      ""}
-                  </p>
-                  <p>
-                    <strong>Message:</strong> {enquiry.message || ""}
-                  </p>
-                  <p>
-                    <strong>Note:</strong> {enquiry.note || ""}
-                  </p>
-                  <p>
-                    <strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-3">
+          <div className="md:hidden space-y-3">
+            {currentEnquiries.map((enquiry, index) => {
+              const isExpanded = expandedEnquiries.has(enquiry.id);
+              const globalIndex =
+                filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
+
+              return (
+                <motion.div
+                  key={enquiry.id}
+                  className="rounded-lg p-4 bg-white shadow-sm border border-gray-200"
+                  variants={rowVariants}
+                  initial="rest"
+                  whileHover="hover"
+                >
+                  {/* Collapsed View */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[#2d4a5e]">
+                        <strong>SI No:</strong> {globalIndex}
+                      </p>
+                      <p className="text-sm text-[#2d4a5e] mt-1">
+                        <strong>Customer:</strong> {enquiry.fullName || "-"}
+                      </p>
+                    </div>
                     <button
-                      onClick={() => {
-                        setAssigningEnquiryId(enquiry.id);
-                        openAssignModal(enquiry);
-                      }}
-                      className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
+                      onClick={() => toggleEnquiryExpand(enquiry.id)}
+                      className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
                     >
-                      {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Assigning
-                        </>
+                      {isExpanded ? (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 15l7-7 7 7"
+                          />
+                        </svg>
                       ) : (
-                        "Assign"
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
                       )}
                     </button>
-                    <button
-                      onClick={() => openEditModal(enquiry)}
-                      className="bg-gray-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!hasPermission("enquiries", "edit")}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => openDeleteModal(enquiry)}
-                      className="bg-red-500 text-white text-sm py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!hasPermission("enquiries", "delete")}
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+
+                  {/* Expanded View */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-[#2d4a5e] text-sm">
+                          <p>
+                            <strong>Date & Time:</strong>{" "}
+                            {new Date(enquiry.created_at).toLocaleString()}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <strong>Phone:</strong>
+                            {enquiry.phoneNumber ? (
+                              <button
+                                onClick={() => openPhoneModal(enquiry)}
+                                className="flex items-center gap-2 text-[#4c7085]"
+                              >
+                                <FaPhoneAlt className="w-3 h-3" />{" "}
+                                {enquiry.phoneNumber}
+                              </button>
+                            ) : (
+                              "-"
+                            )}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <strong>Email:</strong>
+                            {enquiry.email ? (
+                              <a
+                                href={`mailto:${enquiry.email}`}
+                                className="flex items-center gap-2 text-[#4c7085]"
+                              >
+                                <FaEnvelope className="w-3 h-3" />{" "}
+                                {enquiry.email}
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </p>
+                          <p>
+                            <strong>Service:</strong>{" "}
+                            {serviceOptions.find(
+                              (opt) => opt.value === enquiry.serviceType
+                            )?.label ||
+                              enquiry.serviceType ||
+                              "-"}
+                          </p>
+                          <p>
+                            <strong>Message:</strong> {enquiry.message || "-"}
+                          </p>
+                          <p>
+                            <strong>Note:</strong> {enquiry.note || "-"}
+                          </p>
+                          <p>
+                            <strong>Assigned To:</strong>{" "}
+                            {enquiry.assigned_user_email || "Unassigned"}
+                          </p>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 pt-3">
+                            <button
+                              onClick={() => {
+                                setAssigningEnquiryId(enquiry.id);
+                                openAssignModal(enquiry);
+                              }}
+                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={
+                                !hasPermission("enquiries", "edit") ||
+                                (isAssigningEnquiry &&
+                                  assigningEnquiryId === enquiry.id)
+                              }
+                            >
+                              {isAssigningEnquiry &&
+                              assigningEnquiryId === enquiry.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Assigning
+                                </>
+                              ) : (
+                                "Assign"
+                              )}
+                            </button>
+                            <button
+                              onClick={() => openEditModal(enquiry)}
+                              className="bg-gray-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!hasPermission("enquiries", "edit")}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(enquiry)}
+                              className="bg-red-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!hasPermission("enquiries", "delete")}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
           </div>
         </>
       )}
+      {/* Pagination for Mobile */}
+      {filteredEnquiries.length > 0 && (
+        <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Show:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Previous
+            </button>
+
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
       <AnimatePresence>
         <Modal
           isOpen={isAddOpen}
@@ -783,7 +1016,8 @@ const Enquiries = () => {
               className="space-y-4"
             >
               <p className="text-sm text-gray-600">
-                Note: Serial Number and Date & Time are auto-generated by the system.
+                Note: Serial Number and Date & Time are auto-generated by the
+                system.
               </p>
               <Input
                 label="Customer Name"
@@ -799,7 +1033,8 @@ const Enquiries = () => {
                   required: "Phone Number is required",
                   pattern: {
                     value: /^\+?[0-9]{7,15}$/,
-                    message: "Enter a valid phone number (7-15 digits, optional +)",
+                    message:
+                      "Enter a valid phone number (7-15 digits, optional +)",
                   },
                 }}
               />
@@ -875,7 +1110,8 @@ const Enquiries = () => {
                   required: "Phone Number is required",
                   pattern: {
                     value: /^\+?[0-9]{7,15}$/,
-                    message: "Enter a valid phone number (7-15 digits, optional +)",
+                    message:
+                      "Enter a valid phone number (7-15 digits, optional +)",
                   },
                 }}
               />
@@ -925,7 +1161,9 @@ const Enquiries = () => {
                 type="submit"
                 form="assign-enquiry-form"
                 className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("enquiries", "edit") || isAssigningEnquiry}
+                disabled={
+                  !hasPermission("enquiries", "edit") || isAssigningEnquiry
+                }
               >
                 {isAssigningEnquiry ? (
                   <>
@@ -972,7 +1210,9 @@ const Enquiries = () => {
               <button
                 onClick={confirmAssign}
                 className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("enquiries", "edit") || isAssigningEnquiry}
+                disabled={
+                  !hasPermission("enquiries", "edit") || isAssigningEnquiry
+                }
               >
                 {isAssigningEnquiry ? (
                   <>
@@ -988,8 +1228,9 @@ const Enquiries = () => {
         >
           <p className="text-[#2d4a5e] text-sm">
             Are you sure you want to assign this enquiry to{" "}
-            {emailReceivers.find((opt) => opt.value === assignData?.emailReceiver)?.label ||
-              "Unassigned"}
+            {emailReceivers.find(
+              (opt) => opt.value === assignData?.emailReceiver
+            )?.label || "Unassigned"}
             {assignData?.note ? ` with note: "${assignData.note}"` : ""}?
           </p>
         </Modal>
