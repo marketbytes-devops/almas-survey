@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { FaCamera, FaUser, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaCamera} from 'react-icons/fa';
+import { RiChatAiFill } from "react-icons/ri";
 import apiClient from '../../api/apiClient';
 import { FormProvider, useForm } from 'react-hook-form';
 import InputField from '../../components/Input';
@@ -194,8 +195,8 @@ const Profile = () => {
                 {profileForm.watch('name') || 'Your Name'}
               </h2>
               <p className="text-gray-600 text-sm flex items-center justify-center sm:justify-start mt-2">
-                <FaMapMarkerAlt className="w-4 h-4 mr-2 text-indigo-500" />
-                {profileForm.watch('address') || 'No address added'}
+                <RiChatAiFill className="w-4 h-4 mr-2 text-[#4c7085]" />
+                {profileForm.watch('username') || 'No username added'}
               </p>
             </div>
           </div>
@@ -230,7 +231,7 @@ const Profile = () => {
                   name="email"
                   type="email"
                   readOnly
-                  className="bg-gray-100 text-gray-600 py-2 px-3 rounded-lg cursor-not-allowed"
+                  className="w-full bg-gray-100 border text-sm text-gray-600 py-2 px-3 rounded-lg cursor-not-allowed"
                 />
                 <InputField
                   label="Full Name"

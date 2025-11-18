@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { FaBars, FaSignOutAlt, FaCamera, FaUser } from "react-icons/fa";
+import { RiMenu3Line, RiCloseLine } from "react-icons/ri";
+import { FaCamera, FaPowerOff } from "react-icons/fa";
+import { FiLogOut } from "react-icons/fi";
 import apiClient from "../../../api/apiClient";
 import { useNavigate, useLocation } from "react-router-dom";
-
 import fallbackProfile from "../../../assets/images/profile-icon.png";
 
 const routeNames = {
@@ -27,9 +28,11 @@ const routeNames = {
   "/profile": "Profile",
 };
 
-const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthenticated, user: initialUser }) => {
-  const [user, setUser] = useState(initialUser);
-  const [imagePreview, setImagePreview] = useState(initialUser?.image || fallbackProfile);
+
+const Topbar = ({ toggleSidebar, sidebarOpen, user, setIsAuthenticated }) => {
+  const [imagePreview, setImagePreview] = useState(
+    user?.image || fallbackProfile
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [feedback, setFeedback] = useState({ show: false, type: "", msg: "" });
   const fileInputRef = useRef(null);
@@ -40,7 +43,6 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
   useEffect(() => {
     const path = location.pathname;
     let matchedName = "Dashboard";
-
     if (path.includes("/survey/") && path.includes("/survey-details")) {
       matchedName = "Survey Details";
     } else if (path.includes("/survey/") && path.includes("/survey-summary")) {
@@ -58,33 +60,24 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
   }, [location.pathname]);
 
   useEffect(() => {
-    if (initialUser?.image) {
-      setImagePreview(initialUser.image);
-    } else {
-      setImagePreview(fallbackProfile);
-    }
-  }, [initialUser?.image]);
+    if (user?.image) setImagePreview(user.image);
+    else setImagePreview(fallbackProfile);
+  }, [user?.image]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
     setIsUploading(true);
-
     const formData = new FormData();
     formData.append("image", file);
-
     try {
       const res = await apiClient.put("/auth/profile/", formData);
-      const newImage = res.data.image || previewUrl;
-      setImagePreview(newImage);
-      setUser(prev => ({ ...prev, image: newImage }));
+      setImagePreview(res.data.image || previewUrl);
       showFeedback("success", "Profile picture updated!");
     } catch (err) {
-      console.error("Upload failed:", err);
-      setImagePreview(initialUser?.image || fallbackProfile);
+      setImagePreview(user?.image || fallbackProfile);
       showFeedback("error", "Failed to update image");
     } finally {
       setIsUploading(false);
@@ -99,10 +92,10 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
 
   const handleLogout = async () => {
     if (!window.confirm("Are you sure you want to logout?")) return;
-
     const refreshToken = localStorage.getItem("refresh_token");
     try {
-      if (refreshToken) await apiClient.post("/auth/logout/", { refresh: refreshToken });
+      if (refreshToken)
+        await apiClient.post("/auth/logout/", { refresh: refreshToken });
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
@@ -114,32 +107,31 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
 
   return (
     <>
-      <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white shadow-md sticky top-0 z-20">
+      <div className="rounded-b-none md:rounded-b-xl mx-0 md:mx-8 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white shadow-md sticky top-0 z-30">
         <div className="px-4 py-6.5 md:py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={toggleSidebar}
-              className="p-3 rounded-xl hover:bg-white/20 transition-all duration-200 backdrop-blur-sm shrink-0"
-              aria-label="Toggle menu"
+              className="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm shrink-0"
             >
-              <FaBars className="w-5 h-5" />
-            </button>
+              {sidebarOpen ? (
+                <RiCloseLine className="w-6 h-6" />
+              ) : (
+                <RiMenu3Line className="w-6 h-6" />
+              )}
+            </motion.button>
+
             <div className="flex items-center gap-2">
               <div className="hidden sm:block w-2 h-2 bg-white/70 rounded-full animate-pulse"></div>
-              <h1 className="text-sm font-medium">
-                {activePage}
-              </h1>
+              <h1 className="text-sm font-medium truncate">{activePage}</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {user?.username && (
-              <div className="hidden md:flex flex-col text-right">
-                <span className="text-xs font-medium">
-                  {user.username}
-                </span>
-                <span className="text-xs opacity-80">
-                  {user.role?.name || "User"}
-                </span>
+            {user && (
+              <div className="hidden md:flex flex-col text-right leading-tight">
+                <span className="text-xs font-medium">{user.name}</span>
+                <span className="text-[10px] opacity-90 mt-1">{user.role}</span>
               </div>
             )}
             <div className="relative group">
@@ -169,15 +161,22 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
                 />
               </label>
             </div>
-            {isAuthenticated && (
-              <button
-                onClick={handleLogout}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 backdrop-blur-sm font-medium text-sm"
-              >
-                <FaSignOutAlt className="w-4 h-4" />
-                <span className="hidden lg:inline">Logout</span>
-              </button>
-            )}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleLogout}
+              className="sm:hidden p-3 rounded-xl bg-white/10 hover:bg-red-500/30 transition-all ml-2"
+            >
+              <FaPowerOff className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className="hidden sm:flex items-center gap-2.5 px-5 py-2.5 bg-white/10 hover:bg-red-500/20 rounded-xl transition-all font-medium text-sm group"
+            >
+              <FiLogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span className="hidden lg:inline">Logout</span>
+            </motion.button>
           </div>
         </div>
       </div>
@@ -192,11 +191,10 @@ const Topbar = ({ toggleSidebar, isSidebarOpen, isAuthenticated, setIsAuthentica
       >
         {feedback.show && (
           <div
-            className={`px-8 py-4 rounded-2xl shadow-2xl font-bold text-white flex items-center gap-3 backdrop-blur-xl border ${
-              feedback.type === "success"
+            className={`px-8 py-4 rounded-2xl shadow-2xl font-bold text-white flex items-center gap-3 backdrop-blur-xl border ${feedback.type === "success"
                 ? "bg-gradient-to-r from-green-500 to-emerald-600 border-green-300"
                 : "bg-gradient-to-r from-red-500 to-rose-600 border-red-300"
-            }`}
+              }`}
           >
             {feedback.type === "success" ? "Success" : "Error"}
             <span className="font-medium">{feedback.msg}</span>
