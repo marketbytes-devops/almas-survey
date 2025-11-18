@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope } from "react-icons/fa";
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaSearch } from "react-icons/fa";
 import Modal from "../../components/Modal";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import apiClient from "../../api/apiClient";
@@ -37,9 +37,8 @@ const Input = ({
       {type === "select" ? (
         <select
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
+            }`}
           aria-label={label}
         >
           <option value="">Select an option</option>
@@ -52,9 +51,8 @@ const Input = ({
       ) : type === "textarea" ? (
         <textarea
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
+            }`}
           rows={4}
           aria-label={label}
         />
@@ -62,9 +60,8 @@ const Input = ({
         <input
           type={type}
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
+            }`}
           aria-label={label}
           {...props}
         />
@@ -87,6 +84,7 @@ const Enquiries = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isAssignConfirmOpen, setIsAssignConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
@@ -97,6 +95,7 @@ const Enquiries = () => {
   const [isAddingEnquiry, setIsAddingEnquiry] = useState(false);
   const [isAssigningEnquiry, setIsAssigningEnquiry] = useState(false);
   const [assigningEnquiryId, setAssigningEnquiryId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const addForm = useForm();
   const editForm = useForm();
@@ -109,7 +108,6 @@ const Enquiries = () => {
     },
   });
 
-  // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEnquiries = filteredEnquiries.slice(
@@ -118,7 +116,6 @@ const Enquiries = () => {
   );
   const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
 
-  // Toggle expand/collapse
   const toggleEnquiryExpand = (enquiryId) => {
     setExpandedEnquiries((prev) => {
       const newSet = new Set(prev);
@@ -203,9 +200,8 @@ const Enquiries = () => {
       );
       if (!existingScript) {
         const script = document.createElement("script");
-        script.src = `https://www.google.com/recaptcha/api.js?render=${
-          import.meta.env.VITE_RECAPTCHA_SITE_KEY
-        }`;
+        script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY
+          }`;
         script.async = true;
         document.body.appendChild(script);
       }
@@ -217,7 +213,7 @@ const Enquiries = () => {
     fetchEmailReceivers();
   }, []);
 
-  const handleFilter = (data) => {
+  const applyFiltersAndSearch = (data, search) => {
     let filtered = [...enquiries];
     setCurrentPage(1);
 
@@ -241,7 +237,47 @@ const Enquiries = () => {
       });
     }
 
+    if (search && search.trim() !== "") {
+      const searchLower = search.toLowerCase().trim();
+      filtered = filtered.filter((enquiry) => {
+        const fullName = (enquiry.fullName || "").toLowerCase();
+        const phoneNumber = (enquiry.phoneNumber || "").toLowerCase();
+        const email = (enquiry.email || "").toLowerCase();
+        const serviceType = (enquiry.serviceType || "").toLowerCase();
+        const serviceLabel = (serviceOptions.find(
+          (opt) => opt.value === enquiry.serviceType
+        )?.label || "").toLowerCase();
+        const message = (enquiry.message || "").toLowerCase();
+        const note = (enquiry.note || "").toLowerCase();
+        const assignedUser = (enquiry.assigned_user_email || "").toLowerCase();
+
+        return (
+          fullName.includes(searchLower) ||
+          phoneNumber.includes(searchLower) ||
+          email.includes(searchLower) ||
+          serviceType.includes(searchLower) ||
+          serviceLabel.includes(searchLower) ||
+          message.includes(searchLower) ||
+          note.includes(searchLower) ||
+          assignedUser.includes(searchLower)
+        );
+      });
+    }
+
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
     setFilteredEnquiries(filtered);
+  };
+
+  const handleFilter = (data) => {
+    applyFiltersAndSearch(data, searchQuery);
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    const filterData = filterForm.getValues();
+    applyFiltersAndSearch(filterData, value);
   };
 
   const hasPermission = (page, action) => {
@@ -305,9 +341,12 @@ const Enquiries = () => {
         recaptchaToken,
         submittedUrl: window.location.href,
       });
-      const updatedEnquiries = [response.data, ...enquiries];
+      const updatedEnquiries = [response.data, ...enquiries].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
       setEnquiries(updatedEnquiries);
-      setFilteredEnquiries(updatedEnquiries);
+      const filterData = filterForm.getValues();
+      applyFiltersAndSearch(filterData, searchQuery);
       setMessage("Enquiry created successfully");
       setIsAddOpen(false);
       addForm.reset();
@@ -336,9 +375,10 @@ const Enquiries = () => {
       );
       const updatedEnquiries = enquiries.map((enquiry) =>
         enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-      );
+      ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       setEnquiries(updatedEnquiries);
-      setFilteredEnquiries(updatedEnquiries);
+      const filterData = filterForm.getValues();
+      applyFiltersAndSearch(filterData, searchQuery);
       setMessage("Enquiry updated successfully");
       setIsEditOpen(false);
       editForm.reset();
@@ -369,9 +409,10 @@ const Enquiries = () => {
       );
       const updatedEnquiries = enquiries.map((enquiry) =>
         enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-      );
+      ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       setEnquiries(updatedEnquiries);
-      setFilteredEnquiries(updatedEnquiries);
+      const filterData = filterForm.getValues();
+      applyFiltersAndSearch(filterData, searchQuery);
       setMessage(
         "Enquiry assigned successfully and email sent to assigned user"
       );
@@ -386,23 +427,23 @@ const Enquiries = () => {
   };
 
   const onDelete = async () => {
-    if (!hasPermission("enquiries", "delete")) {
-      setError("You do not have permission to delete an enquiry.");
-      return;
-    }
+    if (!hasPermission("enquiries", "delete")) return;
+
+    setIsDeleting(true);
     try {
-      await apiClient.delete(
-        `/contacts/enquiries/${selectedEnquiry?.id}/delete/`
-      );
-      const updatedEnquiries = enquiries.filter(
-        (enquiry) => enquiry.id !== selectedEnquiry?.id
-      );
+      await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/`);
+
+      const updatedEnquiries = enquiries.filter(e => e.id !== selectedEnquiry.id);
       setEnquiries(updatedEnquiries);
-      setFilteredEnquiries(updatedEnquiries);
+      applyFiltersAndSearch(filterForm.getValues(), searchQuery);
+
       setMessage("Enquiry deleted successfully");
       setIsDeleteOpen(false);
+      setSelectedEnquiry(null);
     } catch (error) {
-      setError(extractErrorMessage(error));
+      setError(extractErrorMessage(error) || "Failed to delete enquiry");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -550,13 +591,25 @@ const Enquiries = () => {
           </form>
         </FormProvider>
       </div>
+      <div className="mb-4">
+        <div className="relative">
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search by name, phone, email, service, message, note, or assigned user..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors"
+          />
+        </div>
+      </div>
+
       {filteredEnquiries.length === 0 ? (
         <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
           No Enquiries Found
         </div>
       ) : (
         <>
-          {/* Table for Desktop */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -670,7 +723,7 @@ const Enquiries = () => {
                             }
                           >
                             {isAssigningEnquiry &&
-                            assigningEnquiryId === enquiry.id ? (
+                              assigningEnquiryId === enquiry.id ? (
                               <>
                                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 Assigning
@@ -818,8 +871,6 @@ const Enquiries = () => {
                       )}
                     </button>
                   </div>
-
-                  {/* Expanded View */}
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div
@@ -880,8 +931,6 @@ const Enquiries = () => {
                             <strong>Assigned To:</strong>{" "}
                             {enquiry.assigned_user_email || "Unassigned"}
                           </p>
-
-                          {/* Action Buttons */}
                           <div className="flex flex-wrap gap-2 pt-3">
                             <button
                               onClick={() => {
@@ -896,7 +945,7 @@ const Enquiries = () => {
                               }
                             >
                               {isAssigningEnquiry &&
-                              assigningEnquiryId === enquiry.id ? (
+                                assigningEnquiryId === enquiry.id ? (
                                 <>
                                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                   Assigning
@@ -930,7 +979,6 @@ const Enquiries = () => {
           </div>
         </>
       )}
-      {/* Pagination for Mobile */}
       {filteredEnquiries.length > 0 && (
         <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
           <div className="flex items-center gap-2">
@@ -1248,10 +1296,10 @@ const Enquiries = () => {
               </button>
               <button
                 onClick={onDelete}
+                disabled={isDeleting}
                 className="bg-red-500 text-white py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("enquiries", "delete")}
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </>
           }

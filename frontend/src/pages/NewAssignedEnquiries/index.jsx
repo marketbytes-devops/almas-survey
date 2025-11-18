@@ -35,7 +35,6 @@ const NewAssignedEnquiries = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
   
-  // Loading states
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSchedulingSurvey, setIsSchedulingSurvey] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
@@ -51,13 +50,11 @@ const NewAssignedEnquiries = () => {
     },
   });
 
-  // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEnquiries = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
 
-  // Toggle expand/collapse
   const toggleEnquiryExpand = (enquiryId) => {
     setExpandedEnquiries((prev) => {
       const newSet = new Set(prev);
@@ -90,36 +87,45 @@ const NewAssignedEnquiries = () => {
 
     const fetchData = async () => {
       try {
-        const response = await apiClient.get("/auth/profile/");
-        const user = response.data;
-        
+        const profileResponse = await apiClient.get("/auth/profile/");
+        const user = profileResponse.data;
+
         if (!isMounted) return;
 
         setUserEmail(user.email);
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+        const isSuperadmin = user.is_superuser || user.role?.name === "Superadmin";
+        setIsSuperadmin(isSuperadmin);
 
         const roleId = user.role?.id;
         if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
+          const roleRes = await apiClient.get(`/auth/roles/${roleId}/`);
+          setPermissions(roleRes.data.permissions || []);
         }
 
-        // Now fetch enquiries with correct email
-        const enquiryResponse = await apiClient.get("/contacts/enquiries/", {
-          params: { 
-            assigned_user_email: user.email,
-            has_survey: "false"
-          },
-        });
+        const params = {
+          has_survey: "false", 
+        };
 
-        const sortedEnquiries = enquiryResponse.data.sort((a, b) => 
+        if (!isSuperadmin) {
+          params.assigned_user_email = user.email;
+        }
+
+
+        const enquiryResponse = await apiClient.get("/contacts/enquiries/", { params });
+
+        const assignedEnquiries = enquiryResponse.data.filter(
+          (enquiry) => enquiry.assigned_user_email 
+        );
+
+        const sortedEnquiries = assignedEnquiries.sort((a, b) =>
           new Date(b.created_at) - new Date(a.created_at)
         );
+
         setEnquiries(sortedEnquiries);
         setFilteredEnquiries(sortedEnquiries);
       } catch (error) {
-        console.error("Error:", error);
-        setError("Failed to load data.");
+        console.error("Error loading assigned enquiries:", error);
+        setError("Failed to load assigned enquiries.");
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -127,22 +133,25 @@ const NewAssignedEnquiries = () => {
 
     fetchData();
 
-    return () => { isMounted = false; };
-  }, []); 
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleFilter = (data) => {
-    let filtered = [...enquiries];
-    setCurrentPage(1); // Reset to first page on filter
+    let filtered = [...enquiries]; 
+
+    setCurrentPage(1);
 
     switch (data.filterType) {
       case "attended":
-        filtered = filtered.filter((enquiry) => enquiry.contact_status === "Attended");
+        filtered = filtered.filter((e) => e.contact_status === "Attended");
         break;
       case "notAttended":
-        filtered = filtered.filter((enquiry) => enquiry.contact_status === "Not Attended");
+        filtered = filtered.filter((e) => e.contact_status === "Not Attended");
         break;
       case "notScheduled":
-        filtered = filtered.filter((enquiry) => !enquiry.survey_date);
+        filtered = filtered.filter((e) => !e.survey_date);
         break;
       case "all":
       default:
@@ -152,14 +161,11 @@ const NewAssignedEnquiries = () => {
     if (data.fromDate || data.toDate) {
       const from = data.fromDate ? new Date(data.fromDate) : null;
       const to = data.toDate ? new Date(data.toDate) : null;
-      if (to) {
-        to.setHours(23, 59, 59, 999);
-      }
+      if (to) to.setHours(23, 59, 59, 999);
+
       filtered = filtered.filter((enquiry) => {
         const createdAt = new Date(enquiry.created_at);
-        const afterFrom = from ? createdAt >= from : true;
-        const beforeTo = to ? createdAt <= to : true;
-        return afterFrom && beforeTo;
+        return (!from || createdAt >= from) && (!to || createdAt <= to);
       });
     }
 
