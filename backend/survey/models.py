@@ -89,8 +89,8 @@ class Survey(models.Model):
     )
     destination_parking_notes = models.TextField(blank=True, null=True)
     
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
 
     class Meta:
@@ -146,7 +146,6 @@ class Article(models.Model):
     width = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Width in cm")
     height = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Height in cm")
     calculated_volume = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Auto-calculated volume (L×W×H/1000000)")
-    
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     class Meta:

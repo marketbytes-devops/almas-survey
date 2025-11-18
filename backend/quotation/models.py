@@ -20,7 +20,8 @@ class Quotation(models.Model):
         max_length=20,
         choices=[('variable', 'Variable'), ('fixed', 'Fixed')],
         default='variable',
-        help_text="How the amount was calculated"
+        help_text="How the amount was calculated",
+        null=True, blank=True
     )
     date = models.DateField(default=timezone.now, null=True, blank=True)
     amount = models.DecimalField(
@@ -44,13 +45,11 @@ class Quotation(models.Model):
     notes = models.TextField(null=True, blank=True)
 
     included_services = models.JSONField(
-        default=list,
-        blank=True,
+        default=list, null=True, blank=True,
         help_text="List of included services (e.g., ['Packing Service', 'Loading'])"
     )
     excluded_services = models.JSONField(
-        default=list,
-        blank=True,
+        default=list, null=True, blank=True,
         help_text="List of excluded services (e.g., ['Insurance', 'Storage'])"
     )
 
