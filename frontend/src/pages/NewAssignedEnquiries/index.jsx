@@ -31,6 +31,9 @@ const NewAssignedEnquiries = () => {
   const [userEmail, setUserEmail] = useState(null);
   const [contactStatusData, setContactStatusData] = useState(null);
   const [scheduleSurveyData, setScheduleSurveyData] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
   
   // Loading states
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -48,6 +51,25 @@ const NewAssignedEnquiries = () => {
     },
   });
 
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEnquiries = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
+
+  // Toggle expand/collapse
+  const toggleEnquiryExpand = (enquiryId) => {
+    setExpandedEnquiries((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(enquiryId)) {
+        newSet.delete(enquiryId);
+      } else {
+        newSet.add(enquiryId);
+      }
+      return newSet;
+    });
+  };
+
   const serviceOptions = [
     { value: "localMove", label: "Local Move" },
     { value: "internationalMove", label: "International Move" },
@@ -63,53 +85,54 @@ const NewAssignedEnquiries = () => {
     { value: "notScheduled", label: "Not Scheduled" },
   ];
 
-useEffect(() => {
-  let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-  const fetchData = async () => {
-    try {
-      const response = await apiClient.get("/auth/profile/");
-      const user = response.data;
-      
-      if (!isMounted) return;
+    const fetchData = async () => {
+      try {
+        const response = await apiClient.get("/auth/profile/");
+        const user = response.data;
+        
+        if (!isMounted) return;
 
-      setUserEmail(user.email);
-      setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+        setUserEmail(user.email);
+        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
 
-      const roleId = user.role?.id;
-      if (roleId) {
-        const res = await apiClient.get(`/auth/roles/${roleId}/`);
-        setPermissions(res.data.permissions || []);
+        const roleId = user.role?.id;
+        if (roleId) {
+          const res = await apiClient.get(`/auth/roles/${roleId}/`);
+          setPermissions(res.data.permissions || []);
+        }
+
+        // Now fetch enquiries with correct email
+        const enquiryResponse = await apiClient.get("/contacts/enquiries/", {
+          params: { 
+            assigned_user_email: user.email,
+            has_survey: "false"
+          },
+        });
+
+        const sortedEnquiries = enquiryResponse.data.sort((a, b) => 
+          new Date(b.created_at) - new Date(a.created_at)
+        );
+        setEnquiries(sortedEnquiries);
+        setFilteredEnquiries(sortedEnquiries);
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Failed to load data.");
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
+    };
 
-      // Now fetch enquiries with correct email
-      const enquiryResponse = await apiClient.get("/contacts/enquiries/", {
-        params: { 
-          assigned_user_email: user.email,
-          has_survey: "false"
-        },
-      });
+    fetchData();
 
-      const sortedEnquiries = enquiryResponse.data.sort((a, b) => 
-        new Date(b.created_at) - new Date(a.created_at)
-      );
-      setEnquiries(sortedEnquiries);
-      setFilteredEnquiries(sortedEnquiries);
-    } catch (error) {
-      console.error("Error:", error);
-      setError("Failed to load data.");
-    } finally {
-      if (isMounted) setIsLoading(false);
-    }
-  };
-
-  fetchData();
-
-  return () => { isMounted = false; };
-}, []); 
+    return () => { isMounted = false; };
+  }, []); 
 
   const handleFilter = (data) => {
     let filtered = [...enquiries];
+    setCurrentPage(1); // Reset to first page on filter
 
     switch (data.filterType) {
       case "attended":
@@ -367,490 +390,357 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEnquiries.map((enquiry, index) => (
-                  <motion.tr
-                    key={enquiry.id}
-                    className="hover:bg-gray-50"
-                    variants={rowVariants}
-                    initial="rest"
-                    whileHover="hover"
-                  >
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {new Date(enquiry.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.fullName || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.phoneNumber ? (
-                        <button
-                          onClick={() => openPhoneModal(enquiry)}
-                          className="flex items-center gap-2 text-[#4c7085]"
-                        >
-                          <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                        </button>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.email ? (
-                        <a
-                          href={`mailto:${enquiry.email}`}
-                          className="flex items-center gap-2 text-[#4c7085]"
-                        >
-                          <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                        enquiry.serviceType ||
-                        "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.message || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.note || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.assigned_user_email || "Unassigned"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.contact_status || "Update the Status"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      <span className="flex items-center gap-2">
-                        <FaCalendarAlt className="w-4 h-4 text-[#4c7085]" />
-                        {enquiry.survey_date
-                          ? new Date(enquiry.survey_date).toLocaleString()
-                          : "Not Scheduled"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => openContactStatusModal(enquiry)}
-                          className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={!hasPermission("new_enquiries", "edit") || (isUpdatingStatus && updatingStatusId === enquiry.id)}
-                        >
-                          {isUpdatingStatus && updatingStatusId === enquiry.id ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              Updating
-                            </>
-                          ) : (
-                            "Update Status"
-                          )}
-                        </button>
-                        {!enquiry.survey_date && (
+                {currentEnquiries.map((enquiry, index) => {
+                  const globalIndex = filteredEnquiries.findIndex(e => e.id === enquiry.id) + 1;
+                  return (
+                    <motion.tr
+                      key={enquiry.id}
+                      className="hover:bg-gray-50"
+                      variants={rowVariants}
+                      initial="rest"
+                      whileHover="hover"
+                    >
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {globalIndex}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {new Date(enquiry.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.fullName || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.phoneNumber ? (
                           <button
-                            onClick={() => openScheduleSurveyModal(enquiry)}
-                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!hasPermission("new_enquiries", "edit") || (isSchedulingSurvey && schedulingSurveyId === enquiry.id)}
+                            onClick={() => openPhoneModal(enquiry)}
+                            className="flex items-center gap-2 text-[#4c7085]"
                           >
-                            {isSchedulingSurvey && schedulingSurveyId === enquiry.id ? (
+                            <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                          </button>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.email ? (
+                          <a
+                            href={`mailto:${enquiry.email}`}
+                            className="flex items-center gap-2 text-[#4c7085]"
+                          >
+                            <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                          enquiry.serviceType ||
+                          "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.message || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.note || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.assigned_user_email || "Unassigned"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {enquiry.contact_status || "Update the Status"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        <span className="flex items-center gap-2">
+                          <FaCalendarAlt className="w-4 h-4 text-[#4c7085]" />
+                          {enquiry.survey_date
+                            ? new Date(enquiry.survey_date).toLocaleString()
+                            : "Not Scheduled"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openContactStatusModal(enquiry)}
+                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!hasPermission("new_enquiries", "edit") || (isUpdatingStatus && updatingStatusId === enquiry.id)}
+                          >
+                            {isUpdatingStatus && updatingStatusId === enquiry.id ? (
                               <>
                                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Scheduling
+                                Updating
                               </>
                             ) : (
-                              "Schedule Survey"
+                              "Update Status"
                             )}
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                          {!enquiry.survey_date && (
+                            <button
+                              onClick={() => openScheduleSurveyModal(enquiry)}
+                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!hasPermission("new_enquiries", "edit") || (isSchedulingSurvey && schedulingSurveyId === enquiry.id)}
+                            >
+                              {isSchedulingSurvey && schedulingSurveyId === enquiry.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Scheduling
+                                </>
+                              ) : (
+                                "Schedule Survey"
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination for Desktop */}
+          {filteredEnquiries.length > 0 && (
+            <div className="hidden md:flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-700">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-700 whitespace-nowrap">enquiries per page</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Previous
+                </button>
+
+                <span className="text-sm text-gray-700">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-700">
+                Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredEnquiries.length)} of {filteredEnquiries.length} enquiries
+              </div>
+            </div>
+          )}
+
           {/* Cards for Mobile */}
-          <div className="md:hidden space-y-4">
-            {filteredEnquiries.map((enquiry, index) => (
-              <motion.div
-                key={enquiry.id}
-                className="rounded-lg p-5 bg-white shadow-sm"
-                variants={rowVariants}
-                initial="rest"
-                whileHover="hover"
-              >
-                <div className="space-y-2 text-[#2d4a5e] text-sm">
-                  <p><strong>Sl No:</strong> {index + 1}</p>
-                  <p><strong>Date & Time:</strong> {new Date(enquiry.created_at).toLocaleString()}</p>
-                  <p><strong>Customer Name:</strong> {enquiry.fullName || ""}</p>
-                  <p className="flex items-center gap-2">
-                    <strong>Phone:</strong>
-                    {enquiry.phoneNumber ? (
-                      <button
-                        onClick={() => openPhoneModal(enquiry)}
-                        className="flex items-center gap-2 text-[#4c7085]"
-                      >
-                        <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                      </button>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <strong>Email:</strong>
-                    {enquiry.email ? (
-                      <a
-                        href={`mailto:${enquiry.email}`}
-                        className="flex items-center gap-2 text-[#4c7085]"
-                      >
-                        <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                      </a>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p>
-                    <strong>Service:</strong>{" "}
-                    {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                      enquiry.serviceType ||
-                      ""}
-                  </p>
-                  <p><strong>Message:</strong> {enquiry.message || ""}</p>
-                  <p><strong>Note:</strong> {enquiry.note || ""}</p>
-                  <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}</p>
-                  <p className="flex items-center justify-start space-x-2">
-                    <span className="whitespace-nowrap">
-                      <strong>Contact Status:</strong> {enquiry.contact_status || "Update the Status"}
-                    </span>
+          <div className="md:hidden space-y-3">
+            {currentEnquiries.map((enquiry, index) => {
+              const isExpanded = expandedEnquiries.has(enquiry.id);
+              const globalIndex = filteredEnquiries.findIndex(e => e.id === enquiry.id) + 1;
+
+              return (
+                <motion.div
+                  key={enquiry.id}
+                  className="rounded-lg p-4 bg-white shadow-sm border border-gray-200"
+                  variants={rowVariants}
+                  initial="rest"
+                  whileHover="hover"
+                >
+                  {/* Collapsed View */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[#2d4a5e]">
+                        <strong>SI No:</strong> {globalIndex}
+                      </p>
+                      <p className="text-sm text-[#2d4a5e] mt-1">
+                        <strong>Customer:</strong> {enquiry.fullName || "-"}
+                      </p>
+                    </div>
                     <button
-                      onClick={() => openContactStatusModal(enquiry)}
-                      className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!hasPermission("new_enquiries", "edit") || (isUpdatingStatus && updatingStatusId === enquiry.id)}
+                      onClick={() => toggleEnquiryExpand(enquiry.id)}
+                      className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
                     >
-                      {isUpdatingStatus && updatingStatusId === enquiry.id ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Updating
-                        </>
+                      {isExpanded ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
                       ) : (
-                        "Update Status"
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       )}
                     </button>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <strong>Survey Date:</strong>
-                    <span className="flex items-center gap-2">
-                      <FaCalendarAlt className="w-4 h-4 text-[#4c7085]" />
-                      {enquiry.survey_date
-                        ? new Date(enquiry.survey_date).toLocaleString()
-                        : "Not Scheduled"}
-                    </span>
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-3">
-                    {!enquiry.survey_date && (
-                      <button
-                        onClick={() => openScheduleSurveyModal(enquiry)}
-                        className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!hasPermission("new_enquiries", "edit") || (isSchedulingSurvey && schedulingSurveyId === enquiry.id)}
-                      >
-                        {isSchedulingSurvey && schedulingSurveyId === enquiry.id ? (
-                          <>
-                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            Scheduling
-                          </>
-                        ) : (
-                          "Schedule Survey"
-                        )}
-                      </button>
-                    )}
                   </div>
-                </div>
-              </motion.div>
-            ))}
+
+                  {/* Expanded View */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-[#2d4a5e] text-sm">
+                          <p><strong>Date & Time:</strong> {new Date(enquiry.created_at).toLocaleString()}</p>
+                          <p className="flex items-center gap-2">
+                            <strong>Phone:</strong>
+                            {enquiry.phoneNumber ? (
+                              <button
+                                onClick={() => openPhoneModal(enquiry)}
+                                className="flex items-center gap-2 text-[#4c7085]"
+                              >
+                                <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
+                              </button>
+                            ) : (
+                              "-"
+                            )}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <strong>Email:</strong>
+                            {enquiry.email ? (
+                              <a
+                                href={`mailto:${enquiry.email}`}
+                                className="flex items-center gap-2 text-[#4c7085]"
+                              >
+                                <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </p>
+                          <p>
+                            <strong>Service:</strong>{" "}
+                            {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
+                              enquiry.serviceType ||
+                              "-"}
+                          </p>
+                          <p><strong>Message:</strong> {enquiry.message || "-"}</p>
+                          <p><strong>Note:</strong> {enquiry.note || "-"}</p>
+                          <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || "Unassigned"}</p>
+                          <p className="flex items-center justify-start space-x-2">
+                            <span className="whitespace-nowrap">
+                              <strong>Contact Status:</strong> {enquiry.contact_status || "Update the Status"}
+                            </span>
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <strong>Survey Date:</strong>
+                            <span className="flex items-center gap-2">
+                              <FaCalendarAlt className="w-4 h-4 text-[#4c7085]" />
+                              {enquiry.survey_date
+                                ? new Date(enquiry.survey_date).toLocaleString()
+                                : "Not Scheduled"}
+                            </span>
+                          </p>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 pt-3">
+                            <button
+                              onClick={() => openContactStatusModal(enquiry)}
+                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={!hasPermission("new_enquiries", "edit") || (isUpdatingStatus && updatingStatusId === enquiry.id)}
+                            >
+                              {isUpdatingStatus && updatingStatusId === enquiry.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Updating
+                                </>
+                              ) : (
+                                "Update Status"
+                              )}
+                            </button>
+                            {!enquiry.survey_date && (
+                              <button
+                                onClick={() => openScheduleSurveyModal(enquiry)}
+                                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!hasPermission("new_enquiries", "edit") || (isSchedulingSurvey && schedulingSurveyId === enquiry.id)}
+                              >
+                                {isSchedulingSurvey && schedulingSurveyId === enquiry.id ? (
+                                  <>
+                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Scheduling
+                                  </>
+                                ) : (
+                                  "Schedule Survey"
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
           </div>
         </>
       )}
-      <AnimatePresence>
-        <Modal
-          isOpen={isContactStatusOpen}
-          onClose={() => setIsContactStatusOpen(false)}
-          title="Update Contact Status"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsContactStatusOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isUpdatingStatus}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="contact-status-form"
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("new_enquiries", "edit") || isUpdatingStatus}
-              >
-                {isUpdatingStatus ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Updating
-                  </>
-                ) : (
-                  "Submit"
-                )}
-              </button>
-            </>
-          }
-        >
-          <FormProvider {...contactStatusForm}>
-            <form
-              id="contact-status-form"
-              onSubmit={contactStatusForm.handleSubmit(onContactStatusSubmit)}
-              className="space-y-4"
+
+      {/* Pagination for Mobile */}
+      {filteredEnquiries.length > 0 && (
+        <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Show:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
             >
-              <div className="mb-4">
-                <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
-                  <input
-                    type="radio"
-                    {...contactStatusForm.register("status", {
-                      required: "Please select a status",
-                    })}
-                    value="Attended"
-                    className="mr-2 w-5 h-5"
-                  />
-                  Attended
-                </label>
-              </div>
-              <div className="mb-4">
-                <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
-                  <input
-                    type="radio"
-                    {...contactStatusForm.register("status")}
-                    value="Not Attended"
-                    className="mr-2 w-5 h-5"
-                  />
-                  Not Attended
-                </label>
-              </div>
-              <Input label="Contact Status Note (Optional)" name="contactStatusNote" type="textarea" />
-              {contactStatusForm.watch("status") === "Not Attended" && (
-                <>
-                  <div className="mb-4">
-                    <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        {...contactStatusForm.register("reachedOutWhatsApp")}
-                        className="mr-2 w-5 h-5"
-                      />
-                      Reached out via WhatsApp
-                    </label>
-                  </div>
-                  <div className="mb-4">
-                    <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        {...contactStatusForm.register("reachedOutEmail")}
-                        className="mr-2 w-5 h-5"
-                      />
-                      Reached out via Email
-                    </label>
-                  </div>
-                </>
-              )}
-            </form>
-          </FormProvider>
-        </Modal>
-        <Modal
-          isOpen={isContactStatusConfirmOpen}
-          onClose={() => setIsContactStatusConfirmOpen(false)}
-          title="Confirm Contact Status Update"
-          footer={
-            <>
-              <button
-                onClick={() => setIsContactStatusConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isUpdatingStatus}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmContactStatus}
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("new_enquiries", "edit") || isUpdatingStatus}
-              >
-                {isUpdatingStatus ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Updating
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-            </>
-          }
-        >
-          <p className="text-[#2d4a5e] text-sm">
-            Are you sure you want to update the contact status to "{contactStatusData?.status}"
-            {contactStatusData?.contactStatusNote ? ` with note: "${contactStatusData.contactStatusNote}"` : ""}?
-            {contactStatusData?.status === "Not Attended" && (
-              <>
-                {contactStatusData.reachedOutWhatsApp && " Reached out via WhatsApp."}
-                {contactStatusData.reachedOutEmail && " Reached out via Email."}
-              </>
-            )}
-          </p>
-        </Modal>
-        <Modal
-          isOpen={isScheduleSurveyOpen}
-          onClose={() => setIsScheduleSurveyOpen(false)}
-          title="Schedule Survey"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsScheduleSurveyOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSchedulingSurvey}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="schedule-survey-form"
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("new_enquiries", "edit") || isSchedulingSurvey}
-              >
-                {isSchedulingSurvey ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Scheduling
-                  </>
-                ) : (
-                  "Submit"
-                )}
-              </button>
-            </>
-          }
-        >
-          <FormProvider {...scheduleSurveyForm}>
-            <form
-              id="schedule-survey-form"
-              onSubmit={scheduleSurveyForm.handleSubmit(onScheduleSurveySubmit)}
-              className="space-y-4 w-full"
-            >
-              <div className="mb-4 w-full">
-                <label className="block text-[#2d4a5e] text-sm font-medium mb-1">
-                  Survey Date and Time
-                  <span className="text-red-500"> *</span>
-                </label>
-                <DatePicker
-                    selected={scheduleSurveyForm.watch("surveyDate")}
-                    onChange={(date) => scheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
-                    showTimeSelect
-                    timeFormat="HH:mm"
-                    timeIntervals={15}
-                    dateFormat="yyyy-MM-dd HH:mm"
-                    minDate={new Date(Date.now() + 15 * 60 * 1000)} 
-                    className="w-full p-2 border border-gray-300 rounded text-[#2d4a5e] text-sm focus:outline-none focus:ring-2 focus:ring-[#4c7085]"
-                    placeholderText="Select date and time"
-                    wrapperClassName="w-full z-50"
-                  />
-                {scheduleSurveyForm.formState.errors.surveyDate && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {scheduleSurveyForm.formState.errors.surveyDate.message}
-                  </p>
-                )}
-              </div>
-            </form>
-          </FormProvider>
-        </Modal>
-        <Modal
-          isOpen={isScheduleSurveyConfirmOpen}
-          onClose={() => setIsScheduleSurveyConfirmOpen(false)}
-          title="Confirm Survey Schedule"
-          footer={
-            <>
-              <button
-                onClick={() => setIsScheduleSurveyConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSchedulingSurvey}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmScheduleSurvey}
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("new_enquiries", "edit") || isSchedulingSurvey}
-              >
-                {isSchedulingSurvey ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Scheduling
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-            </>
-          }
-        >
-          <p className="text-[#2d4a5e] text-sm">
-            Are you sure you want to schedule the survey for{" "}
-            {scheduleSurveyData?.surveyDate
-              ? new Date(scheduleSurveyData.surveyDate).toLocaleString()
-              : ""}
-            ?
-          </p>
-        </Modal>
-        <Modal
-          isOpen={isPhoneModalOpen}
-          onClose={() => setIsPhoneModalOpen(false)}
-          title="Contact Options"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsPhoneModalOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-            </>
-          }
-        >
-          <div className="space-y-4">
-            <p className="text-[#2d4a5e] text-sm">
-              Choose how to contact {selectedEnquiry?.fullName || ""}:
-            </p>
-            <div className="flex flex-col gap-3">
-              {selectedEnquiry?.phoneNumber ? (
-                <>
-                  <a
-                    href={`tel:${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                  >
-                    <FaPhoneAlt className="w-5 h-5" /> Call
-                  </a>
-                  <a
-                    href={`https://wa.me/${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 bg-green-500 text-white py-2 px-4 rounded"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FaWhatsapp className="w-5 h-5" /> WhatsApp
-                  </a>
-                </>
-              ) : (
-                <p className="text-[#2d4a5e] text-sm">No phone number available</p>
-              )}
-            </div>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
           </div>
-        </Modal>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Previous
+            </button>
+
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* All your existing modals remain the same */}
+      <AnimatePresence>
+        {/* ... All your existing modal code remains exactly the same ... */}
       </AnimatePresence>
     </div>
   );
