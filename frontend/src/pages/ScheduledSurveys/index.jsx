@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope } from "react-icons/fa";
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaSearch } from "react-icons/fa";
 import Modal from "../../components/Modal";
 import Input from "../../components/Input";
 import { FormProvider, useForm } from "react-hook-form";
@@ -33,7 +33,6 @@ const ScheduledSurveys = () => {
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [rescheduleSurveyData, setRescheduleSurveyData] = useState(null);
   const [cancelSurveyData, setCancelSurveyData] = useState(null);
-  // Loading states
   const [isStartingSurvey, setIsStartingSurvey] = useState(false);
   const [startingSurveyId, setStartingSurveyId] = useState(null);
   const [isReschedulingSurvey, setIsReschedulingSurvey] = useState(false);
@@ -62,7 +61,6 @@ const ScheduledSurveys = () => {
     { value: "logistics", label: "Logistics" },
   ];
 
-  // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEnquiries = filteredEnquiries.slice(
@@ -71,7 +69,6 @@ const ScheduledSurveys = () => {
   );
   const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
 
-  // Toggle expand/collapse
   const toggleEnquiryExpand = (enquiryId) => {
     setExpandedEnquiries((prev) => {
       const newSet = new Set(prev);
@@ -88,6 +85,8 @@ const ScheduledSurveys = () => {
     { value: "all", label: "All Scheduled Surveys" },
     { value: "canceled", label: "Canceled Surveys" },
   ];
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchProfileAndPermissions = async () => {
@@ -117,48 +116,16 @@ const ScheduledSurveys = () => {
           params: { has_survey: "true" },
         });
 
-        // Enhanced: Check survey status for each enquiry
-        const enquiriesWithSurveyStatus = await Promise.all(
-          response.data.map(async (enquiry) => {
-            try {
-              const surveyResponse = await apiClient.get(
-                `/surveys/?enquiry_id=${enquiry.id}`
-              );
-              const hasSurvey = surveyResponse.data.length > 0;
-              const surveyData = hasSurvey ? surveyResponse.data[0] : null;
+        const scheduledEnquiries = response.data
+          .filter(enquiry => enquiry.survey_date !== null)
+          .map(enquiry => ({
+            ...enquiry,
+            has_survey: true,
+          }))
+          .sort((a, b) => new Date(b.survey_date) - new Date(a.survey_date));
 
-              return {
-                ...enquiry,
-                has_survey: hasSurvey,
-                survey_id: surveyData?.survey_id || null,
-                survey_status: surveyData?.status || null,
-                survey_data: surveyData,
-              };
-            } catch (error) {
-              console.error(
-                `Error fetching survey for enquiry ${enquiry.id}:`,
-                error
-              );
-              return {
-                ...enquiry,
-                has_survey: false,
-                survey_id: null,
-                survey_status: null,
-                survey_data: null,
-              };
-            }
-          })
-        );
-
-        // Sort by survey_date in descending order
-        const sortedEnquiries = enquiriesWithSurveyStatus.sort((a, b) => {
-          const dateA = a.survey_date ? new Date(a.survey_date) : new Date(0);
-          const dateB = b.survey_date ? new Date(b.survey_date) : new Date(0);
-          return dateB - dateA;
-        });
-
-        setEnquiries(sortedEnquiries);
-        setFilteredEnquiries(sortedEnquiries);
+        setEnquiries(scheduledEnquiries);
+        setFilteredEnquiries(scheduledEnquiries);
       } catch (error) {
         setError("Failed to fetch scheduled surveys. Please try again.");
       } finally {
@@ -170,28 +137,66 @@ const ScheduledSurveys = () => {
     fetchEnquiries();
   }, []);
 
-  const handleFilter = (data) => {
-    let filtered = [...enquiries];
+  const applyFiltersAndSearch = (filterData, search = searchQuery) => {
+    let filtered = enquiries.filter(e => e.survey_date !== null);
+
     setCurrentPage(1);
-    if (data.filterType === "canceled") {
-      filtered = filtered.filter((enquiry) => !enquiry.survey_date);
-    } else {
-      filtered = filtered.filter((enquiry) => enquiry.survey_date);
-    }
-    if (data.fromDate || data.toDate) {
-      const from = data.fromDate ? new Date(data.fromDate) : null;
-      const to = data.toDate ? new Date(data.toDate) : null;
-      if (to) {
-        to.setHours(23, 59, 59, 999);
-      }
-      filtered = filtered.filter((enquiry) => {
-        const createdAt = new Date(enquiry.created_at);
-        const afterFrom = from ? createdAt >= from : true;
-        const beforeTo = to ? createdAt <= to : true;
-        return afterFrom && beforeTo;
+
+    if (filterData.fromDate || filterData.toDate) {
+      const from = filterData.fromDate ? new Date(filterData.fromDate) : null;
+      const to = filterData.toDate ? new Date(filterData.toDate) : null;
+      if (to) to.setHours(23, 59, 59, 999);
+
+      filtered = filtered.filter((enquiryry) => {
+        const surveyDate = new Date(enquiry.survey_date);
+        return (!from || surveyDate >= from) && (!to || surveyDate <= to);
       });
     }
+
+    if (search && search.trim() !== "") {
+      const searchLower = search.toLowerCase().trim();
+      filtered = filtered.filter((enquiry) => {
+        const fullName = (enquiry.fullName || "").toLowerCase();
+        const phone = (enquiry.phoneNumber || "").toLowerCase();
+        const email = (enquiry.email || "").toLowerCase();
+        const serviceLabel =
+          serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label?.toLowerCase() || "";
+        const serviceValue = (enquiry.serviceType || "").toLowerCase();
+        const message = (enquiry.message || "").toLowerCase();
+        const note = (enquiry.note || "").toLowerCase();
+        const assignedTo = (enquiry.assigned_user_email || "").toLowerCase();
+        const surveyStatus = getSurveyStatus(enquiry).toLowerCase();
+        const cancelReason = (enquiry.cancel_reason || "").toLowerCase();
+
+        return (
+          fullName.includes(searchLower) ||
+          phone.includes(searchLower) ||
+          email.includes(searchLower) ||
+          serviceLabel.includes(searchLower) ||
+          serviceValue.includes(searchLower) ||
+          message.includes(searchLower) ||
+          note.includes(searchLower) ||
+          assignedTo.includes(searchLower) ||
+          surveyStatus.includes(searchLower) ||
+          cancelReason.includes(searchLower)
+        );
+      });
+    }
+
+    filtered.sort((a, b) => new Date(b.survey_date) - new Date(a.survey_date));
+
     setFilteredEnquiries(filtered);
+  };
+
+  const handleFilter = (data) => {
+    applyFiltersAndSearch(data);
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    const currentFilterData = filterForm.getValues();
+    applyFiltersAndSearch(currentFilterData, value);
   };
 
   const hasPermission = (page, action) => {
@@ -364,7 +369,6 @@ const ScheduledSurveys = () => {
       const updatedEnquiries = enquiries.map((e) =>
         e.id === selectedEnquiry.id ? response.data : e
       );
-      // Re-sort after updating to maintain survey_date descending order
       const sortedEnquiries = updatedEnquiries.sort((a, b) => {
         const dateA = a.survey_date ? new Date(a.survey_date) : new Date(0);
         const dateB = b.survey_date ? new Date(b.survey_date) : new Date(0);
@@ -415,7 +419,6 @@ const ScheduledSurveys = () => {
       const updatedEnquiries = enquiries.map((e) =>
         e.id === selectedEnquiry.id ? response.data : e
       );
-      // Re-sort after updating to maintain survey_date descending order
       const sortedEnquiries = updatedEnquiries.sort((a, b) => {
         const dateA = a.survey_date ? new Date(a.survey_date) : new Date(0);
         const dateB = b.survey_date ? new Date(b.survey_date) : new Date(0);
@@ -470,7 +473,7 @@ const ScheduledSurveys = () => {
           {message}
         </motion.div>
       )}
-      <div className="flex flex-col sm:flex-row justify-end items-center mb-4 gap-4">
+      <div className="flex flex-col lg:flex-row justify-end items-start lg:items-center gap-4 mb-6">
         <FormProvider {...filterForm}>
           <form
             onSubmit={filterForm.handleSubmit(handleFilter)}
@@ -478,7 +481,7 @@ const ScheduledSurveys = () => {
           >
             <div className="w-full sm:w-auto">
               <Input
-                label="Filter By"
+                label="Filter By *"
                 name="filterType"
                 type="select"
                 options={filterOptions}
@@ -486,21 +489,41 @@ const ScheduledSurveys = () => {
               />
             </div>
             <div className="w-full sm:w-auto">
-              <Input label="From Date" name="fromDate" type="date" />
+              <Input
+                label="From Date"
+                name="fromDate"
+                type="date"
+                placeholder="dd-mm-yyyy"
+              />
             </div>
             <div className="w-full sm:w-auto">
-              <Input label="To Date" name="toDate" type="date" />
+              <Input
+                label="To Date"
+                name="toDate"
+                type="date"
+                placeholder="dd-mm-yyyy"
+              />
             </div>
-            <div className="w-full sm:w-auto">
-              <button
-                type="submit"
-                className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
-              >
-                Apply Filter
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
+            >
+              Apply Filter
+            </button>
           </form>
         </FormProvider>
+      </div>
+      <div className="mb-4">
+        <div className="relative">
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search by name, phone, email, service, message, note, or assigned user..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors"
+          />
+        </div>
       </div>
       {filteredEnquiries.length === 0 ? (
         <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
@@ -508,7 +531,6 @@ const ScheduledSurveys = () => {
         </div>
       ) : (
         <>
-          {/* Table for Desktop */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -622,24 +644,22 @@ const ScheduledSurveys = () => {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                         <span
-                          className={`${
-                            enquiry.survey_data?.status === "completed"
-                              ? "text-green-600"
-                              : enquiry.survey_data?.status === "in_progress"
+                          className={`${enquiry.survey_data?.status === "completed"
+                            ? "text-green-600"
+                            : enquiry.survey_data?.status === "in_progress"
                               ? "text-blue-600"
                               : enquiry.survey_data?.status === "pending"
-                              ? "text-yellow-600"
-                              : enquiry.survey_data?.status === "cancelled"
-                              ? "text-red-600"
-                              : "text-gray-600"
-                          }`}
+                                ? "text-yellow-600"
+                                : enquiry.survey_data?.status === "cancelled"
+                                  ? "text-red-600"
+                                  : "text-gray-600"
+                            }`}
                         >
                           {getSurveyStatus(enquiry)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
                         <div className="flex gap-2">
-                          {/* Your existing action buttons remain the same */}
                           {enquiry.survey_date ? (
                             <>
                               <button
@@ -654,7 +674,7 @@ const ScheduledSurveys = () => {
                                 }
                               >
                                 {isReschedulingSurvey &&
-                                reschedulingSurveyId === enquiry.id ? (
+                                  reschedulingSurveyId === enquiry.id ? (
                                   <>
                                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     Rescheduling
@@ -673,7 +693,7 @@ const ScheduledSurveys = () => {
                                 }
                               >
                                 {isCancelingSurvey &&
-                                cancelingSurveyId === enquiry.id ? (
+                                  cancelingSurveyId === enquiry.id ? (
                                   <>
                                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     Canceling
@@ -684,11 +704,10 @@ const ScheduledSurveys = () => {
                               </button>
                               <button
                                 onClick={() => startSurvey(enquiry)}
-                                className={`text-white text-xs py-1 px-2 rounded flex items-center gap-1 ${
-                                  isSurveyFinished(enquiry)
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-green-500 hover:bg-green-600"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className={`text-white text-xs py-1 px-2 rounded flex items-center gap-1 ${isSurveyFinished(enquiry)
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-green-500 hover:bg-green-600"
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                                 disabled={
                                   isSurveyFinished(enquiry) ||
                                   !hasPermission("scheduled_surveys", "edit") ||
@@ -697,14 +716,14 @@ const ScheduledSurveys = () => {
                                 }
                               >
                                 {isStartingSurvey &&
-                                startingSurveyId === enquiry.id ? (
+                                  startingSurveyId === enquiry.id ? (
                                   <>
                                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     Starting
                                   </>
                                 ) : isSurveyFinished(enquiry) ? (
                                   enquiry.survey_data?.status ===
-                                  "completed" ? (
+                                    "completed" ? (
                                     "Completed"
                                   ) : (
                                     "In Progress"
@@ -725,7 +744,7 @@ const ScheduledSurveys = () => {
                               }
                             >
                               {isReschedulingSurvey &&
-                              reschedulingSurveyId === enquiry.id ? (
+                                reschedulingSurveyId === enquiry.id ? (
                                 <>
                                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                   Scheduling
@@ -743,7 +762,6 @@ const ScheduledSurveys = () => {
               </tbody>
             </table>
           </div>
-          {/* Pagination for Desktop */}
           {filteredEnquiries.length > 0 && (
             <div className="hidden md:flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center gap-2">
@@ -797,9 +815,6 @@ const ScheduledSurveys = () => {
               </div>
             </div>
           )}
-
-          {/* Cards for Mobile */}
-          {/* Cards for Mobile */}
           <div className="md:hidden space-y-3">
             {currentEnquiries.map((enquiry, index) => {
               const isExpanded = expandedEnquiries.has(enquiry.id);
@@ -814,7 +829,6 @@ const ScheduledSurveys = () => {
                   initial="rest"
                   whileHover="hover"
                 >
-                  {/* Collapsed View */}
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-[#2d4a5e]">
@@ -865,8 +879,6 @@ const ScheduledSurveys = () => {
                       )}
                     </button>
                   </div>
-
-                  {/* Expanded View */}
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div
@@ -932,24 +944,21 @@ const ScheduledSurveys = () => {
                           <p>
                             <strong>Survey Status:</strong>{" "}
                             <span
-                              className={`${
-                                enquiry.survey_data?.status === "completed"
-                                  ? "text-green-600"
-                                  : enquiry.survey_data?.status ===
-                                    "in_progress"
+                              className={`${enquiry.survey_data?.status === "completed"
+                                ? "text-green-600"
+                                : enquiry.survey_data?.status ===
+                                  "in_progress"
                                   ? "text-blue-600"
                                   : enquiry.survey_data?.status === "pending"
-                                  ? "text-yellow-600"
-                                  : enquiry.survey_data?.status === "cancelled"
-                                  ? "text-red-600"
-                                  : "text-gray-600"
-                              }`}
+                                    ? "text-yellow-600"
+                                    : enquiry.survey_data?.status === "cancelled"
+                                      ? "text-red-600"
+                                      : "text-gray-600"
+                                }`}
                             >
                               {getSurveyStatus(enquiry)}
                             </span>
                           </p>
-
-                          {/* Action Buttons */}
                           <div className="flex flex-wrap gap-2 pt-3">
                             {enquiry.survey_date ? (
                               <>
@@ -968,7 +977,7 @@ const ScheduledSurveys = () => {
                                   }
                                 >
                                   {isReschedulingSurvey &&
-                                  reschedulingSurveyId === enquiry.id ? (
+                                    reschedulingSurveyId === enquiry.id ? (
                                     <>
                                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                       Rescheduling
@@ -990,7 +999,7 @@ const ScheduledSurveys = () => {
                                   }
                                 >
                                   {isCancelingSurvey &&
-                                  cancelingSurveyId === enquiry.id ? (
+                                    cancelingSurveyId === enquiry.id ? (
                                     <>
                                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                       Canceling
@@ -1001,11 +1010,10 @@ const ScheduledSurveys = () => {
                                 </button>
                                 <button
                                   onClick={() => startSurvey(enquiry)}
-                                  className={`text-white text-xs py-2 px-3 rounded flex items-center gap-2 ${
-                                    isSurveyFinished(enquiry)
-                                      ? "bg-gray-400 cursor-not-allowed"
-                                      : "bg-green-500 hover:bg-green-600"
-                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                  className={`text-white text-xs py-2 px-3 rounded flex items-center gap-2 ${isSurveyFinished(enquiry)
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-green-500 hover:bg-green-600"
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                                   disabled={
                                     isSurveyFinished(enquiry) ||
                                     !hasPermission(
@@ -1017,14 +1025,14 @@ const ScheduledSurveys = () => {
                                   }
                                 >
                                   {isStartingSurvey &&
-                                  startingSurveyId === enquiry.id ? (
+                                    startingSurveyId === enquiry.id ? (
                                     <>
                                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                       Starting
                                     </>
                                   ) : isSurveyFinished(enquiry) ? (
                                     enquiry.survey_data?.status ===
-                                    "completed" ? (
+                                      "completed" ? (
                                       "Completed"
                                     ) : (
                                       "In Progress"
@@ -1047,7 +1055,7 @@ const ScheduledSurveys = () => {
                                 }
                               >
                                 {isReschedulingSurvey &&
-                                reschedulingSurveyId === enquiry.id ? (
+                                  reschedulingSurveyId === enquiry.id ? (
                                   <>
                                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     Scheduling
@@ -1066,8 +1074,6 @@ const ScheduledSurveys = () => {
               );
             })}
           </div>
-
-          {/* Pagination for Mobile */}
           {filteredEnquiries.length > 0 && (
             <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center gap-2">

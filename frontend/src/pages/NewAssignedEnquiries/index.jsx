@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaCalendarAlt } from "react-icons/fa";
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaCalendarAlt, FaSearch } from "react-icons/fa";
 import Modal from "../../components/Modal";
 import Input from "../../components/Input";
 import { FormProvider, useForm } from "react-hook-form";
@@ -34,7 +34,7 @@ const NewAssignedEnquiries = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
-  
+
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSchedulingSurvey, setIsSchedulingSurvey] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
@@ -82,6 +82,8 @@ const NewAssignedEnquiries = () => {
     { value: "notScheduled", label: "Not Scheduled" },
   ];
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     let isMounted = true;
 
@@ -103,7 +105,7 @@ const NewAssignedEnquiries = () => {
         }
 
         const params = {
-          has_survey: "false", 
+          has_survey: "false",
         };
 
         if (!isSuperadmin) {
@@ -114,7 +116,7 @@ const NewAssignedEnquiries = () => {
         const enquiryResponse = await apiClient.get("/contacts/enquiries/", { params });
 
         const assignedEnquiries = enquiryResponse.data.filter(
-          (enquiry) => enquiry.assigned_user_email 
+          (enquiry) => enquiry.assigned_user_email
         );
 
         const sortedEnquiries = assignedEnquiries.sort((a, b) =>
@@ -138,12 +140,12 @@ const NewAssignedEnquiries = () => {
     };
   }, []);
 
-  const handleFilter = (data) => {
-    let filtered = [...enquiries]; 
+  const applyFiltersAndSearch = (filterData, search = searchQuery) => {
+    let filtered = [...enquiries];
 
     setCurrentPage(1);
 
-    switch (data.filterType) {
+    switch (filterData.filterType) {
       case "attended":
         filtered = filtered.filter((e) => e.contact_status === "Attended");
         break;
@@ -158,9 +160,9 @@ const NewAssignedEnquiries = () => {
         break;
     }
 
-    if (data.fromDate || data.toDate) {
-      const from = data.fromDate ? new Date(data.fromDate) : null;
-      const to = data.toDate ? new Date(data.toDate) : null;
+    if (filterData.fromDate || filterData.toDate) {
+      const from = filterData.fromDate ? new Date(filterData.fromDate) : null;
+      const to = filterData.toDate ? new Date(filterData.toDate) : null;
       if (to) to.setHours(23, 59, 59, 999);
 
       filtered = filtered.filter((enquiry) => {
@@ -169,7 +171,48 @@ const NewAssignedEnquiries = () => {
       });
     }
 
+    if (search && search.trim() !== "") {
+      const searchLower = search.toLowerCase().trim();
+      filtered = filtered.filter((enquiry) => {
+        const fullName = (enquiry.fullName || "").toLowerCase();
+        const phone = (enquiry.phoneNumber || "").toLowerCase();
+        const email = (enquiry.email || "").toLowerCase();
+        const serviceLabel =
+          serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label?.toLowerCase() || "";
+        const serviceValue = (enquiry.serviceType || "").toLowerCase();
+        const message = (enquiry.message || "").toLowerCase();
+        const note = (enquiry.note || "").toLowerCase();
+        const contactStatus = (enquiry.contact_status || "").toLowerCase();
+        const assignedTo = (enquiry.assigned_user_email || "").toLowerCase();
+
+        return (
+          fullName.includes(searchLower) ||
+          phone.includes(searchLower) ||
+          email.includes(searchLower) ||
+          serviceLabel.includes(searchLower) ||
+          serviceValue.includes(searchLower) ||
+          message.includes(searchLower) ||
+          note.includes(searchLower) ||
+          contactStatus.includes(searchLower) ||
+          assignedTo.includes(searchLower)
+        );
+      });
+    }
+
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
     setFilteredEnquiries(filtered);
+  };
+
+  const handleFilter = (data) => {
+    applyFiltersAndSearch(data);
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    const currentFilterData = filterForm.getValues();
+    applyFiltersAndSearch(currentFilterData, value);
   };
 
   const hasPermission = (page, action) => {
@@ -233,7 +276,6 @@ const NewAssignedEnquiries = () => {
       const response = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/schedule/`, {
         survey_date: scheduleSurveyData.surveyDate.toISOString(),
       });
-      // Remove the scheduled enquiry from the list since it now has a survey_date
       const updatedEnquiries = enquiries.filter((e) => e.id !== selectedEnquiry.id);
       setEnquiries(updatedEnquiries);
       setFilteredEnquiries(updatedEnquiries);
@@ -306,45 +348,57 @@ const NewAssignedEnquiries = () => {
           {message}
         </motion.div>
       )}
-      <div className="flex flex-col sm:flex-row justify-end items-center mb-4 gap-4">
+      <div className="flex flex-col lg:flex-row justify-end items-start lg:items-center gap-4 mb-6">
         <FormProvider {...filterForm}>
           <form
             onSubmit={filterForm.handleSubmit(handleFilter)}
             className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
           >
             <div className="w-full sm:w-auto">
-            <Input
-              label="Filter By"
-              name="filterType"
-              type="select"
-              options={filterOptions}
-              rules={{ required: "Filter type is required" }}
-            />
+              <Input
+                label="Filter By *"
+                name="filterType"
+                type="select"
+                options={filterOptions}
+                rules={{ required: "Filter type is required" }}
+              />
             </div>
             <div className="w-full sm:w-auto">
-            <Input
-              label="From Date"
-              name="fromDate"
-              type="date"
-            />
+              <Input
+                label="From Date"
+                name="fromDate"
+                type="date"
+                placeholder="dd-mm-yyyy"
+              />
             </div>
             <div className="w-full sm:w-auto">
-            <Input
-              label="To Date"
-              name="toDate"
-              type="date"
-            />
+              <Input
+                label="To Date"
+                name="toDate"
+                type="date"
+                placeholder="dd-mm-yyyy"
+              />
             </div>
-            <div className="w-full sm:w-auto">
             <button
               type="submit"
               className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
             >
               Apply Filter
             </button>
-            </div>
           </form>
         </FormProvider>
+      </div>
+      <div className="mb-4">
+        <div className="relative">
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search by name, phone, email, service, message, note, or assigned user..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors"
+          />
+        </div>
       </div>
       {filteredEnquiries.length === 0 ? (
         <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
@@ -352,7 +406,6 @@ const NewAssignedEnquiries = () => {
         </div>
       ) : (
         <>
-          {/* Table for Desktop */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -504,8 +557,6 @@ const NewAssignedEnquiries = () => {
               </tbody>
             </table>
           </div>
-
-          {/* Pagination for Desktop */}
           {filteredEnquiries.length > 0 && (
             <div className="hidden md:flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center gap-2">
@@ -744,9 +795,284 @@ const NewAssignedEnquiries = () => {
         </div>
       )}
 
-      {/* All your existing modals remain the same */}
       <AnimatePresence>
-        {/* ... All your existing modal code remains exactly the same ... */}
+        <Modal
+          isOpen={isContactStatusOpen}
+          onClose={() => setIsContactStatusOpen(false)}
+          title="Update Contact Status"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setIsContactStatusOpen(false)}
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isUpdatingStatus}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="contact-status-form"
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isUpdatingStatus}
+              >
+                {isUpdatingStatus ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Updating
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </button>
+            </>
+          }
+        >
+          <FormProvider {...contactStatusForm}>
+            <form
+              id="contact-status-form"
+              onSubmit={contactStatusForm.handleSubmit(onContactStatusSubmit)}
+              className="space-y-4"
+            >
+              <div className="mb-4">
+                <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
+                  <input
+                    type="radio"
+                    {...contactStatusForm.register("status", {
+                      required: "Please select a status",
+                    })}
+                    value="Attended"
+                    className="mr-2 w-5 h-5"
+                  />
+                  Attended
+                </label>
+              </div>
+              <div className="mb-4">
+                <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
+                  <input
+                    type="radio"
+                    {...contactStatusForm.register("status")}
+                    value="Not Attended"
+                    className="mr-2 w-5 h-5"
+                  />
+                  Not Attended
+                </label>
+              </div>
+              <Input label="Contact Status Note (Optional)" name="contactStatusNote" type="textarea" />
+              {contactStatusForm.watch("status") === "Not Attended" && (
+                <>
+                  <div className="mb-4">
+                    <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        {...contactStatusForm.register("reachedOutWhatsApp")}
+                        className="mr-2 w-5 h-5"
+                      />
+                      Reached out via WhatsApp
+                    </label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center text-[#2d4a5e] text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        {...contactStatusForm.register("reachedOutEmail")}
+                        className="mr-2 w-5 h-5"
+                      />
+                      Reached out via Email
+                    </label>
+                  </div>
+                </>
+              )}
+            </form>
+          </FormProvider>
+        </Modal>
+        <Modal
+          isOpen={isContactStatusConfirmOpen}
+          onClose={() => setIsContactStatusConfirmOpen(false)}
+          title="Confirm Contact Status Update"
+          footer={
+            <>
+              <button
+                onClick={() => setIsContactStatusConfirmOpen(false)}
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isUpdatingStatus}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmContactStatus}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isUpdatingStatus}
+              >
+                {isUpdatingStatus ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Updating
+                  </>
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            </>
+          }
+        >
+          <p className="text-[#2d4a5e] text-sm">
+            Are you sure you want to update the contact status to "{contactStatusData?.status}"
+            {contactStatusData?.contactStatusNote ? ` with note: "${contactStatusData.contactStatusNote}"` : ""}?
+            {contactStatusData?.status === "Not Attended" && (
+              <>
+                {contactStatusData.reachedOutWhatsApp && " Reached out via WhatsApp."}
+                {contactStatusData.reachedOutEmail && " Reached out via Email."}
+              </>
+            )}
+          </p>
+        </Modal>
+        <Modal
+          isOpen={isScheduleSurveyOpen}
+          onClose={() => setIsScheduleSurveyOpen(false)}
+          title="Schedule Survey"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setIsScheduleSurveyOpen(false)}
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSchedulingSurvey}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="schedule-survey-form"
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isSchedulingSurvey}
+              >
+                {isSchedulingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Scheduling
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </button>
+            </>
+          }
+        >
+          <FormProvider {...scheduleSurveyForm}>
+            <form
+              id="schedule-survey-form"
+              onSubmit={scheduleSurveyForm.handleSubmit(onScheduleSurveySubmit)}
+              className="space-y-4 w-full"
+            >
+              <div className="mb-4 w-full">
+                <label className="block text-[#2d4a5e] text-sm font-medium mb-1">
+                  Survey Date and Time
+                  <span className="text-red-500"> *</span>
+                </label>
+                <DatePicker
+                  selected={scheduleSurveyForm.watch("surveyDate")}
+                  onChange={(date) => scheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat="yyyy-MM-dd HH:mm"
+                  minDate={new Date(Date.now() + 15 * 60 * 1000)}
+                  className="w-full p-2 border border-gray-300 rounded text-[#2d4a5e] text-sm focus:outline-none focus:ring-2 focus:ring-[#4c7085]"
+                  placeholderText="Select date and time"
+                  wrapperClassName="w-full z-50"
+                />
+                {scheduleSurveyForm.formState.errors.surveyDate && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {scheduleSurveyForm.formState.errors.surveyDate.message}
+                  </p>
+                )}
+              </div>
+            </form>
+          </FormProvider>
+        </Modal>
+        <Modal
+          isOpen={isScheduleSurveyConfirmOpen}
+          onClose={() => setIsScheduleSurveyConfirmOpen(false)}
+          title="Confirm Survey Schedule"
+          footer={
+            <>
+              <button
+                onClick={() => setIsScheduleSurveyConfirmOpen(false)}
+                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSchedulingSurvey}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmScheduleSurvey}
+                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!hasPermission("new_enquiries", "edit") || isSchedulingSurvey}
+              >
+                {isSchedulingSurvey ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Scheduling
+                  </>
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            </>
+          }
+        >
+          <p className="text-[#2d4a5e] text-sm">
+            Are you sure you want to schedule the survey for{" "}
+            {scheduleSurveyData?.surveyDate
+              ? new Date(scheduleSurveyData.surveyDate).toLocaleString()
+              : ""}
+            ?
+          </p>
+        </Modal>
+        <Modal
+          isOpen={isPhoneModalOpen}
+          onClose={() => setIsPhoneModalOpen(false)}
+          title="Contact Options"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setIsPhoneModalOpen(false)}
+                className="bg-gray-500 text-white py-2 px-4 rounded"
+              >
+                Cancel
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <p className="text-[#2d4a5e] text-sm">
+              Choose how to contact {selectedEnquiry?.fullName || ""}:
+            </p>
+            <div className="flex flex-col gap-3">
+              {selectedEnquiry?.phoneNumber ? (
+                <>
+                  <a
+                    href={`tel:${selectedEnquiry.phoneNumber}`}
+                    className="flex items-center gap-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+                  >
+                    <FaPhoneAlt className="w-5 h-5" /> Call
+                  </a>
+                  <a
+                    href={`https://wa.me/${selectedEnquiry.phoneNumber}`}
+                    className="flex items-center gap-2 bg-green-500 text-white py-2 px-4 rounded"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FaWhatsapp className="w-5 h-5" /> WhatsApp
+                  </a>
+                </>
+              ) : (
+                <p className="text-[#2d4a5e] text-sm">No phone number available</p>
+              )}
+            </div>
+          </div>
+        </Modal>
       </AnimatePresence>
     </div>
   );

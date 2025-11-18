@@ -539,7 +539,7 @@ const Enquiries = () => {
         <div className="w-full sm:w-auto">
           <button
             onClick={() => setIsAddOpen(true)}
-            className="w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="relative top-0 sm:top-3 w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
           >
             {isAddingEnquiry ? (
