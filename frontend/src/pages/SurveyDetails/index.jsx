@@ -2648,16 +2648,16 @@ const Article = () => {
         </motion.div>
       )}
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onNext)} className="space-y-8">
-          <div className="flex border-b border-gray-200 mb-6">
+        <form onSubmit={handleSubmit(onNext)} className="space-y-6">
+          <div className="grid grid-cols-3 items-center justify-between gap-6 mb-6">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabChange(tab.id)}
                 className={`py-2 px-4 text-sm font-medium ${activeTab === tab.id
-                  ? "border-b-2 border-indigo-600 text-indigo-600"
-                  : "text-gray-500 hover:text-indigo-600"
+                  ? "text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+                  : "text-sm bg-gradient-to-r from-gray-200 to-gray-100 text-[#6b8ca3] py-2 px-4 rounded"
                   }`}
               >
                 {tab.label}
