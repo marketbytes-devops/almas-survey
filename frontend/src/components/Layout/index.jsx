@@ -1,4 +1,3 @@
-// Layout.jsx
 import { Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,7 +76,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className={`${isDesktop ? "relative" : "fixed inset-y-0 left-0"} z-50 w-72 bg-white shadow-2xl`}
+            className={`${isDesktop ? "relative" : "fixed inset-y-0 left-0"} z-50 w-72 bg-white shadow-lg`}
           >
             <Sidebar toggleSidebar={closeSidebar} user={user} />
           </motion.aside>
@@ -101,7 +100,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             {loading ? (
               <div className="flex items-center justify-center h-full min-h-screen">
                 <Loading />
@@ -118,8 +117,10 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
             )}
           </div>
         </main>
+        <div className="mt-16">
+          <BottomNav />
+        </div>
 
-        <BottomNav />
       </motion.div>
     </div>
   );

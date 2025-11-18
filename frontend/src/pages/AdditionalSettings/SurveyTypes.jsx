@@ -141,12 +141,9 @@ const SurveyTypes = () => {
     }
   };
 
-  /* -------------------------------------------------- RENDER -------------------------------------------------- */
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <Loading />
-      </div>
+      <div className="flex justify-center items-center min-h-screen"><Loading/></div>
     );
   }
 

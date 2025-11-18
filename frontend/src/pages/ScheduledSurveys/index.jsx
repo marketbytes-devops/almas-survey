@@ -445,7 +445,7 @@ const ScheduledSurveys = () => {
   };
 
   if (isLoading) {
-    return <div><Loading /></div>;
+    return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   }
 
   return (

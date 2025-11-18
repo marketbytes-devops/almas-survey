@@ -49,12 +49,12 @@ const Sidebar = ({ toggleSidebar }) => {
     const fetchProfile = async () => {
       try {
         const response = await apiClient.get("/auth/profile/");
-        const data = response.data; 
+        const data = response.data;
 
         setUser({
           name: data.name || "User",
           role: data.role?.name || "User",
-          image: data.image || fallbackProfile, 
+          image: data.image || fallbackProfile,
         });
 
         setIsSuperadmin(data.is_superuser === true || data.role?.name === "Superadmin");
@@ -67,7 +67,7 @@ const Sidebar = ({ toggleSidebar }) => {
       } catch (err) {
         console.error("Failed to fetch profile:", err);
         setError("Failed to load user data");
-        setUser(prev => ({ ...prev, image: fallbackProfile })); 
+        setUser(prev => ({ ...prev, image: fallbackProfile }));
       } finally {
         setIsLoading(false);
       }
@@ -89,7 +89,7 @@ const Sidebar = ({ toggleSidebar }) => {
     window.location.href = "/login";
   };
 
-  const menuItems = [
+  const allMenuItems = [
     { id: "dashboard", to: "/", label: "Dashboard", icon: <AiOutlineProject className="w-5 h-5" />, page: "Dashboard", action: "view" },
     { id: "enquiries", to: "/enquiries", label: "Enquiries", icon: <AiOutlineSearch className="w-5 h-5" />, page: "enquiries", action: "view" },
     { id: "new-enquiries", to: "/new-enquiries", label: "New Assigned", icon: <AiOutlineAliwangwang className="w-5 h-5" />, page: "new_enquiries", action: "view" },
@@ -141,9 +141,17 @@ const Sidebar = ({ toggleSidebar }) => {
         { to: "/user-roles/permissions", label: "Permissions", icon: <AiOutlineKey className="w-4 h-4" />, page: "permissions", action: "view" },
       ],
     },
-
     { id: "profile", to: "/profile", label: "Profile", icon: <AiOutlineIdcard className="w-5 h-5" />, page: "Profile", action: "view" },
   ];
+
+  const mobileMenuItems = allMenuItems.filter(item =>
+    item.id === "pricing" ||
+    item.id === "additional-settings" ||
+    item.id === "user-roles" ||
+    item.id === "profile"
+  );
+
+  const menuItems = isMobile() ? mobileMenuItems : allMenuItems;
 
   const renderMenuItem = (item) => {
     if (item.subItems) {
@@ -182,7 +190,7 @@ const Sidebar = ({ toggleSidebar }) => {
                     <NavLink
                       to={sub.to}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all ${
+                        `flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm transition-all ${
                           isActive
                             ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium"
                             : "text-gray-600 hover:bg-gray-100"
@@ -232,7 +240,7 @@ const Sidebar = ({ toggleSidebar }) => {
   }
 
   return (
-    <div className="w-72 h-screen bg-white shadow-xl flex flex-col">
+    <div className="w-72 h-screen bg-white shadow-lg flex flex-col">
       {isMobile() && !isLoading && (
         <div className="p-5 bg-gradient-to-br from-[#4c7085] to-[#6b8ca3] text-white">
           <div className="flex items-center gap-4">

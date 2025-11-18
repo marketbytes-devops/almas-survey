@@ -1,4 +1,3 @@
-// pages/SurveyDetails/Article.jsx
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { FaChevronDown, FaChevronUp, FaPlus } from "react-icons/fa";
@@ -7,12 +6,7 @@ import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams } from "react-router";
 import apiClient from "../../../api/apiClient";
 import Input from "../../../components/Input";
-
-const Loading = () => (
-  <div className="flex justify-center items-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-  </div>
-);
+import Loading from "../../../components/Loading";
 
 const QuantityInput = ({ label, name, rules = {}, onChange }) => {
   const { setValue, watch, formState: { errors } } = useFormContext();
@@ -664,7 +658,7 @@ const Article = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      {isLoadingTypes && <Loading />}
+      {isLoadingTypes && <div className="flex justify-center items-center min-h-screen"><Loading /></div>}
       <FormProvider {...methods}>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 mb-4">

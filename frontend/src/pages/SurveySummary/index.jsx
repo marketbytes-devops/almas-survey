@@ -649,7 +649,7 @@ const SurveySummary = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-4"><Loading /></div>;
+    return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   }
 
   if (surveys.length === 0) {

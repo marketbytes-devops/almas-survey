@@ -3,6 +3,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
+import Loading from "../../components/Loading";
 
 const Team = () => {
   const [teams, setTeams] = useState([]);
@@ -85,9 +86,7 @@ const Team = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-      </div>
+      <div className="flex justify-center items-center min-h-screen"><Loading/></div>
     );
   }
 

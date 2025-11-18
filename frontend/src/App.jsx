@@ -11,7 +11,6 @@ import ResetPassword from "./pages/Auth/ResetPassword";
 import Users from "./pages/Admin/Users";
 import Permissions from "./pages/Admin/Permissions";
 import Roles from "./pages/Admin/Roles";
-import Loading from "./components/Loading";
 import apiClient from "./api/apiClient";
 import FollowUps from "./pages/FollowUps";
 import ProcessingEnquiries from "./pages/ProcessingEnquiries";
@@ -39,60 +38,53 @@ const ProtectedRoute = ({
   requiredPage,
   requiredAction = "view",
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasPermission, setHasPermission] = useState(false);
+  const [hasPermission, setHasPermission] = useState(null);
 
   useEffect(() => {
     const checkPermissions = async () => {
       if (!isAuthenticated) {
-        setIsLoading(false);
+        setHasPermission(false);
         return;
       }
+
       try {
         const response = await apiClient.get("/auth/profile/");
         const user = response.data;
+
         if (user.is_superuser || user.role?.name === "Superadmin") {
           setHasPermission(true);
-          setIsLoading(false);
           return;
         }
+
         const roleId = user.role?.id;
         if (!roleId) {
           setHasPermission(false);
-          setIsLoading(false);
           return;
         }
+
         const roleResponse = await apiClient.get(`/auth/roles/${roleId}/`);
         const perms = roleResponse.data.permissions || [];
         const pagePerm = perms.find((p) => p.page === requiredPage);
-        if (!requiredPage || (pagePerm && pagePerm[`can_${requiredAction}`])) {
-          setHasPermission(true);
-        } else {
-          setHasPermission(false);
-        }
+
+        const allowed = !requiredPage || (pagePerm && pagePerm[`can_${requiredAction}`]);
+        setHasPermission(allowed);
       } catch (error) {
         console.error("Failed to fetch permissions:", error);
         setHasPermission(false);
-      } finally {
-        setIsLoading(false);
       }
     };
+
     checkPermissions();
   }, [isAuthenticated, requiredPage, requiredAction]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
-  if (!hasPermission) {
+
+  if (hasPermission === false) {
     return <Navigate to="/" replace />;
   }
+
   return children;
 };
 
@@ -113,10 +105,7 @@ function App() {
     {
       path: "/",
       element: (
-        <ProtectedRoute
-          isAuthenticated={isAuthenticated}
-          requiredPage="Dashboard"
-        >
+        <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="Dashboard">
           <Layout
             isAuthenticated={isAuthenticated}
             setIsAuthenticated={setIsAuthenticated}
@@ -133,10 +122,7 @@ function App() {
         {
           path: "/enquiries",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="enquiries"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="enquiries">
               <Enquiries />
             </ProtectedRoute>
           ),
@@ -144,10 +130,7 @@ function App() {
         {
           path: "/scheduled-surveys",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="scheduled_surveys"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="scheduled_surveys">
               <ScheduledSurveys />
             </ProtectedRoute>
           ),
@@ -155,10 +138,7 @@ function App() {
         {
           path: "/new-enquiries",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="new_enquiries"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="new_enquiries">
               <NewAssignedEnquiries />
             </ProtectedRoute>
           ),
@@ -166,10 +146,7 @@ function App() {
         {
           path: "/processing-enquiries",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="processing_enquiries"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="processing_enquiries">
               <ProcessingEnquiries />
             </ProtectedRoute>
           ),
@@ -177,10 +154,7 @@ function App() {
         {
           path: "/follow-ups",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="follow_ups"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="follow_ups">
               <FollowUps />
             </ProtectedRoute>
           ),
@@ -188,10 +162,7 @@ function App() {
         {
           path: "/survey/:surveyId/survey-details",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="survey_details"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_details">
               <SurveyDetails />
             </ProtectedRoute>
           ),
@@ -199,10 +170,7 @@ function App() {
         {
           path: "/survey/:surveyId/survey-summary",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="survey_summary"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
               <SurveySummary />
             </ProtectedRoute>
           ),
@@ -210,10 +178,7 @@ function App() {
         {
           path: "/survey/survey-summary",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="survey_summary"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
               <SurveySummary />
             </ProtectedRoute>
           ),
@@ -221,10 +186,7 @@ function App() {
         {
           path: "/pricing/local-move",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="local_move"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="local_move">
               <LocalMove />
             </ProtectedRoute>
           ),
@@ -232,10 +194,7 @@ function App() {
         {
           path: "/pricing/international-move",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="international_move"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="international_move">
               <InternationalMove />
             </ProtectedRoute>
           ),
@@ -283,10 +242,7 @@ function App() {
         {
           path: "/additional-settings/types",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="types"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="types">
               <SurveyTypes />
             </ProtectedRoute>
           ),
@@ -294,10 +250,7 @@ function App() {
         {
           path: "/additional-settings/units",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="units"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="units">
               <Units />
             </ProtectedRoute>
           ),
@@ -305,10 +258,7 @@ function App() {
         {
           path: "/additional-settings/currency",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="currency"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="currency">
               <Currency />
             </ProtectedRoute>
           ),
@@ -316,10 +266,7 @@ function App() {
         {
           path: "/additional-settings/tax",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="tax"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="tax">
               <Tax />
             </ProtectedRoute>
           ),
@@ -327,10 +274,7 @@ function App() {
         {
           path: "/additional-settings/handyman",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="handyman"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="handyman">
               <Handyman />
             </ProtectedRoute>
           ),
@@ -338,10 +282,7 @@ function App() {
         {
           path: "/additional-settings/manpower",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="manpower"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="manpower">
               <Manpower />
             </ProtectedRoute>
           ),
@@ -349,10 +290,7 @@ function App() {
         {
           path: "/additional-settings/room",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="room"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="room">
               <Room />
             </ProtectedRoute>
           ),
@@ -360,10 +298,7 @@ function App() {
         {
           path: "/profile",
           element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="Profile"
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="Profile">
               <Profile />
             </ProtectedRoute>
           ),

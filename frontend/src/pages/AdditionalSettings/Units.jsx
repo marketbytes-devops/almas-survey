@@ -3,6 +3,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
+import Loading from "../../components/Loading";
 
 const Units = () => {
   const [volumeUnits, setVolumeUnits] = useState([]);
@@ -117,7 +118,7 @@ const Units = () => {
     weight: "Weight Units",
   };
 
-  if (loading) return <div className="text-center py-4">Loading...</div>;
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading/></div>;
 
   return (
     <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg shadow-md">

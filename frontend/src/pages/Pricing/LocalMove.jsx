@@ -103,7 +103,7 @@ const LocalMove = () => {
     dropdownData,
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loading /></div>;
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-600 text-2xl">{error}</div>;
 
   return (
