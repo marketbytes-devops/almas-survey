@@ -69,9 +69,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
   }, [isAuthenticated]);
 
   const toggleSidebar = () => {
-    if (window.innerWidth < 768) {
-      setIsOpen(!isOpen);
-    }
+    setIsOpen(prev => !prev); 
   };
 
   const getActivePage = () => {
