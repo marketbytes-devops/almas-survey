@@ -1,9 +1,50 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Price
-from .serializers import PriceSerializer
+from .models import Price, AdditionalService
+from .serializers import PriceSerializer, AdditionalServiceSerializer
 from django.db import transaction
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET', 'POST'])
+def additional_services_list_create(request):
+    if request.method == 'GET':
+        services = AdditionalService.objects.all()
+        serializer = AdditionalServiceSerializer(services, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        data = request.data
+        if isinstance(data, list):
+            # Bulk upsert
+            response_data = []
+            for item in data:
+                obj_id = item.get('id')
+                if obj_id:
+                    try:
+                        obj = AdditionalService.objects.get(id=obj_id)
+                        serializer = AdditionalServiceSerializer(obj, data=item, partial=True)
+                    except AdditionalService.DoesNotExist:
+                        serializer = AdditionalServiceSerializer(data=item)
+                else:
+                    serializer = AdditionalServiceSerializer(data=item)
+                
+                if serializer.is_valid():
+                    serializer.save()
+                    response_data.append(serializer.data)
+                else:
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(response_data, status=status.HTTP_200_OK)
+        else:
+            serializer = AdditionalServiceSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
 
 class PriceViewSet(viewsets.ModelViewSet):
     queryset = Price.objects.filter(is_active=True).order_by('min_volume')
