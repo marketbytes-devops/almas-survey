@@ -25,7 +25,7 @@ export default function QuotationList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  
+
   // Signature modal state
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
@@ -66,17 +66,17 @@ export default function QuotationList() {
       const survey = surveyRes.data;
 
       const res = await apiClient.post("/quotation-create/create-draft/", {
-        survey_id: survey.id, 
+        survey_id: survey.id,
       });
 
       setSurveys((prev) =>
         prev.map((s) =>
           s.survey_id === surveyId
             ? {
-                ...s,
-                hasQuotation: true,
-                quotation_id: res.data.quotation_id,
-              }
+              ...s,
+              hasQuotation: true,
+              quotation_id: res.data.quotation_id,
+            }
             : s
         )
       );
@@ -84,16 +84,16 @@ export default function QuotationList() {
         prev.map((s) =>
           s.survey_id === surveyId
             ? {
-                ...s,
-                hasQuotation: true,
-                quotation_id: res.data.quotation_id,
-              }
+              ...s,
+              hasQuotation: true,
+              quotation_id: res.data.quotation_id,
+            }
             : s
         )
       );
 
       navigate(`/quotation-create/${surveyId}`);
-      
+
       setMessage("Draft quotation created! Opening editor...");
     } catch (err) {
       const msg = err.response?.data?.detail || "Failed to create draft quotation";
@@ -170,9 +170,9 @@ export default function QuotationList() {
               </button>
             </div>
             <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
-              <img 
-                src={currentSignature} 
-                alt="Digital Signature" 
+              <img
+                src={currentSignature}
+                alt="Digital Signature"
                 className="w-full h-auto max-h-64 object-contain"
               />
             </div>
@@ -267,21 +267,27 @@ export default function QuotationList() {
                               to={`/quotation-view/${s.quotation_id}`}
                               className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
                             >
-                              <FaEye /> View
+                              <FaEye /> View Quotation
                             </Link>
                             <Link
                               to={`/quotation-edit/${s.survey_id}`}
                               className="inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
                             >
-                              <FaEdit /> Edit
+                              <FaEdit /> Edit Quotation
                             </Link>
+                            <button
+                              onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
+                              className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                            >
+                              Delete Quotation
+                            </button>
                           </>
                         ) : (
                           <Link
                             to={`/quotation-create/${s.survey_id}`}
                             className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            Create
+                            Create Quotation
                           </Link>
                         )}
                       </td>
@@ -334,31 +340,31 @@ export default function QuotationList() {
 
                     <div className="flex flex-wrap gap-2 pt-2">
                       {!s.hasQuotation ? (
-                        <button
-                          onClick={() => handleCreateQuotation(s.survey_id)}
+                        <Link
+                          to={`/quotation-create/${s.survey_id}`}
                           className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs cursor-pointer"
                         >
-                          Create
-                        </button>
+                          Create Quotation
+                        </Link>
                       ) : (
                         <>
                           <Link
                             to={`/quotation-view/${s.quotation_id}`}
                             className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            View
+                            View Quotation
                           </Link>
                           <Link
-                            to={`/quotation-create/${s.survey_id}`} 
+                            to={`/quotation-create/${s.survey_id}`}
                             className="inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            Edit
+                            Edit Quotation
                           </Link>
                           <button
                             onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
                             className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            Delete
+                            Delete Quotation
                           </button>
                         </>
                       )}
