@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Price
+from .models import Price, AdditionalService
 
 class PriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,3 +17,10 @@ class PriceSerializer(serializers.ModelSerializer):
             })
         
         return attrs
+    
+    
+class AdditionalServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdditionalService
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
