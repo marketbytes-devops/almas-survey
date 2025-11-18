@@ -117,7 +117,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
             )}
           </div>
         </main>
-        <div className="mt-20">
+        <div className="mt-20 sm:mt-0">
           <BottomNav />
         </div>
 
