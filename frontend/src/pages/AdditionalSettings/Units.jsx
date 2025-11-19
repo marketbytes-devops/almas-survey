@@ -127,7 +127,7 @@ const Units = () => {
       
       <div className="space-y-6">
         <div className="p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-2xl font-medium mb-6">Add New Unit</h2>
+          <h2 className="text-lg sm:text-xl font-medium mb-6">Add New Unit</h2>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="flex flex-wrap gap-4 mb-4">

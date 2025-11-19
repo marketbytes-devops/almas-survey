@@ -108,8 +108,8 @@ const AdditionalServices = () => {
 
       <div className="space-y-8">
         {/* Add New Form */}
-        <div className="p-6 border border-gray-200 rounded-lg bg-gray-50">
-          <h2 className="text-2xl font-medium mb-6">Add New Survey Additional Service</h2>
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h2 className="text-lg sm:text-xl font-medium mb-6">Add New Survey Additional Service</h2>
 
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

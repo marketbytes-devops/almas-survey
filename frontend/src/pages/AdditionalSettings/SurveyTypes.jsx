@@ -164,7 +164,7 @@ const SurveyTypes = () => {
 
       {/* ---------- ADD FORM ---------- */}
       <div className="p-4 border border-gray-200 rounded-lg mb-6">
-        <h2 className="text-2xl font-medium mb-6">Add New Type</h2>
+        <h2 className="text-lg sm:text-xl font-medium mb-6">Add New Type</h2>
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Category radios */}

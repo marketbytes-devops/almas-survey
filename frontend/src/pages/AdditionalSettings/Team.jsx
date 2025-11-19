@@ -104,8 +104,8 @@ const Team = () => {
       )}
 
       <div className="space-y-6">
-        <div className="p-5 border border-gray-200 rounded-lg bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Add New Team Member</h2>
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h2 className="text-lg sm:text-xl font-medium text-gray-800 mb-4">Add New Team Member</h2>
 
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

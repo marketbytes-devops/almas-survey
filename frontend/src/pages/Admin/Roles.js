@@ -126,7 +126,7 @@ const Roles = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-2xl font-medium mb-6">Roles Management</h1>
+      <h1 className="text-lg sm:text-xl font-medium mb-6">Roles Management</h1>
       <p className="text-gray-600 mb-8">Create and manage roles for users.</p>
       {error && (
         <motion.div

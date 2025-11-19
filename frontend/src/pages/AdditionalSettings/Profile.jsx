@@ -143,7 +143,7 @@ const Profile = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4 text-center sm:text-left">
+          <h1 className="text-lg sm:text-xl font-medium text-gray-900 mb-4 text-center sm:text-left">
             Profile Settings
           </h1>
         </motion.div>
