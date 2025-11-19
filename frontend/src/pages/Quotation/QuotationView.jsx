@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaSignature, FaEye, FaPrint } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
-import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; // Your template
+import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; 
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -43,7 +43,7 @@ export default function QuotationView() {
   const [hasSignature, setHasSignature] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [showPrintPreview, setShowPrintPreview] = useState(false); // Print trigger
+  const [showPrintPreview, setShowPrintPreview] = useState(false); 
 
   const checkSignatureExists = async (surveyId) => {
     try {
@@ -111,7 +111,6 @@ export default function QuotationView() {
   const advance = quotation.advance ? parseFloat(quotation.advance) : 0;
   const balance = (totalAmount - advance).toFixed(2);
 
-  // Print Button Handler
   const handlePrint = () => {
     setShowPrintPreview(true);
     setTimeout(() => {
@@ -122,7 +121,6 @@ export default function QuotationView() {
 
   return (
     <>
-      {/* Print Preview Modal (Hidden normally, shown only during print) */}
       {showPrintPreview && (
         <div className="fixed inset-0 z-[9999] bg-white">
           <QuotationLocalMove
@@ -142,7 +140,6 @@ export default function QuotationView() {
         </div>
       )}
 
-      {/* Signature Modal */}
       {isSignatureModalOpen && currentSignature && (
         <div className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -174,7 +171,6 @@ export default function QuotationView() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] p-4 text-white">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <p><strong>Quotation ID:</strong> {quotation.quotation_id}</p>
@@ -182,8 +178,6 @@ export default function QuotationView() {
               <p><strong>Date:</strong> {quotation.date || "—"}</p>
             </div>
           </div>
-
-          {/* Client Information - 2 Columns */}
           <div className="p-6 border-b">
             <h3 className="font-semibold text-gray-800 mb-4">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -197,8 +191,6 @@ export default function QuotationView() {
               </div>
             </div>
           </div>
-
-          {/* Moving Details - 2 Columns */}
           <div className="p-6 border-b">
             <h3 className="font-semibold text-gray-800 mb-4">Moving Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -212,8 +204,6 @@ export default function QuotationView() {
               </div>
             </div>
           </div>
-
-          {/* Quotation Amount */}
           <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
             <h3 className="text-xl font-bold text-center mb-4">Quotation Amount</h3>
             <div className="text-center">
@@ -222,8 +212,6 @@ export default function QuotationView() {
               </div>
             </div>
           </div>
-
-          {/* Service Includes/Excludes */}
           <div className="p-6 border-b">
             <div className="rounded-xl overflow-hidden border-2 border-gray-300">
               <div className="grid grid-cols-2 text-white font-bold text-lg">
@@ -258,8 +246,6 @@ export default function QuotationView() {
               </div>
             </div>
           </div>
-
-          {/* Digital Signature */}
           <div className="p-6 border-b">
             <h3 className="font-semibold text-gray-800 mb-3">Digital Signature</h3>
             <div className="bg-gray-50 p-4 rounded-lg border">
@@ -288,8 +274,6 @@ export default function QuotationView() {
               )}
             </div>
           </div>
-
-          {/* Payment Details */}
           <div className="p-6 bg-gray-50">
             <h3 className="font-semibold text-gray-800 mb-4">Payment Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">

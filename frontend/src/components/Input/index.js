@@ -1,4 +1,3 @@
-// src/components/Input/index.jsx
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 
@@ -14,7 +13,7 @@ const Input = ({
   ...props 
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const context = useFormContext(); // Can be null — that's OK now
+  const context = useFormContext(); 
 
   const error = context?.formState?.errors?.[name];
   const isControlled = controlledValue !== undefined || onChange;
@@ -26,7 +25,6 @@ const Input = ({
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  // Readonly text display
   if (readOnly && type === "text") {
     return (
       <div className="flex flex-col">
@@ -44,7 +42,6 @@ const Input = ({
     );
   }
 
-  // Main input rendering
   const inputProps = {
     ...props,
     className: `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors ${
@@ -52,7 +49,6 @@ const Input = ({
     } ${type === "password" ? "pr-10" : ""}`,
   };
 
-  // If inside FormProvider and has name → use register
   if (context && name && !isControlled) {
     const { register } = context;
     const registered = register(name, rules);
@@ -112,7 +108,6 @@ const Input = ({
     );
   }
 
-  // Outside FormProvider OR controlled input → manual control
   return (
     <div className="flex flex-col">
       {type !== "checkbox" && label && (

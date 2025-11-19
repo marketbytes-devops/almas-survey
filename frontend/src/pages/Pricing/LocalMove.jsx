@@ -3,11 +3,10 @@ import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import Tab from "../../components/Tab/Tab";
-import TabPanel from "../../components/Tab/TabsPanel";
+import TabPanel from "../../components/Tab/TabPanel";
 import PricingTab from "./Tabs/Pricing";
 import AdditionalChargesTab from "./Tabs/AdditionalCharges";
 import IncludesTab from "./Tabs/Includes";
-import Exclude from "./Tabs/Exclude";
 import ExcludesTab from "./Tabs/Exclude";
 
 const TAB_LIST = [
@@ -109,11 +108,8 @@ const LocalMove = () => {
   return (
     <FormProvider {...methods}>
       <div className="bg-gray-50 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">Local Move Configuration</h1>
-          
+        <div className="w-full">          
           <Tab tabs={TAB_LIST} activeTab={activeTab} setActiveTab={setActiveTab} />
-
           {TAB_LIST.map(tab => (
             <TabPanel key={tab.id} activeTab={activeTab} tabId={tab.id}>
               {tab.component ? (
@@ -121,7 +117,7 @@ const LocalMove = () => {
               ) : (
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
                   <p className="text-3xl font-bold text-gray-700 mb-4">{tab.label}</p>
-                  <p className="text-lg text-gray-500">This section is under development</p>
+                  <p className="text-lg text-gray-500">Coming Soon...</p>
                 </div>
               )}
             </TabPanel>
