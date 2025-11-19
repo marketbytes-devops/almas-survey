@@ -22,6 +22,7 @@ const routeNames = {
   "/additional-settings/handyman": "Handyman",
   "/additional-settings/manpower": "Manpower",
   "/additional-settings/room": "Room",
+  "/additional-settings/additional-services": "Additional Services",
   "/user-roles/roles": "Roles",
   "/user-roles/users": "Users",
   "/user-roles/permissions": "Permissions",
@@ -192,8 +193,8 @@ const Topbar = ({ toggleSidebar, sidebarOpen, user, setIsAuthenticated }) => {
         {feedback.show && (
           <div
             className={`px-8 py-4 rounded-2xl shadow-2xl font-bold text-white flex items-center gap-3 backdrop-blur-xl border ${feedback.type === "success"
-                ? "bg-gradient-to-r from-green-500 to-emerald-600 border-green-300"
-                : "bg-gradient-to-r from-red-500 to-rose-600 border-red-300"
+              ? "bg-gradient-to-r from-green-500 to-emerald-600 border-green-300"
+              : "bg-gradient-to-r from-red-500 to-rose-600 border-red-300"
               }`}
           >
             {feedback.type === "success" ? "Success" : "Error"}

@@ -65,6 +65,7 @@ def set_default_permissions(sender, instance, created, **kwargs):
             {'page': 'handyman', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'manpower', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'room', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
+            {'page': 'additional-services', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
 
             # User Role Pages
             {'page': 'users', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},

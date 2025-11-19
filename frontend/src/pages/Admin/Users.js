@@ -199,7 +199,7 @@ const Users = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-2xl font-bold mb-6">User Management</h1>
+      <h1 className="text-2xl font-medium mb-6">User Management</h1>
       <p className="text-gray-600 mb-8">
         Create and manage users and their roles.
       </p>

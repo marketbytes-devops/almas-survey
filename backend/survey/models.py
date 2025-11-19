@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from contact.models import Enquiry
-from additional_settings.models import CustomerType, ServiceType, Room, VolumeUnit, WeightUnit, PackingType, Handyman, Currency, VehicleType
+from additional_settings.models import CustomerType, ServiceType, Room, VolumeUnit, WeightUnit, PackingType, Handyman, Currency, VehicleType, SurveyAdditionalService
 
 class Survey(models.Model):
     enquiry = models.ForeignKey(
@@ -37,10 +37,7 @@ class Survey(models.Model):
     survey_start_time = models.TimeField(blank=True, null=True)
     survey_end_time = models.TimeField(blank=True, null=True)
     work_description = models.TextField(blank=True, null=True)
-    include_vehicle = models.BooleanField(default=False, blank=True, null=True)
-    include_pet = models.BooleanField(default=False, blank=True, null=True)
-    cost_together_vehicle = models.BooleanField(default=False, blank=True, null=True)
-    cost_together_pet = models.BooleanField(default=False, blank=True, null=True)
+
     same_as_customer_address = models.BooleanField(default=False, blank=True, null=True)
     origin_address = models.TextField(blank=True, null=True)
     origin_city = models.CharField(max_length=100, blank=True, null=True)
@@ -49,6 +46,7 @@ class Survey(models.Model):
     origin_zip = models.CharField(max_length=20, blank=True, null=True)
     pod_pol = models.CharField(max_length=100, blank=True, null=True)
     multiple_addresses = models.BooleanField(default=False, blank=True, null=True)
+
     packing_date_from = models.DateField(blank=True, null=True)
     packing_date_to = models.DateField(blank=True, null=True)
     loading_date = models.DateField(blank=True, null=True)
@@ -60,6 +58,7 @@ class Survey(models.Model):
     storage_duration = models.CharField(max_length=50, blank=True, null=True)
     storage_mode = models.CharField(max_length=50, blank=True, null=True)
     transport_mode = models.CharField(max_length=50, blank=True, null=True)
+
     general_owner_packed = models.BooleanField(default=False, blank=True, null=True)
     general_owner_packed_notes = models.TextField(blank=True, null=True)
     general_restriction = models.BooleanField(default=False, blank=True, null=True)
@@ -68,6 +67,7 @@ class Survey(models.Model):
     general_handyman_notes = models.TextField(blank=True, null=True)
     general_insurance = models.BooleanField(default=False, blank=True, null=True)
     general_insurance_notes = models.TextField(blank=True, null=True)
+
     origin_floor = models.BooleanField(default=False, blank=True, null=True)
     origin_floor_notes = models.TextField(blank=True, null=True)
     origin_lift = models.BooleanField(default=False, blank=True, null=True)
@@ -76,23 +76,25 @@ class Survey(models.Model):
     origin_parking_notes = models.TextField(blank=True, null=True)
     origin_storage = models.BooleanField(default=False, blank=True, null=True)
     origin_storage_notes = models.TextField(blank=True, null=True)
+
     destination_floor = models.BooleanField(default=False, blank=True, null=True)
     destination_floor_notes = models.TextField(blank=True, null=True)
     destination_lift = models.BooleanField(default=False, blank=True, null=True)
     destination_lift_notes = models.TextField(blank=True, null=True)
     destination_parking = models.BooleanField(default=False, blank=True, null=True)
-    signature = models.FileField(
-        upload_to='signatures/',
-        null=True,
-        blank=True,
-        help_text='Customer signature file'
-    )
     destination_parking_notes = models.TextField(blank=True, null=True)
+
+    signature = models.FileField(upload_to='signatures/', null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
-
-
+    
+    additional_services = models.ManyToManyField(
+        'additional_settings.SurveyAdditionalService',
+        blank=True,
+        related_name='surveys'
+    )
+    
     class Meta:
         indexes = [
             models.Index(fields=["enquiry"]),
@@ -103,7 +105,6 @@ class Survey(models.Model):
     def save(self, *args, **kwargs):
         if not self.status:
             self.status = 'pending'
-            
         if not self.survey_id:
             self.survey_id = f"SURVEY-{self.enquiry.id if self.enquiry else 'TEMP'}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
         super().save(*args, **kwargs)
@@ -139,25 +140,13 @@ class Article(models.Model):
     handyman = models.ForeignKey(Handyman, on_delete=models.SET_NULL, null=True, blank=True)
     packing_option = models.ForeignKey(PackingType, on_delete=models.SET_NULL, null=True, blank=True)
     move_status = models.CharField(max_length=50, blank=True, null=True)
-    amount = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
-    currency = models.ForeignKey(Currency, on_delete=models.SET_NULL, null=True, blank=True)
     remarks = models.TextField(blank=True, null=True)
-    length = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Length in cm")
-    width = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Width in cm")
-    height = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Height in cm")
-    calculated_volume = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True, help_text="Auto-calculated volume (L×W×H/1000000)")
+    length = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True)
+    width = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True)
+    height = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True)
+    calculated_volume = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=["survey"]),
-            models.Index(fields=["room"]),
-            models.Index(fields=["created_at"]),
-        ]
-
-    def __str__(self):
-        return f"{self.item_name} (Qty: {self.quantity})"
-    
     def save(self, *args, **kwargs):
         if self.length and self.width and self.height:
             self.calculated_volume = (self.length * self.width * self.height) / 1000000
@@ -170,17 +159,7 @@ class Vehicle(models.Model):
     model = models.CharField(max_length=100, blank=True, null=True)
     insurance = models.BooleanField(default=False, blank=True, null=True)
     remark = models.TextField(blank=True, null=True)
-    transport_mode = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=["survey"]),
-            models.Index(fields=["created_at"]),
-        ]
-
-    def __str__(self):
-        return f"{self.make} {self.model}"
 
 class Pet(models.Model):
     survey = models.ForeignKey(Survey, related_name='pets', on_delete=models.CASCADE, null=True, blank=True)
@@ -204,3 +183,4 @@ class Pet(models.Model):
 
     def __str__(self):
         return f"{self.pet_name} ({self.pet_type})"
+    

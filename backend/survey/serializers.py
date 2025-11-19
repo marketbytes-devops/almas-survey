@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Survey, DestinationAddress, Article, Vehicle, Pet
 from additional_settings.models import (
     CustomerType, Room, VolumeUnit, WeightUnit, 
-    PackingType, Handyman, Currency, VehicleType, PetType, Item
+    PackingType, Handyman, Currency, VehicleType, PetType, Item, SurveyAdditionalService
 )
 from contact.models import Enquiry
 from django.db import transaction
@@ -57,41 +57,17 @@ class ArticleSerializer(serializers.ModelSerializer):
     handyman_name = serializers.CharField(source='handyman.type_name', read_only=True, allow_null=True)
     packing_option = serializers.PrimaryKeyRelatedField(queryset=PackingType.objects.all(), allow_null=True)
     packing_option_name = serializers.CharField(source='packing_option.name', read_only=True, allow_null=True)
-    currency = serializers.PrimaryKeyRelatedField(queryset=Currency.objects.all(), allow_null=True)
-    currency_code = serializers.CharField(source='currency.name', read_only=True, allow_null=True)
 
     class Meta:
         model = Article
         fields = [
             'id', 'room', 'room_name', 'item_name', 'quantity',
-            'volume', 'volume_unit', 'volume_unit_name', 'weight', 'weight_unit', 'weight_unit_name',
+            'volume', 'volume_unit', 'volume_unit_name',
+            'weight', 'weight_unit', 'weight_unit_name',
             'handyman', 'handyman_name', 'packing_option', 'packing_option_name',
-            'move_status', 'amount', 'currency', 'currency_code', 'remarks', 'created_at',
-            'length', 'width', 'height', 'calculated_volume' 
+            'move_status', 'remarks', 'length', 'width', 'height', 'calculated_volume', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at']
-
-    def validate(self, data):
-        room = data.get('room')
-        item_name = data.get('item_name')
-        if room and item_name:
-            if not Item.objects.filter(room=room, name=item_name).exists():
-                raise serializers.ValidationError({
-                    'item_name': f"Invalid item '{item_name}' for room '{room.name}'. Please select a valid item."
-                })
-        if data.get('volume') is not None and not data.get('volume_unit'):
-            raise serializers.ValidationError({
-                'volume_unit': 'Volume unit is required when volume is provided.'
-            })
-        if data.get('weight') is not None and not data.get('weight_unit'):
-            raise serializers.ValidationError({
-                'weight_unit': 'Weight unit is required when weight is provided.'
-            })
-        if data.get('amount') is not None and not data.get('currency'):
-            raise serializers.ValidationError({
-                'currency': 'Currency is required when amount is provided.'
-            })
-        return data
+        read_only_fields = ['id', 'created_at', 'calculated_volume']
 
 class VehicleSerializer(serializers.ModelSerializer):
     vehicle_type = serializers.PrimaryKeyRelatedField(queryset=VehicleType.objects.all(), allow_null=True)
@@ -99,18 +75,8 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehicle
-        fields = [
-            'id', 'vehicle_type', 'vehicle_type_name', 'make', 'model',
-            'insurance', 'remark', 'transport_mode', 'created_at'
-        ]
+        fields = ['id', 'vehicle_type', 'vehicle_type_name', 'make', 'model', 'insurance', 'remark', 'created_at']
         read_only_fields = ['id', 'created_at']
-
-    def validate(self, data):
-        if data.get('transport_mode') and data.get('transport_mode') not in [choice[0] for choice in TRANSPORT_MODE_CHOICES]:
-            raise serializers.ValidationError({
-                'transport_mode': f"Invalid transport mode. Choose from {', '.join([choice[0] for choice in TRANSPORT_MODE_CHOICES])}."
-            })
-        return data
 
 class PetSerializer(serializers.ModelSerializer):
     pet_type = serializers.PrimaryKeyRelatedField(queryset=PetType.objects.all(), allow_null=True)
@@ -124,199 +90,117 @@ class PetSerializer(serializers.ModelSerializer):
             'medication', 'vaccination_status', 'behavior_notes', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+        
+class SurveyAdditionalServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SurveyAdditionalService
+        fields = ['id', 'name']
+        
 class SurveySerializer(serializers.ModelSerializer):
     destination_addresses = DestinationAddressSerializer(many=True, required=False)
     articles = ArticleSerializer(many=True, required=False)
     vehicles = VehicleSerializer(many=True, required=False)
-    pets = PetSerializer(many=True, required=False)
 
-    customer_type = serializers.PrimaryKeyRelatedField(
-        queryset=CustomerType.objects.all(), allow_null=True, required=False
-    )
+    customer_type = serializers.PrimaryKeyRelatedField(queryset=CustomerType.objects.all(), allow_null=True, required=False)
     customer_type_name = serializers.CharField(source='customer_type.name', read_only=True, allow_null=True)
-    
-    full_name = serializers.CharField(max_length=100, required=False, allow_blank=True, allow_null=True)
-    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
-    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
-    service_type = serializers.CharField(max_length=50, required=False, allow_blank=True, allow_null=True)
-    
-    service_type_display = serializers.SerializerMethodField()
-    
-    status = serializers.ChoiceField(
-        choices=STATUS_CHOICES, 
-        allow_null=True, 
-        required=False,
-        default='pending' 
-    )
-    storage_frequency = serializers.ChoiceField(
-        choices=STORAGE_FREQUENCY_CHOICES, allow_null=True, required=False
-    )
-    storage_mode = serializers.ChoiceField(
-        choices=STORAGE_MODE_CHOICES, allow_null=True, required=False
-    )
-    transport_mode = serializers.ChoiceField(
-        choices=TRANSPORT_MODE_CHOICES, allow_null=True, required=False
-    )
 
-    enquiry_service_type = serializers.CharField(source='enquiry.serviceType', read_only=True)
-    message = serializers.CharField(source='enquiry.message', read_only=True)
-    note = serializers.CharField(source='enquiry.note', read_only=True)
-    enquiry_survey_date = serializers.DateTimeField(source='enquiry.survey_date', read_only=True)
-    assigned_user_email = serializers.CharField(source='enquiry.assigned_user.email', read_only=True)
-    
-    enquiry = serializers.PrimaryKeyRelatedField(
-        queryset=Enquiry.objects.all(), required=False, allow_null=True
-    )
+    service_type_display = serializers.SerializerMethodField()
     signature_url = serializers.SerializerMethodField()
     signature_uploaded = serializers.SerializerMethodField()
+    
+    additional_services = SurveyAdditionalServiceSerializer(many=True, read_only=True)
+    additional_service_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
     
     class Meta:
         model = Survey
         fields = [
             'id', 'enquiry', 'customer_type', 'customer_type_name', 'is_military', 'salutation',
-            'full_name', 'phone_number', 'email', 'address', 'company', 'survey_id', 
-            'service_type', 'service_type_display', 'goods_type', 'status', 'survey_date', 
-            'survey_start_time', 'survey_end_time', 'work_description', 'include_vehicle', 
-            'include_pet', 'cost_together_vehicle', 'cost_together_pet', 
-            'same_as_customer_address', 'origin_address', 'origin_city', 'origin_country', 
-            'origin_state', 'origin_zip', 'pod_pol', 'multiple_addresses', 'destination_addresses', 
-            'packing_date_from', 'packing_date_to', 'loading_date', 'eta', 'etd', 
-            'est_delivery_date', 'storage_start_date', 'storage_frequency', 'storage_duration', 
-            'storage_mode', 'transport_mode', 'general_owner_packed', 'general_owner_packed_notes', 
-            'general_restriction', 'general_restriction_notes', 'general_handyman', 
-            'general_handyman_notes', 'general_insurance', 'general_insurance_notes', 
-            'origin_floor', 'origin_floor_notes', 'origin_lift', 'origin_lift_notes', 
-            'origin_parking', 'origin_parking_notes', 'origin_storage', 'origin_storage_notes', 
-            'destination_floor', 'destination_floor_notes', 'destination_lift', 
-            'destination_lift_notes', 'destination_parking', 'destination_parking_notes', 
-            'articles', 'vehicles', 'pets', 'enquiry_service_type', 'message', 'note', 
-            'enquiry_survey_date', 'assigned_user_email', 'created_at', 'updated_at', 'signature',
-            'signature_url', 'signature_uploaded'  # ADD THESE TWO FIELDS HERE
+            'full_name', 'phone_number', 'email', 'address', 'company', 'survey_id',
+            'service_type', 'service_type_display', 'goods_type', 'status', 'survey_date',
+            'survey_start_time', 'survey_end_time', 'work_description',
+            'same_as_customer_address', 'origin_address', 'origin_city', 'origin_country',
+            'origin_state', 'origin_zip', 'pod_pol', 'multiple_addresses', 'destination_addresses',
+            'packing_date_from', 'packing_date_to', 'loading_date', 'eta', 'etd', 'est_delivery_date',
+            'storage_start_date', 'storage_frequency', 'storage_duration', 'storage_mode', 'transport_mode',
+            'general_owner_packed', 'general_owner_packed_notes', 'general_restriction', 'general_restriction_notes',
+            'general_handyman', 'general_handyman_notes', 'general_insurance', 'general_insurance_notes',
+            'origin_floor', 'origin_floor_notes', 'origin_lift', 'origin_lift_notes',
+            'origin_parking', 'origin_parking_notes', 'origin_storage', 'origin_storage_notes',
+            'destination_floor', 'destination_floor_notes', 'destination_lift', 'destination_lift_notes',
+            'destination_parking', 'destination_parking_notes',
+            'articles', 'vehicles', 'created_at', 'updated_at', 'signature', 'signature_url', 'signature_uploaded',
+            'additional_services', 'additional_service_ids'  
         ]
-        read_only_fields = [
-            'id', 'survey_id', 'created_at', 'updated_at', 
-            'enquiry_service_type', 'message', 'note', 'enquiry_survey_date', 'assigned_user_email',
-            'service_type_display', 'signature_url', 'signature_uploaded'  # ADD THEM HERE TOO
-        ]
+        read_only_fields = ['id', 'survey_id', 'created_at', 'updated_at', 'service_type_display', 'signature_url', 'signature_uploaded', 'additional_services']
 
-    def get_phone_number(self, obj):
-        """Get phone number from Survey first, then fallback to Enquiry"""
-        if obj.phone_number:
-            return obj.phone_number
-        if obj.enquiry and obj.enquiry.phoneNumber:
-            return obj.enquiry.phoneNumber
-        return None
-    
     def get_service_type_display(self, obj):
-        """Get display name for service type - check both Survey and Enquiry"""
         if obj.service_type:
             return SERVICE_TYPE_DISPLAY.get(obj.service_type, obj.service_type)
         if obj.enquiry and obj.enquiry.serviceType:
             return SERVICE_TYPE_DISPLAY.get(obj.enquiry.serviceType, obj.enquiry.serviceType)
         return "N/A"
-    
+
     def get_signature_url(self, obj):
-        """Get absolute URL for signature file"""
-        if obj.signature:
+        if obj.signature and hasattr(obj.signature, 'url'):
             request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.signature.url)
-            return obj.signature.url
+            return request.build_absolute_uri(obj.signature.url) if request else obj.signature.url
         return None
-    
+
     def get_signature_uploaded(self, obj):
-        """Check if signature has been uploaded"""
         return bool(obj.signature)
 
-    def validate_customer_type(self, value):
-        if value is not None and not CustomerType.objects.filter(id=value.id).exists():
-            raise serializers.ValidationError("Invalid customer type ID.")
-        return value
-
-    def validate(self, data):
-        if data.get("same_as_customer_address") and not data.get("address"):
-            raise serializers.ValidationError(
-                {"address": "Customer address is required when same_as_customer_address is true"}
-            )
-        if data.get("multiple_addresses") and not data.get("destination_addresses"):
-            raise serializers.ValidationError(
-                {"destination_addresses": "At least one destination address is required when multiple_addresses is true"}
-            )
-        return data
-    
-    def validate(self, data):
-        country_fields = ['origin_country', 'destination_country']
-        for field in country_fields:
-            if data.get(field):
-                pass
-        
-        state_fields = ['origin_state', 'destination_state']
-        for field in state_fields:
-            if data.get(field):
-                pass
-        
-        if data.get("same_as_customer_address") and not data.get("address"):
-            raise serializers.ValidationError(
-                {"address": "Customer address is required when same_as_customer_address is true"}
-            )
-        if data.get("multiple_addresses") and not data.get("destination_addresses"):
-            raise serializers.ValidationError(
-                {"destination_addresses": "At least one destination address is required when multiple_addresses is true"}
-            )
-        return data
-
     def create(self, validated_data):
-        if 'status' not in validated_data or validated_data['status'] is None:
-            validated_data['status'] = 'pending'
-        
+        additional_service_ids = validated_data.pop('additional_service_ids', [])
         destination_addresses_data = validated_data.pop("destination_addresses", [])
         articles_data = validated_data.pop("articles", [])
         vehicles_data = validated_data.pop("vehicles", [])
-        pets_data = validated_data.pop("pets", [])
 
         with transaction.atomic():
             survey = Survey.objects.create(**validated_data)
-
-            for address_data in destination_addresses_data:
-                DestinationAddress.objects.create(survey=survey, **address_data)
-            for article_data in articles_data:
-                Article.objects.create(survey=survey, **article_data)
-            for vehicle_data in vehicles_data:
-                Vehicle.objects.create(survey=survey, **vehicle_data)
-            for pet_data in pets_data:
-                Pet.objects.create(survey=survey, **pet_data)
+            
+            if additional_service_ids:
+                survey.additional_services.set(additional_service_ids)
+                
+            for addr in destination_addresses_data:
+                DestinationAddress.objects.create(survey=survey, **addr)
+            for article in articles_data:
+                Article.objects.create(survey=survey, **article)
+            for vehicle in vehicles_data:
+                Vehicle.objects.create(survey=survey, **vehicle)
 
         return survey
 
     def update(self, instance, validated_data):
+        additional_service_ids = validated_data.pop('additional_service_ids', [])
         destination_addresses_data = validated_data.pop("destination_addresses", None)
         articles_data = validated_data.pop("articles", None)
         vehicles_data = validated_data.pop("vehicles", None)
-        pets_data = validated_data.pop("pets", None)
 
         with transaction.atomic():
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)
             instance.save()
+            
+            if additional_service_ids is not None:
+                instance.additional_services.set(additional_service_ids)
 
             if destination_addresses_data is not None:
                 instance.destination_addresses.all().delete()
-                for address_data in destination_addresses_data:
-                    DestinationAddress.objects.create(survey=instance, **address_data)
+                for addr in destination_addresses_data:
+                    DestinationAddress.objects.create(survey=instance, **addr)
 
             if articles_data is not None:
                 instance.articles.all().delete()
-                for article_data in articles_data:
-                    Article.objects.create(survey=instance, **article_data)
+                for article in articles_data:
+                    Article.objects.create(survey=instance, **article)
 
             if vehicles_data is not None:
                 instance.vehicles.all().delete()
-                for vehicle_data in vehicles_data:
-                    Vehicle.objects.create(survey=instance, **vehicle_data)
-
-            if pets_data is not None:
-                instance.pets.all().delete()
-                for pet_data in pets_data:
-                    Pet.objects.create(survey=instance, **pet_data)
+                for vehicle in vehicles_data:
+                    Vehicle.objects.create(survey=instance, **vehicle)
 
         return instance

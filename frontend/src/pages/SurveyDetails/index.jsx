@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaPlus, FaMinus, FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck } from "react-icons/fa";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
@@ -12,15 +11,27 @@ import apiClient from "../../api/apiClient";
 import { Country, State, City } from "country-state-city";
 
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
-  const { setValue, watch, formState: { errors } } = useFormContext();
+  const methods = useFormContext();
+  if (!methods) return null;
+
+  const { setValue, watch, formState: { errors } } = methods;
   const value = watch(name);
-  const error = errors[name];
+  const error = errors?.[name];
+
+  const inputClasses = `
+    w-full px-3 py-2 text-sm border rounded-md 
+    transition-all duration-200 
+    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50
+    ${error ? "border-red-500" : "border-gray-300"}
+    ${value ? "text-black" : "text-black"}
+  `;
+
   return (
-    <div className="flex flex-col">
+    <div className="w-full">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-        {rules.required && <span className="text-red-500"> *</span>}
+        {label} {rules?.required && <span className="text-red-500">*</span>}
       </label>
+
       <DatePicker
         selected={value}
         onChange={(date) => setValue(name, date, { shouldValidate: true })}
@@ -29,102 +40,15 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
         timeIntervals={15}
         timeCaption="Time"
         dateFormat={isTimeOnly ? "h:mm aa" : "MM/dd/yyyy"}
-        className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none transition-colors ${error ? "border-red-500" : "border-black"}`}
+        className={inputClasses}
+        wrapperClassName="w-full"
+        placeholderText={isTimeOnly ? "Select time" : "Select date"}
+        popperClassName="z-50"
+        calendarClassName="shadow-lg border border-gray-200"
       />
-      {error && <p className="mt-1 text-xs text-red-500">{error.message}</p>}
-    </div>
-  );
-};
 
-const QuantityInput = ({ label, name, rules = {}, onChange }) => {
-  const { setValue, watch, formState: { errors } } = useFormContext();
-  const value = watch(name) || 0;
-  const error = errors[name];
-
-  const increment = () => {
-    const newValue = value + 1;
-    setValue(name, newValue, { shouldValidate: true });
-    if (onChange) onChange(newValue);
-  };
-
-  const decrement = () => {
-    if (value > 0) {
-      const newValue = value - 1;
-      setValue(name, newValue, { shouldValidate: true });
-      if (onChange) onChange(newValue);
-    }
-  };
-
-  return (
-    <div className="flex flex-col w-full items-center">
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-          {rules.required && <span className="text-red-500"> *</span>}
-        </label>
-      )}
-      <div className="flex items-center justify-center">
-        <button
-          type="button"
-          onClick={decrement}
-          className="p-2 bg-gray-200 rounded-l-md hover:bg-gray-300 transition-colors"
-        >
-          <FaMinus className="w-3 h-3" />
-        </button>
-        <input
-          type="number"
-          value={value}
-          readOnly
-          className="w-16 text-center px-3 py-2 text-sm border-t border-b border-gray-300 focus:outline-none"
-        />
-        <button
-          type="button"
-          onClick={increment}
-          className="p-2 bg-gray-200 rounded-r-md hover:bg-gray-300 transition-colors"
-        >
-          <FaPlus className="w-3 h-3" />
-        </button>
-      </div>
-      {error && <p className="mt-2 text-xs text-red-500">{error.message}</p>}
-    </div>
-  );
-};
-
-const ServiceCheckbox = ({ label, name, rules = {}, notesName, notesRules = {} }) => {
-  const { watch, setValue, register } = useFormContext();
-  const isChecked = watch(name);
-
-  const handleCheckboxChange = (e) => {
-    const checked = e.target.checked;
-    setValue(name, checked, { shouldValidate: true });
-    if (!checked) {
-      setValue(notesName, "", { shouldValidate: true });
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          {...register(name)}
-          checked={isChecked}
-          onChange={handleCheckboxChange}
-          className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-black rounded"
-          aria-label={label}
-        />
-        <span className="ml-2 text-sm text-gray-700">{label}</span>
-      </label>
-      {isChecked && (
-        <div>
-          <Input
-            label="Notes"
-            name={notesName}
-            type="textarea"
-            rules={notesRules}
-            placeholder="Enter additional notes..."
-          />
-        </div>
+      {error && (
+        <p className="mt-1 text-xs text-red-500">{error.message || "This field is required"}</p>
       )}
     </div>
   );
@@ -138,6 +62,10 @@ const SurveyDetails = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [existingSurvey, setExistingSurvey] = useState(null);
+  const { customerData: initialCustomerData } = location.state || {};
+  const [showArticlesSidebar, setShowArticlesSidebar] = useState(false);
+
   const [apiData, setApiData] = useState({
     customerTypes: [],
     volumeUnits: [],
@@ -145,15 +73,9 @@ const SurveyDetails = () => {
     packingTypes: [],
     handymanTypes: [],
     vehicleTypes: [],
-    petTypes: [],
     rooms: [],
     items: [],
-    currencies: [],
-    serviceTypes: [],
   });
-  const [existingSurvey, setExistingSurvey] = useState(null);
-
-  const { customerData: initialCustomerData } = location.state || {};
 
   const methods = useForm({
     defaultValues: {
@@ -167,17 +89,12 @@ const SurveyDetails = () => {
       serviceType: initialCustomerData?.serviceType || "",
       address: "",
       company: "",
-      goodsType: "",
+      goodsType: "article",
       status: "pending",
       surveyDate: initialCustomerData?.surveyDate || null,
       surveyStartTime: initialCustomerData?.surveyStartTime || null,
       surveyEndTime: null,
       workDescription: "",
-      includeVehicle: false,
-      includePet: false,
-      costTogetherVehicle: false,
-      costTogetherPet: false,
-      sameAsCustomerAddress: false,
       originAddress: "",
       originCity: "",
       originCountry: "",
@@ -185,17 +102,7 @@ const SurveyDetails = () => {
       originZip: "",
       podPol: "",
       multipleAddresses: false,
-      destinationAddresses: [
-        {
-          id: uuidv4(),
-          address: "",
-          city: "",
-          country: "",
-          state: "",
-          zip: "",
-          poe: "",
-        },
-      ],
+      destinationAddresses: [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
       packingDateFrom: null,
       packingDateTo: null,
       loadingDate: null,
@@ -209,328 +116,167 @@ const SurveyDetails = () => {
       transportMode: "road",
       articles: [],
       vehicles: [],
-      pets: [],
-      generalOwnerPacked: false,
-      generalOwnerPackedNotes: "",
-      generalRestriction: false,
-      generalRestrictionNotes: "",
-      generalHandyman: false,
-      generalHandymanNotes: "",
-      generalInsurance: false,
-      generalInsuranceNotes: "",
-      originFloor: false,
-      originFloorNotes: "",
-      originLift: false,
-      originLiftNotes: "",
-      originParking: false,
-      originParkingNotes: "",
-      originStorage: false,
-      originStorageNotes: "",
-      destinationFloor: false,
-      destinationFloorNotes: "",
-      destinationLift: false,
-      destinationLiftNotes: "",
-      destinationParking: false,
-      destinationParkingNotes: "",
+      additionalServices: [],
     },
   });
 
   const { handleSubmit, watch, setValue, reset, register } = methods;
-
   const hasReset = useRef(false);
 
   useEffect(() => {
     if (surveyId) {
       setIsLoading(true);
-      apiClient
-        .get(`/surveys/?enquiry_id=${surveyId}`)
-        .then((response) => {
-          if (response.data.length > 0) {
-            const survey = response.data[0];
-            setExistingSurvey(survey);
-            const surveyDateTime = survey.survey_date ? new Date(survey.survey_date) : null;
-            const surveyStartTime = survey.survey_start_time
-              ? new Date(`1970-01-01T${survey.survey_start_time}`)
-              : null;
-            const surveyEndTime = survey.survey_end_time
-              ? new Date(`1970-01-01T${survey.survey_end_time}`)
-              : null;
-            reset({
-              enquiry: survey.enquiry || surveyId,
-              customerType: survey.customer_type?.id || survey.customer_type || "",
-              isMilitary: survey.is_military || false,
-              salutation: survey.salutation || "",
-              fullName: survey.full_name || initialCustomerData?.fullName || "",
-              phoneNumber: survey.mobile_number || initialCustomerData?.phoneNumber || "",
-              email: survey.email || initialCustomerData?.email || "",
-              serviceType: survey.service_type || initialCustomerData?.serviceType || "",
-              address: survey.address || "",
-              company: survey.company || "",
-              goodsType: survey.goods_type || "",
-              status: survey.status || "pending",
-              surveyDate: surveyDateTime,
-              surveyStartTime: surveyStartTime,
-              surveyEndTime: surveyEndTime,
-              workDescription: survey.work_description || "",
-              includeVehicle: survey.include_vehicle || false,
-              includePet: survey.include_pet || false,
-              costTogetherVehicle: survey.cost_together_vehicle || false,
-              costTogetherPet: survey.cost_together_pet || false,
-              sameAsCustomerAddress: survey.same_as_customer_address || false,
-              originAddress: survey.origin_address || "",
-              originCity: survey.origin_city || "",
-              originCountry: survey.origin_country || "",
-              originState: survey.origin_state || "",
-              originZip: survey.origin_zip || "",
-              podPol: survey.pod_pol || "",
-              multipleAddresses: survey.multiple_addresses || false,
-              destinationAddresses: survey.destination_addresses?.length > 0
-                ? survey.destination_addresses.map((addr) => ({
-                  id: uuidv4(),
-                  address: addr.address || "",
-                  city: addr.city || "",
-                  country: addr.country || "",
-                  state: addr.state || "",
-                  zip: addr.zip || "",
-                  poe: addr.poe || "",
-                }))
-                : [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
-              packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
-              packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
-              loadingDate: survey.loading_date ? new Date(survey.loading_date) : null,
-              eta: survey.eta ? new Date(survey.eta) : null,
-              etd: survey.etd ? new Date(survey.etd) : null,
-              estDeliveryDate: survey.est_delivery_date ? new Date(survey.est_delivery_date) : null,
-              storageStartDate: survey.storage_start_date ? new Date(survey.storage_start_date) : null,
-              storageFrequency: survey.storage_frequency || "",
-              storageDuration: survey.storage_duration || "",
-              storageMode: survey.storage_mode || "",
-              transportMode: survey.transport_mode || "road",
-              generalOwnerPacked: survey.general_owner_packed || false,
-              generalOwnerPackedNotes: survey.general_owner_packed_notes || "",
-              generalRestriction: survey.general_restriction || false,
-              generalRestrictionNotes: survey.general_restriction_notes || "",
-              generalHandyman: survey.general_handyman || false,
-              generalHandymanNotes: survey.general_handyman_notes || "",
-              generalInsurance: survey.general_insurance || false,
-              generalInsuranceNotes: survey.general_insurance_notes || "",
-              originFloor: survey.origin_floor || false,
-              originFloorNotes: survey.origin_floor_notes || "",
-              originLift: survey.origin_lift || false,
-              originLiftNotes: survey.origin_lift_notes || "",
-              originParking: survey.origin_parking || false,
-              originParkingNotes: survey.origin_parking_notes || "",
-              originStorage: survey.origin_storage || false,
-              originStorageNotes: survey.origin_storage_notes || "",
-              destinationFloor: survey.destination_floor || false,
-              destinationFloorNotes: survey.destination_floor_notes || "",
-              destinationLift: survey.destination_lift || false,
-              destinationLiftNotes: survey.destination_lift_notes || "",
-              destinationParking: survey.destination_parking || false,
-              destinationParkingNotes: survey.destination_parking_notes || "",
-              articles: survey.articles?.map((article) => ({
-                id: uuidv4(),
-                itemName: article.item_name || "",
-                quantity: article.quantity || 0,
-                volume: article.volume || "",
-                volumeUnit: article.volume_unit || "",
-                weight: article.weight || "",
-                weightUnit: article.weight_unit || "",
-                handyman: article.handyman || "",
-                packingOption: article.packing_option || "",
-                moveStatus: article.move_status || "",
-                amount: article.amount || "",
-                currency: article.currency || "",
-                remarks: article.remarks || "",
-                room: article.room || "",
-                length: article.length || "",
-                width: article.width || "",
-                height: article.height || "",
-                calculated_volume: article.calculated_volume || "",
-              })) || [],
-              vehicles: survey.vehicles?.map((vehicle) => ({
-                vehicleType: vehicle.vehicle_type || "",
-                make: vehicle.make || "",
-                model: vehicle.model || "",
-                insurance: vehicle.insurance || false,
-                remark: vehicle.remark || "",
-                transportMode: vehicle.transport_mode || "",
-              })) || [],
-              pets: survey.pets?.map((pet) => ({
-                id: pet.id || Date.now(),
-                petName: pet.pet_name || "",
-                petType: pet.pet_type || "",
-                breed: pet.breed || "",
-                age: pet.age || 0,
-                weight: pet.weight || 0,
-                specialCare: pet.special_care || "",
-                transportRequirements: pet.transport_requirements || "",
-                feedingInstructions: pet.feeding_instructions || "",
-                medication: pet.medication || "",
-                vaccinationStatus: pet.vaccination_status || "",
-                behaviorNotes: pet.behavior_notes || "",
-              })) || [],
-            });
-            hasReset.current = true;
-          } else {
-            reset({
-              ...methods.getValues(),
-              enquiry: surveyId,
-              fullName: initialCustomerData?.fullName || "",
-              phoneNumber: initialCustomerData?.phoneNumber || "",
-              email: initialCustomerData?.email || "",
-              serviceType: initialCustomerData?.serviceType || "",
-              surveyDate: initialCustomerData?.surveyDate || null,
-              surveyStartTime: initialCustomerData?.surveyStartTime || null,
-            });
-            hasReset.current = true;
-          }
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          setError("Failed to fetch survey data. Please try again.");
-          setIsLoading(false);
-          console.error("Survey fetch error:", err);
-        });
+      apiClient.get(`/surveys/?enquiry_id=${surveyId}`).then((res) => {
+        if (res.data.length > 0) {
+          const survey = res.data[0];
+          setExistingSurvey(survey);
+          const surveyDateTime = survey.survey_date ? new Date(survey.survey_date) : null;
+          const surveyStartTime = survey.survey_start_time ? new Date(`1970-01-01T${survey.survey_start_time}`) : null;
+          const surveyEndTime = survey.survey_end_time ? new Date(`1970-01-01T${survey.survey_end_time}`) : null;
+
+          reset({
+            enquiry: survey.enquiry || surveyId,
+            // customerType: survey.customer_type?.id || "",
+            customerType: survey.customer_type || "",
+            isMilitary: survey.is_military || false,
+            salutation: survey.salutation || "",
+            fullName: survey.full_name || initialCustomerData?.fullName || "",
+            phoneNumber: survey.mobile_number || initialCustomerData?.phoneNumber || "",
+            email: survey.email || initialCustomerData?.email || "",
+            serviceType: survey.service_type || initialCustomerData?.serviceType || "",
+            address: survey.address || "",
+            company: survey.company || "",
+            goodsType: survey.goods_type || "article",
+            status: survey.status || "pending",
+            surveyDate: surveyDateTime,
+            surveyStartTime,
+            surveyEndTime,
+            workDescription: survey.work_description || "",
+            includeVehicle: survey.include_vehicle || false,
+            originAddress: survey.origin_address || "",
+            originCity: survey.origin_city || "",
+            originCountry: survey.origin_country || "",
+            originState: survey.origin_state || "",
+            originZip: survey.origin_zip || "",
+            podPol: survey.pod_pol || "",
+            multipleAddresses: survey.multiple_addresses || false,
+            destinationAddresses: survey.destination_addresses?.length > 0 ? survey.destination_addresses.map((addr) => ({
+              id: uuidv4(),
+              address: addr.address || "",
+              city: addr.city || "",
+              country: addr.country || "",
+              state: addr.state || "",
+              zip: addr.zip || "",
+              poe: addr.poe || "",
+            })) : [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
+            packingDateFrom: survey.packing_date_from ? new Date(survey.packing_date_from) : null,
+            packingDateTo: survey.packing_date_to ? new Date(survey.packing_date_to) : null,
+            loadingDate: survey.loading_date ? new Date(survey.loading_date) : null,
+            eta: survey.eta ? new Date(survey.eta) : null,
+            etd: survey.etd ? new Date(survey.etd) : null,
+            estDeliveryDate: survey.est_delivery_date ? new Date(survey.est_delivery_date) : null,
+            storageStartDate: survey.storage_start_date ? new Date(survey.storage_start_date) : null,
+            storageFrequency: survey.storage_frequency || "",
+            storageDuration: survey.storage_duration || "",
+            storageMode: survey.storage_mode || "",
+            transportMode: survey.transport_mode || "road",
+            articles: survey.articles?.map((a) => ({
+              id: uuidv4(),
+              itemName: a.item_name || "",
+              quantity: a.quantity || 0,
+              volume: a.volume || "",
+              volumeUnit: a.volume_unit || "",
+              weight: a.weight || "",
+              weightUnit: a.weight_unit || "",
+              handyman: a.handyman || "",
+              packingOption: a.packing_option || "",
+              moveStatus: a.move_status || "",
+              room: a.room || "",
+              length: a.length || "",
+              width: a.width || "",
+              height: a.height || "",
+            })) || [],
+            vehicles: survey.vehicles?.map((v) => ({
+              id: uuidv4(),
+              vehicleType: v.vehicle_type || "",
+              make: v.make || "",
+              model: v.model || "",
+              insurance: v.insurance || false,
+              remark: v.remark || "",
+              transportMode: v.transport_mode || "",
+            })) || [],
+            additionalServices: survey.additional_services?.map(service => ({
+              id: service.id,
+              name: service.name,
+              selected: true
+            })) || [],
+          });
+          hasReset.current = true;
+        }
+        setIsLoading(false);
+      }).catch(() => {
+        setError("Failed to fetch survey data.");
+        setIsLoading(false);
+      });
     }
   }, [surveyId, initialCustomerData, reset]);
 
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
-      apiClient.get("/customer-types/").then((response) => ({
-        customerTypes: response.data.map((type) => ({
-          value: type.id,
-          label: type.name,
-        })),
-      })),
-      apiClient.get("/volume-units/").then((response) => ({
-        volumeUnits: response.data.map((unit) => ({
-          value: unit.id,
-          label: unit.name,
-        })),
-      })),
-      apiClient.get("/weight-units/").then((response) => ({
-        weightUnits: response.data.map((unit) => ({
-          value: unit.id,
-          label: unit.name,
-        })),
-      })),
-      apiClient.get("/packing-types/").then((response) => ({
-        packingTypes: response.data.map((type) => ({
-          value: type.id,
-          label: type.name,
-        })),
-      })),
-      apiClient.get("/handyman/").then((response) => ({
-        handymanTypes: response.data.map((type) => ({
-          value: type.id,
-          label: type.type_name,
-        })),
-      })),
-      apiClient.get("/vehicle-types/").then((response) => ({
-        vehicleTypes: response.data.map((type) => ({
-          value: type.id,
-          label: type.name,
-        })),
-      })),
-      apiClient.get("/pet-types/").then((response) => ({
-        petTypes: response.data.map((type) => ({
-          value: type.id,
-          label: type.name,
-        })),
-      })),
-      apiClient.get("/rooms/").then((response) => ({
-        rooms: response.data.map((room) => ({
-          id: room.id,
-          value: room.id,
-          label: room.name,
-          name: room.name,
-        })),
-      })),
-      apiClient.get("/items/").then((response) => ({
-        items: response.data.map((item) => ({
-          id: item.id,
-          name: item.name,
-          room: item.room,
-          description: item.description,
-          length: item.length,
-          width: item.width,
-          height: item.height,
-          volume: item.volume,
-          weight: item.weight,
-          calculated_volume: item.calculated_volume,
-        })),
-      })),
-      apiClient.get("/currencies/").then((response) => ({
-        currencies: response.data.map((currency) => ({
-          value: currency.id,
-          label: currency.name,
-        })),
-      })),
-    ])
-      .then((results) => {
-        const combinedData = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-        setApiData((prev) => ({
-          ...prev,
-          ...combinedData,
-        }));
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        setError("Failed to fetch types. Please try again.");
-        setIsLoading(false);
-        console.error("API fetch error:", err);
+      apiClient.get("/customer-types/"),
+      apiClient.get("/volume-units/"),
+      apiClient.get("/weight-units/"),
+      apiClient.get("/packing-types/"),
+      apiClient.get("/handyman/"),
+      apiClient.get("/vehicle-types/"),
+      apiClient.get("/rooms/"),
+      apiClient.get("/items/"),
+    ]).then((results) => {
+      const data = results.map(r => r.data);
+      setApiData({
+        customerTypes: data[0].map(t => ({ value: t.id, label: t.name })),
+        volumeUnits: data[1].map(u => ({ value: u.id, label: u.name })),
+        weightUnits: data[2].map(u => ({ value: u.id, label: u.name })),
+        packingTypes: data[3].map(t => ({ value: t.id, label: t.name })),
+        handymanTypes: data[4].map(t => ({ value: t.id, label: t.type_name })),
+        vehicleTypes: data[5].map(t => ({ value: t.id, label: t.name })),
+        rooms: data[6].map(r => ({ id: r.id, value: r.id, label: r.name, name: r.name })),
+        items: data[7],
       });
+      setIsLoading(false);
+    }).catch(() => {
+      setError("Failed to load master data.");
+      setIsLoading(false);
+    });
   }, []);
 
   const tabs = [
     { id: "customer", label: "Customer" },
-    { id: "items", label: watch("goodsType") === "pet" ? "Pet" : "Article" },
-    { id: "service", label: "Service" },
+    { id: "items", label: "Article" },
+    { id: "additionalServices", label: "Additional Services" },
   ];
 
   const handleTabChange = (tabId) => {
+    if (watch("goodsType") === "pet") {
+      setMessage("Pet relocation feature is coming soon!");
+      return;
+    }
     setActiveTab(tabId);
   };
 
   const Customer = () => {
     const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
-    const sameAsCustomerAddress = watch("sameAsCustomerAddress");
     const multipleAddresses = watch("multipleAddresses");
 
-    const countryOptions = Country.getAllCountries().map(country => ({
-      value: country.isoCode,
-      label: country.name
-    }));
-
-    const getStateOptions = (countryCode) => {
-      if (!countryCode) return [];
-      return State.getStatesOfCountry(countryCode).map(state => ({
-        value: state.isoCode,
-        label: state.name
-      }));
-    };
-
-    const getCityOptions = (countryCode, stateCode) => {
-      if (!countryCode || !stateCode) return [];
-      return City.getCitiesOfState(countryCode, stateCode).map(city => ({
-        value: city.name,
-        label: city.name
-      }));
-    };
+    const countryOptions = Country.getAllCountries().map(c => ({ value: c.isoCode, label: c.name }));
+    const getStateOptions = (code) => code ? State.getStatesOfCountry(code).map(s => ({ value: s.isoCode, label: s.name })) : [];
+    const getCityOptions = (country, state) => country && state ? City.getCitiesOfState(country, state).map(c => ({ value: c.name, label: c.name })) : [];
 
     const originCountry = watch("originCountry");
     const originState = watch("originState");
-
     const destinationCountry = watch("destinationAddresses[0].country");
     const destinationState = watch("destinationAddresses[0].state");
-
-    const originStateOptions = getStateOptions(originCountry);
-    const originCityOptions = getCityOptions(originCountry, originState);
-
-    const destinationStateOptions = getStateOptions(destinationCountry);
-    const destinationCityOptions = getCityOptions(destinationCountry, destinationState);
 
     const serviceTypeOptions = [
       { value: "localMove", label: "Local Move" },
@@ -540,69 +286,31 @@ const SurveyDetails = () => {
       { value: "logistics", label: "Logistics" },
     ];
 
-    const addAddress = () => {
-      const newAddresses = [...destinationAddresses, {
-        id: uuidv4(),
-        address: "",
-        city: "",
-        country: "",
-        state: "",
-        zip: "",
-        poe: ""
-      }];
-      setDestinationAddresses(newAddresses);
-      setValue("destinationAddresses", newAddresses);
-    };
+    const salutationOptions = [{ value: "Mr", label: "Mr" }, { value: "Ms", label: "Ms" }, { value: "Mrs", label: "Mrs" }];
 
-    const removeAddress = (index) => {
-      if (destinationAddresses.length > 1) {
-        const newAddresses = destinationAddresses.filter((_, i) => i !== index);
-        setDestinationAddresses(newAddresses);
-        setValue("destinationAddresses", newAddresses);
-      }
-    };
-
-    const salutationOptions = [
-      { value: "Mr", label: "Mr" },
-      { value: "Ms", label: "Ms" },
-      { value: "Mrs", label: "Mrs" },
-    ];
-    const goodsTypeOptions = [
-      { value: "article", label: "Article" },
-      { value: "pet", label: "Pet" },
-    ];
     const statusOptions = [
       { value: "pending", label: "Pending" },
       { value: "in_progress", label: "In Progress" },
       { value: "completed", label: "Completed" },
       { value: "cancelled", label: "Cancelled" },
     ];
-    const frequencyOptions = [
-      { value: "weekly", label: "Weekly" },
-      { value: "monthly", label: "Monthly" },
-      { value: "yearly", label: "Yearly" },
-    ];
-    const storageModeOptions = [
-      { value: "warehouse", label: "Warehouse" },
-      { value: "container", label: "Container" },
-    ];
 
-    // Helper function to get state options for destination addresses
-    const getDestinationStateOptions = (countryCode, index) => {
-      if (!countryCode) return [];
-      return State.getStatesOfCountry(countryCode).map(state => ({
-        value: state.isoCode,
-        label: state.name
-      }));
+    const frequencyOptions = [{ value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }, { value: "yearly", label: "Yearly" }];
+    const storageModeOptions = [{ value: "warehouse", label: "Warehouse" }, { value: "container", label: "Container" }];
+
+    const addAddress = () => {
+      const newAddr = { id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" };
+      const updated = [...destinationAddresses, newAddr];
+      setDestinationAddresses(updated);
+      setValue("destinationAddresses", updated);
     };
 
-    // Helper function to get city options for destination addresses
-    const getDestinationCityOptions = (countryCode, stateCode, index) => {
-      if (!countryCode || !stateCode) return [];
-      return City.getCitiesOfState(countryCode, stateCode).map(city => ({
-        value: city.name,
-        label: city.name
-      }));
+    const removeAddress = (index) => {
+      if (destinationAddresses.length > 1) {
+        const updated = destinationAddresses.filter((_, i) => i !== index);
+        setDestinationAddresses(updated);
+        setValue("destinationAddresses", updated);
+      }
     };
 
     const sections = [
@@ -610,70 +318,19 @@ const SurveyDetails = () => {
         id: "customer-details",
         title: "Customer Details",
         content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="Customer Type"
-              name="customerType"
-              type="select"
-              options={apiData.customerTypes}
-              rules={{ required: "Customer Type is required" }}
-            />
-            <Input
-              label="Salutation"
-              name="salutation"
-              type="select"
-              options={salutationOptions}
-              rules={{ required: "Salutation is required" }}
-            />
-            <Input
-              label="Full Name"
-              name="fullName"
-              type="text"
-              rules={{ required: "Full Name is required" }}
-            />
-            <Input
-              label="Mobile Number"
-              name="phoneNumber"
-              type="text"
-              rules={{
-                required: "Mobile Number is required",
-                pattern: {
-                  value: /^\+?[0-9]{7,15}$/,
-                  message: "Enter a valid mobile number (7-15 digits)",
-                },
-              }}
-            />
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              rules={{
-                required: "Email is required",
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: "Enter a valid email",
-                },
-              }}
-            />
-            <Input
-              label="Service Type"
-              name="serviceType"
-              type="select"
-              options={serviceTypeOptions}
-              rules={{ required: "Service Type is required" }}
-            />
-            <Input
-              label="Address"
-              name="address"
-              type="text"
-              rules={{ required: "Address is required" }}
-            />
-            <Input label="Company" name="company" type="text" />
-            <div>
-              <p className="block text-sm font-medium text-gray-700 mb-1 mt-1">
-                (Optional Field)
-              </p>
-              <Input label="Is Military" name="isMilitary" type="checkbox" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Customer Type" name="customerType" type="select" options={apiData.customerTypes} />
+            <Input label="Salutation" name="salutation" type="select" options={salutationOptions} />
+            <Input label="Full Name" name="fullName" rules={{ required: "Required" }} />
+            <Input label="Phone" name="phoneNumber" rules={{ required: "Required" }} />
+            <Input label="Email" name="email" type="email" />
+            <Input label="Service Type" name="serviceType" type="select" options={serviceTypeOptions} />
+            <Input label="Address" name="address" />
+            <Input label="Company" name="company" />
+            <Input label="Status" name="status" type="select" options={statusOptions} />
+            <div className="flex items-center gap-2">
+              <input type="checkbox" {...register("isMilitary")} />
+              <label>Military</label>
             </div>
           </div>
         ),
@@ -682,60 +339,11 @@ const SurveyDetails = () => {
         id: "survey-details",
         title: "Survey Details",
         content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="Goods Type"
-              name="goodsType"
-              type="select"
-              options={goodsTypeOptions}
-              rules={{ required: "Goods Type is required" }}
-            />
-            <Input
-              label="Status"
-              name="status"
-              type="select"
-              options={statusOptions}
-              rules={{ required: "Status is required" }}
-            />
-            <DatePickerInput
-              label="Survey Date"
-              name="surveyDate"
-              rules={{ required: "Survey Date is required" }}
-            />
-            <DatePickerInput
-              label="Survey Start Time"
-              name="surveyStartTime"
-              isTimeOnly
-              rules={{ required: "Survey Start Time is required" }}
-            />
-            <DatePickerInput
-              label="Survey End Time"
-              name="surveyEndTime"
-              isTimeOnly
-              rules={{ required: "Survey End Time is required" }}
-            />
-            <Input
-              label="Work Description"
-              name="workDescription"
-              type="textarea"
-              rules={{ required: "Work Description is required" }}
-            />
-            <Input
-              label="Include Vehicle"
-              name="includeVehicle"
-              type="checkbox"
-            />
-            <Input label="Include Pet" name="includePet" type="checkbox" />
-            <Input
-              label="Cost Together (Vehicle)"
-              name="costTogetherVehicle"
-              type="checkbox"
-            />
-            <Input
-              label="Cost Together (Pet)"
-              name="costTogetherPet"
-              type="checkbox"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DatePickerInput label="Survey Date" name="surveyDate" />
+            <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
+            <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
+            <Input label="Work Description" name="workDescription" type="textarea" />
           </div>
         ),
       },
@@ -743,59 +351,13 @@ const SurveyDetails = () => {
         id: "origin-address",
         title: "Origin Address",
         content: (
-          <div className="grid grid-cols-1 gap-6">
-            <Input
-              label="Same as Customer Address"
-              name="sameAsCustomerAddress"
-              type="checkbox"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <Input
-                label="Address"
-                name="originAddress"
-                type="text"
-                rules={{
-                  required: !sameAsCustomerAddress && "Address is required",
-                }}
-              />
-              <Input
-                label="Country"
-                name="originCountry"
-                type="select"
-                options={[{ value: "", label: "Select Country" }, ...countryOptions]}
-                rules={{
-                  required: !sameAsCustomerAddress && "Country is required",
-                }}
-              />
-              <Input
-                label="State"
-                name="originState"
-                type="select"
-                options={[{ value: "", label: "Select State" }, ...originStateOptions]}
-                rules={{
-                  required: !sameAsCustomerAddress && "State is required",
-                }}
-              />
-              <Input
-                label="City"
-                name="originCity"
-                type="select"
-                options={[{ value: "", label: "Select City" }, ...originCityOptions]}
-                rules={{ required: !sameAsCustomerAddress && "City is required" }}
-              />
-              <Input
-                label="ZIP"
-                name="originZip"
-                type="text"
-                rules={{ required: !sameAsCustomerAddress && "ZIP is required" }}
-              />
-              <Input
-                label="POD/POL"
-                name="podPol"
-                type="text"
-                rules={{ required: "POD/POL is required" }}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Origin Address" name="originAddress" />
+            <Input label="Country" name="originCountry" type="select" options={countryOptions} />
+            <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
+            <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+            <Input label="ZIP" name="originZip" />
+            <Input label="POD/POL" name="podPol" />
           </div>
         ),
       },
@@ -803,173 +365,65 @@ const SurveyDetails = () => {
         id: "destination-details",
         title: "Destination Details",
         content: (
-          <div className="grid grid-cols-1 gap-6">
-            <Input
-              label="Multiple Addresses"
-              name="multipleAddresses"
-              type="checkbox"
-            />
+          <div className="space-y-4">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" {...register("multipleAddresses")} />
+              <span>Multiple Addresses</span>
+            </label>
             {multipleAddresses ? (
               <>
-                {destinationAddresses.map((address, index) => {
-                  const destCountry = watch(`destinationAddresses[${index}].country`);
-                  const destState = watch(`destinationAddresses[${index}].state`);
-                  const destStateOptions = getDestinationStateOptions(destCountry, index);
-                  const destCityOptions = getDestinationCityOptions(destCountry, destState, index);
-
+                {destinationAddresses.map((addr, i) => {
+                  const country = watch(`destinationAddresses[${i}].country`);
+                  const state = watch(`destinationAddresses[${i}].state`);
                   return (
-                    <div key={address.id} className="mt-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Address ({index + 1})
-                        </h3>
+                    <div key={addr.id} className="bg-gray-100 p-4 rounded space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">Address {i + 1}</h4>
                         {destinationAddresses.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeAddress(index)}
-                            className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
-                            aria-label={`Remove Address ${index + 1}`}
-                          >
-                            <FaMinus className="w-3 h-3" />
+                          <button type="button" onClick={() => removeAddress(i)} className="text-red-600">
+                            <FaTimes />
                           </button>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input
-                          label="Address"
-                          name={`destinationAddresses[${index}].address`}
-                          type="text"
-                          rules={{ required: "Address is required" }}
-                        />
-                        <Input
-                          label="Country"
-                          name={`destinationAddresses[${index}].country`}
-                          type="select"
-                          options={[{ value: "", label: "Select Country" }, ...countryOptions]}
-                          rules={{ required: "Country is required" }}
-                        />
-                        <Input
-                          label="State"
-                          name={`destinationAddresses[${index}].state`}
-                          type="select"
-                          options={[{ value: "", label: "Select State" }, ...destStateOptions]}
-                          rules={{ required: "State is required" }}
-                        />
-                        <Input
-                          label="City"
-                          name={`destinationAddresses[${index}].city`}
-                          type="select"
-                          options={[{ value: "", label: "Select City" }, ...destCityOptions]}
-                          rules={{ required: "City is required" }}
-                        />
-                        <Input
-                          label="ZIP"
-                          name={`destinationAddresses[${index}].zip`}
-                          type="text"
-                          rules={{ required: "ZIP is required" }}
-                        />
-                        <Input
-                          label="POE"
-                          name={`destinationAddresses[${index}].poe`}
-                          type="text"
-                          rules={{ required: "POE is required" }}
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input label="Address" name={`destinationAddresses[${i}].address`} />
+                        <Input label="Country" name={`destinationAddresses[${i}].country`} type="select" options={countryOptions} />
+                        <Input label="State" name={`destinationAddresses[${i}].state`} type="select" options={getStateOptions(country)} />
+                        <Input label="City" name={`destinationAddresses[${i}].city`} type="select" options={getCityOptions(country, state)} />
+                        <Input label="ZIP" name={`destinationAddresses[${i}].zip`} />
+                        <Input label="POE" name={`destinationAddresses[${i}].poe`} />
                       </div>
                     </div>
                   );
                 })}
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={addAddress}
-                    className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded duration-300"
-                  >
-                    <FaPlus className="w-3 h-3" /> Add Address
-                  </button>
-                </div>
+                <button type="button" onClick={addAddress} className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition">
+                  Add Address
+                </button>
               </>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                <Input
-                  label="Address"
-                  name="destinationAddresses[0].address"
-                  type="text"
-                  rules={{ required: "Address is required" }}
-                />
-                <Input
-                  label="Country"
-                  name="destinationAddresses[0].country"
-                  type="select"
-                  options={[{ value: "", label: "Select Country" }, ...countryOptions]}
-                  rules={{ required: "Country is required" }}
-                />
-                <Input
-                  label="State"
-                  name="destinationAddresses[0].state"
-                  type="select"
-                  options={[{ value: "", label: "Select State" }, ...destinationStateOptions]}
-                  rules={{ required: "State is required" }}
-                />
-                <Input
-                  label="City"
-                  name="destinationAddresses[0].city"
-                  type="select"
-                  options={[{ value: "", label: "Select City" }, ...destinationCityOptions]}
-                  rules={{ required: "City is required" }}
-                />
-                <Input
-                  label="ZIP"
-                  name="destinationAddresses[0].zip"
-                  type="text"
-                  rules={{ required: "ZIP is required" }}
-                />
-                <Input
-                  label="POE"
-                  name="destinationAddresses[0].poe"
-                  type="text"
-                  rules={{ required: "POE is required" }}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Address" name="destinationAddresses[0].address" />
+                <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
+                <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
+                <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
+                <Input label="ZIP" name="destinationAddresses[0].zip" />
+                <Input label="POE" name="destinationAddresses[0].poe" />
               </div>
             )}
           </div>
         ),
       },
-      // ... rest of the sections remain the same
       {
         id: "move-details",
         title: "Move Details",
         content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DatePickerInput
-              label="Packing Date From"
-              name="packingDateFrom"
-              rules={{ required: "Packing Date From is required" }}
-            />
-            <DatePickerInput
-              label="Packing Date To"
-              name="packingDateTo"
-              rules={{ required: "Packing Date To is required" }}
-            />
-            <DatePickerInput
-              label="Loading Date"
-              name="loadingDate"
-              rules={{ required: "Loading Date is required" }}
-            />
-            <DatePickerInput
-              label="ETA"
-              name="eta"
-              rules={{ required: "ETA is required" }}
-            />
-            <DatePickerInput
-              label="ETD"
-              name="etd"
-              rules={{ required: "ETD is required" }}
-            />
-            <DatePickerInput
-              label="Est. Delivery Date"
-              name="estDeliveryDate"
-              rules={{ required: "Est. Delivery Date is required" }}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DatePickerInput label="Packing From" name="packingDateFrom" />
+            <DatePickerInput label="Packing To" name="packingDateTo" />
+            <DatePickerInput label="Loading Date" name="loadingDate" />
+            <DatePickerInput label="ETA" name="eta" />
+            <DatePickerInput label="ETD" name="etd" />
+            <DatePickerInput label="Est. Delivery" name="estDeliveryDate" />
           </div>
         ),
       },
@@ -977,47 +431,21 @@ const SurveyDetails = () => {
         id: "storage-details",
         title: "Storage Details",
         content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DatePickerInput
-              label="Start Date"
-              name="storageStartDate"
-              rules={{ required: "Start Date is required" }}
-            />
-            <Input
-              label="Frequency"
-              name="storageFrequency"
-              type="select"
-              options={frequencyOptions}
-              rules={{ required: "Frequency is required" }}
-            />
-            <Input
-              label="Duration"
-              name="storageDuration"
-              type="text"
-              rules={{ required: "Duration is required" }}
-            />
-            <Input
-              label="Storage Mode"
-              name="storageMode"
-              type="select"
-              options={storageModeOptions}
-              rules={{ required: "Storage Mode is required" }}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DatePickerInput label="Storage Start" name="storageStartDate" />
+            <Input label="Frequency" name="storageFrequency" type="select" options={frequencyOptions} />
+            <Input label="Duration" name="storageDuration" />
+            <Input label="Mode" name="storageMode" type="select" options={storageModeOptions} />
           </div>
         ),
       },
     ];
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {sections.map((section) => (
-          <div
-            key={section.id}
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {section.title}
-            </h2>
+          <div key={section.id} className="bg-white rounded-lg shadow p-4 md:p-6">
+            <h3 className="text-lg font-medium mb-4">{section.title}</h3>
             {section.content}
           </div>
         ))}
@@ -1025,1316 +453,945 @@ const SurveyDetails = () => {
     );
   };
 
-const Article = () => {
-  const [selectedRoom, setSelectedRoom] = useState(null);
-  const [showRoomDropdown, setShowRoomDropdown] = useState(false);
-  const [expandedItems, setExpandedItems] = useState({});
-  const [itemQuantities, setItemQuantities] = useState({});
-  const [editingArticleId, setEditingArticleId] = useState(null);
-  const [showArticlesPanel, setShowArticlesPanel] = useState(false);
+  const Article = () => {
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [showRoomDropdown, setShowRoomDropdown] = useState(false);
+    const [expandedItems, setExpandedItems] = useState({});
+    const [itemQuantities, setItemQuantities] = useState({});
+    const [selectedItems, setSelectedItems] = useState({});
 
-  const getRoomNameById = (roomId) => {
-    const room = apiData.rooms.find(room => room.id === roomId || room.value === roomId);
-    return room ? room.name : 'Unknown Room';
-  };
+    const dropdownRef = useRef(null);
 
-  const toggleExpandedItem = (itemName) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [itemName]: !prev[itemName],
-    }));
-  };
-
-  const updateQuantity = (itemName, newQuantity) => {
-    setItemQuantities((prev) => ({ ...prev, [itemName]: newQuantity }));
-  };
-
-  const addArticle = (itemName, itemData) => {
-    const newArticle = {
-      id: uuidv4(),
-      itemName,
-      quantity: itemQuantities[itemName] || 1,
-      volume: itemData[`volume_${itemName}`] || "",
-      volumeUnit: itemData[`volumeUnit_${itemName}`] || "",
-      weight: itemData[`weight_${itemName}`] || "",
-      weightUnit: itemData[`weightUnit_${itemName}`] || "",
-      handyman: itemData[`handyman_${itemName}`] || "",
-      packingOption: itemData[`packingOption_${itemName}`] || "",
-      moveStatus: itemData[`moveStatus_${itemName}`] || "",
-      amount: itemData[`amount_${itemName}`] || "",
-      currency: itemData[`currency_${itemName}`] || "",
-      remarks: itemData[`remarks_${itemName}`] || "",
-      room: selectedRoom?.value || "",
-      length: itemData[`length_${itemName}`] || "",
-      width: itemData[`width_${itemName}`] || "",
-      height: itemData[`height_${itemName}`] || "",
-      useManualVolume: itemData[`useManualVolume_${itemName}`] || false,
-    };
-    const updatedArticles = [...watch("articles"), newArticle];
-    setValue("articles", updatedArticles);
-    setMessage("Article added successfully!");
-    setTimeout(() => setMessage(null), 3000);
-    setExpandedItems((prev) => ({ ...prev, [itemName]: false }));
-  };
-
-  const updateArticle = (articleId, itemData) => {
-    const updatedArticles = watch("articles").map((article) =>
-      article.id === articleId
-        ? {
-          ...article,
-          quantity: itemData.quantity || article.quantity,
-          volume: itemData.volume || "",
-          volumeUnit: itemData.volumeUnit || "",
-          weight: itemData.weight || "",
-          weightUnit: itemData.weightUnit || "",
-          handyman: itemData.handyman || "",
-          packingOption: itemData.packingOption || "",
-          moveStatus: itemData.moveStatus || "",
-          amount: itemData.amount || "",
-          currency: itemData.currency || "",
-          remarks: itemData.remarks || "",
-          room: selectedRoom?.value || article.room,
-          length: itemData.length || "",
-          width: itemData.width || "",
-          height: itemData.height || "",
-          useManualVolume: itemData.useManualVolume || false,
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setShowRoomDropdown(false);
         }
-        : article
-    );
-    setValue("articles", updatedArticles);
-    setMessage("Article updated successfully!");
-    setTimeout(() => setMessage(null), 3000);
-    setEditingArticleId(null);
-  };
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-  const removeArticle = (articleId) => {
-    const updatedArticles = watch("articles").filter((article) => article.id !== articleId);
-    setValue("articles", updatedArticles);
-    setMessage("Article removed successfully!");
-    setTimeout(() => setMessage(null), 3000);
-    setEditingArticleId(null);
-  };
+    const toggleExpandedItem = (itemName) => {
+      setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
+    };
 
-  const handleRoomSelect = (room) => {
-    setSelectedRoom(room);
-    setShowRoomDropdown(false);
-    setExpandedItems({});
-    setEditingArticleId(null);
-  };
+    const updateQuantity = (itemName, qty) => {
+      setItemQuantities(prev => ({ ...prev, [itemName]: Math.max(1, qty) }));
+    };
 
-  const ItemRow = ({ item }) => {
-    const itemFormMethods = useForm({
-      defaultValues: {
-        [`volume_${item.name}`]: item.volume || item.calculated_volume || "",
+    const toggleItemSelection = (itemName) => {
+      setSelectedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
+    };
+
+    const calculateVolume = (length, width, height) => {
+      if (!length || !width || !height) return 0;
+      return (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+    };
+
+    const calculateWeight = (volume) => {
+      return volume ? parseFloat(volume) * 110 : 0;
+    };
+
+    const addArticle = (itemName, formData = {}) => {
+      const length = formData[`length_${itemName}`] || "";
+      const width = formData[`width_${itemName}`] || "";
+      const height = formData[`height_${itemName}`] || "";
+
+      const volume = calculateVolume(length, width, height);
+      const weight = calculateWeight(volume);
+
+      const newArticle = {
+        id: uuidv4(),
+        itemName,
+        quantity: itemQuantities[itemName] || 1,
+        volume: volume.toFixed(4),
+        volumeUnit: formData[`volumeUnit_${itemName}`] || apiData.volumeUnits[0]?.value || "",
+        weight: weight.toFixed(2),
+        weightUnit: formData[`weightUnit_${itemName}`] || apiData.weightUnits[0]?.value || "",
+        handyman: formData[`handyman_${itemName}`] || "",
+        packingOption: formData[`packingOption_${itemName}`] || "",
+        moveStatus: "new",
+        room: selectedRoom?.value || "",
+        length,
+        width,
+        height,
+      };
+
+      setValue("articles", [...watch("articles"), newArticle]);
+      setMessage("Article added!");
+      setTimeout(() => setMessage(null), 3000);
+      toggleExpandedItem(itemName);
+      setItemQuantities(prev => ({ ...prev, [itemName]: 1 }));
+    };
+
+    const addMultipleArticles = () => {
+      const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
+      if (selectedItemNames.length === 0) return setError("Select at least one item");
+
+      const newArticles = selectedItemNames.map(itemName => ({
+        id: uuidv4(),
+        itemName,
+        quantity: itemQuantities[itemName] || 1,
+        volume: "",
+        volumeUnit: "",
+        weight: "",
+        weightUnit: "",
+        handyman: "",
+        packingOption: "",
+        moveStatus: "new",
+        room: selectedRoom?.value || "",
+        length: "",
+        width: "",
+        height: "",
+      }));
+
+      setValue("articles", [...watch("articles"), ...newArticles]);
+      setMessage(`${newArticles.length} articles added!`);
+      setTimeout(() => setMessage(null), 3000);
+      setSelectedItems({});
+    };
+
+    const removeArticle = (id) => {
+      setValue("articles", watch("articles").filter(a => a.id !== id));
+      setMessage("Article removed!");
+      setTimeout(() => setMessage(null), 3000);
+    };
+
+    const ItemForm = ({ item, onAdd, onCancel }) => {
+      const [formData, setFormData] = useState({
+        [`length_${item.name}`]: "",
+        [`width_${item.name}`]: "",
+        [`height_${item.name}`]: "",
         [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
-        [`weight_${item.name}`]: item.weight || "",
         [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
-        [`handyman_${item.name}`]: apiData.handymanTypes[0]?.value || "",
-        [`packingOption_${item.name}`]: apiData.packingTypes[0]?.value || "",
-        [`moveStatus_${item.name}`]: "new",
-        [`amount_${item.name}`]: "",
-        [`currency_${item.name}`]: apiData.currencies[0]?.value || "INR",
-        [`remarks_${item.name}`]: "",
-        [`quantity_${item.name}`]: itemQuantities[item.name] || 0,
-        [`length_${item.name}`]: item.length || "",
-        [`width_${item.name}`]: item.width || "",
-        [`height_${item.name}`]: item.height || "",
-        [`useManualVolume_${item.name}`]: !!(item.volume && !item.calculated_volume),
-      },
-    });
+        [`handyman_${item.name}`]: "",
+        [`packingOption_${item.name}`]: "",
+      });
 
-    const { handleSubmit: handleItemSubmit, watch, setValue } = itemFormMethods;
+      const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
 
-    const length = watch(`length_${item.name}`);
-    const width = watch(`width_${item.name}`);
-    const height = watch(`height_${item.name}`);
-    const useManualVolume = watch(`useManualVolume_${item.name}`);
-    const manualVolume = watch(`volume_${item.name}`);
+        const l = field === `length_${item.name}` ? value : formData[`length_${item.name}`];
+        const w = field === `width_${item.name}` ? value : formData[`width_${item.name}`];
+        const h = field === `height_${item.name}` ? value : formData[`height_${item.name}`];
 
-    useEffect(() => {
-      if (!useManualVolume && length && width && height) {
-        const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
-        setValue(`volume_${item.name}`, calculatedVolume.toFixed(4));
+        if (l && w && h) {
+          const vol = calculateVolume(l, w, h);
+          const wt = calculateWeight(vol);
+          setFormData(prev => ({
+            ...prev,
+            [`volume_${item.name}`]: vol.toFixed(4),
+            [`weight_${item.name}`]: wt.toFixed(2),
+          }));
+        }
+      };
 
-        const calculatedWeight = calculatedVolume * 110;
-        setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
-      }
-    }, [length, width, height, useManualVolume, setValue, item.name]);
+      const volume = calculateVolume(
+        formData[`length_${item.name}`],
+        formData[`width_${item.name}`],
+        formData[`height_${item.name}`]
+      );
+      const weight = calculateWeight(volume);
 
-    useEffect(() => {
-      if (useManualVolume && manualVolume) {
-        const calculatedWeight = parseFloat(manualVolume) * 110;
-        setValue(`weight_${item.name}`, calculatedWeight.toFixed(2));
-      }
-    }, [manualVolume, useManualVolume, setValue, item.name]);
-
-    return (
-      <>
-        <tr key={`${item.name}-main`} className="w-full border-b border-gray-200">
-          <td className="text-left py-4 px-4 text-sm text-gray-700 cursor-pointer hover:bg-gray-50">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{item.name}</span>
-              {item.calculated_volume && (
-                <span className="text-xs text-gray-500">
-                  (Auto: {item.calculated_volume} m³)
-                </span>
-              )}
-            </div>
-            {item.description && (
-              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-            )}
-            {(item.length || item.width || item.height) && (
-              <div className="text-xs text-gray-500 mt-1">
-                {item.length && `L:${item.length}cm`}
-                {item.width && ` × W:${item.width}cm`}
-                {item.height && ` × H:${item.height}cm`}
-              </div>
-            )}
-          </td>
-          <td className="text-center py-4 px-4">
-            <FormProvider {...itemFormMethods}>
-              <QuantityInput
-                label=""
-                name={`quantity_${item.name}`}
-                onChange={(newQuantity) => updateQuantity(item.name, newQuantity)}
-              />
-            </FormProvider>
-          </td>
-          <td className="flex items-center justify-end py-4 px-8"
-            onClick={() => toggleExpandedItem(item.name)}>
-            {expandedItems[item.name] ? (
-              <FaChevronUp className="w-3 h-3 text-gray-500" />
-            ) : (
-              <FaChevronDown className="w-3 h-3 text-gray-500" />
-            )}
-          </td>
-        </tr>
-        {expandedItems[item.name] && (
-          <tr key={`${item.name}-details`} className="border border-gray-200">
-            <td colSpan="3">
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="p-4 bg-white"
-              >
-                <FormProvider {...itemFormMethods}>
-                  <div className="grid gap-6">
-                    <div className="">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <Input
-                          label="Length (cm)"
-                          name={`length_${item.name}`}
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                        />
-                        <Input
-                          label="Width (cm)"
-                          name={`width_${item.name}`}
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                        />
-                        <Input
-                          label="Height (cm)"
-                          name={`height_${item.name}`}
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-4 mb-4">
-                        <Input
-                          label="Use Manual Volume"
-                          name={`useManualVolume_${item.name}`}
-                          type="checkbox"
-                        />
-                        <div className="text-xs text-gray-500">
-                          {useManualVolume
-                            ? "Manual volume input enabled"
-                            : "Volume auto-calculated from dimensions"
-                          }
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          label="Volume (m³)"
-                          name={`volume_${item.name}`}
-                          type="number"
-                          step="0.0001"
-                          rules={{ required: "Volume is required" }}
-                          disabled={!useManualVolume}
-                        />
-                        <Input
-                          label="Volume Unit"
-                          name={`volumeUnit_${item.name}`}
-                          type="select"
-                          options={apiData.volumeUnits}
-                        />
-                      </div>
-
-                      {!useManualVolume && length && width && height && (
-                        <div className="mt-2 text-xs text-green-600">
-                          Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
-                          (L×W×H/1,000,000)
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <Input
-                        label="Weight (kg)"
-                        name={`weight_${item.name}`}
-                        type="number"
-                        step="0.01"
-                        rules={{ required: "Weight is required" }}
-                      />
-                      <Input
-                        label="Weight Unit"
-                        name={`weightUnit_${item.name}`}
-                        type="select"
-                        options={apiData.weightUnits}
-                      />
-                      <Input
-                        label="Handyman"
-                        name={`handyman_${item.name}`}
-                        type="select"
-                        options={apiData.handymanTypes}
-                      />
-                      <Input
-                        label="Packing Option"
-                        name={`packingOption_${item.name}`}
-                        type="select"
-                        options={apiData.packingTypes}
-                      />
-                      <Input
-                        label="Amount"
-                        name={`amount_${item.name}`}
-                        type="number"
-                        step="0.01"
-                      />
-                      <Input
-                        label="Currency"
-                        name={`currency_${item.name}`}
-                        type="select"
-                        options={apiData.currencies}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6">
-                      <Input
-                        label="Remarks"
-                        name={`remarks_${item.name}`}
-                        type="textarea"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-3 justify-end">
-                    <button
-                      type="button"
-                      onClick={handleItemSubmit((data) =>
-                        addArticle(item.name, data)
-                      )}
-                      className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                    >
-                      Update
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpandedItem(item.name)}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </FormProvider>
-              </motion.div>
-            </td>
-          </tr>
-        )}
-      </>
-    );
-  };
-
-  const EditArticleRow = ({ article }) => {
-    const editFormMethods = useForm({
-      defaultValues: {
-        volume: article.volume || "",
-        volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
-        weight: article.weight || "",
-        weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
-        handyman: article.handyman || apiData.handymanTypes[0]?.value || "",
-        packingOption: article.packingOption || apiData.packingTypes[0]?.value || "",
-        moveStatus: article.moveStatus || "new",
-        amount: article.amount || "",
-        currency: article.currency || apiData.currencies[0]?.value || "INR",
-        remarks: article.remarks || "",
-        quantity: article.quantity || 0,
-        length: article.length || "",
-        width: article.width || "",
-        height: article.height || "",
-        useManualVolume: !!(article.volume && !article.calculated_volume),
-      },
-    });
-
-    const { handleSubmit: handleEditSubmit, watch, setValue } = editFormMethods;
-
-    const length = watch('length');
-    const width = watch('width');
-    const height = watch('height');
-    const useManualVolume = watch('useManualVolume');
-    const manualVolume = watch('volume');
-
-    useEffect(() => {
-      if (!useManualVolume && length && width && height) {
-        const calculatedVolume = (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
-        setValue('volume', calculatedVolume.toFixed(4));
-
-        const calculatedWeight = calculatedVolume * 110;
-        setValue('weight', calculatedWeight.toFixed(2));
-      }
-    }, [length, width, height, useManualVolume, setValue]);
-
-    useEffect(() => {
-      if (useManualVolume && manualVolume) {
-        const calculatedWeight = parseFloat(manualVolume) * 110;
-        setValue('weight', calculatedWeight.toFixed(2));
-      }
-    }, [manualVolume, useManualVolume, setValue]);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
-      >
-        <FormProvider {...editFormMethods}>
-          <div className="grid gap-6">
-            <div className="grid grid-cols-1 gap-6">
-              <QuantityInput
-                label="Quantity"
-                name="quantity"
-                rules={{ required: "Quantity is required" }}
-              />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions & Volume</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <Input
-                  label="Length (cm)"
-                  name="length"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                />
-                <Input
-                  label="Width (cm)"
-                  name="width"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                />
-                <Input
-                  label="Height (cm)"
-                  name="height"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="grid items-center gap-4 mb-4">
-                <Input
-                  label="Use Manual Volume"
-                  name="useManualVolume"
-                  type="checkbox"
-                />
-                <div className="text-xs text-gray-500">
-                  {useManualVolume
-                    ? "Manual volume input enabled"
-                    : "Volume auto-calculated from dimensions"
-                  }
+      return (
+        <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="col-span-full">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions</h4>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Length (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData[`length_${item.name}`]}
+                    onChange={(e) => handleInputChange(`length_${item.name}`, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Width (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData[`width_${item.name}`]}
+                    onChange={(e) => handleInputChange(`width_${item.name}`, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Height (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData[`height_${item.name}`]}
+                    onChange={(e) => handleInputChange(`height_${item.name}`, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                    placeholder="0.00"
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Volume (m³)"
-                  name="volume"
-                  type="number"
-                  step="0.0001"
-                  rules={{ required: "Volume is required" }}
-                  disabled={!useManualVolume}
-                />
-                <Input
-                  label="Volume Unit"
-                  name="volumeUnit"
-                  type="select"
-                  options={apiData.volumeUnits}
-                />
-              </div>
-
-              {!useManualVolume && length && width && height && (
-                <div className="mt-2 text-xs text-green-600">
-                  Auto-calculated: {((parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000).toFixed(4)} m³
-                  (L×W×H/1,000,000)
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Volume (m³)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={volume.toFixed(4)}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
+                  <select
+                    value={formData[`volumeUnit_${item.name}`]}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [`volumeUnit_${item.name}`]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                  >
+                    {apiData.volumeUnits.map(unit => (
+                      <option key={unit.value} value={unit.value}>{unit.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Input
-                label="Weight (kg)"
-                name="weight"
-                type="number"
-                step="0.01"
-                rules={{ required: "Weight is required" }}
-              />
-              <Input
-                label="Weight Unit"
-                name="weightUnit"
-                type="select"
-                options={apiData.weightUnits}
-              />
-              <Input
-                label="Handyman"
-                name="handyman"
-                type="select"
-                options={apiData.handymanTypes}
-              />
-              <Input
-                label="Packing Option"
-                name="packingOption"
-                type="select"
-                options={apiData.packingTypes}
-              />
-              <Input
-                label="Currency"
-                name="currency"
-                type="select"
-                options={apiData.currencies}
-              />
-              <Input
-                label="Remarks"
-                name="remarks"
-                type="textarea"
-              />
+            <div className="col-span-full">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Weight</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Weight (kg)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={weight.toFixed(2)}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
+                  <select
+                    value={formData[`weightUnit_${item.name}`]}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [`weightUnit_${item.name}`]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                  >
+                    {apiData.weightUnits.map(unit => (
+                      <option key={unit.value} value={unit.value}>{unit.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="mt-4 flex gap-3 justify-end">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+              <select
+                value={formData[`handyman_${item.name}`]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [`handyman_${item.name}`]: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+              >
+                <option value="">Select</option>
+                {apiData.handymanTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
+              <select
+                value={formData[`packingOption_${item.name}`]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [`packingOption_${item.name}`]: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+              >
+                <option value="">Select</option>
+                {apiData.packingTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end mt-4">
             <button
               type="button"
-              onClick={handleEditSubmit((data) => updateArticle(article.id, data))}
-              className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
+              onClick={() => onAdd(item.name, formData)}
+              className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition"
             >
-              Update
+              Add to Survey
             </button>
             <button
               type="button"
-              onClick={() => setEditingArticleId(null)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+              onClick={onCancel}
+              className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
             >
               Cancel
             </button>
           </div>
-        </FormProvider>
-      </motion.div>
+        </div>
+      );
+    };
+
+    const ItemRow = ({ item }) => {
+      const isSelected = selectedItems[item.name] || false;
+      const qty = itemQuantities[item.name] || 1;
+
+      return (
+        <div className="border-b border-gray-200 last:border-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all rounded-lg">
+            <div className="flex items-center gap-4 flex-1 w-full">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => toggleItemSelection(item.name)}
+                className="w-4 h-4 text-[#4c7085] rounded border-gray-300 focus:ring-[#4c7085]"
+              />
+              <div className="flex-1">
+                <div className="font-semibold text-gray-800">{item.name}</div>
+                {item.description && <div className="text-xs text-gray-500 mt-1">{item.description}</div>}
+                {(item.length || item.width || item.height) && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {item.length && `L:${item.length}cm`}
+                    {item.width && ` × W:${item.width}cm`}
+                    {item.height && ` × H:${item.height}cm`}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-lg shadow-sm">
+              <button
+                type="button"
+                onClick={() => updateQuantity(item.name, qty - 1)}
+                className="p-4 text-gray-600 hover:bg-gray-100 rounded-l-lg transition"
+              >
+                <FaMinus className="w-4 h-4" />
+              </button>
+              <input
+                type="text"
+                value={qty}
+                readOnly
+                className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => updateQuantity(item.name, qty + 1)}
+                className="p-4 text-gray-600 hover:bg-gray-100 rounded-r-lg transition"
+              >
+                <FaPlus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => toggleExpandedItem(item.name)}
+              className="p-2 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
+            >
+              {expandedItems[item.name] ? <FaChevronUp /> : <FaChevronDown />}
+            </button>
+          </div>
+
+          {expandedItems[item.name] && (
+            <ItemForm
+              item={item}
+              onAdd={addArticle}
+              onCancel={() => toggleExpandedItem(item.name)}
+            />
+          )}
+        </div>
+      );
+    };
+
+  const AddedArticlesSidebar = () => {
+    const articles = watch("articles");
+    const [editingArticle, setEditingArticle] = useState(null);
+    const [editFormData, setEditFormData] = useState({});
+
+    useEffect(() => {
+      if (editingArticle) {
+        const article = articles.find(a => a.id === editingArticle);
+        if (article) {
+          setEditFormData({
+            quantity: article.quantity || 1,
+            length: article.length || "",
+            width: article.width || "",
+            height: article.height || "",
+            volume: article.volume || "",
+            volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
+            weight: article.weight || "",
+            weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
+            handyman: article.handyman || "",
+            packingOption: article.packingOption || "",
+          });
+        }
+      }
+    }, [editingArticle, articles]);
+
+    const calculateVolume = (length, width, height) => {
+      if (!length || !width || !height) return 0;
+      return (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+    };
+
+    const calculateWeight = (volume) => {
+      return volume ? parseFloat(volume) * 110 : 0;
+    };
+
+    const handleEditInputChange = (field, value) => {
+      setEditFormData(prev => {
+        const newData = { ...prev, [field]: value };
+
+        if (field === 'length' || field === 'width' || field === 'height') {
+          const l = field === 'length' ? value : prev.length;
+          const w = field === 'width' ? value : prev.width;
+          const h = field === 'height' ? value : prev.height;
+
+          if (l && w && h) {
+            const vol = calculateVolume(l, w, h);
+            const wt = calculateWeight(vol);
+            newData.volume = vol.toFixed(4);
+            newData.weight = wt.toFixed(2);
+          }
+        }
+
+        return newData;
+      });
+    };
+
+    const updateArticle = (articleId) => {
+      const updatedArticles = articles.map(article => {
+        if (article.id === articleId) {
+          return {
+            ...article,
+            quantity: editFormData.quantity || 1,
+            length: editFormData.length || "",
+            width: editFormData.width || "",
+            height: editFormData.height || "",
+            volume: editFormData.volume || "",
+            volumeUnit: editFormData.volumeUnit || "",
+            weight: editFormData.weight || "",
+            weightUnit: editFormData.weightUnit || "",
+            handyman: editFormData.handyman || "",
+            packingOption: editFormData.packingOption || "",
+          };
+        }
+        return article;
+      });
+
+      setValue("articles", updatedArticles);
+      setEditingArticle(null);
+      setMessage("Article updated!");
+      setTimeout(() => setMessage(null), 3000);
+    };
+
+    const cancelEdit = () => {
+      setEditingArticle(null);
+      setEditFormData({});
+    };
+
+    const removeArticle = (id) => {
+      setValue("articles", articles.filter(a => a.id !== id));
+      setMessage("Article removed!");
+      setTimeout(() => setMessage(null), 3000);
+    };
+
+    return (
+      <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform z-50 ${showArticlesSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
+          <h3 className="font-medium">Added Articles ({articles.length})</h3>
+          <button 
+            onClick={() => setShowArticlesSidebar(false)} 
+            className="p-1 hover:bg-white/20 rounded"
+          >
+            <FaTimes />
+          </button>
+        </div>
+        
+        <div className="overflow-y-auto p-4 space-y-3 h-[calc(100%-64px)]">
+          {articles.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No articles added</p>
+          ) : (
+            articles.map(article => (
+              <div key={article.id} className="p-3 border border-gray-300 rounded-lg bg-white shadow-sm">
+                {editingArticle === article.id ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium text-sm text-gray-800">{article.itemName}</h4>
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={() => updateArticle(article.id)}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Save"
+                        >
+                          <FaCheck className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={cancelEdit}
+                          className="text-gray-600 hover:text-gray-800 p-1"
+                          title="Cancel"
+                        >
+                          <FaTimes className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => handleEditInputChange('quantity', Math.max(1, (editFormData.quantity || 1) - 1))}
+                          className="p-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                          <FaMinus className="w-2 h-2" />
+                        </button>
+                        <input
+                          type="number"
+                          value={editFormData.quantity || 1}
+                          onChange={(e) => handleEditInputChange('quantity', parseInt(e.target.value) || 1)}
+                          className="w-12 text-center px-1 py-1 border rounded text-sm"
+                          min="1"
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => handleEditInputChange('quantity', (editFormData.quantity || 1) + 1)}
+                          className="p-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                          <FaPlus className="w-2 h-2" />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Dimensions (cm)</label>
+                      <div className="grid grid-cols-3 gap-1">
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="L"
+                          value={editFormData.length || ""}
+                          onChange={(e) => handleEditInputChange('length', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="W"
+                          value={editFormData.width || ""}
+                          onChange={(e) => handleEditInputChange('width', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="H"
+                          value={editFormData.height || ""}
+                          onChange={(e) => handleEditInputChange('height', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Volume (m³)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={editFormData.volume || "0.0000"}
+                          className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
+                        <select
+                          value={editFormData.volumeUnit || ""}
+                          onChange={(e) => handleEditInputChange('volumeUnit', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          {apiData.volumeUnits.map(unit => (
+                            <option key={unit.value} value={unit.value}>{unit.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Weight (kg)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={editFormData.weight || "0.00"}
+                          className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
+                        <select
+                          value={editFormData.weightUnit || ""}
+                          onChange={(e) => handleEditInputChange('weightUnit', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          {apiData.weightUnits.map(unit => (
+                            <option key={unit.value} value={unit.value}>{unit.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+                        <select
+                          value={editFormData.handyman || ""}
+                          onChange={(e) => handleEditInputChange('handyman', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value="">Select</option>
+                          {apiData.handymanTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
+                        <select
+                          value={editFormData.packingOption || ""}
+                          onChange={(e) => handleEditInputChange('packingOption', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value="">Select</option>
+                          {apiData.packingTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-800">{article.itemName}</div>
+                      <div className="text-xs text-gray-600 mt-1">Qty: {article.quantity}</div>
+                      {article.volume && (
+                        <div className="text-xs text-gray-600">
+                          Vol: {article.volume} {apiData.volumeUnits.find(u => u.value === article.volumeUnit)?.label || 'm³'}
+                        </div>
+                      )}
+                      {article.weight && (
+                        <div className="text-xs text-gray-600">
+                          Wt: {article.weight} {apiData.weightUnits.find(u => u.value === article.weightUnit)?.label || 'kg'}
+                        </div>
+                      )}
+                      {(article.length || article.width || article.height) && (
+                        <div className="text-xs text-gray-600">
+                          Dim: {article.length && `L:${article.length}cm`}
+                          {article.width && ` × W:${article.width}cm`}
+                          {article.height && ` × H:${article.height}cm`}
+                        </div>
+                      )}
+                      {article.handyman && (
+                        <div className="text-xs text-gray-600">
+                          Handyman: {apiData.handymanTypes.find(h => h.value === article.handyman)?.label}
+                        </div>
+                      )}
+                      {article.packingOption && (
+                        <div className="text-xs text-gray-600">
+                          Packing: {apiData.packingTypes.find(p => p.value === article.packingOption)?.label}
+                        </div>
+                      )}
+                      {article.room && (
+                        <div className="text-xs text-gray-600">
+                          Room: {apiData.rooms.find(r => r.value === article.room)?.label || article.room}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <button 
+                        onClick={() => setEditingArticle(article.id)}
+                        className="text-blue-600 hover:text-blue-800 p-1"
+                        title="Edit"
+                      >
+                        <FaEdit className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => removeArticle(article.id)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Remove"
+                      >
+                        <FaTimes className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     );
   };
 
-  const AddedArticlesPanel = () => {
-    const articles = watch("articles");
-    
     return (
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: showArticlesPanel ? 0 : "100%" }}
-        transition={{ type: "spring", damping: 25 }}
-        className="fixed inset-y-0 right-0 w-full sm:w-1/3 h-screen bg-white shadow-2xl z-50 flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between py-3 px-5 border-b border-gray-200 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
-          <h2 className="text-sm font-light">
-            Added Articles
-            <span className="ml-2 bg-white text-[#4c7085] bg-opacity-20 px-2 py-1 rounded-full text-xs">
-              {articles.length} {articles.length === 1 ? 'article' : 'articles'}
-            </span>
-          </h2>
-          <button
-            onClick={() => setShowArticlesPanel(false)}
-            className="group p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
-            aria-label="Close panel"
-          >
-            <FaMinus className="w-4 h-4 group-hover:text-[#4c7085]" />
+    <div className="relative">
+      <AddedArticlesSidebar />
+      {showArticlesSidebar && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40" 
+          onClick={() => setShowArticlesSidebar(false)} 
+        />
+      )}
+      <div className="space-y-8">
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-medium text-black">Select Room</h3>
+            <button
+              onClick={() => setShowArticlesSidebar(true)}
+              className="flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform hover:scale-105"
+            >
+              <FaBars /> View Added ({watch("articles").length})
+            </button>
+          </div>
+
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setShowRoomDropdown(prev => !prev)}
+                className={`w-full px-6 py-2 text-left text-sm font-medium rounded-xl border-2 transition-all duration-300 flex justify-between items-center shadow-sm ${selectedRoom
+                  ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:border-[#4c7085]"
+                  }`}
+              >
+                <span>{selectedRoom ? selectedRoom.label : "Choose a room to add items"}</span>
+                <FaChevronDown className={`w-4 h-4 transition-transform ${showRoomDropdown ? "rotate-180" : ""}`} />
+              </button>
+
+              {showRoomDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-3 bg-white border-2 border-indigo-200 rounded-2xl shadow-2xl z-20 max-h-96 overflow-y-auto">
+                  {apiData.rooms.map(room => (
+                    <button
+                      key={room.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRoom(room);
+                        setShowRoomDropdown(false);
+                      }}
+                      className="w-full text-left px-6 py-4 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all font-medium text-gray-800 border-b border-gray-100 last:border-0"
+                    >
+                      {room.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {selectedRoom && (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+              {Object.values(selectedItems).some(v => v) && (
+                <div className="p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex justify-between items-center">
+                  <span className="font-medium">
+                    {Object.values(selectedItems).filter(Boolean).length} item(s) selected
+                  </span>
+                  <button
+                    onClick={addMultipleArticles}
+                    className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
+                  >
+                    Add Selected
+                  </button>
+                </div>
+              )}
+
+              <div className="divide-y divide-gray-200">
+                {apiData.items
+                  .filter(i => i.room === selectedRoom.id)
+                  .map(item => (
+                    <ItemRow key={item.id} item={item} />
+                  ))}
+              </div>
+
+              {apiData.items.filter(i => i.room === selectedRoom.id).length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                  <p className="text-lg">No items found in this room.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const VehicleDetails = () => {
+    const vehicles = watch("vehicles") || [];
+
+    const addVehicle = () => {
+      setValue("vehicles", [...vehicles, { id: uuidv4(), vehicleType: "", make: "", model: "", insurance: false, remark: "" }]);
+    };
+
+    const removeVehicle = (id) => {
+      setValue("vehicles", vehicles.filter(v => v.id !== id));
+    };
+
+    return (
+      <div className="mt-10 bg-white rounded-lg shadow p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-medium">Vehicle Details</h2>
+          <button type="button" onClick={addVehicle} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded">
+            <FaPlus /> Add Vehicle
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {articles.length > 0 ? (
-            <div className="p-4 space-y-4">
-              {articles.map((article, index) => (
-                <div
-                  key={article.id}
-                  className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-800 text-sm">
-                        {article.itemName}
-                      </h3>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Room: {getRoomNameById(article.room)}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                          Qty: {article.quantity}
-                        </span>
-                        {article.volume && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            Vol: {article.volume} m³
-                          </span>
-                        )}
-                        {article.weight && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
-                            Wt: {article.weight} kg
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeArticle(article.id);
-                      }}
-                      className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors ml-2"
-                      aria-label={`Remove ${article.itemName}`}
-                    >
-                      <FaMinus className="w-3 h-3" />
-                    </button>
+        {vehicles.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">No vehicles added yet.</p>
+        ) : (
+          <div className="space-y-6">
+            {vehicles.map((vehicle, index) => (
+              <div key={vehicle.id} className="rounded-lg p-6 bg-gray-100 relative">
+                <button type="button" onClick={() => removeVehicle(vehicle.id)} className="absolute top-4 right-4 text-red-600 hover:bg-red-100 p-2 rounded">
+                  <FaTimes />
+                </button>
+                <h4 className="text-lg font-medium mb-4">Vehicle {index + 1}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input label="Vehicle Type" name={`vehicles[${index}].vehicleType`} type="select" options={apiData.vehicleTypes} />
+                  <Input label="Make" name={`vehicles[${index}].make`} placeholder="e.g. Toyota" />
+                  <Input label="Model" name={`vehicles[${index}].model`} placeholder="e.g. Camry" />
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" {...register(`vehicles[${index}].insurance`)} className="w-4 h-4" />
+                    <label className="font-medium">Insurance Required</label>
                   </div>
+                </div>
+                <div className="mt-4">
+                  <Input label="Remark (Optional)" name={`vehicles[${index}].remark`} type="textarea" rows={2} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
-                  {/* Edit button */}
+  const AdditionalServicesTab = () => {
+    const [additionalServices, setAdditionalServices] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const selectedServices = watch("additionalServices") || [];
+
+    useEffect(() => {
+      const fetchAdditionalServices = async () => {
+        try {
+          const response = await apiClient.get("/survey-additional-services/");
+          setAdditionalServices(response.data);
+        } catch (err) {
+          setError("Failed to load additional services.");
+          console.error("Error fetching additional services:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchAdditionalServices();
+    }, []);
+
+    const handleServiceToggle = (serviceId, serviceName) => {
+      const isCurrentlySelected = selectedServices.some(service => service.id === serviceId);
+      
+      let updatedServices;
+      if (isCurrentlySelected) {
+        updatedServices = selectedServices.filter(service => service.id !== serviceId);
+      } else {
+        updatedServices = [...selectedServices, { id: serviceId, name: serviceName, selected: true }];
+      }
+      
+      setValue("additionalServices", updatedServices, { shouldValidate: true });
+    };
+
+    const isServiceSelected = (serviceId) => {
+      return selectedServices.some(service => service.id === serviceId);
+    };
+
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center py-8">
+          <Loading />
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+        <h3 className="text-2xl font-medium text-gray-900 mb-6">Additional Services</h3>
+        
+        {error && (
+          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {additionalServices.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No additional services available. Please add services in the settings first.
+            </div>
+          ) : (
+            additionalServices.map((service) => (
+              <div
+                key={service.id}
+                className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-200 ${
+                  isServiceSelected(service.id)
+                    ? "bg-blue-50 border-blue-200"
+                    : "bg-white border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center space-x-4">
+                  <input
+                    type="checkbox"
+                    checked={isServiceSelected(service.id)}
+                    onChange={() => handleServiceToggle(service.id, service.name)}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className={`font-medium ${
+                    isServiceSelected(service.id) ? "text-blue-700" : "text-gray-700"
+                  }`}>
+                    {service.name}
+                  </span>
+                </div>
+                
+                {isServiceSelected(service.id) && (
+                  <span className="text-sm text-green-600 font-medium">Selected</span>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        {selectedServices.length > 0 && (
+          <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 className="text-lg font-medium text-green-800 mb-2">
+              Selected Additional Services ({selectedServices.length})
+            </h4>
+            <div className="space-y-2">
+              {selectedServices.map((service) => (
+                <div key={service.id} className="flex items-center justify-between">
+                  <span className="text-green-700">{service.name}</span>
                   <button
                     type="button"
-                    onClick={() => setEditingArticleId(
-                      editingArticleId === article.id ? null : article.id
-                    )}
-                    className="w-full mt-2 py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-md text-sm text-gray-700 transition-colors flex items-center justify-center gap-2"
+                    onClick={() => handleServiceToggle(service.id, service.name)}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium"
                   >
-                    {editingArticleId === article.id ? (
-                      <>
-                        <FaChevronUp className="w-3 h-3" />
-                        Cancel Edit
-                      </>
-                    ) : (
-                      <>
-                        <FaChevronDown className="w-3 h-3" />
-                        Edit Article
-                      </>
-                    )}
+                    Remove
                   </button>
-
-                  {/* Edit Form */}
-                  {editingArticleId === article.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3"
-                    >
-                      <EditArticleRow article={article} />
-                    </motion.div>
-                  )}
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg
-                  className="w-16 h-16 mx-auto"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1"
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              </div>
-              <p className="text-gray-500 text-lg mb-2">No articles added yet</p>
-              <p className="text-gray-400 text-sm">
-                Add articles using the form above
-              </p>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    );
-  };
-
-  const sections = [
-    {
-      id: "master-article",
-      title: "Master Article",
-      content: (
-        <>
-          {/* Floating button for mobile */}
-          <div className="sm:hidden fixed bottom-6 right-6 z-40">
-            <button
-              type="button"
-              onClick={() => setShowArticlesPanel(true)}
-              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
-              aria-label="View added articles"
-            >
-              <div className="relative">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-                {watch("articles").length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {watch("articles").length}
-                  </span>
-                )}
-              </div>
-            </button>
           </div>
-
-          {/* Sidebar button for desktop */}
-          <div className="hidden sm:block fixed top-1/2 right-0 transform -translate-y-1/2 z-30">
-            <button
-              type="button"
-              onClick={() => setShowArticlesPanel(true)}
-              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-4 rounded-l-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 group"
-              aria-label="View added articles"
-            >
-              <div className="relative">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-                {watch("articles").length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    {watch("articles").length}
-                  </span>
-                )}
-              </div>
-              <span className="text-sm font-medium group-hover:block hidden">
-                Articles ({watch("articles").length})
-              </span>
-            </button>
-          </div>
-
-          {selectedRoom ? (
-            <div className="overflow-x-auto mt-4">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-left">
-                      Item
-                    </th>
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-center">
-                      Quantity
-                    </th>
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-700 text-right">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {apiData.items
-                    .filter((item) => item.room === selectedRoom.id)
-                    .map((itemData) => (
-                      <ItemRow key={itemData.id} item={itemData} />
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center text-gray-500 py-4">
-              Please select a room to view items.
-            </div>
-          )}
-        </>
-      ),
-    },
-    {
-      id: "vehicle",
-      title: "Vehicle",
-      content: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4">
-          <Input
-            label="Vehicle Type"
-            name="vehicles[0].vehicleType"
-            type="select"
-            options={apiData.vehicleTypes}
-            rules={{ required: "Vehicle Type is required" }}
-          />
-          <Input
-            label="Make"
-            name="vehicles[0].make"
-            type="text"
-            rules={{ required: "Make is required" }}
-          />
-          <Input
-            label="Model"
-            name="vehicles[0].model"
-            type="text"
-            rules={{ required: "Model is required" }}
-          />
-          <Input
-            label="Remark"
-            name="vehicles[0].remark"
-            type="textarea"
-          />
-        </div>
-      ),
-    },
-  ];
-
-  return (
-    <div className="space-y-8 relative">
-      {/* Articles Panel */}
-      <AddedArticlesPanel />
-      
-      {/* Overlay for mobile when panel is open */}
-      {showArticlesPanel && (
-        <div 
-          className="fixed inset-0 backdrop-brightness-50 z-40 sm:hidden"
-          onClick={() => setShowArticlesPanel(false)}
-        />
-      )}
-
-      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          Select Room
-        </h2>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowRoomDropdown(!showRoomDropdown)}
-            className="w-full px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex justify-between items-center"
-          >
-            <span>{selectedRoom ? selectedRoom.label : "Select a Room"}</span>
-            <FaPlus
-              className={`w-3 h-3 transition-transform ${showRoomDropdown ? "rotate-45" : ""
-                }`}
-            />
-          </button>
-          <AnimatePresence>
-            {showRoomDropdown && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 bg-white border rounded-md shadow-lg"
-              >
-                {apiData.rooms.map((room) => (
-                  <button
-                    key={room.id}
-                    type="button"
-                    onClick={() => handleRoomSelect(room)}
-                    className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100"
-                  >
-                    {room.label}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-      
-      {sections.map((section) => (
-        <div
-          key={section.id}
-          className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-        >
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            {section.title}
-          </h2>
-          {section.content}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-  const Pet = () => {
-    const breedOptions = {
-      dog: [
-        { value: "labrador", label: "Labrador Retriever" },
-        { value: "german_shepherd", label: "German Shepherd" },
-        { value: "golden_retriever", label: "Golden Retriever" },
-        { value: "bulldog", label: "Bulldog" },
-        { value: "beagle", label: "Beagle" },
-        { value: "poodle", label: "Poodle" },
-        { value: "other", label: "Other" },
-      ],
-      cat: [
-        { value: "siamese", label: "Siamese" },
-        { value: "persian", label: "Persian" },
-        { value: "maine_coon", label: "Maine Coon" },
-        { value: "ragdoll", label: "Ragdoll" },
-        { value: "bengal", label: "Bengal" },
-        { value: "other", label: "Other" },
-      ],
-      bird: [
-        { value: "parrot", label: "Parrot" },
-        { value: "canary", label: "Canary" },
-        { value: "finch", label: "Finch" },
-        { value: "cockatiel", label: "Cockatiel" },
-        { value: "other", label: "Other" },
-      ],
-      other: [
-        { value: "other", label: "Other" },
-      ],
-    };
-    const vaccinationOptions = [
-      { value: "up_to_date", label: "Up to Date" },
-      { value: "not_up_to_date", label: "Not Up to Date" },
-      { value: "unknown", label: "Unknown" },
-    ];
-
-    const getBreedOptions = (petType) => {
-      return breedOptions[petType] || breedOptions.other;
-    };
-
-    const onAddPet = (data) => {
-      const newPet = {
-        ...data,
-        id: Date.now(),
-      };
-      const updatedPets = [...watch("pets"), newPet];
-      setValue("pets", updatedPets);
-      reset({
-        ...watch(),
-        petName: "",
-        petType: "",
-        breed: "",
-        age: 0,
-        weight: 0,
-        specialCare: "",
-        transportRequirements: "",
-        feedingInstructions: "",
-        medication: "",
-        vaccinationStatus: "",
-        behaviorNotes: "",
-      });
-      setMessage("Pet added successfully!");
-      setTimeout(() => setMessage(null), 3000);
-    };
-
-    const removePet = (petId) => {
-      const updatedPets = watch("pets").filter((pet) => pet.id !== petId);
-      setValue("pets", updatedPets);
-      setMessage("Pet removed successfully!");
-      setTimeout(() => setMessage(null), 3000);
-    };
-
-    const sections = [
-      {
-        id: "pet-details",
-        title: "Pet Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-            <Input
-              label="Pet Name"
-              name="petName"
-              type="text"
-              rules={{ required: "Pet Name is required" }}
-              placeholder="Enter pet name"
-            />
-            <Input
-              label="Pet Type"
-              name="petType"
-              type="select"
-              options={[{ value: "", label: "Select Pet Type" }, ...apiData.petTypes]}
-              rules={{ required: "Pet Type is required" }}
-            />
-            <Input
-              label="Breed"
-              name="breed"
-              type="select"
-              options={[{ value: "", label: "Select Breed" }, ...getBreedOptions(watch("petType"))]}
-              rules={{ required: "Breed is required" }}
-            />
-            <Input
-              label="Age (years)"
-              name="age"
-              type="number"
-              rules={{
-                required: "Age is required",
-                min: { value: 0, message: "Age cannot be negative" },
-                max: { value: 50, message: "Please enter a valid age" },
-              }}
-              placeholder="Age in years"
-            />
-            <Input
-              label="Weight (kg)"
-              name="weight"
-              type="number"
-              rules={{
-                required: "Weight is required",
-                min: { value: 0, message: "Weight cannot be negative" },
-                max: { value: 200, message: "Please enter a valid weight" },
-              }}
-              placeholder="Weight in kilograms"
-            />
-            <Input
-              label="Vaccination Status"
-              name="vaccinationStatus"
-              type="select"
-              options={[{ value: "", label: "Select Status" }, ...vaccinationOptions]}
-              rules={{ required: "Vaccination status is required" }}
-            />
-            <div className="md:col-span-2">
-              <Input
-                label="Special Care Instructions"
-                name="specialCare"
-                type="textarea"
-                placeholder="Any special care requirements, health issues, or specific needs"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Transport Requirements"
-                name="transportRequirements"
-                type="textarea"
-                placeholder="Specific requirements for transport (cage size, temperature, etc.)"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Feeding Instructions"
-                name="feedingInstructions"
-                type="textarea"
-                placeholder="Feeding schedule, diet restrictions, special food requirements"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Medication"
-                name="medication"
-                type="textarea"
-                placeholder="Current medications, dosage, and administration instructions"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input
-                label="Behavior Notes"
-                name="behaviorNotes"
-                type="textarea"
-                placeholder="Temperament, behavior with other animals/people, any special handling requirements"
-              />
-            </div>
-            <div className="md:col-span-2 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleSubmit(onAddPet)}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-300"
-              >
-                Add Pet
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  reset({
-                    ...watch(),
-                    petName: "",
-                    petType: "",
-                    breed: "",
-                    age: 0,
-                    weight: 0,
-                    specialCare: "",
-                    transportRequirements: "",
-                    feedingInstructions: "",
-                    medication: "",
-                    vaccinationStatus: "",
-                    behaviorNotes: "",
-                  })
-                }
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-300"
-              >
-                Clear Form
-              </button>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "pet-list",
-        title: "Added Pets",
-        content: (
-          <div className="p-4">
-            {watch("pets").length > 0 ? (
-              <div className="space-y-4">
-                {watch("pets").map((pet, index) => (
-                  <motion.div
-                    key={pet.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="border border-gray-200 rounded-md p-4 bg-white shadow-sm"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {pet.petName}
-                          <span className="ml-2 text-sm font-normal text-gray-600 capitalize">
-                            ({pet.petType})
-                          </span>
-                        </h3>
-                        <p className="text-sm text-gray-600 capitalize">
-                          {pet.breed}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removePet(pet.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                        aria-label={`Remove ${pet.petName}`}
-                      >
-                        <FaMinus className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">Age:</span>
-                        <p className="text-gray-600">{pet.age} years</p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Weight:</span>
-                        <p className="text-gray-600">{pet.weight} kg</p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Vaccination:
-                        </span>
-                        <p className="text-gray-600 capitalize">
-                          {pet.vaccinationStatus?.replace("_", " ")}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">ID:</span>
-                        <p className="text-gray-600">#{index + 1}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {pet.specialCare && (
-                        <div>
-                          <span className="font-medium text-gray-700 text-sm">
-                            Special Care:
-                          </span>
-                          <p className="text-gray-600 text-sm">
-                            {pet.specialCare}
-                          </p>
-                        </div>
-                      )}
-                      {pet.transportRequirements && (
-                        <div>
-                          <span className="font-medium text-gray-700 text-sm">
-                            Transport:
-                          </span>
-                          <p className="text-gray-600 text-sm">
-                            {pet.transportRequirements}
-                          </p>
-                        </div>
-                      )}
-                      {pet.medication && (
-                        <div>
-                          <span className="font-medium text-gray-700 text-sm">
-                            Medication:
-                          </span>
-                          <p className="text-gray-600 text-sm">
-                            {pet.medication}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-gray-400 mb-2">
-                  <svg
-                    className="w-16 h-16 mx-auto"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1"
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                </div>
-                <p className="text-gray-500 text-lg">No pets added yet</p>
-                <p className="text-gray-400 text-sm mt-1">
-                  Add pets using the form above
-                </p>
-              </div>
-            )}
-          </div>
-        ),
-      },
-    ];
-
-    return (
-      <div className="space-y-8">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {section.title}
-              {section.id === "pet-list" && watch("pets").length > 0 && (
-                <span className="ml-2 bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full text-xs">
-                  {watch("pets").length}{" "}
-                  {watch("pets").length === 1 ? "pet" : "pets"}
-                </span>
-              )}
-            </h2>
-            {section.content}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const Service = () => {
-    const sections = [
-      {
-        id: "general",
-        title: "General",
-        content: (
-          <div className="grid grid-cols-1 gap-6">
-            <ServiceCheckbox
-              label="Any goods packed by the owner?"
-              name="generalOwnerPacked"
-              notesName="generalOwnerPackedNotes"
-            />
-            <ServiceCheckbox
-              label="Is there any restriction on weight, volume, or budget?"
-              name="generalRestriction"
-              notesName="generalRestrictionNotes"
-            />
-            <ServiceCheckbox
-              label="Do you require any handyman service at origin and destination?"
-              name="generalHandyman"
-              notesName="generalHandymanNotes"
-            />
-            <ServiceCheckbox
-              label="Do you require insurance for your items?"
-              name="generalInsurance"
-              notesName="generalInsuranceNotes"
-            />
-          </div>
-        ),
-      },
-      {
-        id: "origin",
-        title: "Origin",
-        content: (
-          <div className="grid grid-cols-1 gap-6">
-            <ServiceCheckbox
-              label="On which floor is your residence?"
-              name="originFloor"
-              notesName="originFloorNotes"
-            />
-            <ServiceCheckbox
-              label="Is a lift available and allowed for use?"
-              name="originLift"
-              notesName="originLiftNotes"
-            />
-            <ServiceCheckbox
-              label="Are there any parking restrictions?"
-              name="originParking"
-              notesName="originParkingNotes"
-            />
-            <ServiceCheckbox
-              label="Is your destination house ready to occupy, or do you require a storage facility?"
-              name="originStorage"
-              notesName="originStorageNotes"
-            />
-          </div>
-        ),
-      },
-      {
-        id: "destination",
-        title: "Destination",
-        content: (
-          <div className="grid grid-cols-1 gap-6">
-            <ServiceCheckbox
-              label="On which floor is your residence?"
-              name="destinationFloor"
-              notesName="destinationFloorNotes"
-            />
-            <ServiceCheckbox
-              label="Is a lift available and allowed for use?"
-              name="destinationLift"
-              notesName="destinationLiftNotes"
-            />
-            <ServiceCheckbox
-              label="Are there any parking restrictions?"
-              name="destinationParking"
-              notesName="destinationParkingNotes"
-            />
-          </div>
-        ),
-      },
-    ];
-
-    return (
-      <div className="space-y-8">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {section.title}
-            </h2>
-            {section.content}
-          </div>
-        ))}
+        )}
       </div>
     );
   };
 
   const saveSurveyData = async (data) => {
     setIsLoading(true);
-
     const payload = {
       enquiry: surveyId ? parseInt(surveyId) : null,
       customer_type: data.customerType || null,
@@ -2349,18 +1406,10 @@ const Article = () => {
       goods_type: data.goodsType,
       status: data.status,
       survey_date: data.surveyDate ? data.surveyDate.toISOString().split("T")[0] : null,
-      survey_start_time: data.surveyStartTime
-        ? data.surveyStartTime.toTimeString().split(" ")[0]
-        : null,
-      survey_end_time: data.surveyEndTime
-        ? data.surveyEndTime.toTimeString().split(" ")[0]
-        : null,
+      survey_start_time: data.surveyStartTime ? data.surveyStartTime.toTimeString().split(" ")[0].slice(0, 5) : null,
+      survey_end_time: data.surveyEndTime ? data.surveyEndTime.toTimeString().split(" ")[0].slice(0, 5) : null,
       work_description: data.workDescription,
       include_vehicle: data.includeVehicle,
-      include_pet: data.includePet,
-      cost_together_vehicle: data.costTogetherVehicle,
-      cost_together_pet: data.costTogetherPet,
-      same_as_customer_address: data.sameAsCustomerAddress,
       origin_address: data.originAddress,
       origin_city: data.originCity,
       origin_country: data.originCountry,
@@ -2368,330 +1417,156 @@ const Article = () => {
       origin_zip: data.originZip,
       pod_pol: data.podPol,
       multiple_addresses: data.multipleAddresses,
-      destination_addresses: data.destinationAddresses.map((addr) => ({
-        address: addr.address,
-        city: addr.city,
-        country: addr.country,
-        state: addr.state,
-        zip: addr.zip,
-        poe: addr.poe,
+      destination_addresses: data.destinationAddresses.map(a => ({
+        address: a.address,
+        city: a.city,
+        country: a.country,
+        state: a.state,
+        zip: a.zip,
+        poe: a.poe
       })),
-      packing_date_from: data.packingDateFrom
-        ? data.packingDateFrom.toISOString().split("T")[0]
-        : null,
-      packing_date_to: data.packingDateTo
-        ? data.packingDateTo.toISOString().split("T")[0]
-        : null,
-      loading_date: data.loadingDate
-        ? data.loadingDate.toISOString().split("T")[0]
-        : null,
+      packing_date_from: data.packingDateFrom ? data.packingDateFrom.toISOString().split("T")[0] : null,
+      packing_date_to: data.packingDateTo ? data.packingDateTo.toISOString().split("T")[0] : null,
+      loading_date: data.loadingDate ? data.loadingDate.toISOString().split("T")[0] : null,
       eta: data.eta ? data.eta.toISOString().split("T")[0] : null,
       etd: data.etd ? data.etd.toISOString().split("T")[0] : null,
-      est_delivery_date: data.estDeliveryDate
-        ? data.estDeliveryDate.toISOString().split("T")[0]
-        : null,
-      storage_start_date: data.storageStartDate
-        ? data.storageStartDate.toISOString().split("T")[0]
-        : null,
+      est_delivery_date: data.estDeliveryDate ? data.estDeliveryDate.toISOString().split("T")[0] : null,
+      storage_start_date: data.storageStartDate ? data.storageStartDate.toISOString().split("T")[0] : null,
       storage_frequency: data.storageFrequency,
       storage_duration: data.storageDuration,
       storage_mode: data.storageMode,
       transport_mode: data.transportMode,
-      general_owner_packed: data.generalOwnerPacked,
-      general_owner_packed_notes: data.generalOwnerPackedNotes,
-      general_restriction: data.generalRestriction,
-      general_restriction_notes: data.generalRestrictionNotes,
-      general_handyman: data.generalHandyman,
-      general_handyman_notes: data.generalHandymanNotes,
-      general_insurance: data.generalInsurance,
-      general_insurance_notes: data.generalInsuranceNotes,
-      origin_floor: data.originFloor,
-      origin_floor_notes: data.originFloorNotes,
-      origin_lift: data.originLift,
-      origin_lift_notes: data.originLiftNotes,
-      origin_parking: data.originParking,
-      origin_parking_notes: data.originParkingNotes,
-      origin_storage: data.originStorage,
-      origin_storage_notes: data.originStorageNotes,
-      destination_floor: data.destinationFloor,
-      destination_floor_notes: data.destinationFloorNotes,
-      destination_lift: data.destinationLift,
-      destination_lift_notes: data.destinationLiftNotes,
-      destination_parking: data.destinationParking,
-      destination_parking_notes: data.destinationParkingNotes,
-      articles: data.articles.map((article) => ({
-        room: article.room || null,
-        item_name: article.itemName,
-        quantity: article.quantity,
-        volume: article.volume || null,
-        volume_unit: article.volumeUnit || null,
-        weight: article.weight || null,
-        weight_unit: article.weightUnit || null,
-        handyman: article.handyman || null,
-        packing_option: article.packingOption || null,
-        move_status: article.moveStatus,
-        amount: article.amount || null,
-        currency: article.currency || null,
-        remarks: article.remarks,
-        length: article.length || null,
-        width: article.width || null,
-        height: article.height || null,
+      articles: data.articles.map(a => ({
+        room: a.room || null,
+        item_name: a.itemName,
+        quantity: a.quantity,
+        volume: a.volume || null,
+        volume_unit: a.volumeUnit || null,
+        weight: a.weight || null,
+        weight_unit: a.weightUnit || null,
+        handyman: a.handyman || null,
+        packing_option: a.packingOption || null,
+        move_status: a.moveStatus || "new",
+        length: a.length || null,
+        width: a.width || null,
+        height: a.height || null,
       })),
-      vehicles: data.vehicles.map((vehicle) => ({
-        vehicle_type: vehicle.vehicleType || null,
-        make: vehicle.make,
-        model: vehicle.model,
-        insurance: vehicle.insurance || false,
-        remark: vehicle.remark,
-        transport_mode: vehicle.transportMode || null,
+      vehicles: data.vehicles.map(v => ({
+        vehicle_type: v.vehicleType || null,
+        make: v.make || "",
+        model: v.model || "",
+        insurance: v.insurance || false,
+        remark: v.remark || "",
       })),
-      pets: data.pets.map((pet) => ({
-        pet_name: pet.petName,
-        pet_type: pet.petType || null,
-        breed: pet.breed,
-        age: pet.age,
-        weight: pet.weight,
-        special_care: pet.specialCare,
-        transport_requirements: pet.transportRequirements,
-        feeding_instructions: pet.feedingInstructions,
-        medication: pet.medication,
-        vaccination_status: pet.vaccinationStatus,
-        behavior_notes: pet.behaviorNotes,
-      })),
+      additional_service_ids: data.additionalServices?.map(service => service.id) || [],
     };
 
-    if (existingSurvey) {
-      return apiClient
-        .put(`/surveys/${existingSurvey.survey_id}/`, payload)
-        .then((response) => {
-          setMessage("Survey updated successfully!");
-          setTimeout(() => {
-            navigate(`/survey/${existingSurvey.survey_id}/survey-summary`, {
-              state: {
-                customerData: {
-                  surveyId: response.data.survey_id,
-                  fullName: data.fullName,
-                  phoneNumber: data.phoneNumber,
-                  email: data.email,
-                  serviceType:
-                    response.data.service_type_display ||
-                    response.data.service_type_name ||
-                    "N/A",
-                  surveyDate: data.surveyDate,
-                  surveyStartTime: data.surveyStartTime,
-                  customer_id: response.data.enquiry?.id || null,
-                  enquiry_id: response.data.enquiry || null,
-                },
-                articles: data.articles,
-                vehicles: data.vehicles,
-                pets: data.pets,
-                serviceData: {
-                  general_owner_packed: data.generalOwnerPacked,
-                  general_owner_packed_notes: data.generalOwnerPackedNotes,
-                  general_restriction: data.generalRestriction,
-                  general_restriction_notes: data.generalRestrictionNotes,
-                  general_handyman: data.generalHandyman,
-                  general_handyman_notes: data.generalHandymanNotes,
-                  general_insurance: data.generalInsurance,
-                  general_insurance_notes: data.generalInsuranceNotes,
-                  origin_floor: data.originFloor,
-                  origin_floor_notes: data.originFloorNotes,
-                  origin_lift: data.originLift,
-                  origin_lift_notes: data.originLiftNotes,
-                  origin_parking: data.originParking,
-                  origin_parking_notes: data.originParkingNotes,
-                  origin_storage: data.originStorage,
-                  origin_storage_notes: data.originStorageNotes,
-                  destination_floor: data.destinationFloor,
-                  destination_floor_notes: data.destinationFloorNotes,
-                  destination_lift: data.destinationLift,
-                  destination_lift_notes: data.destinationLiftNotes,
-                  destination_parking: data.destinationParking,
-                  destination_parking_notes: data.destinationParkingNotes,
-                },
-              },
-            });
-          }, 2000);
-          setIsLoading(false);
-          return response.data;
-        })
-        .catch((error) => {
-          setError("Failed to update survey data. Please try again.");
-          setIsLoading(false);
-          throw error;
-        });
-    } else {
-      return apiClient
-        .post(`/surveys/`, payload)
-        .then((response) => {
-          const newSurveyId = response.data.survey_id;
-          setMessage("Survey created successfully!");
-          setTimeout(() => {
-            navigate(`/survey/${newSurveyId}/survey-summary`, {
-              state: {
-                customerData: {
-                  surveyId: response.data.survey_id,
-                  fullName: data.fullName,
-                  phoneNumber: data.phoneNumber,
-                  email: data.email,
-                  serviceType:
-                    response.data.service_type_display ||
-                    response.data.service_type_name ||
-                    "N/A",
-                  surveyDate: data.surveyDate,
-                  surveyStartTime: data.surveyStartTime,
-                  customer_id: response.data.enquiry?.id || null,
-                  enquiry_id: response.data.enquiry || null,
-                },
-                articles: data.articles,
-                vehicles: data.vehicles,
-                pets: data.pets,
-                serviceData: {
-                  general_owner_packed: data.generalOwnerPacked,
-                  general_owner_packed_notes: data.generalOwnerPackedNotes,
-                  general_restriction: data.generalRestriction,
-                  general_restriction_notes: data.generalRestrictionNotes,
-                  general_handyman: data.generalHandyman,
-                  general_handyman_notes: data.generalHandymanNotes,
-                  general_insurance: data.generalInsurance,
-                  general_insurance_notes: data.generalInsuranceNotes,
-                  origin_floor: data.originFloor,
-                  origin_floor_notes: data.originFloorNotes,
-                  origin_lift: data.originLift,
-                  origin_lift_notes: data.originLiftNotes,
-                  origin_parking: data.originParking,
-                  origin_parking_notes: data.originParkingNotes,
-                  origin_storage: data.originStorage,
-                  origin_storage_notes: data.originStorageNotes,
-                  destination_floor: data.destinationFloor,
-                  destination_floor_notes: data.destinationFloorNotes,
-                  destination_lift: data.destinationLift,
-                  destination_lift_notes: data.destinationLiftNotes,
-                  destination_parking: data.destinationParking,
-                  destination_parking_notes: data.destinationParkingNotes,
-                },
-              },
-            });
-          }, 2000);
-          setIsLoading(false);
-          return response.data;
-        })
-        .catch((error) => {
-          setError("Failed to create survey data. Please try again.");
-          setIsLoading(false);
-          throw error;
-        });
-    }
+    const request = existingSurvey
+      ? apiClient.put(`/surveys/${existingSurvey.survey_id}/`, payload)
+      : apiClient.post("/surveys/", payload);
+
+    request
+      .then(res => {
+        setMessage(existingSurvey ? "Survey updated!" : "Survey created!");
+        setTimeout(() => navigate(`/survey/${res.data.survey_id}/survey-summary`, { state: { customerData: data } }), 2000);
+      })
+      .catch(err => {
+        console.error("Error saving survey:", err.response?.data);
+        setError("Failed to save survey.");
+      })
+      .finally(() => setIsLoading(false));
   };
 
-  const onNext = async (data) => {
+  const onNext = (data) => {
     if (activeTab === "customer") {
-      try {
-        setActiveTab(data.goodsType === "pet" ? "items" : "items");
-      } catch (error) {
-        setError("Failed to proceed to next step. Please try again.");
-      }
+      setActiveTab("items");
     } else if (activeTab === "items") {
-      if (data.goodsType === "pet" && data.pets.length === 0) {
-        setError("Please add at least one pet before proceeding.");
+      setActiveTab("additionalServices");
+    } else if (activeTab === "additionalServices") {
+      if (data.articles.length === 0 && data.vehicles.length === 0 && data.additionalServices.length === 0) {
+        setError("Add at least one article, vehicle, or additional service");
         return;
       }
-      if (data.goodsType === "article" && data.articles.length === 0) {
-        setError("Please add at least one article before proceeding.");
-        return;
-      }
-      setActiveTab("service");
-    } else if (activeTab === "service") {
-      try {
-        await saveSurveyData(data);
-      } catch (error) {
-        console.error("Failed to save survey data:", error);
-      }
+      saveSurveyData(data);
     }
   };
 
-  const onBack = () => {
-    if (activeTab === "service") {
-      setActiveTab(watch("goodsType") === "pet" ? "items" : "items");
-    } else if (activeTab === "items") {
-      setActiveTab("customer");
-    } else {
-      navigate(-1);
+  const getButtonText = () => {
+    if (isLoading) return "Saving...";
+    
+    switch (activeTab) {
+      case "customer":
+        return "Next";
+      case "items":
+        return "Next";
+      case "additionalServices":
+        return "Save & Complete";
+      default:
+        return "Next";
+    }
+  };
+
+  const handleBack = () => {
+    switch (activeTab) {
+      case "items":
+        setActiveTab("customer");
+        break;
+      case "additionalServices":
+        setActiveTab("items");
+        break;
+      default:
+        navigate(-1);
+        break;
     }
   };
 
   return (
     <>
-      {isLoading && (
-        <div className="flex justify-center items-center min-h-screen">
-          <Loading />
-        </div>
-      )}
-      {error && (
-        <motion.div
-          className="mb-6 p-4 bg-red-100 text-red-700 rounded-md"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {error}
-        </motion.div>
-      )}
-      {message && (
-        <motion.div
-          className="mb-6 p-4 bg-green-100 text-green-700 rounded-md"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {message}
-        </motion.div>
-      )}
-      <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onNext)} className="space-y-6">
-          <div className="grid grid-cols-3 items-center justify-between gap-6 mb-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={`py-2 px-4 text-sm font-medium ${activeTab === tab.id
-                  ? "text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                  : "text-sm bg-gradient-to-r from-gray-200 to-gray-100 text-[#6b8ca3] py-2 px-4 rounded"
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-6">
+      {isLoading && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><Loading /></div>}
+      {error && <div className="fixed top-20 right-8 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50">{error}</div>}
+      {message && <div className="fixed top-20 right-8 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50">{message}</div>}
+
+      <div className="min-h-auto">
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onNext)} className="mx-auto">
+            <div className="flex gap-4 mb-8">
+              {tabs.map(tab => (
+                <button key={tab.id} type="button" onClick={() => handleTabChange(tab.id)}
+                  className={`px-6 py-3 rounded-lg font-medium ${activeTab === tab.id ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {activeTab === "customer" && <Customer />}
-            {activeTab === "items" &&
-              (watch("goodsType") === "pet" ? <Pet /> : <Article />)}
-            {activeTab === "service" && <Service />}
-          </div>
-          <div className="mt-8 flex flex-col sm:flex-row sm:justify-end gap-4">
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-6 py-3 w-full sm:w-auto bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 hover:shadow-md transition-all duration-300 text-sm"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-            >
-              {isLoading
-                ? "Saving..."
-                : activeTab === "service"
-                  ? "Save & Complete Survey"
-                  : "Next"}
-            </button>
-          </div>
-        </form>
-      </FormProvider>
+            {activeTab === "items" && (
+              <>
+                <Article />
+                <div className="mt-10">
+                  <VehicleDetails />
+                </div>
+              </>
+            )}
+            {activeTab === "additionalServices" && <AdditionalServicesTab />}
+            <div className="flex gap-4 mt-10">
+              <button 
+                type="button" 
+                onClick={handleBack}
+                className="flex-1 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
+              >
+                Back
+              </button>
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                className="flex-1 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:opacity-90 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {getButtonText()}
+              </button>
+            </div>
+          </form>
+        </FormProvider>
+      </div>
     </>
   );
 };

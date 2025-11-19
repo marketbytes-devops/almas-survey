@@ -31,6 +31,7 @@ import QuotationCreate from "./pages/Quotation/QuotationCreate";
 import QuotationEdit from "./pages/Quotation/QuotationEdit";
 import QuotationView from "./pages/Quotation/QuotationView";
 import QuotationLocalMove from "./components/Templates/QuotationLocalMove";
+import AdditionalServices from "./pages/AdditionalSettings/AdditionalService";
 
 const ProtectedRoute = ({
   children,
@@ -292,6 +293,13 @@ function App() {
           element: (
             <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="room">
               <Room />
+            </ProtectedRoute>
+          ),
+        }, {
+          path: "/additional-settings/additional-services",
+          element: (
+            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="additional-services">
+              <AdditionalServices />
             </ProtectedRoute>
           ),
         },

@@ -125,6 +125,7 @@ const Sidebar = ({ toggleSidebar }) => {
         { to: "/additional-settings/handyman", label: "Handyman", icon: <AiOutlineTool className="w-4 h-4" />, page: "handyman", action: "view" },
         { to: "/additional-settings/manpower", label: "Manpower", icon: <AiOutlineTeam className="w-4 h-4" />, page: "manpower", action: "view" },
         { to: "/additional-settings/room", label: "Room", icon: <AiOutlineHome className="w-4 h-4" />, page: "room", action: "view" },
+        { to: "/additional-settings/additional-services", label: "Additional Services", icon: <AiOutlineHome className="w-4 h-4" />, page: "additional-services", action: "view" },
       ],
     },
     {
