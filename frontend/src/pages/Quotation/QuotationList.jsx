@@ -221,13 +221,13 @@ export default function QuotationList() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">S.No</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Phone</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Service</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase">Quotation</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase">Signature</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">S.No</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Customer</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Phone</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Email</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Service</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-center text-xs font-medium uppercase">Action</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-center text-xs font-medium uppercase">Signature</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -247,57 +247,61 @@ export default function QuotationList() {
                       initial="rest"
                       whileHover="hover"
                     >
-                      <td className="px-4 py-3 text-sm text-gray-900">{idx + 1}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{idx + 1}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{name}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                         <span className="flex items-center gap-1">
                           <FaPhoneAlt className="w-3 h-3" /> {phone}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                         <span className="flex items-center gap-1">
                           <FaEnvelope className="w-3 h-3" /> {email}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{service}</td>
-                      <td className="px-4 py-3 text-center space-x-2">
-                        {s.hasQuotation ? (
-                          <>
-                            <Link
-                              to={`/quotation-view/${s.quotation_id}`}
-                              className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
-                            >
-                              <FaEye /> View Quotation
-                            </Link>
-                            <Link
-                              to={`/quotation-edit/${s.survey_id}`}
-                              className="inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
-                            >
-                              <FaEdit /> Edit Quotation
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
-                              className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
-                            >
-                              Delete Quotation
-                            </button>
-                          </>
-                        ) : (
-                          <Link
-                            to={`/quotation-create/${s.survey_id}`}
-                            className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
-                          >
-                            Create Quotation
-                          </Link>
-                        )}
-                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{service}</td>
+                        <td className="px-4 py-3">
+                          {s.hasQuotation ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Link
+                                to={`/quotation-view/${s.quotation_id}`}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                              >
+                                <FaEye /> View Quotation
+                              </Link>
+
+                              <Link
+                                to={`/quotation-edit/${s.survey_id}`}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
+                              >
+                                <FaEdit /> Edit Quotation
+                              </Link>
+
+                              <button
+                                onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                              >
+                                Delete Quotation
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center">
+                              <Link
+                                to={`/quotation-create/${s.survey_id}`}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                              >
+                                Create Quotation
+                              </Link>
+                            </div>
+                          )}
+                        </td>
                       <td className="px-4 py-3 text-center">
                         {s.signature_uploaded ? (
                           <button
                             onClick={() => viewSignature(s)}
-                            className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                            className="whitespace-nowrap inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
                           >
-                            <FaSignature /> View Sign
+                            <FaSignature /> View Signature
                           </button>
                         ) : (
                           <span className="text-gray-500 text-xs">No Signature</span>
@@ -342,7 +346,7 @@ export default function QuotationList() {
                       {!s.hasQuotation ? (
                         <Link
                           to={`/quotation-create/${s.survey_id}`}
-                          className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs cursor-pointer"
+                          className="whitespace-nowrap inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs cursor-pointer"
                         >
                           Create Quotation
                         </Link>
@@ -350,19 +354,19 @@ export default function QuotationList() {
                         <>
                           <Link
                             to={`/quotation-view/${s.quotation_id}`}
-                            className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                            className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
                           >
                             View Quotation
                           </Link>
                           <Link
                             to={`/quotation-create/${s.survey_id}`}
-                            className="inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
+                            className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
                           >
                             Edit Quotation
                           </Link>
                           <button
                             onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
-                            className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                            className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
                           >
                             Delete Quotation
                           </button>
@@ -374,7 +378,7 @@ export default function QuotationList() {
                       {s.signature_uploaded ? (
                         <button
                           onClick={() => viewSignature(s)}
-                          className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs w-full justify-center"
+                          className="whitespace-nowrap inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs w-full justify-center"
                         >
                           <FaSignature /> View Signature
                         </button>
