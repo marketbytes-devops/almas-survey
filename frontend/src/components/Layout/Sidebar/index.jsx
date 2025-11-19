@@ -20,8 +20,9 @@ import {
   AiOutlineUsergroupAdd,
   AiOutlineKey,
   AiOutlineIdcard,
-  AiOutlineUser,
   AiOutlineLogout,
+  AiTwotoneProfile,
+  AiOutlineGlobal
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -106,7 +107,7 @@ const Sidebar = ({ toggleSidebar }) => {
       action: "view",
       subItems: [
         { to: "/pricing/local-move", label: "Local Move", icon: <AiOutlineHome className="w-4 h-4" />, page: "local_move", action: "view" },
-        { to: "/pricing/international-move", label: "International Move", icon: <AiOutlineTool className="w-4 h-4" />, page: "international_move", action: "view" },
+        { to: "/pricing/international-move", label: "International Move", icon: <AiOutlineGlobal className="w-4 h-4" />, page: "international_move", action: "view" },
       ],
     },
     {
@@ -125,7 +126,7 @@ const Sidebar = ({ toggleSidebar }) => {
         { to: "/additional-settings/handyman", label: "Handyman", icon: <AiOutlineTool className="w-4 h-4" />, page: "handyman", action: "view" },
         { to: "/additional-settings/manpower", label: "Manpower", icon: <AiOutlineTeam className="w-4 h-4" />, page: "manpower", action: "view" },
         { to: "/additional-settings/room", label: "Room", icon: <AiOutlineHome className="w-4 h-4" />, page: "room", action: "view" },
-        { to: "/additional-settings/additional-services", label: "Additional Services", icon: <AiOutlineHome className="w-4 h-4" />, page: "additional-services", action: "view" },
+        { to: "/additional-settings/additional-services", label: "Additional Services", icon: <AiTwotoneProfile className="w-4 h-4" />, page: "additional-services", action: "view" },
       ],
     },
     {

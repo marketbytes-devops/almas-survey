@@ -217,17 +217,17 @@ export default function QuotationList() {
         </div>
       ) : (
         <>
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto rounded-t-xl">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
                 <tr>
-                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">S.No</th>
-                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Customer</th>
-                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Phone</th>
-                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Email</th>
-                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase">Service</th>
-                  <th className="whitespace-nowrap px-4 py-3 text-center text-xs font-medium uppercase">Action</th>
-                  <th className="whitespace-nowrap px-4 py-3 text-center text-xs font-medium uppercase">Signature</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs sm:text-sm font-medium uppercase">S.No</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs sm:text-sm font-medium uppercase">Customer</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs sm:text-sm font-medium uppercase">Phone</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs sm:text-sm font-medium uppercase">Email</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-left text-xs sm:text-sm font-medium uppercase">Service</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-center text-xs sm:text-sm font-medium uppercase">Action</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-center text-xs sm:text-sm font-medium uppercase">Signature</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -247,19 +247,19 @@ export default function QuotationList() {
                       initial="rest"
                       whileHover="hover"
                     >
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{idx + 1}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{name}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-normal text-gray-800">{idx + 1}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-normal text-gray-800">{name}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-normal text-gray-800">
                         <span className="flex items-center gap-1">
                           <FaPhoneAlt className="w-3 h-3" /> {phone}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-normal text-gray-800">
                         <span className="flex items-center gap-1">
                           <FaEnvelope className="w-3 h-3" /> {email}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{service}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-normal text-gray-800">{service}</td>
                         <td className="px-4 py-3">
                           {s.hasQuotation ? (
                             <div className="flex items-center justify-center gap-2">
@@ -331,7 +331,7 @@ export default function QuotationList() {
                   initial="rest"
                   whileHover="hover"
                 >
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm font-medium text-gray-800">
                     <p><strong>S.No:</strong> {idx + 1}</p>
                     <p><strong>Customer:</strong> {name}</p>
                     <p className="flex items-center gap-1">
@@ -342,7 +342,7 @@ export default function QuotationList() {
                     </p>
                     <p><strong>Service:</strong> {service}</p>
 
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    <div className="grid sm:flex flex-wrap gap-2 pt-2">
                       {!s.hasQuotation ? (
                         <Link
                           to={`/quotation-create/${s.survey_id}`}
@@ -374,7 +374,7 @@ export default function QuotationList() {
                       )}
                     </div>
 
-                    <div className="pt-2">
+                    <div>
                       {s.signature_uploaded ? (
                         <button
                           onClick={() => viewSignature(s)}

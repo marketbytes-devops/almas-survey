@@ -260,7 +260,7 @@ const SurveySummary = () => {
       </AnimatePresence>
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-medium">Surveys List ({surveys.length})</h2>
+        <h2 className="text-lg sm:text-xl font-medium">Surveys List - {surveys.length}</h2>
         <Button onClick={() => navigate("/scheduled-surveys")} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">Back to Scheduled</Button>
       </div>
 
@@ -274,9 +274,9 @@ const SurveySummary = () => {
               <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] p-5 text-white">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-medium">{survey.survey_id}</h3>
-                    <p className="text-sm mt-2">{survey.full_name || survey.enquiry?.fullName || "N/A"}</p>
-                    <p className="text-sm mt-2">{phone}</p>
+                    <h3 className="text-xs sm:text-lg font-medium">{survey.survey_id}</h3>
+                    <p className="text-xs sm:text-sm mt-2">{survey.full_name || survey.enquiry?.fullName || "N/A"}</p>
+                    <p className="text-xs sm:text-sm mt-2">{phone}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">{service}</p>
@@ -287,16 +287,16 @@ const SurveySummary = () => {
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-end">
-                <Button onClick={() => openStatusModal({ ...survey, newStatus: survey.status })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm rounded">Change Status</Button>
+              <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-center sm:justify-end">
+                <Button onClick={() => openStatusModal({ ...survey, newStatus: survey.status })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">Change Status</Button>
                 <Button onClick={() => handleEditSurvey(survey)} className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 text-sm rounded">Edit</Button>
-                <Button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""}`}>
+                <Button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""}`}>
                   {printing === survey.survey_id ? <>Printing...</> : "Print"}
                 </Button>
-                <Button onClick={() => handleDeleteSurvey(survey.survey_id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm rounded">Delete</Button>
+                <Button onClick={() => handleDeleteSurvey(survey.survey_id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">Delete</Button>
               </div>
 
-              <button onClick={() => toggleSectionExpansion(survey.survey_id)} className="w-full py-3 text-center bg-gray-200 hover:bg-[#6b8ca3] hover:text-white transition-colors text-sm font-medium">
+              <button onClick={() => toggleSectionExpansion(survey.survey_id)} className="w-full py-3 text-center bg-gray-200 hover:bg-[#6b8ca3] hover:text-white transition-colors text-xs sm:text-sm font-medium">
                 {expandedSections.has(survey.survey_id) ? "Hide Details" : "Show Details"}
               </button>
 
@@ -316,7 +316,7 @@ const SurveySummary = () => {
         {statusModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4" onClick={() => setStatusModal(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-medium mb-4">Update Status - {statusModal.survey_id}</h3>
+              <h3 className="text-sm font-medium mb-4">Update Status - {statusModal.survey_id}</h3>
               <select
                 value={statusModal.newStatus || ""}
                 onChange={e => setStatusModal(prev => ({ ...prev, newStatus: e.target.value }))}

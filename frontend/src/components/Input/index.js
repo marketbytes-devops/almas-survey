@@ -20,7 +20,7 @@ const Input = ({
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  const baseInputClasses = "w-full px-3 py-2 text-sm border rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50";
+  const baseInputClasses = "w-full px-3 py-2 text-sm border rounded-md transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:ring-opacity-50";
   const borderColor = error ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-indigo-500";
   const bgColor = readOnly ? "bg-gray-50 cursor-not-allowed" : "bg-white";
 
@@ -77,7 +77,7 @@ const Input = ({
             <input
               type="checkbox"
               {...registered}
-              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 disabled:bg-gray-100"
+              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-1 disabled:bg-gray-100"
               disabled={readOnly}
             />
             <span className="text-sm text-gray-700">
@@ -153,7 +153,7 @@ const Input = ({
             type="checkbox"
             checked={controlledValue}
             onChange={onChange}
-            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 disabled:bg-gray-100"
+            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-1 disabled:bg-gray-100"
             disabled={readOnly}
           />
           <span className="text-sm text-gray-700">{label}</span>

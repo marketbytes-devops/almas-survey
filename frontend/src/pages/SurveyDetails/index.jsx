@@ -21,7 +21,7 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
   const inputClasses = `
     w-full px-3 py-2 text-sm border rounded-md 
     transition-all duration-200 
-    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50
+    focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:ring-opacity-50
     ${error ? "border-red-500" : "border-gray-300"}
     ${value ? "text-black" : "text-black"}
   `;
@@ -445,7 +445,7 @@ const SurveyDetails = () => {
       <div className="space-y-6">
         {sections.map((section) => (
           <div key={section.id} className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h3 className="text-lg font-medium mb-4">{section.title}</h3>
+            <h3 className="text-lg sm:text-xl font-medium mb-4">{section.title}</h3>
             {section.content}
           </div>
         ))}
@@ -742,68 +742,78 @@ const SurveyDetails = () => {
       const qty = itemQuantities[item.name] || 1;
 
       return (
-        <div className="border-b border-gray-200 last:border-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all rounded-lg">
-            <div className="flex items-center gap-4 flex-1 w-full">
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => toggleItemSelection(item.name)}
-                className="w-4 h-4 text-[#4c7085] rounded border-gray-300 focus:ring-[#4c7085]"
-              />
-              <div className="flex-1">
-                <div className="font-semibold text-gray-800">{item.name}</div>
-                {item.description && <div className="text-xs text-gray-500 mt-1">{item.description}</div>}
-                {(item.length || item.width || item.height) && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {item.length && `L:${item.length}cm`}
-                    {item.width && ` × W:${item.width}cm`}
-                    {item.height && ` × H:${item.height}cm`}
-                  </div>
-                )}
-              </div>
-            </div>
+<div className="border-b border-gray-200 last:border-0">
+  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 
+                  hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 
+                  transition-all rounded-lg">
+    <div className="flex items-start sm:items-center gap-4 flex-1 w-full">
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={() => toggleItemSelection(item.name)}
+        className="w-5 h-5 text-[#4c7085] rounded border-gray-300 focus:ring-[#4c7085]"
+      />
 
-            <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-lg shadow-sm">
-              <button
-                type="button"
-                onClick={() => updateQuantity(item.name, qty - 1)}
-                className="p-4 text-gray-600 hover:bg-gray-100 rounded-l-lg transition"
-              >
-                <FaMinus className="w-4 h-4" />
-              </button>
-              <input
-                type="text"
-                value={qty}
-                readOnly
-                className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => updateQuantity(item.name, qty + 1)}
-                className="p-4 text-gray-600 hover:bg-gray-100 rounded-r-lg transition"
-              >
-                <FaPlus className="w-4 h-4" />
-              </button>
-            </div>
+      <div className="flex-1">
+        <div className="font-semibold text-gray-800 text-sm sm:text-base">{item.name}</div>
 
-            <button
-              type="button"
-              onClick={() => toggleExpandedItem(item.name)}
-              className="p-2 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
-            >
-              {expandedItems[item.name] ? <FaChevronUp /> : <FaChevronDown />}
-            </button>
+        {item.description && (
+          <div className="text-xs text-gray-500 mt-1">{item.description}</div>
+        )}
+
+        {(item.length || item.width || item.height) && (
+          <div className="text-xs text-gray-500 mt-1">
+            {item.length && `L:${item.length}cm`}
+            {item.width && ` × W:${item.width}cm`}
+            {item.height && ` × H:${item.height}cm`}
           </div>
+        )}
+      </div>
+    </div>
+    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+      <div className="flex items-center justify-between w-full sm:w-auto bg-white border border-gray-300 rounded-lg shadow-sm">
+        <button
+          type="button"
+          onClick={() => updateQuantity(item.name, qty - 1)}
+          className="p-3 text-gray-600 hover:bg-gray-100 rounded-l-lg transition w-1/3 sm:w-auto"
+        >
+          <FaMinus className="w-4 h-4" />
+        </button>
+        <input
+          type="text"
+          value={qty}
+          readOnly
+          className="w-full sm:w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-2"
+        />
 
-          {expandedItems[item.name] && (
-            <ItemForm
-              item={item}
-              onAdd={addArticle}
-              onCancel={() => toggleExpandedItem(item.name)}
-            />
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => updateQuantity(item.name, qty + 1)}
+          className="p-3 text-gray-600 hover:bg-gray-100 rounded-r-lg transition w-1/3 sm:w-auto"
+        >
+          <FaPlus className="w-4 h-4" />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => toggleExpandedItem(item.name)}
+        className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
+      >
+        Item Options {expandedItems[item.name] ? <FaChevronUp className="w-4 h-4" /> : <FaChevronDown className="w-4 h-4" />}
+      </button>
+
+    </div>
+  </div>
+
+  {expandedItems[item.name] && (
+    <ItemForm
+      item={item}
+      onAdd={addArticle}
+      onCancel={() => toggleExpandedItem(item.name)}
+    />
+  )}
+</div>
       );
     };
 
@@ -1144,14 +1154,30 @@ const SurveyDetails = () => {
       <div className="space-y-8">
         <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-medium text-black">Select Room</h3>
+            <h3 className="text-lg sm:text-xl font-medium text-black">Select Room</h3>
             <button
+              type="button"
               onClick={() => setShowArticlesSidebar(true)}
-              className="flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform hover:scale-105"
+              className="hidden sm:flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform hover:scale-105"
             >
               <FaBars /> View Added ({watch("articles").length})
             </button>
           </div>
+          {watch("articles").length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowArticlesSidebar(true)}
+              className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-14 h-14 sm:hidden bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-full shadow-2xl hover:shadow-xl transform hover:scale-110 transition-all duration-300"
+              aria-label="View added articles"
+            >
+              <div className="relative">
+                <FaBars className="w-5 h-5" />
+                <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-4 h-4 bg-red-500 text-white text-xs font-light rounded-full px-2">
+                  {watch("articles").length}
+                </span>
+              </div>
+            </button>
+          )}
 
             <div ref={dropdownRef} className="relative">
               <button
@@ -1234,10 +1260,10 @@ const SurveyDetails = () => {
     };
 
     return (
-      <div className="mt-10 bg-white rounded-lg shadow p-6">
+      <div className="mt-4 sm:mt-10 bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-medium">Vehicle Details</h2>
-          <button type="button" onClick={addVehicle} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded">
+          <h2 className="text-lg sm:text-xl font-medium">Vehicle Details</h2>
+          <button type="button" onClick={addVehicle} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded">
             <FaPlus /> Add Vehicle
           </button>
         </div>
@@ -1251,7 +1277,7 @@ const SurveyDetails = () => {
                 <button type="button" onClick={() => removeVehicle(vehicle.id)} className="absolute top-4 right-4 text-red-600 hover:bg-red-100 p-2 rounded">
                   <FaTimes />
                 </button>
-                <h4 className="text-lg font-medium mb-4">Vehicle {index + 1}</h4>
+                <h4 className="text-lg sm:text-xl font-medium mb-4">Vehicle {index + 1}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label="Vehicle Type" name={`vehicles[${index}].vehicleType`} type="select" options={apiData.vehicleTypes} />
                   <Input label="Make" name={`vehicles[${index}].make`} placeholder="e.g. Toyota" />
@@ -1268,6 +1294,9 @@ const SurveyDetails = () => {
             ))}
           </div>
         )}
+          <button type="button" onClick={addVehicle} className="w-full flex sm:hidden mt-6 items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded">
+            <FaPlus /> Add Vehicle
+          </button>
       </div>
     );
   };
@@ -1321,7 +1350,7 @@ const SurveyDetails = () => {
 
     return (
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-        <h3 className="text-2xl font-medium text-gray-900 mb-6">Additional Services</h3>
+        <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-6">Additional Services</h3>
         
         {error && (
           <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -1367,7 +1396,7 @@ const SurveyDetails = () => {
         </div>
         {selectedServices.length > 0 && (
           <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="text-lg font-medium text-green-800 mb-2">
+            <h4 className="text-lg sm:text-xl font-medium text-green-800 mb-2">
               Selected Additional Services ({selectedServices.length})
             </h4>
             <div className="space-y-2">
@@ -1523,16 +1552,16 @@ const SurveyDetails = () => {
   return (
     <>
       {isLoading && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><Loading /></div>}
-      {error && <div className="fixed top-20 right-8 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50">{error}</div>}
-      {message && <div className="fixed top-20 right-8 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50">{message}</div>}
+      {error && <div className="fixed top-28 sm:top-20 right-4 sm:right-8 bg-red-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{error}</div>}
+      {message && <div className="fixed top-28 sm:top-20 right-4 sm:right-8 bg-green-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{message}</div>}
 
       <div className="min-h-auto">
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onNext)} className="mx-auto">
-            <div className="flex gap-4 mb-8">
+            <div className="grid sm:grid-cols-3 w-full gap-4 mb-8">
               {tabs.map(tab => (
                 <button key={tab.id} type="button" onClick={() => handleTabChange(tab.id)}
-                  className={`px-6 py-3 rounded-lg font-medium ${activeTab === tab.id ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200"}`}>
+                  className={`px-6 py-2 rounded-lg text-sm font-medium ${activeTab === tab.id ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -1542,13 +1571,13 @@ const SurveyDetails = () => {
             {activeTab === "items" && (
               <>
                 <Article />
-                <div className="mt-10">
+                <div className="mt-4 sm:mt-10">
                   <VehicleDetails />
                 </div>
               </>
             )}
             {activeTab === "additionalServices" && <AdditionalServicesTab />}
-            <div className="flex gap-4 mt-10">
+            <div className="flex gap-4 mt-4 sm:mt-10">
               <button 
                 type="button" 
                 onClick={handleBack}
