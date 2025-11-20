@@ -311,37 +311,41 @@ export default function QuotationList() {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">{service}</td>
                       <td className="px-6 py-4">
-                        {s.hasQuotation ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <Link
-                              to={`/quotation-view/${s.quotation_id}`}
-                              className="whitespace-nowrap inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm"
-                            >
-                              <FaEye /> View
-                            </Link>
-                            <Link
-                              to={`/quotation-edit/${s.survey_id}`}
-                              className="whitespace-nowrap inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm"
-                            >
-                              <FaEdit /> Edit
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
-                              className="whitespace-nowrap inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm"
-                            >
-                              <FaTrash /> Delete
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center">
-                            <button
-                              onClick={() => handleCreateQuotation(s.survey_id)}
-                              className="whitespace-nowrap inline-flex items-center gap-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
-                            >
-                              Create Quotation
-                            </button>
-                          </div>
-                        )}
+                        <td className="px-4 py-3">
+                          {s.hasQuotation ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Link
+                                to={`/quotation-view/${s.quotation_id}`}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                              >
+                                <FaEye /> View Quotation
+                              </Link>
+
+                              <Link
+                                to={`/quotation-edit/${s.survey_id}`}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
+                              >
+                                <FaEdit /> Edit Quotation
+                              </Link>
+
+                              <button
+                                onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
+                                className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
+                              >
+                                Delete Quotation
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center">
+                              <Link
+                                to={`/quotation-create/${s.survey_id}`}
+                                className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
+                              >
+                                Create Quotation
+                              </Link>
+                            </div>
+                          )}
+                        </td>
                       </td>
                       <td className="px-6 py-4 text-center">
                         {s.signature_uploaded ? (
@@ -461,33 +465,37 @@ export default function QuotationList() {
                           <div className="pt-2">
                             <p className="font-medium mb-2">Quotation:</p>
                             {s.hasQuotation ? (
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap items-center justify-start gap-2">
                                 <Link
                                   to={`/quotation-view/${s.quotation_id}`}
-                                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm"
+                                  className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
                                 >
-                                  <FaEye /> View
+                                  <FaEye /> View Quotation
                                 </Link>
+
                                 <Link
                                   to={`/quotation-edit/${s.survey_id}`}
-                                  className="inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm"
+                                  className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
                                 >
-                                  <FaEdit /> Edit
+                                  <FaEdit /> Edit Quotation
                                 </Link>
+
                                 <button
                                   onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
-                                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm"
+                                  className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
                                 >
-                                  <FaTrash /> Delete
+                                  Delete Quotation
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() => handleCreateQuotation(s.survey_id)}
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
-                              >
-                                Create Quotation
-                              </button>
+                              <div className="flex items-center justify-start">
+                                <Link
+                                  to={`/quotation-create/${s.survey_id}`}
+                                  className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
+                                >
+                                  Create Quotation
+                                </Link>
+                              </div>
                             )}
                           </div>
 
