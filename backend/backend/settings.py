@@ -206,4 +206,4 @@ LOGGING = {
 # In settings.py (add these if not present)
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = '/root/almas/backend/media'
