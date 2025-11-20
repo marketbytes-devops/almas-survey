@@ -30,10 +30,8 @@ urlpatterns = [
     # Survey API's
     path('api/', include('additional_settings.urls')),
     path('api/', include('survey.urls')),
-    
-    # Quotation API's
+    path('api/', include('pricing.urls')),
     path('api/', include('quotation.urls')),
-    path('api/', include('price.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

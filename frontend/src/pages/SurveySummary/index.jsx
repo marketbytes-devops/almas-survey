@@ -260,7 +260,6 @@ const SurveySummary = () => {
       </AnimatePresence>
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg sm:text-xl font-medium">Surveys List - {surveys.length}</h2>
         <Button onClick={() => navigate("/scheduled-surveys")} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">Back to Scheduled</Button>
       </div>
 
@@ -287,7 +286,7 @@ const SurveySummary = () => {
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-center sm:justify-end">
+              <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-end">
                 <Button onClick={() => openStatusModal({ ...survey, newStatus: survey.status })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">Change Status</Button>
                 <Button onClick={() => handleEditSurvey(survey)} className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 text-sm rounded">Edit</Button>
                 <Button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""}`}>

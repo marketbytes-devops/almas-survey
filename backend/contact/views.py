@@ -760,6 +760,30 @@ class EnquiryRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
             )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class EnquiryDelete(generics.DestroyAPIView):
+    queryset = Enquiry.objects.all()
+    serializer_class = EnquirySerializer
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {"message": "Enquiry deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+class EnquiryDeleteAll(generics.GenericAPIView):
+
+    def delete(self, request, *args, **kwargs):
+        count, _ = Enquiry.objects.all().delete()
+        return Response(
+            {"message": f"Successfully deleted {count} enquiries"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
 class EnquirySchedule(generics.GenericAPIView):
     queryset = Enquiry.objects.all()
     serializer_class = EnquirySerializer

@@ -23,22 +23,24 @@ const TAB_LIST = [
   { id: "services", label: "SERVICES", component: null },
 ];
 
+// Qatar cities for pricing
+const QATAR_CITIES = [
+  "Doha", "Al Rayyan", "Al Wakrah", "Al Khor", "Umm Salal", 
+  "Al Daayen", "Al Shamal", "Mesaieed", "Lusail", "Pearl-Qatar"
+];
+
 const LocalMove = () => {
   const methods = useForm();
-
   const [activeTab, setActiveTab] = useState("pricing");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hasAutoSelectedHub, setHasAutoSelectedHub] = useState(false);
-
-  const [selectedHub, setSelectedHub] = useState("");
+  const [hasAutoSelectedCity, setHasAutoSelectedCity] = useState(false);
+  const [selectedCity, setSelectedCity] = useState(""); // Now using city instead of hub
   const [selectedMoveType, setSelectedMoveType] = useState("");
   const [selectedTariff, setSelectedTariff] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState("");
-
   const [dropdownData, setDropdownData] = useState({
-    hubs: [],
     moveTypes: [],
     tariffTypes: [],
     currencies: [],
@@ -53,7 +55,6 @@ const LocalMove = () => {
       try {
         setLoading(true);
         const endpoints = [
-          `${API_BASE_URL}/hub/`,
           `${API_BASE_URL}/move-types/`,
           `${API_BASE_URL}/tariff-types/`,
           `${API_BASE_URL}/currencies/`,
@@ -61,13 +62,9 @@ const LocalMove = () => {
           `${API_BASE_URL}/weight-units/`,
         ];
         const responses = await Promise.all(endpoints.map(url => apiClient.get(url)));
-        const [hubsRes, moveTypesRes, tariffTypesRes, currenciesRes, volumeUnitsRes, weightUnitsRes] = responses;
-
-        const hubs = Array.isArray(hubsRes.data) ? hubsRes.data : hubsRes.data.results || [];
-        const activeHubs = hubs.filter(h => h.is_active !== false);
-
+        const [moveTypesRes, tariffTypesRes, currenciesRes, volumeUnitsRes, weightUnitsRes] = responses;
+        
         setDropdownData({
-          hubs,
           moveTypes: moveTypesRes.data.results || moveTypesRes.data,
           tariffTypes: tariffTypesRes.data.results || tariffTypesRes.data,
           currencies: currenciesRes.data.results || currenciesRes.data,
@@ -75,22 +72,24 @@ const LocalMove = () => {
           weightUnits: weightUnitsRes.data.results || weightUnitsRes.data,
         });
 
-        if (activeHubs.length > 0 && !hasAutoSelectedHub) {
-          setSelectedHub(String(activeHubs[0].id));
-          setHasAutoSelectedHub(true);
+        // Auto-select Doha as default city
+        if (!hasAutoSelectedCity) {
+          setSelectedCity("Doha");
+          setHasAutoSelectedCity(true);
         }
       } catch (err) {
         setError("Failed to load data");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
     fetchDropdowns();
-  }, []);
+  }, [hasAutoSelectedCity]);
 
   const sharedProps = {
-    selectedHub,
-    setSelectedHub,
+    selectedHub: selectedCity, // Passing city as selectedHub for compatibility
+    setSelectedHub: setSelectedCity,
     selectedMoveType,
     setSelectedMoveType,
     selectedTariff,
@@ -99,7 +98,10 @@ const LocalMove = () => {
     setSelectedUnit,
     selectedCurrency,
     setSelectedCurrency,
-    dropdownData,
+    dropdownData: {
+      ...dropdownData,
+      hubs: QATAR_CITIES.map(city => ({ id: city, name: city })), // Convert cities to hub format for compatibility
+    },
   };
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
@@ -108,7 +110,7 @@ const LocalMove = () => {
   return (
     <FormProvider {...methods}>
       <div className="bg-gray-50 min-h-screen">
-        <div className="w-full">          
+        <div className="w-full">
           <Tab tabs={TAB_LIST} activeTab={activeTab} setActiveTab={setActiveTab} />
           {TAB_LIST.map(tab => (
             <TabPanel key={tab.id} activeTab={activeTab} tabId={tab.id}>

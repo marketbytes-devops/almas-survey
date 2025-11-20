@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'documentation',
     'survey',
     'quotation',
-    'price',
+    'pricing',
     'additional_settings',
 
 ]

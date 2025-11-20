@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FaCopy, FaSave, FaPlus, FaTrash } from "react-icons/fa";
+import { Country, State, City } from "country-state-city";
 import apiClient from "../../../api/apiClient";
 
 const PricingTab = ({
-  selectedHub,
-  setSelectedHub,
   selectedMoveType,
   setSelectedMoveType,
   selectedTariff,
@@ -20,12 +19,34 @@ const PricingTab = ({
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [existingIds, setExistingIds] = useState(new Set());
   const [saving, setSaving] = useState(false);
+  const [qatarCities, setQatarCities] = useState([]);
+  const [selectedPricingCity, setSelectedPricingCity] = useState("");
 
   const API_BASE_URL =
     apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
   useEffect(() => {
-    if (!selectedHub || !selectedMoveType) {
+    const getQatarCities = () => {
+      const qatar = Country.getAllCountries().find(c => c.name === "Qatar");
+      if (!qatar) return [];
+      const cities = City.getCitiesOfCountry(qatar.isoCode) || [];
+      return cities.map(city => ({
+        value: city.name,
+        label: city.name
+      }));
+    };
+    
+    const cities = getQatarCities();
+    setQatarCities(cities);
+    
+    const doha = cities.find(c => c.value === "Doha");
+    if (doha) {
+      setSelectedPricingCity(doha.value);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedPricingCity || !selectedMoveType) {
       setTableData([]);
       setIsUpdateMode(false);
       setExistingIds(new Set());
@@ -35,9 +56,9 @@ const PricingTab = ({
     const fetchPricing = async () => {
       try {
         const params = new URLSearchParams();
-        params.append("hub", selectedHub);
+        params.append("pricing_city", selectedPricingCity);
         params.append("move_type", selectedMoveType);
-
+        
         const res = await apiClient.get(`${API_BASE_URL}/price/active/?${params}`);
         const apiRows = (res.data || []).map((r, i) => ({
           id: r.id,
@@ -48,7 +69,7 @@ const PricingTab = ({
           variableRate: r.rate_type === "variable" ? String(r.rate) : "0.00",
           rateType: r.rate_type || (i === 0 ? "flat" : "variable"),
         }));
-
+        
         setTableData(apiRows);
         setNextId(apiRows.length ? Math.max(...apiRows.map((x) => x.id)) + 1 : 1);
         setExistingIds(new Set(apiRows.map((r) => r.id)));
@@ -60,7 +81,7 @@ const PricingTab = ({
     };
 
     fetchPricing();
-  }, [selectedHub, selectedMoveType]);
+  }, [selectedPricingCity, selectedMoveType]);
 
   const getOptions = (data, labelField = "name", valueField = "id") => {
     if (!Array.isArray(data)) return [];
@@ -125,10 +146,11 @@ const PricingTab = ({
   };
 
   const handleSave = async () => {
-    if (!selectedHub || !selectedMoveType || !selectedTariff || !selectedUnit || !selectedCurrency) {
-      alert("Please fill all required fields: Location, Move Type, Tariff, Unit, and Currency");
+    if (!selectedPricingCity || !selectedMoveType || !selectedTariff || !selectedUnit || !selectedCurrency) {
+      alert("Please fill all required fields: City, Move Type, Tariff, Unit, and Currency");
       return;
     }
+    
     if (tableData.length === 0) {
       alert("Please add at least one pricing range");
       return;
@@ -141,7 +163,8 @@ const PricingTab = ({
       max_volume: parseFloat(row.max) || 999999,
       rate: parseFloat(row.rateType === "flat" ? row.flatRate : row.variableRate) || 0,
       rate_type: row.rateType,
-      hub: parseInt(selectedHub),
+      pricing_country: "Qatar", 
+      pricing_city: selectedPricingCity, 
       move_type: parseInt(selectedMoveType),
       currency: dropdownData.currencies.find((c) => c.id == selectedCurrency)?.name || "QAR",
     }));
@@ -170,20 +193,22 @@ const PricingTab = ({
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
             <select
-              value={selectedHub}
-              onChange={(e) => setSelectedHub(e.target.value)}
+              value={selectedPricingCity}
+              onChange={(e) => setSelectedPricingCity(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none transition"
             >
-              <option value="">Select Location</option>
-              {getOptions(dropdownData.hubs).map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              <option value="">Select City</option>
+              {qatarCities.map((city) => (
+                <option key={city.value} value={city.value}>
+                  {city.label}
                 </option>
               ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">Country: Qatar</p>
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Move Type *</label>
             <select
@@ -199,6 +224,7 @@ const PricingTab = ({
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Tariff</label>
             <select
@@ -214,6 +240,7 @@ const PricingTab = ({
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Table Unit *</label>
             <select
@@ -229,6 +256,7 @@ const PricingTab = ({
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Currency *</label>
             <select
@@ -248,7 +276,7 @@ const PricingTab = ({
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <button className="flex items-center justify-center gap-2 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium text-sm">
-            <FaCopy /> <span>Copy from Another</span>
+            <FaCopy /> <span>Copy from Another City</span>
           </button>
           <button
             onClick={handleSave}
@@ -259,7 +287,16 @@ const PricingTab = ({
             <span>{saving ? "Saving..." : isUpdateMode ? "Update Pricing" : "Save Pricing"}</span>
           </button>
         </div>
+
+        {selectedPricingCity && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">
+              <strong>Current Location:</strong> {selectedPricingCity}, Qatar
+            </p>
+          </div>
+        )}
       </div>
+
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
@@ -360,6 +397,7 @@ const PricingTab = ({
             </tbody>
           </table>
         </div>
+
         <div className="lg:hidden">
           {tableData.map((row) => {
             const isFlat = row.rateType === "flat";
@@ -393,6 +431,7 @@ const PricingTab = ({
             );
           })}
         </div>
+
         <div className="p-5 border-t bg-gray-50">
           <button
             onClick={addRow}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaSignature, FaEye, FaPlus } from "react-icons/fa";
+import { Country, State, City } from "country-state-city";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import SignatureModal from "../../components/SignatureModal/SignatureModal";
@@ -55,7 +56,10 @@ export default function QuotationEdit() {
     rateType: "",
     rateValue: 0,
     formula: "",
+    pricingCity: "",
   });
+
+  const [destinationCity, setDestinationCity] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -67,7 +71,6 @@ export default function QuotationEdit() {
     email: "",
     serviceRequired: "",
     movingFrom: "",
-    buildingFrom: "",
     movingTo: "",
     moveDate: today,
     jobType: "Local",
@@ -78,11 +81,25 @@ export default function QuotationEdit() {
     advance: "",
   });
 
-  // Fetch live pricing
+  const getQatarCities = () => {
+    const qatar = Country.getAllCountries().find(c => c.name === "Qatar");
+    if (!qatar) return [];
+    return City.getCitiesOfCountry(qatar.isoCode) || [];
+  };
+
   useEffect(() => {
     const fetchLivePricing = async () => {
+      if (!destinationCity) {
+        setPricingRanges([]);
+        return;
+      }
+
       try {
-        const res = await apiClient.get("/price/active/");
+        const params = new URLSearchParams();
+        params.append("pricing_city", destinationCity);
+        params.append("move_type", "1"); // Assuming 1 is local move type ID
+
+        const res = await apiClient.get(`/price/active/?${params}`);
         const liveRates = res.data.map((item) => ({
           min: parseFloat(item.min_volume),
           max: parseFloat(item.max_volume),
@@ -90,12 +107,18 @@ export default function QuotationEdit() {
           rateType: item.rate_type,
         }));
         setPricingRanges(liveRates);
+        setPriceError("");
       } catch (err) {
-        setPriceError("Failed to load pricing data.");
+        console.error("Failed to fetch pricing:", err);
+        setPriceError(
+          `No pricing found for ${destinationCity}. Please contact administrator.`
+        );
+        setPricingRanges([]);
       }
     };
+
     fetchLivePricing();
-  }, []);
+  }, [destinationCity]);
 
   // Check signature
   const checkSignatureExists = async (surveyId) => {
@@ -114,11 +137,17 @@ export default function QuotationEdit() {
     .reduce((sum, r) => sum + (parseFloat(r.volume) || 0) * (r.qty || 0), 0)
     .toFixed(2);
 
-  // Auto-calculate amount
+  // Auto-calculate amount based on destination city pricing
   useEffect(() => {
-    if (!totalVolume || totalVolume <= 0 || pricingRanges.length === 0) {
+    if (!totalVolume || totalVolume <= 0 || pricingRanges.length === 0 || !destinationCity) {
       setForm((prev) => ({ ...prev, amount: "" }));
-      setCalculationDetails({ range: "", rateType: "", rateValue: 0, formula: "" });
+      setCalculationDetails({
+        range: "",
+        rateType: "",
+        rateValue: 0,
+        formula: "",
+        pricingCity: ""
+      });
       return;
     }
 
@@ -126,7 +155,7 @@ export default function QuotationEdit() {
     const range = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
 
     if (!range) {
-      setPriceError(`No pricing range for ${volume} CBM`);
+      setPriceError(`No pricing range found for volume ${volume} CBM in ${destinationCity}`);
       setForm((prev) => ({ ...prev, amount: "" }));
       return;
     }
@@ -148,9 +177,10 @@ export default function QuotationEdit() {
       rateType: range.rateType === "flat" ? "Fixed" : "Variable",
       rateValue: range.rate.toFixed(2),
       formula,
+      pricingCity: destinationCity
     });
     setPriceError("");
-  }, [totalVolume, pricingRanges]);
+  }, [totalVolume, pricingRanges, destinationCity]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -158,6 +188,10 @@ export default function QuotationEdit() {
         const surveyRes = await apiClient.get(`/surveys/${id}/`);
         const s = surveyRes.data;
         setSurvey(s);
+
+        const destCity = s.destination_addresses?.[0]?.city || "";
+        setDestinationCity(destCity);
+
         await checkSignatureExists(s.survey_id);
 
         const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${id}`);
@@ -194,7 +228,6 @@ export default function QuotationEdit() {
           email: get(s.email, s.enquiry?.email),
           serviceRequired: SERVICE_TYPE_DISPLAY[s.service_type] || "—",
           movingFrom: get(s.origin_address),
-          buildingFrom: [s.origin_floor ? "Floor" : "", s.origin_lift ? "Lift" : ""].filter(Boolean).join(" + ") || "—",
           movingTo: s.destination_addresses?.[0]?.address || "—",
           moveDate: s.packing_date_from || today,
           jobType: s.service_type === "localMove" ? "Local" : "International",
@@ -206,6 +239,7 @@ export default function QuotationEdit() {
         });
       } catch (err) {
         setError("Failed to load data.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -220,6 +254,7 @@ export default function QuotationEdit() {
   const handleUpdate = async () => {
     if (!form.amount) return alert("Amount is required.");
     if (!quotation?.quotation_id) return alert("Quotation not found.");
+    if (priceError) return alert(priceError);
 
     const payload = {
       serial_no: form.serialNo,
@@ -278,7 +313,7 @@ export default function QuotationEdit() {
         <div className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Digital Signature</h3>
+              <h3 className="font-medium">Digital Signature</h3>
               <button onClick={() => setIsSignatureViewModalOpen(false)} className="text-3xl">×</button>
             </div>
             <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
@@ -292,9 +327,9 @@ export default function QuotationEdit() {
         </div>
       )}
 
-      <div className="mx-auto bg-white rounded-2xl shadow-xl overflow-hidden my-8">
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center">
-          <h2 className="text-2xl font-medium">Edit Quotation</h2>
+      <div className="mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-8 flex justify-between items-center">
+          <h2 className="text-lg sm:text-xl font-medium">Edit Quotation</h2>
           <button onClick={() => navigate(-1)} className="text-4xl hover:opacity-80">×</button>
         </div>
 
@@ -302,6 +337,39 @@ export default function QuotationEdit() {
         {error && <div className="m-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">{error}</div>}
 
         <div className="p-8 space-y-8">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-800 mb-2">Pricing Location</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-blue-700 mb-1">
+                  Destination City
+                </label>
+                <input
+                  type="text"
+                  value={destinationCity || "Not specified"}
+                  readOnly
+                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-blue-700 mb-1">
+                  Country
+                </label>
+                <input
+                  type="text"
+                  value="Qatar"
+                  readOnly
+                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium"
+                />
+              </div>
+            </div>
+            {destinationCity && (
+              <p className="text-xs text-blue-600 mt-2">
+                Pricing is calculated based on rates for {destinationCity}, Qatar
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Quotation No.</label>
@@ -326,7 +394,6 @@ export default function QuotationEdit() {
           {[
             { label: "Service Required", value: form.serviceRequired },
             { label: "Moving From", value: form.movingFrom },
-            { label: "Building / Floor", value: form.buildingFrom },
             { label: "Moving To", value: form.movingTo },
             { label: "Date of Move", value: form.moveDate },
           ].map((item) => (
@@ -335,40 +402,24 @@ export default function QuotationEdit() {
               <input type="text" value={item.value} readOnly className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
             </div>
           ))}
-          <div>
-            <h3 className="text-lg font-bold mb-4">Items & Volume</h3>
-            <div className="overflow-x-auto rounded-xl shadow-md border">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Room</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Item</th>
-                    <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">Qty</th>
-                    <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">Volume (CBM)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {form.rooms.length === 0 ? (
-                    <tr><td colSpan={4} className="text-center py-8 text-gray-500">No items</td></tr>
-                  ) : (
-                    form.rooms.map((r, i) => (
-                      <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                        <td className="px-6 py-4 text-sm">{r.room}</td>
-                        <td className="px-6 py-4 text-sm">{r.item}</td>
-                        <td className="px-6 py-4 text-center">{r.qty}</td>
-                        <td className="px-6 py-4 text-center font-medium">{r.volume}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border-2 border-blue-200">
+            <h3 className="text-xl font-medium text-center mb-4">Quotation Amount</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-2">Total Volume</p>
+                <div className="text-2xl font-medium text-green-600">
+                  {totalVolume} <span className="text-lg">CBM</span>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-2">Pricing Location</p>
+                <div className="text-lg font-medium text-blue-600">
+                  {destinationCity || "Not specified"}
+                </div>
+              </div>
             </div>
-            <div className="text-right mt-4 text-xl font-bold text-[#4c7085]">
-              Total Volume: {totalVolume} CBM
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-            <h3 className="text-xl font-bold text-center mb-4">Quotation Amount</h3>
+
             {priceError ? (
               <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 text-center text-red-700 font-medium">
                 {priceError}
@@ -376,28 +427,24 @@ export default function QuotationEdit() {
             ) : (
               <>
                 {calculationDetails.range && (
-                  <div className="bg-white rounded-lg p-4 mb-4 text-sm grid grid-cols-3 gap-4">
+                  <div className="bg-white rounded-lg p-4 mb-4 text-sm grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div><strong>Range:</strong> {calculationDetails.range}</div>
                     <div><strong>Type:</strong> {calculationDetails.rateType}</div>
                     <div><strong>Rate:</strong> {calculationDetails.rateValue} QAR</div>
+                    <div><strong>City:</strong> {calculationDetails.pricingCity}</div>
                   </div>
                 )}
                 <div className="text-center">
-                  <p className="text-5xl font-bold text-[#4c7085]">{form.amount || "0.00"} <span className="text-3xl">QAR</span></p>
-                  {calculationDetails.formula && (
-                    <p className="mt-3 text-sm bg-white inline-block px-6 py-2 rounded-full">
-                      {calculationDetails.formula}
-                    </p>
-                  )}
+                  <p className="text-5xl font-medium text-[#4c7085]">{form.amount || "0.00"} <span className="text-3xl">QAR</span></p>
                 </div>
               </>
             )}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-gray-300 rounded-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4 text-center text-lg font-bold">
+          <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-gray-300 rounded-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4 text-center text-lg font-medium">
               Service Includes
             </div>
-            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 text-center text-lg font-bold">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 text-center text-lg font-medium">
               Service Excludes
             </div>
             <div className="p-6 space-y-4 bg-gray-50">
@@ -433,45 +480,69 @@ export default function QuotationEdit() {
             </div>
             <div>
               <label className="block font-medium">Balance</label>
-              <input type="text" readOnly value={balance ? `${balance} QAR` : ""} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-bold text-green-700" />
+              <input type="text" readOnly value={balance ? `${balance} QAR` : ""} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-bold mb-4">Digital Signature</h3>
-            <div className="bg-gray-50 p-6 rounded-xl border text-center">
+            <h3 className="font-medium mb-1">Digital Signature</h3>
+
+            <div className="bg-gray-50 p-6 rounded-lg border text-center">
               {hasSignature ? (
-                <div className="flex justify-between items-center">
-                  <div className="text-left">
-                    <p className="font-bold text-green-700">Digitally Signed</p>
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 md:gap-0">
+                  <div className="text-center md:text-left">
+                    <p className="font-medium text-green-700">Digitally Signed</p>
                     <p className="text-sm text-gray-600">Customer signature is attached</p>
                   </div>
-                  <div className="flex gap-3">
-                    <button onClick={viewSignature} className="px-5 py-3 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+
+                    <button
+                      onClick={viewSignature}
+                      className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700"
+                    >
                       <FaEye /> View
                     </button>
-                    <button onClick={openSignatureModal} disabled={isSignatureUploading}
-                      className="px-5 py-3 bg-green-600 text-white rounded-lg flex items-center gap-2 hover:bg-green-700 disabled:opacity-60">
+
+                    <button
+                      onClick={openSignatureModal}
+                      disabled={isSignatureUploading}
+                      className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white text-sm rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-60"
+                    >
                       <FaPlus /> Change
                     </button>
+
                   </div>
                 </div>
               ) : (
-                <div>
+                <div className="flex flex-col items-center">
                   <p className="text-gray-600 mb-4">No signature uploaded yet</p>
-                  <button onClick={openSignatureModal} className="px-8 py-4 bg-red-600 text-white rounded-xl text-lg hover:bg-red-700">
-                    <FaSignature className="inline mr-2" /> Add Digital Signature
+
+                  <button
+                    onClick={openSignatureModal}
+                    className="px-8 py-2 bg-red-600 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-red-700"
+                  >
+                    <FaSignature className="inline" /> Add Digital Signature
                   </button>
                 </div>
               )}
             </div>
           </div>
-          <div className="text-center pt-6">
+
+          <div className="text-center">
             <button
               onClick={handleUpdate}
-              className="w-full max-w-md mx-auto py-4 px-8 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xl font-bold rounded-xl shadow-lg hover:from-[#3a586d] hover:to-[#54738a] transition transform hover:scale-105"
+              disabled={!form.amount || priceError}
+              className={`w-full max-w-md mx-auto py-2 px-4 text-sm font-medium rounded-lg shadow-lg transition transform ${!form.amount || priceError
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:from-[#3a586d] hover:to-[#54738a] hover:scale-105"
+                }`}
             >
               UPDATE QUOTATION
             </button>
+            {priceError && (
+              <p className="mt-4 text-sm text-red-600">
+                Cannot update: {priceError}
+              </p>
+            )}
           </div>
         </div>
       </div>
