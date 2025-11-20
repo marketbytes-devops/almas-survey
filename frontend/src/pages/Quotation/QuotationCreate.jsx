@@ -253,7 +253,7 @@ export default function QuotationCreate() {
         customerName={form.client}
       />
       
-      <div className="mx-auto bg-white rounded-lg shadow-xl overflow-hidden my-8">
+      <div className="mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-8 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-medium">Create Quotation</h2>
           <button
