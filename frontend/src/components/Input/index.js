@@ -25,6 +25,9 @@ const Input = ({
   const bgColor = readOnly ? "bg-gray-50 cursor-not-allowed" : "bg-white";
 
   if (readOnly && type !== "checkbox") {
+    const { watch } = useFormContext();
+    const value = watch?.(name) || controlledValue || props.defaultValue || "-";
+
     return (
       <div className="flex flex-col">
         {label && (
@@ -34,7 +37,7 @@ const Input = ({
           </label>
         )}
         <div className={`px-3 py-2 text-sm border rounded-md bg-gray-50 ${error ? "border-red-500" : "border-gray-300"}`}>
-          {controlledValue ?? props.defaultValue ?? "-"}
+          {value}
         </div>
         {error && <p className="mt-1 text-xs text-red-500">{error.message}</p>}
       </div>

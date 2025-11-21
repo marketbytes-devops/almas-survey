@@ -231,7 +231,6 @@ const Profile = () => {
                   name="email"
                   type="email"
                   readOnly
-                  className="w-full bg-gray-100 border text-sm text-gray-600 py-2 px-3 rounded-lg cursor-not-allowed"
                 />
                 <InputField
                   label="Full Name"
