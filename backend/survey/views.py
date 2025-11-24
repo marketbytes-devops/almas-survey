@@ -7,7 +7,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import Survey, DestinationAddress, Article, Vehicle, Pet
-from .serializers import SurveySerializer, DestinationAddressSerializer, ArticleSerializer, VehicleSerializer, PetSerializer
+from .serializers import (
+    SurveySerializer,
+    DestinationAddressSerializer,
+    ArticleSerializer,
+    VehicleSerializer,
+    PetSerializer,
+)
 from contact.models import Enquiry
 from additional_settings.models import Item
 from django.utils.decorators import method_decorator
@@ -24,11 +30,12 @@ SERVICE_TYPE_DISPLAY = {
     "logistics": "Logistics",
 }
 
+
 def send_survey_submission_email(survey):
     from_email = settings.DEFAULT_FROM_EMAIL
-    service_type_display = "Unknown Service Type"  
+    service_type_display = "Unknown Service Type"
 
-    if survey.enquiry and hasattr(survey.enquiry, 'serviceType'):
+    if survey.enquiry and hasattr(survey.enquiry, "serviceType"):
         service_type_display = SERVICE_TYPE_DISPLAY.get(
             survey.enquiry.serviceType, survey.enquiry.serviceType
         )
@@ -37,7 +44,8 @@ def send_survey_submission_email(survey):
     recipients = [superadmin_email]
 
     if (
-        survey.enquiry and survey.enquiry.assigned_user
+        survey.enquiry
+        and survey.enquiry.assigned_user
         and survey.enquiry.assigned_user.email != superadmin_email
     ):
         recipients.append(survey.enquiry.assigned_user.email)
@@ -47,7 +55,8 @@ def send_survey_submission_email(survey):
         if superadmin_email in recipients
         else (
             f"{survey.enquiry.assigned_user.name} ({survey.enquiry.assigned_user.role.name})"
-            if survey.enquiry and survey.enquiry.assigned_user
+            if survey.enquiry
+            and survey.enquiry.assigned_user
             and survey.enquiry.assigned_user.name
             and survey.enquiry.assigned_user.role
             else "Team"
@@ -106,30 +115,37 @@ Website: www.almasintl.com
             body=message,
             from_email=from_email,
             to=recipients,
-            reply_to=[survey.enquiry.email] if survey.enquiry and survey.enquiry.email else [],
+            reply_to=(
+                [survey.enquiry.email]
+                if survey.enquiry and survey.enquiry.email
+                else []
+            ),
         )
         email.attach_alternative(html_content, "text/html")
         email.send(fail_silently=False)
-        logger.info(f"Survey submission email sent to {', '.join(recipient for recipient in recipients)}")
+        logger.info(
+            f"Survey submission email sent to {', '.join(recipient for recipient in recipients)}"
+        )
     except Exception as e:
         logger.error(f"Failed to send survey submission email: {str(e)}", exc_info=True)
 
-@method_decorator(csrf_exempt, name='dispatch')
+
+@method_decorator(csrf_exempt, name="dispatch")
 class SurveyViewSet(viewsets.ModelViewSet):
     queryset = Survey.objects.all()
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication] 
+    authentication_classes = [JWTAuthentication]
     lookup_field = "survey_id"
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        survey_id = self.request.query_params.get('enquiry_id')
+        survey_id = self.request.query_params.get("enquiry_id")
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
-        return queryset.select_related('enquiry').prefetch_related(
-            'destination_addresses', 'articles', 'vehicles', 'pets'
+        return queryset.select_related("enquiry").prefetch_related(
+            "destination_addresses", "articles", "vehicles", "pets"
         )
 
     def get_object(self):
@@ -149,93 +165,167 @@ class SurveyViewSet(viewsets.ModelViewSet):
         send_survey_submission_email(survey)
 
     # ADD THIS NEW METHOD
-    @action(detail=True, methods=['post'], url_path='upload-signature')
+    @action(detail=True, methods=["post"], url_path="upload-signature")
     def upload_signature(self, request, survey_id=None):
         """Upload customer signature for a survey"""
         try:
             survey = self.get_object()
-            
+
             # Check if file was uploaded
-            if 'signature' not in request.FILES:
+            if "signature" not in request.FILES:
                 return Response(
-                    {'error': 'No signature file provided'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": "No signature file provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-            
-            signature_file = request.FILES['signature']
-            
+
+            signature_file = request.FILES["signature"]
+
             # Validate file type
-            allowed_types = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+            allowed_types = ["image/png", "image/jpeg", "image/jpg", "application/pdf"]
             if signature_file.content_type not in allowed_types:
                 return Response(
-                    {'error': 'Invalid file type. Only PNG, JPEG, and PDF are allowed.'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {
+                        "error": "Invalid file type. Only PNG, JPEG, and PDF are allowed."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Validate file size (max 5MB)
             max_size = 5 * 1024 * 1024  # 5MB in bytes
             if signature_file.size > max_size:
                 return Response(
-                    {'error': 'File size exceeds 5MB limit'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": "File size exceeds 5MB limit"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Save the signature to the survey
             survey.signature = signature_file
             survey.save()
-            
+
             logger.info(f"Signature uploaded for survey {survey.survey_id}")
-            
+
             return Response(
                 {
-                    'message': 'Signature uploaded successfully',
-                    'signature_url': survey.signature.url if survey.signature else None
+                    "message": "Signature uploaded successfully",
+                    "signature_url": survey.signature.url if survey.signature else None,
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
-            
+
         except Survey.DoesNotExist:
             return Response(
-                {'error': 'Survey not found'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Survey not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             logger.error(f"Error uploading signature: {str(e)}", exc_info=True)
             return Response(
-                {'error': f'Failed to upload signature: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"Failed to upload signature: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-    @action(detail=True, methods=['get'], url_path='signature')
+
+    @action(detail=True, methods=["get"], url_path="signature")
     def get_signature(self, request, survey_id=None):
-            """Get signature URL for a survey"""
-            try:
-                survey = self.get_object()
-                
-                if survey.signature:
-                    return Response(
-                        {
-                            'has_signature': True,
-                            'signature_url': request.build_absolute_uri(survey.signature.url)
-                        },
-                        status=status.HTTP_200_OK
-                    )
-                else:
-                    return Response(
-                        {'has_signature': False, 'signature_url': None},
-                        status=status.HTTP_200_OK
-                    )
-                    
-            except Survey.DoesNotExist:
+        """Get signature URL for a survey"""
+        try:
+            survey = self.get_object()
+
+            if survey.signature:
                 return Response(
-                    {'error': 'Survey not found'},
-                    status=status.HTTP_404_NOT_FOUND
+                    {
+                        "has_signature": True,
+                        "signature_url": request.build_absolute_uri(
+                            survey.signature.url
+                        ),
+                    },
+                    status=status.HTTP_200_OK,
                 )
-            except Exception as e:
-                logger.error(f"Error fetching signature: {str(e)}", exc_info=True)
+            else:
                 return Response(
-                    {'error': f'Failed to fetch signature: {str(e)}'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"has_signature": False, "signature_url": None},
+                    status=status.HTTP_200_OK,
                 )
+
+        except Survey.DoesNotExist:
+            return Response(
+                {"error": "Survey not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error fetching signature: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to fetch signature: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+    @action(detail=False, methods=["post"], url_path="start")
+    def start_survey(self, request):
+        """
+        POST /api/surveys/start/
+        Body: { "enquiry_id": 123 }
+        """
+        enquiry_id = request.data.get("enquiry_id")
+        if not enquiry_id:
+            return Response(
+                {"error": "enquiry_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            enquiry = Enquiry.objects.select_related("assigned_user").get(id=enquiry_id)
+        except Enquiry.DoesNotExist:
+            return Response(
+                {"error": "Enquiry not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if survey already exists
+        existing_survey = Survey.objects.filter(enquiry=enquiry).first()
+
+        if existing_survey:
+            if existing_survey.status in ["in_progress", "completed"]:
+                return Response(
+                    {
+                        "survey_id": existing_survey.survey_id,
+                        "status": existing_survey.status,
+                        "message": "Survey already in progress or completed",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            # Resume a pending survey
+            existing_survey.status = "in_progress"
+            existing_survey.save(update_fields=["status"])
+            return Response(
+                {
+                    "survey_id": existing_survey.survey_id,
+                    "status": "in_progress",
+                    "message": "Survey resumed and marked as in progress",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Create brand new survey - FIXED: Remove or correct the address field
+        survey = Survey.objects.create(
+            enquiry=enquiry,
+            status="in_progress",
+            service_type=enquiry.serviceType or "",
+            full_name=enquiry.fullName or "",
+            phone_number=enquiry.phoneNumber or "",
+            email=enquiry.email or "",
+            # Remove address or use correct field name from Enquiry model
+            address="",  # Set to empty string or use the correct field
+        )
+
+        logger.info(
+            f"New survey started for enquiry {enquiry_id} → survey_id: {survey.survey_id}"
+        )
+
+        return Response(
+            {
+                "survey_id": survey.survey_id,
+                "status": "in_progress",
+                "message": "Survey started successfully",
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class DestinationAddressViewSet(viewsets.ModelViewSet):
@@ -245,10 +335,11 @@ class DestinationAddressViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        survey_id = self.request.query_params.get('survey_id')
+        survey_id = self.request.query_params.get("survey_id")
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
         return queryset
+
 
 class ArticleViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
@@ -257,31 +348,50 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        survey_id = self.request.query_params.get('survey_id')
-        room_id = self.request.query_params.get('room_id')
+        survey_id = self.request.query_params.get("survey_id")
+        room_id = self.request.query_params.get("room_id")
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
         if room_id:
             queryset = queryset.filter(room_id=room_id)
-        return queryset.select_related('room', 'volume_unit', 'weight_unit', 'handyman', 'packing_option', 'currency')
+        return queryset.select_related(
+            "room",
+            "volume_unit",
+            "weight_unit",
+            "handyman",
+            "packing_option",
+            "currency",
+        )
 
-    @action(detail=False, methods=['get'], url_path='items-by-room')
+    @action(detail=False, methods=["get"], url_path="items-by-room")
     def items_by_room(self, request):
         """Fetch available items for a given room."""
-        room_id = request.query_params.get('room_id')
+        room_id = request.query_params.get("room_id")
         if not room_id:
-            return Response({'error': 'Room ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Room ID is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
-            items = Item.objects.filter(room_id=room_id).values('id', 'name', 'description')
+            items = Item.objects.filter(room_id=room_id).values(
+                "id", "name", "description"
+            )
             items_list = [
-                {'value': item['name'], 'label': item['name'], 'description': item['description'] or ''}
+                {
+                    "value": item["name"],
+                    "label": item["name"],
+                    "description": item["description"] or "",
+                }
                 for item in items
             ]
-            return Response({'items': items_list}, status=status.HTTP_200_OK)
+            return Response({"items": items_list}, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Failed to fetch items for room {room_id}: {str(e)}")
-            return Response({'error': f'Failed to fetch items for room: {room_id}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": f"Failed to fetch items for room: {room_id}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
@@ -290,10 +400,11 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        survey_id = self.request.query_params.get('survey_id')
+        survey_id = self.request.query_params.get("survey_id")
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
-        return queryset.select_related('vehicle_type')
+        return queryset.select_related("vehicle_type")
+
 
 class PetViewSet(viewsets.ModelViewSet):
     queryset = Pet.objects.all()
@@ -302,7 +413,7 @@ class PetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        survey_id = self.request.query_params.get('survey_id')
+        survey_id = self.request.query_params.get("survey_id")
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
         return queryset

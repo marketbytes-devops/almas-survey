@@ -1,161 +1,345 @@
 // src/pages/Pricing/Tabs/AdditionalChargesTab.jsx
+
 import React, { useState, useEffect } from "react";
-import Input from "../../../components/Input/index";
-import { FaPlus, FaTrash, FaEdit, FaSave } from "react-icons/fa";
+import Input from "../../../components/Input";
+import { FaPlus, FaTrash, FaEdit, FaSave, FaCheckCircle } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 
 const AdditionalChargesTab = ({ dropdownData }) => {
   const [rows, setRows] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [masterServices, setMasterServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const [newService, setNewService] = useState("");
-  const [newCurrency, setNewCurrency] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [newPerUnit, setNewPerUnit] = useState("1");
-  const [newRateType, setNewRateType] = useState("FIX");
+  // Form fields
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [price, setPrice] = useState("");
+  const [perUnitQty, setPerUnitQty] = useState("1");
+  const [rateType, setRateType] = useState("FIX");
+  const [editingId, setEditingId] = useState(null);
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+  // ✅ CORRECT: No /api prefix (apiClient already has it)
+  const BASE_PATH = "/pricing";
 
+  // Load master services (dropdown) + already saved charges
   useEffect(() => {
-    fetchServices();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const [servicesRes, chargesRes] = await Promise.all([
+          apiClient.get(`${BASE_PATH}/survey-additional-services/`),
+          apiClient.get(`${BASE_PATH}/quotation-additional-charges/`),
+        ]);
+
+        console.log("✅ Loaded services:", servicesRes.data);
+        console.log("✅ Loaded charges:", chargesRes.data);
+
+        setMasterServices(servicesRes.data);
+        setRows(chargesRes.data || []);
+      } catch (err) {
+        console.error("❌ Failed to load data:", err);
+        console.error("Error details:", err.response?.data);
+        alert("Could not load additional services. Check console for details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const fetchServices = async () => {
-    try {
-      const res = await apiClient.get(`${API_BASE_URL}/additional-services/`);
-      setRows(res.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const addNewRow = () => {
-    if (!newService.trim()) {
-      alert("Service name is required");
+  const handleAddOrUpdate = () => {
+    if (!selectedServiceId) {
+      alert("Please select a service");
       return;
     }
-    const newRow = {
-      id: Date.now(),
-      service_name: newService,
-      currency: newCurrency,
-      price_per_unit: newPrice,
-      per_unit_quantity: newPerUnit,
-      rate_type: newRateType,
-      isNew: true,
-    };
-    setRows([...rows, newRow]);
-    resetForm();
-  };
+    if (!price || parseFloat(price) <= 0) {
+      alert("Please enter a valid price");
+      return;
+    }
 
-  const resetForm = () => {
-    setNewService("");
-    setNewPrice("");
-    setNewPerUnit("1");
-    setNewRateType("FIX");
+    const serviceObj = masterServices.find(
+      (s) => s.id === parseInt(selectedServiceId)
+    );
+    if (!serviceObj) {
+      alert("Service not found");
+      return;
+    }
+
+    const newRow = {
+      id: editingId || `temp_${Date.now()}`, // Temporary ID for new rows
+      service: { id: serviceObj.id, name: serviceObj.name },
+      service_id: serviceObj.id,
+      currency: currency ? parseInt(currency) : null,
+      price_per_unit: parseFloat(price),
+      per_unit_quantity: parseInt(perUnitQty) || 1,
+      rate_type: rateType,
+    };
+
+    if (editingId) {
+      setRows(rows.map((r) => (r.id === editingId ? newRow : r)));
+      setEditingId(null);
+    } else {
+      setRows([...rows, newRow]);
+    }
+
+    // Reset form
+    setSelectedServiceId("");
+    setCurrency("");
+    setPrice("");
+    setPerUnitQty("1");
+    setRateType("FIX");
   };
 
   const startEdit = (row) => {
     setEditingId(row.id);
-    setNewService(row.service_name);
-    setNewCurrency(row.currency);
-    setNewPrice(row.price_per_unit);
-    setNewPerUnit(row.per_unit_quantity);
-    setNewRateType(row.rate_type);
-  };
-
-  const saveEdit = () => {
-    if (!newService.trim()) return;
-    setRows(rows.map(r =>
-      r.id === editingId
-        ? { ...r, service_name: newService, currency: newCurrency, price_per_unit: newPrice, per_unit_quantity: newPerUnit, rate_type: newRateType }
-        : r
-    ));
-    setEditingId(null);
-    resetForm();
+    setSelectedServiceId(row.service.id);
+    setCurrency(row.currency || "");
+    setPrice(row.price_per_unit);
+    setPerUnitQty(row.per_unit_quantity);
+    setRateType(row.rate_type);
   };
 
   const deleteRow = (id) => {
-    setRows(rows.filter(r => r.id !== id));
+    setRows(rows.filter((r) => r.id !== id));
   };
 
   const handleSaveAll = async () => {
-    const payload = rows.map(r => ({
-      service_name: r.service_name,
-      currency: dropdownData.currencies.find(c => c.id == r.currency)?.name || "QAR",
-      price_per_unit: parseFloat(r.price_per_unit) || 0,
-      per_unit_quantity: parseInt(r.per_unit_quantity) || 1,
+    if (rows.length === 0) {
+      alert("No services to save");
+      return;
+    }
+
+    const payload = rows.map((r) => ({
+      service_id: r.service?.id || r.service_id,
+      currency: r.currency || null,
+      price_per_unit: parseFloat(r.price_per_unit),
+      per_unit_quantity: parseInt(r.per_unit_quantity),
       rate_type: r.rate_type,
-      id: r.id > 1000 ? undefined : r.id,
     }));
+
+    console.log("💾 Saving payload:", payload);
 
     try {
       setSaving(true);
-      await apiClient.post(`${API_BASE_URL}/additional-services/`, payload);
-      alert("All additional services saved!");
-      fetchServices();
+      setSaveSuccess(false);
+
+      const response = await apiClient.post(
+        `${BASE_PATH}/quotation-additional-charges/`,
+        payload
+      );
+
+      console.log("✅ Save successful:", response.data);
+
+      // Refresh from server to get real DB IDs
+      const refreshRes = await apiClient.get(
+        `${BASE_PATH}/quotation-additional-charges/`
+      );
+      setRows(refreshRes.data);
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+
+      alert("✅ All additional charges saved successfully!");
     } catch (err) {
-      alert("Save failed");
+      console.error("❌ Save failed:", err);
+      console.error("Error response:", err.response?.data);
+      alert(
+        "❌ Save failed:\n" +
+          JSON.stringify(err.response?.data || err.message, null, 2)
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="text-center py-16 text-gray-600">
+        <div className="text-xl mb-2">Loading additional services...</div>
+        <div className="text-sm text-gray-500">Please wait</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Additional Services</h2>
+      {/* Success Message */}
+      {saveSuccess && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg flex items-center gap-3">
+          <FaCheckCircle className="text-2xl" />
+          <span className="font-medium">
+            All services saved successfully! Data will persist after refresh.
+          </span>
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-          <input type="text" placeholder="Service Name" value={newService} onChange={e => setNewService(e.target.value)} className="px-4 py-2 border rounded-lg focus:border-blue-500 outline-none" />
-          <Input type="select" options={dropdownData.currencies.map(c => ({ value: c.id, label: c.name }))} value={newCurrency} onChange={e => setNewCurrency(e.target.value)} />
-          <input type="number" placeholder="Price" value={newPrice} onChange={e => setNewPrice(e.target.value)} className="px-4 py-2 border rounded-lg focus:border-blue-500 outline-none" />
-          <input type="number" placeholder="Per Unit Qty" value={newPerUnit} onChange={e => setNewPerUnit(e.target.value)} className="px-4 py-2 border rounded-lg focus:border-blue-500 outline-none" />
-          <select value={newRateType} onChange={e => setNewRateType(e.target.value)} className="px-4 py-2 border rounded-lg focus:border-blue-500 outline-none">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          Additional Services
+        </h2>
+
+        {/* Add / Edit Form */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
+          {/* Service Dropdown */}
+          <select
+            value={selectedServiceId}
+            onChange={(e) => setSelectedServiceId(e.target.value)}
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
+          >
+            <option value="">Select Service</option>
+            {masterServices.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Currency */}
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
+          >
+            <option value="">Currency</option>
+            {(dropdownData.currencies || []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Price */}
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
+          />
+
+          {/* Per Unit Qty */}
+          <input
+            type="number"
+            placeholder="Per Unit Qty"
+            value={perUnitQty}
+            onChange={(e) => setPerUnitQty(e.target.value)}
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
+          />
+
+          {/* Rate Type */}
+          <select
+            value={rateType}
+            onChange={(e) => setRateType(e.target.value)}
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
+          >
             <option value="FIX">FIX</option>
             <option value="VARIABLE">VARIABLE</option>
           </select>
-          <button onClick={editingId ? saveEdit : addNewRow} className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-6 py-2 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2">
-            {editingId ? <FaSave /> : <FaPlus />}
-            <span>{editingId ? "Update" : "Add"}</span>
+
+          {/* Add / Update Button */}
+          <button
+            onClick={handleAddOrUpdate}
+            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-6 py-2 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
+          >
+            {editingId ? (
+              <>
+                <FaSave /> Update
+              </>
+            ) : (
+              <>
+                <FaPlus /> Add
+              </>
+            )}
           </button>
         </div>
 
+        {/* SAVE ALL Button */}
         <div className="flex justify-end mb-4">
-          <button onClick={handleSaveAll} disabled={saving || rows.length === 0} className="flex items-center gap-2 px-8 py-3 bg-gradient  from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 font-semibold shadow-lg">
-            <FaSave /> {saving ? "Saving..." : "SAVE ALL SERVICES"}
+          <button
+            onClick={handleSaveAll}
+            disabled={saving || rows.length === 0}
+            className={`flex items-center gap-2 px-8 py-3 rounded-lg font-semibold shadow-lg transition ${
+              saving || rows.length === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+            }`}
+          >
+            <FaSave />
+            {saving ? "Saving..." : `SAVE ALL (${rows.length} services)`}
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border">
+        {/* Table */}
+        <div className="overflow-x-auto border-2 border-gray-300 rounded-lg">
+          <table className="w-full text-sm">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left">ADDITIONAL SERVICES</th>
-                <th className="px-4 py-3 text-left">CURRENCY TYPE</th>
+                <th className="px-4 py-3 text-left">SERVICE NAME</th>
+                <th className="px-4 py-3 text-left">CURRENCY</th>
                 <th className="px-4 py-3 text-left">PRICE PER UNIT</th>
-                <th className="px-4 py-3 text-left">RATE TYPE – PER UNIT</th>
+                <th className="px-4 py-3 text-left">PER UNIT QTY</th>
                 <th className="px-4 py-3 text-left">RATE TYPE</th>
                 <th className="px-4 py-3 text-center">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(row => (
-                <tr key={row.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3">{row.service_name}</td>
-                  <td className="px-4 py-3">{dropdownData.currencies.find(c => c.id == row.currency)?.name || "QAR"}</td>
-                  <td className="px-4 py-3">{row.price_per_unit}</td>
-                  <td className="px-4 py-3">{row.per_unit_quantity}</td>
-                  <td className="px-4 py-3">{row.rate_type}</td>
-                  <td className="px-4 py-3 text-center flex gap-3 justify-center">
-                    <button onClick={() => startEdit(row)} className="text-blue-600 hover:text-blue-800"><FaEdit /></button>
-                    <button onClick={() => deleteRow(row.id)} className="text-red-600 hover:text-red-800"><FaTrash /></button>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const currencyName =
+                  dropdownData.currencies?.find((c) => c.id === row.currency)
+                    ?.name || "QAR";
+
+                return (
+                  <tr key={row.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium">
+                      {row.service.name}
+                    </td>
+                    <td className="px-4 py-3">{currencyName}</td>
+                    <td className="px-4 py-3">{row.price_per_unit}</td>
+                    <td className="px-4 py-3">{row.per_unit_quantity}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                          row.rate_type === "FIX"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-purple-100 text-purple-700"
+                        }`}
+                      >
+                        {row.rate_type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center flex gap-3 justify-center">
+                      <button
+                        onClick={() => startEdit(row)}
+                        className="text-blue-600 hover:text-blue-800 transition"
+                        title="Edit"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => deleteRow(row.id)}
+                        className="text-red-600 hover:text-red-800 transition"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          {rows.length === 0 && <div className="text-center py-10 text-gray-500">No additional services added yet.</div>}
+
+          {rows.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg mb-2">No additional services added yet.</p>
+              <p className="text-sm">Use the form above to add services.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,7 +11,11 @@ import ExcludesTab from "./Tabs/Exclude";
 
 const TAB_LIST = [
   { id: "pricing", label: "PRICING", component: PricingTab },
-  { id: "additional-charges", label: "ADDITIONAL CHARGES", component: AdditionalChargesTab },
+  {
+    id: "additional-charges",
+    label: "ADDITIONAL CHARGES",
+    component: AdditionalChargesTab,
+  },
   { id: "includes", label: "INCLUDES", component: IncludesTab },
   { id: "excludes", label: "EXCLUDES", component: ExcludesTab },
   { id: "insurance", label: "INSURANCE", component: null },
@@ -25,8 +29,16 @@ const TAB_LIST = [
 
 // Qatar cities for pricing
 const QATAR_CITIES = [
-  "Doha", "Al Rayyan", "Al Wakrah", "Al Khor", "Umm Salal", 
-  "Al Daayen", "Al Shamal", "Mesaieed", "Lusail", "Pearl-Qatar"
+  "Doha",
+  "Al Rayyan",
+  "Al Wakrah",
+  "Al Khor",
+  "Umm Salal",
+  "Al Daayen",
+  "Al Shamal",
+  "Mesaieed",
+  "Lusail",
+  "Pearl-Qatar",
 ];
 
 const LocalMove = () => {
@@ -48,22 +60,34 @@ const LocalMove = () => {
     weightUnits: [],
   });
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+  // NEW CORRECT PATH — because we changed URL to /api/additional-settings/
+  const ADDITIONAL_SETTINGS_API = "/additional-settings";
 
   useEffect(() => {
     const fetchDropdowns = async () => {
       try {
         setLoading(true);
+
         const endpoints = [
-          `${API_BASE_URL}/move-types/`,
-          `${API_BASE_URL}/tariff-types/`,
-          `${API_BASE_URL}/currencies/`,
-          `${API_BASE_URL}/volume-units/`,
-          `${API_BASE_URL}/weight-units/`,
+          `${ADDITIONAL_SETTINGS_API}/move-types/`,
+          `${ADDITIONAL_SETTINGS_API}/tariff-types/`,
+          `${ADDITIONAL_SETTINGS_API}/currencies/`,
+          `${ADDITIONAL_SETTINGS_API}/volume-units/`,
+          `${ADDITIONAL_SETTINGS_API}/weight-units/`,
         ];
-        const responses = await Promise.all(endpoints.map(url => apiClient.get(url)));
-        const [moveTypesRes, tariffTypesRes, currenciesRes, volumeUnitsRes, weightUnitsRes] = responses;
-        
+
+        const responses = await Promise.all(
+          endpoints.map((url) => apiClient.get(url))
+        );
+
+        const [
+          moveTypesRes,
+          tariffTypesRes,
+          currenciesRes,
+          volumeUnitsRes,
+          weightUnitsRes,
+        ] = responses;
+
         setDropdownData({
           moveTypes: moveTypesRes.data.results || moveTypesRes.data,
           tariffTypes: tariffTypesRes.data.results || tariffTypesRes.data,
@@ -78,12 +102,13 @@ const LocalMove = () => {
           setHasAutoSelectedCity(true);
         }
       } catch (err) {
-        setError("Failed to load data");
-        console.error(err);
+        console.error("Failed to load dropdown data:", err);
+        setError("Failed to load required data. Please refresh.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchDropdowns();
   }, [hasAutoSelectedCity]);
 
@@ -100,25 +125,41 @@ const LocalMove = () => {
     setSelectedCurrency,
     dropdownData: {
       ...dropdownData,
-      hubs: QATAR_CITIES.map(city => ({ id: city, name: city })), // Convert cities to hub format for compatibility
+      hubs: QATAR_CITIES.map((city) => ({ id: city, name: city })), // Convert cities to hub format for compatibility
     },
   };
 
-  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
-  if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-600 text-2xl">{error}</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-600 text-2xl">
+        {error}
+      </div>
+    );
 
   return (
     <FormProvider {...methods}>
       <div className="bg-gray-50 min-h-screen">
         <div className="w-full">
-          <Tab tabs={TAB_LIST} activeTab={activeTab} setActiveTab={setActiveTab} />
-          {TAB_LIST.map(tab => (
+          <Tab
+            tabs={TAB_LIST}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+          {TAB_LIST.map((tab) => (
             <TabPanel key={tab.id} activeTab={activeTab} tabId={tab.id}>
               {tab.component ? (
                 <tab.component {...sharedProps} />
               ) : (
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
-                  <p className="text-3xl font-bold text-gray-700 mb-4">{tab.label}</p>
+                  <p className="text-3xl font-bold text-gray-700 mb-4">
+                    {tab.label}
+                  </p>
                   <p className="text-lg text-gray-500">Coming Soon...</p>
                 </div>
               )}
