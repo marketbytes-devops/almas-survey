@@ -68,3 +68,42 @@ class AdditionalService(models.Model):
 
     def __str__(self):
         return f"{self.service_name} - {self.price_per_unit} {self.currency}"
+    
+    
+    # pricing/models.py  ← ADD THIS NEW MODEL (below your Price model)
+
+class QuotationAdditionalCharge(models.Model):
+    RATE_TYPE_CHOICES = [
+        ("FIX", "FIX"),
+        ("VARIABLE", "VARIABLE"),
+    ]
+
+    # Link to the master service from Additional Settings
+    service = models.ForeignKey(
+        'additional_settings.SurveyAdditionalService',
+        on_delete=models.PROTECT,
+        related_name='quotation_charges'
+    )
+
+   # CORRECT — Currency is in additional_settings
+    currency = models.ForeignKey(
+        'additional_settings.Currency',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    price_per_unit = models.DecimalField(max_digits=12, decimal_places=2)
+    per_unit_quantity = models.PositiveIntegerField(default=1)
+    rate_type = models.CharField(max_length=20, choices=RATE_TYPE_CHOICES, default="FIX")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Quotation Additional Charge"
+        verbose_name_plural = "Quotation Additional Charges"
+        ordering = ['service__name']
+
+    def __str__(self):
+        return f"{self.service.name} - {self.price_per_unit} {self.currency}"

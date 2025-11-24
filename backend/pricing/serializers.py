@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Price, AdditionalService
+from .models import Price, AdditionalService, QuotationAdditionalCharge
+from survey.models import SurveyAdditionalService
 
 class PriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,3 +24,30 @@ class AdditionalServiceSerializer(serializers.ModelSerializer):
         model = AdditionalService
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
+        
+class SurveyAdditionalServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SurveyAdditionalService
+        fields = ['id', 'name']
+
+class QuotationAdditionalChargeSerializer(serializers.ModelSerializer):
+    service = SurveyAdditionalServiceSerializer(read_only=True)
+    service_id = serializers.PrimaryKeyRelatedField(
+        queryset=SurveyAdditionalService.objects.all(),
+        source='service',
+        write_only=True
+    )
+    currency_name = serializers.CharField(source='currency.name', read_only=True, default='QAR')
+
+    class Meta:
+        model = QuotationAdditionalCharge
+        fields = [
+            'id',
+            'service',
+            'service_id',
+            'currency',
+            'currency_name',
+            'price_per_unit',
+            'per_unit_quantity',
+            'rate_type',
+        ]

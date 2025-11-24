@@ -1,12 +1,14 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Price, AdditionalService
-from .serializers import PriceSerializer, AdditionalServiceSerializer
+from .models import Price, AdditionalService, QuotationAdditionalCharge
+from .serializers import PriceSerializer, AdditionalServiceSerializer, SurveyAdditionalServiceSerializer, QuotationAdditionalChargeSerializer
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from survey.models import SurveyAdditionalService
+
 
 @api_view(['GET', 'POST'])
 def additional_services_list_create(request):
@@ -174,3 +176,23 @@ class PriceViewSet(viewsets.ModelViewSet):
                 {"detail": f"Error deleting entries: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+            
+            
+            
+class SurveyAdditionalServiceViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SurveyAdditionalService.objects.all().order_by('name')
+    serializer_class = SurveyAdditionalServiceSerializer
+
+class QuotationAdditionalChargeViewSet(viewsets.ModelViewSet):
+    queryset = QuotationAdditionalCharge.objects.select_related('service', 'currency').all()
+    serializer_class = QuotationAdditionalChargeSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Support bulk create (sending list)
+        if isinstance(request.data, list):
+            serializer = self.get_serializer(data=request.data, many=True)
+        else:
+            serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=201)
