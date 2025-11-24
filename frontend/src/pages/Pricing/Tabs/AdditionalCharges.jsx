@@ -1,7 +1,4 @@
-// src/pages/Pricing/Tabs/AdditionalChargesTab.jsx
-
 import React, { useState, useEffect } from "react";
-import Input from "../../../components/Input";
 import { FaPlus, FaTrash, FaEdit, FaSave, FaCheckCircle } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 
@@ -12,7 +9,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Form fields
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [currency, setCurrency] = useState("");
   const [price, setPrice] = useState("");
@@ -20,27 +16,24 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   const [rateType, setRateType] = useState("FIX");
   const [editingId, setEditingId] = useState(null);
 
-  // ✅ CORRECT: No /api prefix (apiClient already has it)
-  const BASE_PATH = "/pricing";
 
-  // Load master services (dropdown) + already saved charges
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
         const [servicesRes, chargesRes] = await Promise.all([
-          apiClient.get(`${BASE_PATH}/survey-additional-services/`),
-          apiClient.get(`${BASE_PATH}/quotation-additional-charges/`),
+          apiClient.get('/survey-additional-services/'),
+          apiClient.get('/quotation-additional-charges/'),
         ]);
 
-        console.log("✅ Loaded services:", servicesRes.data);
-        console.log("✅ Loaded charges:", chargesRes.data);
+        console.log("Loaded services:", servicesRes.data);
+        console.log("Loaded charges:", chargesRes.data);
 
         setMasterServices(servicesRes.data);
         setRows(chargesRes.data || []);
       } catch (err) {
-        console.error("❌ Failed to load data:", err);
+        console.error("Failed to load data:", err);
         console.error("Error details:", err.response?.data);
         alert("Could not load additional services. Check console for details.");
       } finally {
@@ -70,7 +63,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     }
 
     const newRow = {
-      id: editingId || `temp_${Date.now()}`, // Temporary ID for new rows
+      id: editingId || `temp_${Date.now()}`, 
       service: { id: serviceObj.id, name: serviceObj.name },
       service_id: serviceObj.id,
       currency: currency ? parseInt(currency) : null,
@@ -86,7 +79,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       setRows([...rows, newRow]);
     }
 
-    // Reset form
     setSelectedServiceId("");
     setCurrency("");
     setPrice("");
@@ -121,22 +113,21 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       rate_type: r.rate_type,
     }));
 
-    console.log("💾 Saving payload:", payload);
+    console.log("Saving payload:", payload);
 
     try {
       setSaving(true);
       setSaveSuccess(false);
 
       const response = await apiClient.post(
-        `${BASE_PATH}/quotation-additional-charges/`,
+        '/quotation-additional-charges/',
         payload
       );
 
-      console.log("✅ Save successful:", response.data);
+      console.log("Save successful:", response.data);
 
-      // Refresh from server to get real DB IDs
       const refreshRes = await apiClient.get(
-        `${BASE_PATH}/quotation-additional-charges/`
+        '/quotation-additional-charges/'
       );
       setRows(refreshRes.data);
 
@@ -145,10 +136,10 @@ const AdditionalChargesTab = ({ dropdownData }) => {
 
       alert("✅ All additional charges saved successfully!");
     } catch (err) {
-      console.error("❌ Save failed:", err);
+      console.error("Save failed:", err);
       console.error("Error response:", err.response?.data);
       alert(
-        "❌ Save failed:\n" +
+        "Save failed:\n" +
           JSON.stringify(err.response?.data || err.message, null, 2)
       );
     } finally {
@@ -167,7 +158,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
 
   return (
     <div className="space-y-8">
-      {/* Success Message */}
       {saveSuccess && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg flex items-center gap-3">
           <FaCheckCircle className="text-2xl" />
@@ -181,10 +171,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           Additional Services
         </h2>
-
-        {/* Add / Edit Form */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
-          {/* Service Dropdown */}
           <select
             value={selectedServiceId}
             onChange={(e) => setSelectedServiceId(e.target.value)}
@@ -197,8 +184,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
               </option>
             ))}
           </select>
-
-          {/* Currency */}
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -211,8 +196,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
               </option>
             ))}
           </select>
-
-          {/* Price */}
           <input
             type="number"
             step="0.01"
@@ -221,8 +204,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             onChange={(e) => setPrice(e.target.value)}
             className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
           />
-
-          {/* Per Unit Qty */}
           <input
             type="number"
             placeholder="Per Unit Qty"
@@ -230,8 +211,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             onChange={(e) => setPerUnitQty(e.target.value)}
             className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
           />
-
-          {/* Rate Type */}
           <select
             value={rateType}
             onChange={(e) => setRateType(e.target.value)}
@@ -240,8 +219,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             <option value="FIX">FIX</option>
             <option value="VARIABLE">VARIABLE</option>
           </select>
-
-          {/* Add / Update Button */}
           <button
             onClick={handleAddOrUpdate}
             className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-6 py-2 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
@@ -257,8 +234,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             )}
           </button>
         </div>
-
-        {/* SAVE ALL Button */}
         <div className="flex justify-end mb-4">
           <button
             onClick={handleSaveAll}
@@ -273,8 +248,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             {saving ? "Saving..." : `SAVE ALL (${rows.length} services)`}
           </button>
         </div>
-
-        {/* Table */}
         <div className="overflow-x-auto border-2 border-gray-300 rounded-lg">
           <table className="w-full text-sm">
             <thead className="bg-gray-800 text-white">

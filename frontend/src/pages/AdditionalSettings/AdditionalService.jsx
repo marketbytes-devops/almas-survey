@@ -25,7 +25,7 @@ const AdditionalServices = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await apiClient.get("/pricing/survey-additional-services/");
+        const response = await apiClient.get("/survey-additional-services/");
         setServices(response.data);
       } catch (err) {
         setError("Failed to load additional services. Please try again.");
@@ -45,7 +45,7 @@ const AdditionalServices = () => {
 
     try {
       const payload = { name: data.name.trim() };
-      const response = await apiClient.post("/pricing/survey-additional-services/", payload);
+      const response = await apiClient.post("/survey-additional-services/", payload);
 
       const newService = response.data;
       setServices(prev => {
@@ -73,7 +73,7 @@ const AdditionalServices = () => {
     setSuccess(null);
 
     try {
-      await apiClient.delete(`/pricing/survey-additional-services/${id}/`);
+      await apiClient.delete(`/survey-additional-services/${id}/`);
       setServices(prev => prev.filter(s => s.id !== id));
       setSuccess("Service deleted successfully!");
       setTimeout(() => setSuccess(null), 3000);
@@ -107,7 +107,6 @@ const AdditionalServices = () => {
       )}
 
       <div className="space-y-8">
-        {/* Add New Form */}
         <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
           <h2 className="text-lg sm:text-xl font-medium mb-6">Add New Survey Additional Service</h2>
 
@@ -115,7 +114,7 @@ const AdditionalServices = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="w-full">
                 <Input
-                  label="Service Name *"
+                  label="Service Name"
                   name="name"
                   type="text"
                   placeholder="e.g. Piano Moving, Storage in Transit..."
@@ -137,8 +136,6 @@ const AdditionalServices = () => {
             </form>
           </FormProvider>
         </div>
-
-        {/* List of Services */}
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <h3 className="bg-gray-50 px-6 py-4 text-lg font-semibold text-gray-900 border-b border-gray-200">
             Survey Additional Services ({services.length})

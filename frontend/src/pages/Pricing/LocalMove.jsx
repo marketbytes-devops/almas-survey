@@ -27,7 +27,6 @@ const TAB_LIST = [
   { id: "services", label: "SERVICES", component: null },
 ];
 
-// Qatar cities for pricing
 const QATAR_CITIES = [
   "Doha",
   "Al Rayyan",
@@ -47,7 +46,7 @@ const LocalMove = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasAutoSelectedCity, setHasAutoSelectedCity] = useState(false);
-  const [selectedCity, setSelectedCity] = useState(""); // Now using city instead of hub
+  const [selectedCity, setSelectedCity] = useState(""); 
   const [selectedMoveType, setSelectedMoveType] = useState("");
   const [selectedTariff, setSelectedTariff] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
@@ -60,8 +59,7 @@ const LocalMove = () => {
     weightUnits: [],
   });
 
-  // NEW CORRECT PATH — because we changed URL to /api/additional-settings/
-  const ADDITIONAL_SETTINGS_API = "/additional-settings";
+  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
   useEffect(() => {
     const fetchDropdowns = async () => {
@@ -69,11 +67,11 @@ const LocalMove = () => {
         setLoading(true);
 
         const endpoints = [
-          `${ADDITIONAL_SETTINGS_API}/move-types/`,
-          `${ADDITIONAL_SETTINGS_API}/tariff-types/`,
-          `${ADDITIONAL_SETTINGS_API}/currencies/`,
-          `${ADDITIONAL_SETTINGS_API}/volume-units/`,
-          `${ADDITIONAL_SETTINGS_API}/weight-units/`,
+          `${API_BASE_URL}/move-types/`,
+          `${API_BASE_URL}/tariff-types/`,
+          `${API_BASE_URL}/currencies/`,
+          `${API_BASE_URL}/volume-units/`,
+          `${API_BASE_URL}/weight-units/`,
         ];
 
         const responses = await Promise.all(
@@ -96,7 +94,6 @@ const LocalMove = () => {
           weightUnits: weightUnitsRes.data.results || weightUnitsRes.data,
         });
 
-        // Auto-select Doha as default city
         if (!hasAutoSelectedCity) {
           setSelectedCity("Doha");
           setHasAutoSelectedCity(true);
@@ -113,7 +110,7 @@ const LocalMove = () => {
   }, [hasAutoSelectedCity]);
 
   const sharedProps = {
-    selectedHub: selectedCity, // Passing city as selectedHub for compatibility
+    selectedHub: selectedCity, 
     setSelectedHub: setSelectedCity,
     selectedMoveType,
     setSelectedMoveType,
@@ -125,7 +122,7 @@ const LocalMove = () => {
     setSelectedCurrency,
     dropdownData: {
       ...dropdownData,
-      hubs: QATAR_CITIES.map((city) => ({ id: city, name: city })), // Convert cities to hub format for compatibility
+      hubs: QATAR_CITIES.map((city) => ({ id: city, name: city })), 
     },
   };
 

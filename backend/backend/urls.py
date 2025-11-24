@@ -14,26 +14,24 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-
-# backend/backend/urls.py  ← Replace your current file with this
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/auth/", include("authapp.urls")),
-    path("documentation/", include("documentation.urls")),
-    path("api/customers/", include("add_customers.urls")),
-    path("api/jobs/", include("add_jobs.urls")),
-    path("api/contacts/", include("contact.urls")),
-    # GIVE EVERY APP ITS OWN CLEAN PREFIX — THIS IS THE FINAL CORRECT WAY
-    path("api/additional-settings/", include("additional_settings.urls")),
-    path("api/survey/", include("survey.urls")),
-    path("api/pricing/", include("pricing.urls")),
-    path("api/quotation/", include("quotation.urls")),
+    path('admin/', admin.site.urls),
+    path('api/auth/', include('authapp.urls')),
+    path('documentation/', include('documentation.urls')),
+    path('api/customers/', include('add_customers.urls')),
+    path('api/jobs/', include('add_jobs.urls')),
+    path('api/contacts/', include('contact.urls')),
+    
+    # Survey API's
+    path('api/', include('additional_settings.urls')),
+    path('api/', include('survey.urls')),
+    path('api/', include('pricing.urls')),
+    path('api/', include('quotation.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
