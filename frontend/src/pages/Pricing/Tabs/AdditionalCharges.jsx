@@ -134,7 +134,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      alert("✅ All additional charges saved successfully!");
+      alert("All additional charges saved successfully!");
     } catch (err) {
       console.error("Save failed:", err);
       console.error("Error response:", err.response?.data);
