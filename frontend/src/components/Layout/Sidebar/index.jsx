@@ -23,7 +23,7 @@ import {
   AiOutlineLogout,
   AiTwotoneProfile,
   AiOutlineGlobal,
-  AiFillContainer
+  AiOutlineFileText
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -97,7 +97,7 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "new-enquiries", to: "/new-enquiries", label: "New Assigned", icon: <AiOutlineAliwangwang className="w-5 h-5" />, page: "new_enquiries", action: "view" },
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <AiOutlineCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <AiOutlineBarChart className="w-5 h-5" />, page: "survey_summary", action: "view" },
-    { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <AiFillContainer className="w-5 h-5" />, page: "quotation", action: "view" },
+    { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <AiOutlineFileText className="w-5 h-5" />, page: "quotation", action: "view" },
     {
       id: "pricing",
       label: "Pricing",
