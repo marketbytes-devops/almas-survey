@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Country, State, City } from "country-state-city";
+import { Country, City } from "country-state-city";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import SignatureModal from "../../components/SignatureModal/SignatureModal";
@@ -13,25 +13,6 @@ const SERVICE_TYPE_DISPLAY = {
   logistics: "Logistics",
 };
 
-const SERVICE_INCLUDES = [
-  "Packing Service",
-  "Customer packed boxes collection",
-  "Miscellaneous items packing",
-  "Furniture dismantling and packing",
-  "Loading",
-  "Transportation",
-  "Unloading , unpacking",
-  "Furniture assembly",
-  "Debris removal on same day",
-];
-
-const SERVICE_EXCLUDES = [
-  "Insurance",
-  "Storage",
-  "Cleaning service, plumbing service , electrical works if any",
-  "Chandelier removal / installation/ Plan soil removal, Wall installation",
-];
-
 export default function QuotationCreate() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,11 +22,16 @@ export default function QuotationCreate() {
   const [message, setMessage] = useState("");
   const [isSignatureUploading, setIsSignatureUploading] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  
+
   const today = new Date().toISOString().split("T")[0];
   const [pricingRanges, setPricingRanges] = useState([]);
   const [priceError, setPriceError] = useState("");
   const [destinationCity, setDestinationCity] = useState("");
+
+  // Dynamic Includes & Excludes
+  const [dynamicIncludes, setDynamicIncludes] = useState([]);
+  const [dynamicExcludes, setDynamicExcludes] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
 
   const [form, setForm] = useState({
     serialNo: "1001",
@@ -60,31 +46,18 @@ export default function QuotationCreate() {
     jobType: "Local",
     amount: "",
     advance: "",
-    includedServices: SERVICE_INCLUDES.reduce(
-      (acc, item) => ({ ...acc, [item]: false }),
-      {}
-    ),
-    excludedServices: SERVICE_EXCLUDES.reduce(
-      (acc, item) => ({ ...acc, [item]: false }),
-      {}
-    ),
+    includedServices: {},   // will be filled dynamically
+    excludedServices: {},   // will be filled dynamically
   });
 
-  const getQatarCities = () => {
-    const qatar = Country.getAllCountries().find(c => c.name === "Qatar");
-    if (!qatar) return [];
-    return City.getCitiesOfCountry(qatar.isoCode) || [];
-  };
-
-  const qatarCities = getQatarCities();
-
+  // Fetch survey data
   useEffect(() => {
     const fetchSurvey = async () => {
       try {
         const res = await apiClient.get(`/surveys/${id}/`);
         const s = res.data;
         setSurvey(s);
-        
+
         const destCity = s.destination_addresses?.[0]?.city || "";
         setDestinationCity(destCity);
 
@@ -113,18 +86,17 @@ export default function QuotationCreate() {
     fetchSurvey();
   }, [id, today]);
 
+  // Fetch pricing
   useEffect(() => {
     const fetchLivePricing = async () => {
       if (!destinationCity) {
         setPricingRanges([]);
         return;
       }
-
       try {
         const params = new URLSearchParams();
         params.append("pricing_city", destinationCity);
-        params.append("move_type", "1"); 
-        
+        params.append("move_type", "1");
         const res = await apiClient.get(`/price/active/?${params}`);
         const liveRates = res.data.map((item) => ({
           min: parseFloat(item.min_volume),
@@ -136,22 +108,55 @@ export default function QuotationCreate() {
         setPriceError("");
       } catch (err) {
         console.error("Failed to fetch pricing:", err);
-        setPriceError(
-          `No pricing found for ${destinationCity}. Please contact administrator.`
-        );
+        setPriceError(`No pricing found for ${destinationCity}. Please contact administrator.`);
         setPricingRanges([]);
       }
     };
-
     fetchLivePricing();
   }, [destinationCity]);
 
+  // Fetch dynamic Includes & Excludes based on city
+// Fetch ALL Includes & Excludes (Global — appears in every quote)
+  useEffect(() => {
+    const fetchIncludesExcludes = async () => {
+      try {
+        setLoadingServices(true);
+
+        const [includeRes, excludeRes] = await Promise.all([
+          apiClient.get("/inclusion-exclusion/?type=include"),
+          apiClient.get("/inclusion-exclusion/?type=exclude"),
+        ]);
+
+        setDynamicIncludes(includeRes.data);
+        setDynamicExcludes(excludeRes.data);
+      } catch (err) {
+        console.error("Failed to load includes/excludes:", err);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    fetchIncludesExcludes();
+  }, []); // ← No dependency on city → loads once
+
+  // Update form when dynamic services load
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      includedServices: dynamicIncludes.reduce((acc, item) => ({
+        ...acc,
+        [item.id]: prev.includedServices[item.id] || false,
+      }), {}),
+      excludedServices: dynamicExcludes.reduce((acc, item) => ({
+        ...acc,
+        [item.id]: prev.excludedServices[item.id] || false,
+      }), {}),
+    }));
+  }, [dynamicIncludes, dynamicExcludes]);
+
   const totalVolume =
     survey?.articles
-      ?.reduce(
-        (sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0),
-        0
-      )
+      ?.reduce((sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0), 0)
       ?.toFixed(2) || "0.00";
 
   useEffect(() => {
@@ -161,9 +166,7 @@ export default function QuotationCreate() {
     }
 
     const volume = parseFloat(totalVolume);
-    const applicableRange = pricingRanges.find(
-      (r) => volume >= r.min && volume <= r.max
-    );
+    const applicableRange = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
 
     if (!applicableRange) {
       setPriceError(`No pricing range found for volume ${volume} CBM in ${destinationCity}.`);
@@ -175,7 +178,7 @@ export default function QuotationCreate() {
       applicableRange.rateType === "flat"
         ? applicableRange.rate
         : applicableRange.rate * volume;
-    
+
     setForm((prev) => ({ ...prev, amount: calculatedAmount.toFixed(2) }));
     setPriceError("");
   }, [totalVolume, pricingRanges, destinationCity]);
@@ -188,13 +191,9 @@ export default function QuotationCreate() {
     formData.append("signature", file);
     setIsSignatureUploading(true);
     try {
-      await apiClient.post(
-        `/surveys/${survey.survey_id}/upload-signature/`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      await apiClient.post(`/surveys/${survey.survey_id}/upload-signature/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setMessage("Digital signature uploaded successfully");
       setSurvey((prev) => ({ ...prev, signature_uploaded: true }));
     } catch (err) {
@@ -208,19 +207,15 @@ export default function QuotationCreate() {
   const handleCreate = async () => {
     if (!form.amount) return alert("Amount is not calculated.");
     if (priceError) return alert(priceError);
-    
+
     const payload = {
       survey: parseInt(survey.id),
       serial_no: form.serialNo,
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
-      included_services: Object.keys(form.includedServices).filter(
-        (k) => form.includedServices[k]
-      ),
-      excluded_services: Object.keys(form.excludedServices).filter(
-        (k) => form.excludedServices[k]
-      ),
+      included_services: Object.keys(form.includedServices).filter((k) => form.includedServices[k]),
+      excluded_services: Object.keys(form.excludedServices).filter((k) => form.excludedServices[k]),
     };
 
     try {
@@ -228,20 +223,11 @@ export default function QuotationCreate() {
       alert("Quotation created successfully!");
       navigate("/quotation-list");
     } catch (err) {
-      alert(
-        "Error: " +
-          (err.response?.data?.detail || "Failed to create quotation.")
-      );
+      alert("Error: " + (err.response?.data?.detail || "Failed to create quotation."));
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
 
   return (
@@ -252,16 +238,11 @@ export default function QuotationCreate() {
         onSave={handleSignatureSave}
         customerName={form.client}
       />
-      
+
       <div className="mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-8 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-medium">Create Quotation</h2>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-4xl hover:opacity-80"
-          >
-            ×
-          </button>
+          <button onClick={() => navigate(-1)} className="text-4xl hover:opacity-80">×</button>
         </div>
 
         {message && <div className="m-6 p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium">{message}</div>}
@@ -273,53 +254,25 @@ export default function QuotationCreate() {
             <h3 className="text-sm font-medium text-blue-800 mb-2">Pricing Location</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">
-                  Destination City
-                </label>
-                <input
-                  type="text"
-                  value={destinationCity || "Not specified"}
-                  readOnly
-                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium"
-                />
+                <label className="block text-xs font-medium text-blue-700 mb-1">Destination City</label>
+                <input type="text" value={destinationCity || "Not specified"} readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  value="Qatar"
-                  readOnly
-                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium"
-                />
+                <label className="block text-xs font-medium text-blue-700 mb-1">Country</label>
+                <input type="text" value="Qatar" readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
               </div>
             </div>
-            {destinationCity && (
-              <p className="text-xs text-blue-600 mt-2">
-                Pricing is calculated based on rates for {destinationCity}, Qatar
-              </p>
-            )}
           </div>
 
+          {/* Form fields... (serial no, date, client, etc.) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Quotation No.</label>
-              <input 
-                type="text" 
-                value={form.serialNo} 
-                onChange={(e) => setForm({ ...form, serialNo: e.target.value })}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:border-blue-500 outline-none" 
-              />
+              <input type="text" value={form.serialNo} onChange={(e) => setForm({ ...form, serialNo: e.target.value })} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:border-blue-500 outline-none" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input 
-                type="date" 
-                value={form.date} 
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:border-blue-500 outline-none" 
-              />
+              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:border-blue-500 outline-none" />
             </div>
           </div>
 
@@ -327,12 +280,7 @@ export default function QuotationCreate() {
             {["Client Name", "Mobile", "Email"].map((label, i) => (
               <div key={i}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                <input 
-                  type="text" 
-                  value={[form.client, form.mobile, form.email][i]} 
-                  readOnly 
-                  className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" 
-                />
+                <input type="text" value={[form.client, form.mobile, form.email][i]} readOnly className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
               </div>
             ))}
           </div>
@@ -345,102 +293,85 @@ export default function QuotationCreate() {
           ].map((item) => (
             <div key={item.label}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{item.label}</label>
-              <input 
-                type="text" 
-                value={item.value} 
-                readOnly 
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" 
-              />
+              <input type="text" value={item.value} readOnly className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
             </div>
           ))}
 
-          {/* Volume and Pricing Section */}
+          {/* Volume and Pricing */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border-2 border-blue-200">
             <h3 className="text-xl font-medium text-center mb-4">Quotation Amount</h3>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-2">Total Volume</p>
-                <div className="text-2xl font-medium text-green-600">
-                  {totalVolume} <span className="text-lg">CBM</span>
-                </div>
+                <div className="text-2xl font-medium text-green-600">{totalVolume} <span className="text-lg">CBM</span></div>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-2">Pricing Location</p>
-                <div className="text-lg font-medium text-blue-600">
-                  {destinationCity || "Not specified"}
-                </div>
+                <div className="text-lg font-medium text-blue-600">{destinationCity || "Not specified"}</div>
               </div>
             </div>
-
             {priceError ? (
-              <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 text-center text-red-700 font-medium">
-                {priceError}
-              </div>
+              <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 text-center text-red-700 font-medium">{priceError}</div>
             ) : (
               <div className="text-center">
-                <p className="text-5xl font-medium text-[#4c7085]">
-                  {form.amount || "0.00"} <span className="text-3xl">QAR</span>
-                </p>
+                <p className="text-5xl font-medium text-[#4c7085]">{form.amount || "0.00"} <span className="text-3xl">QAR</span></p>
               </div>
             )}
           </div>
 
-          {/* Services Include/Exclude */}
+          {/* DYNAMIC Includes / Excludes */}
           <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-gray-300 rounded-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4 text-center text-lg font-medium">
-              Service Includes
+            <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4 text-center text-lg font-medium">Service Includes</div>
+            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 text-center text-lg font-medium">Service Excludes</div>
+
+            <div className="p-6 space-y-4 bg-gray-50 max-h-96 overflow-y-auto">
+              {loadingServices ? (
+                <p className="text-center text-gray-500">Loading services...</p>
+              ) : dynamicIncludes.length === 0 ? (
+                <p className="text-center text-gray-500">No included services defined for {destinationCity}</p>
+              ) : (
+                dynamicIncludes.map((service) => (
+                  <label key={service.id} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.includedServices[service.id] || false}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          includedServices: { ...form.includedServices, [service.id]: e.target.checked },
+                        })
+                      }
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-800">• {service.text}</span>
+                  </label>
+                ))
+              )}
             </div>
-            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 text-center text-lg font-medium">
-              Service Excludes
-            </div>
-            <div className="p-6 space-y-4 bg-gray-50">
-              {SERVICE_INCLUDES.map((service) => (
-                <label
-                  key={service}
-                  className="flex items-center space-x-3 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={form.includedServices[service] || false}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        includedServices: {
-                          ...form.includedServices,
-                          [service]: e.target.checked,
-                        },
-                      })
-                    }
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium">{service}</span>
-                </label>
-              ))}
-            </div>
-            <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200">
-              {SERVICE_EXCLUDES.map((service) => (
-                <label
-                  key={service}
-                  className="flex items-center space-x-3 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={form.excludedServices[service] || false}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        excludedServices: {
-                          ...form.excludedServices,
-                          [service]: e.target.checked,
-                        },
-                      })
-                    }
-                    className="w-5 h-5 text-red-600 rounded"
-                  />
-                  <span className="text-sm font-medium">{service}</span>
-                </label>
-              ))}
+
+            <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200 max-h-96 overflow-y-auto">
+              {loadingServices ? (
+                <p className="text-center text-gray-500">Loading...</p>
+              ) : dynamicExcludes.length === 0 ? (
+                <p className="text-center text-gray-500">No excluded services defined</p>
+              ) : (
+                dynamicExcludes.map((service) => (
+                  <label key={service.id} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.excludedServices[service.id] || false}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          excludedServices: { ...form.excludedServices, [service.id]: e.target.checked },
+                        })
+                      }
+                      className="w-5 h-5 text-red-600 rounded focus:ring-red-500"
+                    />
+                    <span className="text-sm font-medium text-gray-800">• {service.text}</span>
+                  </label>
+                ))
+              )}
             </div>
           </div>
 
@@ -448,12 +379,7 @@ export default function QuotationCreate() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div>
               <label className="block font-medium">Total Amount</label>
-              <input
-                type="text"
-                readOnly
-                value={form.amount ? `${form.amount} QAR` : ""}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50"
-              />
+              <input type="text" readOnly value={form.amount ? `${form.amount} QAR` : ""} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
             </div>
             <div>
               <label className="block font-medium">Advance</label>
@@ -471,58 +397,37 @@ export default function QuotationCreate() {
               <input
                 type="text"
                 readOnly
-                value={
-                  form.amount && form.advance
-                    ? `${(
-                        parseFloat(form.amount) - parseFloat(form.advance)
-                      ).toFixed(2)} QAR`
-                    : ""
-                }
+                value={form.amount && form.advance ? `${(parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)} QAR` : ""}
                 className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700"
               />
             </div>
           </div>
 
-          {/* Digital Signature */}
+          {/* Digital Signature & Create Button */}
           <div>
             <h3 className="font-medium mb-1">Digital Signature</h3>
             <div className="bg-gray-50 p-6 rounded-lg border text-center">
               {survey?.signature_uploaded ? (
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 md:gap-0">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
                   <div className="text-center md:text-left">
                     <p className="font-medium text-green-700">Digitally Signed</p>
                     <p className="text-sm text-gray-600">Customer signature is attached</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <button
-                      onClick={openSignatureModal}
-                      disabled={isSignatureUploading}
-                      className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white text-sm rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-60"
-                    >
-                      Change
-                    </button>
-                  </div>
+                  <button onClick={openSignatureModal} className="px-4 py-2 bg-green-600 text-white rounded-lg">Change</button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center">
-                  <p className="text-gray-600 mb-4">No signature uploaded yet</p>
-                  <button
-                    onClick={openSignatureModal}
-                    className="px-8 py-2 bg-red-600 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-red-700"
-                  >
-                    Add Digital Signature
-                  </button>
-                </div>
+                <button onClick={openSignatureModal} className="px-8 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                  Add Digital Signature
+                </button>
               )}
             </div>
           </div>
 
-          {/* Create Button */}
           <div className="text-center">
             <button
               onClick={handleCreate}
               disabled={!form.amount || priceError}
-              className={`w-full max-w-md mx-auto py-2 px-4 text-sm font-medium rounded-lg shadow-lg transition transform ${
+              className={`w-full max-w-md mx-auto py-3 px-6 text-lg font-medium rounded-lg shadow-lg transition transform ${
                 !form.amount || priceError
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                   : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:from-[#3a586d] hover:to-[#54738a] hover:scale-105"
@@ -530,11 +435,7 @@ export default function QuotationCreate() {
             >
               CREATE QUOTATION
             </button>
-            {priceError && (
-              <p className="mt-4 text-sm text-red-600">
-                Cannot create: {priceError}
-              </p>
-            )}
+            {priceError && <p className="mt-4 text-sm text-red-600">Cannot create: {priceError}</p>}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Price, AdditionalService, QuotationAdditionalCharge
+from .models import Price, AdditionalService, QuotationAdditionalCharge, InclusionExclusion
 from survey.models import SurveyAdditionalService
 
 class PriceSerializer(serializers.ModelSerializer):
@@ -51,3 +51,14 @@ class QuotationAdditionalChargeSerializer(serializers.ModelSerializer):
             'per_unit_quantity',
             'rate_type',
         ]
+        
+class InclusionExclusionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InclusionExclusion
+        fields = ['id', 'text', 'type', 'city', 'country', 'is_active', 'created_at']
+        read_only_fields = ['created_at', 'country']
+
+    def create(self, validated_data):
+        # Default to Qatar if not provided
+        validated_data.setdefault('country', 'Qatar')
+        return super().create(validated_data)
