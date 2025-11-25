@@ -5,7 +5,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     PriceViewSet,
     SurveyAdditionalServiceViewSet,        # ← NEW: for dropdown
-    QuotationAdditionalChargeViewSet,     # ← NEW: for save/load charges
+    QuotationAdditionalChargeViewSet,InclusionExclusionViewSet
+    # ← NEW: for save/load charges
 )
 
 # Main router
@@ -15,6 +16,7 @@ router.register(r'price', PriceViewSet, basename='price')  # Keep your existing 
 # New endpoints for Additional Services (dropdown + charges)
 router.register(r'survey-additional-services', SurveyAdditionalServiceViewSet, basename='survey-additional-service')
 router.register(r'quotation-additional-charges', QuotationAdditionalChargeViewSet, basename='quotation-additional-charge')
+router.register(r'inclusion-exclusion', InclusionExclusionViewSet, basename='inclusionexclusion')
 
 urlpatterns = [
     # This includes ALL routes: price/, survey-additional-services/, quotation-additional-charges/

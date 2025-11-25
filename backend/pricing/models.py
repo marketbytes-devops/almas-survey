@@ -1,6 +1,36 @@
 from django.db import models
 from additional_settings import models as additional_settings
 
+class InclusionExclusion(models.Model):
+    TYPE_CHOICES = [
+        ('include', 'Include'),
+        ('exclude', 'Exclude'),
+    ]
+
+    text = models.CharField(max_length=500)
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    
+    # Optional: Scope it to Qatar / Local Move only
+    country = models.CharField(max_length=100, default="Qatar")
+    city = models.CharField(max_length=100, blank=True, null=True)  # e.g., Doha
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Inclusion / Exclusion Item"
+        verbose_name_plural = "Inclusion / Exclusion Items"
+        unique_together = ('text', 'type', 'city')  # prevent duplicates
+        indexes = [
+            models.Index(fields=['type']),
+            models.Index(fields=['city']),
+            models.Index(fields=['is_active']),
+        ]
+
+    def __str__(self):
+        return f"[{self.get_type_display()}] {self.text}"
+
 class Price(models.Model):
     RATE_TYPE_CHOICES = [
         ('variable', 'Variable (Rate × Volume)'),
@@ -70,7 +100,7 @@ class AdditionalService(models.Model):
         return f"{self.service_name} - {self.price_per_unit} {self.currency}"
     
     
-    # pricing/models.py  ← ADD THIS NEW MODEL (below your Price model)
+    
 
 class QuotationAdditionalCharge(models.Model):
     RATE_TYPE_CHOICES = [

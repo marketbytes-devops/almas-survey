@@ -16,24 +16,23 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   const [rateType, setRateType] = useState("FIX");
   const [editingId, setEditingId] = useState(null);
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
         const [servicesRes, chargesRes] = await Promise.all([
-          apiClient.get('/survey-additional-services/'),
-          apiClient.get('/quotation-additional-charges/'),
+          apiClient.get("/survey-additional-services/"),
+          apiClient.get("/quotation-additional-charges/"),
         ]);
 
-        console.log("Loaded services:", servicesRes.data);
-        console.log("Loaded charges:", chargesRes.data);
+        console.log("✅ Loaded services:", servicesRes.data);
+        console.log("✅ Loaded charges:", chargesRes.data);
 
         setMasterServices(servicesRes.data);
         setRows(chargesRes.data || []);
       } catch (err) {
-        console.error("Failed to load data:", err);
+        console.error("❌ Failed to load data:", err);
         console.error("Error details:", err.response?.data);
         alert("Could not load additional services. Check console for details.");
       } finally {
@@ -63,7 +62,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     }
 
     const newRow = {
-      id: editingId || `temp_${Date.now()}`, 
+      id: editingId || `temp_${Date.now()}`,
       service: { id: serviceObj.id, name: serviceObj.name },
       service_id: serviceObj.id,
       currency: currency ? parseInt(currency) : null,
@@ -95,8 +94,39 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     setRateType(row.rate_type);
   };
 
-  const deleteRow = (id) => {
-    setRows(rows.filter((r) => r.id !== id));
+  // 🔥 FIXED: Delete from database AND frontend
+  const deleteRow = async (id) => {
+    // Check if it's a temporary row (not saved yet)
+    if (String(id).startsWith("temp_")) {
+      setRows(rows.filter((r) => r.id !== id));
+      return;
+    }
+
+    // Confirm deletion
+    if (!window.confirm("Are you sure you want to delete this service?")) {
+      return;
+    }
+
+    try {
+      console.log(`🗑️ Deleting service with ID: ${id}`);
+      
+      // Delete from database
+      await apiClient.delete(`/quotation-additional-charges/${id}/`);
+      
+      console.log("✅ Service deleted from database");
+      
+      // Remove from frontend state
+      setRows(rows.filter((r) => r.id !== id));
+      
+      alert("Service deleted successfully!");
+    } catch (err) {
+      console.error("❌ Delete failed:", err);
+      console.error("Error response:", err.response?.data);
+      alert(
+        "Failed to delete service:\n" +
+        JSON.stringify(err.response?.data || err.message, null, 2)
+      );
+    }
   };
 
   const handleSaveAll = async () => {
@@ -105,7 +135,15 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       return;
     }
 
-    const payload = rows.map((r) => ({
+    // Filter out already saved rows (those with real IDs)
+    const unsavedRows = rows.filter(r => String(r.id).startsWith("temp_"));
+    
+    if (unsavedRows.length === 0) {
+      alert("All services are already saved!");
+      return;
+    }
+
+    const payload = unsavedRows.map((r) => ({
       service_id: r.service?.id || r.service_id,
       currency: r.currency || null,
       price_per_unit: parseFloat(r.price_per_unit),
@@ -113,34 +151,33 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       rate_type: r.rate_type,
     }));
 
-    console.log("Saving payload:", payload);
+    console.log("💾 Saving payload:", payload);
 
     try {
       setSaving(true);
       setSaveSuccess(false);
 
       const response = await apiClient.post(
-        '/quotation-additional-charges/',
+        "/quotation-additional-charges/",
         payload
       );
 
-      console.log("Save successful:", response.data);
+      console.log("✅ Save successful:", response.data);
 
-      const refreshRes = await apiClient.get(
-        '/quotation-additional-charges/'
-      );
+      // Refresh from server to get real DB IDs
+      const refreshRes = await apiClient.get("/quotation-additional-charges/");
       setRows(refreshRes.data);
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      alert("All additional charges saved successfully!");
+      alert(`✅ ${unsavedRows.length} service(s) saved successfully!`);
     } catch (err) {
-      console.error("Save failed:", err);
+      console.error("❌ Save failed:", err);
       console.error("Error response:", err.response?.data);
       alert(
         "Save failed:\n" +
-          JSON.stringify(err.response?.data || err.message, null, 2)
+        JSON.stringify(err.response?.data || err.message, null, 2)
       );
     } finally {
       setSaving(false);
@@ -155,6 +192,9 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       </div>
     );
   }
+
+  // Count unsaved rows
+  const unsavedCount = rows.filter(r => String(r.id).startsWith("temp_")).length;
 
   return (
     <div className="space-y-8">
@@ -237,21 +277,26 @@ const AdditionalChargesTab = ({ dropdownData }) => {
         <div className="flex justify-end mb-4">
           <button
             onClick={handleSaveAll}
-            disabled={saving || rows.length === 0}
+            disabled={saving || unsavedCount === 0}
             className={`flex items-center gap-2 px-8 py-3 rounded-lg font-semibold shadow-lg transition ${
-              saving || rows.length === 0
+              saving || unsavedCount === 0
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
             }`}
           >
             <FaSave />
-            {saving ? "Saving..." : `SAVE ALL (${rows.length} services)`}
+            {saving 
+              ? "Saving..." 
+              : unsavedCount > 0 
+              ? `SAVE ${unsavedCount} NEW SERVICE${unsavedCount > 1 ? 'S' : ''}`
+              : "ALL SAVED"}
           </button>
         </div>
         <div className="overflow-x-auto border-2 border-gray-300 rounded-lg">
           <table className="w-full text-sm">
             <thead className="bg-gray-800 text-white">
               <tr>
+                <th className="px-4 py-3 text-left">STATUS</th>
                 <th className="px-4 py-3 text-left">SERVICE NAME</th>
                 <th className="px-4 py-3 text-left">CURRENCY</th>
                 <th className="px-4 py-3 text-left">PRICE PER UNIT</th>
@@ -265,9 +310,21 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                 const currencyName =
                   dropdownData.currencies?.find((c) => c.id === row.currency)
                     ?.name || "QAR";
+                const isSaved = !String(row.id).startsWith("temp_");
 
                 return (
                   <tr key={row.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      {isSaved ? (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
+                          SAVED
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-semibold">
+                          UNSAVED
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-medium">
                       {row.service.name}
                     </td>
