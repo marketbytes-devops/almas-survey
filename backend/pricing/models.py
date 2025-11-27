@@ -10,9 +10,8 @@ class InclusionExclusion(models.Model):
     text = models.CharField(max_length=500)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     
-    # Optional: Scope it to Qatar / Local Move only
     country = models.CharField(max_length=100, default="Qatar")
-    city = models.CharField(max_length=100, blank=True, null=True)  # e.g., Doha
+    city = models.CharField(max_length=100, blank=True, null=True)  
     
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,7 +20,7 @@ class InclusionExclusion(models.Model):
     class Meta:
         verbose_name = "Inclusion / Exclusion Item"
         verbose_name_plural = "Inclusion / Exclusion Items"
-        unique_together = ('text', 'type', 'city')  # prevent duplicates
+        unique_together = ('text', 'type', 'city')  
         indexes = [
             models.Index(fields=['type']),
             models.Index(fields=['city']),
@@ -108,14 +107,12 @@ class QuotationAdditionalCharge(models.Model):
         ("VARIABLE", "VARIABLE"),
     ]
 
-    # Link to the master service from Additional Settings
     service = models.ForeignKey(
         'additional_settings.SurveyAdditionalService',
         on_delete=models.PROTECT,
         related_name='quotation_charges'
     )
 
-   # CORRECT — Currency is in additional_settings
     currency = models.ForeignKey(
         'additional_settings.Currency',
         on_delete=models.SET_NULL,
