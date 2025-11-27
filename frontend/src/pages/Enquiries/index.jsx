@@ -11,21 +11,9 @@ const rowVariants = {
   rest: { backgroundColor: "#ffffff" },
 };
 
-const Input = ({
-  label,
-  name,
-  type = "text",
-  options = [],
-  rules = {},
-  ...props
-}) => {
-  const {
-    register,
-    formState: { errors },
-  } = useFormContext();
-
+const Input = ({ label, name, type = "text", options = [], rules = {}, ...props }) => {
+  const { register, formState: { errors } } = useFormContext();
   const error = errors[name];
-
   return (
     <div className="flex flex-col">
       {label && (
@@ -37,9 +25,7 @@ const Input = ({
       {type === "select" ? (
         <select
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""}`}
           aria-label={label}
         >
           <option value="">Select an option</option>
@@ -52,9 +38,7 @@ const Input = ({
       ) : type === "textarea" ? (
         <textarea
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""}`}
           rows={4}
           aria-label={label}
         />
@@ -62,9 +46,7 @@ const Input = ({
         <input
           type={type}
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""}`}
           aria-label={label}
           {...props}
         />
@@ -104,84 +86,102 @@ const Enquiries = () => {
   const editForm = useForm();
   const assignForm = useForm();
   const filterForm = useForm({
-    defaultValues: {
-      filterType: "all",
-      fromDate: "",
-      toDate: "",
-    },
+    defaultValues: { filterType: "all", fromDate: "", toDate: "" },
   });
 
-  const applyCurrentFilters = (dataToFilter) => {
-    const filterData = filterForm.getValues();
-    let filtered = [...dataToFilter];
+  const RECAPTCHA_ACTION = "submit_enquiry";
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
-    // Apply filter type
-    if (filterData.filterType === "assigned") {
-      filtered = filtered.filter((enquiry) => enquiry.assigned_user_email);
-    } else if (filterData.filterType === "non-assigned") {
-      filtered = filtered.filter((enquiry) => !enquiry.assigned_user_email);
-    }
+  useEffect(() => {
+    const loadRecaptcha = () => {
+      if (document.getElementById("recaptcha-script")) return;
+      const script = document.createElement("script");
+      script.id = "recaptcha-script";
+      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    };
 
-    // Apply date filters
-    if (filterData.fromDate || filterData.toDate) {
-      const from = filterData.fromDate ? new Date(filterData.fromDate) : null;
-      const to = filterData.toDate ? new Date(filterData.toDate) : null;
+    const fetchData = async () => {
+      try {
+        const [profileRes, enquiriesRes, usersRes] = await Promise.all([
+          apiClient.get("/auth/profile/"),
+          apiClient.get("/contacts/enquiries/"),
+          apiClient.get("/auth/users/"),
+        ]);
+
+        const user = profileRes.data;
+        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+        if (user.role?.id) {
+          const roleRes = await apiClient.get(`/auth/roles/${user.role.id}/`);
+          setPermissions(roleRes.data.permissions || []);
+        }
+
+        const sorted = enquiriesRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setEnquiries(sorted);
+        setFilteredEnquiries(sorted);
+
+        setEmailReceivers(
+          usersRes.data.map((u) => ({ value: u.email, label: u.name || u.email }))
+        );
+      } catch (err) {
+        setError("Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRecaptcha();
+    fetchData();
+  }, []);
+
+  const getRecaptchaToken = () => {
+    return new Promise((resolve, reject) => {
+      if (!window.grecaptcha) return reject(new Error("reCAPTCHA not loaded"));
+      window.grecaptcha.ready(() => {
+        window.grecaptcha
+          .execute(RECAPTCHA_SITE_KEY, { action: RECAPTCHA_ACTION })
+          .then(resolve)
+          .catch(reject);
+      });
+    });
+  };
+
+  const applyCurrentFilters = (data) => {
+    const { filterType, fromDate, toDate } = filterForm.getValues();
+    let filtered = [...data];
+
+    if (filterType === "assigned") filtered = filtered.filter((e) => e.assigned_user_email);
+    else if (filterType === "non-assigned") filtered = filtered.filter((e) => !e.assigned_user_email);
+
+    if (fromDate || toDate) {
+      const from = fromDate ? new Date(fromDate) : null;
+      const to = toDate ? new Date(toDate) : null;
       if (to) to.setHours(23, 59, 59, 999);
-
-      filtered = filtered.filter((enquiry) => {
-        const createdAt = new Date(enquiry.created_at);
-        return (
-          (from ? createdAt >= from : true) && (to ? createdAt <= to : true)
-        );
+      filtered = filtered.filter((e) => {
+        const d = new Date(e.created_at);
+        return (!from || d >= from) && (!to || d <= to);
       });
     }
 
-    // Apply search filter
-    if (searchQuery && searchQuery.trim() !== "") {
-      const searchLower = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((enquiry) => {
-        const fullName = (enquiry.fullName || "").toLowerCase();
-        const phoneNumber = (enquiry.phoneNumber || "").toLowerCase();
-        const email = (enquiry.email || "").toLowerCase();
-        const serviceType = (enquiry.serviceType || "").toLowerCase();
-        const message = (enquiry.message || "").toLowerCase();
-        const note = (enquiry.note || "").toLowerCase();
-        const assignedUser = (enquiry.assigned_user_email || "").toLowerCase();
-
-        return (
-          fullName.includes(searchLower) ||
-          phoneNumber.includes(searchLower) ||
-          email.includes(searchLower) ||
-          serviceType.includes(searchLower) ||
-          message.includes(searchLower) ||
-          note.includes(searchLower) ||
-          assignedUser.includes(searchLower)
-        );
-      });
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((e) =>
+        Object.values(e)
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
+      );
     }
 
-    return filtered;
+    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   };
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEnquiries = filteredEnquiries.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+  const currentEnquiries = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
-
-  const toggleEnquiryExpand = (enquiryId) => {
-    setExpandedEnquiries((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(enquiryId)) {
-        newSet.delete(enquiryId);
-      } else {
-        newSet.add(enquiryId);
-      }
-      return newSet;
-    });
-  };
 
   const serviceOptions = [
     { value: "localMove", label: "Local Move" },
@@ -197,197 +197,27 @@ const Enquiries = () => {
     { value: "non-assigned", label: "Non-Assigned Enquiries" },
   ];
 
-  const RECAPTCHA_ACTION = "submit_enquiry";
-
-  useEffect(() => {
-    const fetchProfileAndPermissions = async () => {
-      try {
-        const response = await apiClient.get("/auth/profile/");
-        const user = response.data;
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-        const roleId = user.role?.id;
-        if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
-        } else {
-          setPermissions([]);
-        }
-      } catch (error) {
-        console.error("Unable to fetch user profile:", error);
-        setPermissions([]);
-        setIsSuperadmin(false);
-      }
-    };
-
-    const fetchEnquiries = async () => {
-      setIsLoading(true);
-      try {
-        const response = await apiClient.get("/contacts/enquiries/");
-        const sortedEnquiries = response.data.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        );
-        setEnquiries(sortedEnquiries);
-        setFilteredEnquiries(sortedEnquiries);
-      } catch (error) {
-        setError("Failed to fetch enquiries. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchEmailReceivers = async () => {
-      try {
-        const response = await apiClient.get("/auth/users/");
-        setEmailReceivers(
-          response.data.map((user) => ({
-            value: user.email,
-            label: user.name || user.email,
-          }))
-        );
-      } catch (error) {
-        setError("Failed to fetch users for assignment. Please try again.");
-      }
-    };
-
-    const loadRecaptcha = () => {
-      const existingScript = document.querySelector(
-        `script[src*="recaptcha/api.js"]`
-      );
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = `https://www.google.com/recaptcha/api.js?render=${
-          import.meta.env.VITE_RECAPTCHA_SITE_KEY
-        }`;
-        script.async = true;
-        document.body.appendChild(script);
-      }
-    };
-
-    loadRecaptcha();
-    fetchProfileAndPermissions();
-    fetchEnquiries();
-    fetchEmailReceivers();
-  }, []);
-
-  const applyFiltersAndSearch = (data, search) => {
-    let filtered = [...enquiries];
-    setCurrentPage(1);
-
-    if (data.filterType === "assigned") {
-      filtered = filtered.filter((enquiry) => enquiry.assigned_user_email);
-    } else if (data.filterType === "non-assigned") {
-      filtered = filtered.filter((enquiry) => !enquiry.assigned_user_email);
-    }
-
-    if (data.fromDate || data.toDate) {
-      const from = data.fromDate ? new Date(data.fromDate) : null;
-      const to = data.toDate ? new Date(data.toDate) : null;
-      if (to) {
-        to.setHours(23, 59, 59, 999);
-      }
-      filtered = filtered.filter((enquiry) => {
-        const createdAt = new Date(enquiry.created_at);
-        const afterFrom = from ? createdAt >= from : true;
-        const beforeTo = to ? createdAt <= to : true;
-        return afterFrom && beforeTo;
-      });
-    }
-
-    if (search && search.trim() !== "") {
-      const searchLower = search.toLowerCase().trim();
-      filtered = filtered.filter((enquiry) => {
-        const fullName = (enquiry.fullName || "").toLowerCase();
-        const phoneNumber = (enquiry.phoneNumber || "").toLowerCase();
-        const email = (enquiry.email || "").toLowerCase();
-        const serviceType = (enquiry.serviceType || "").toLowerCase();
-        const serviceLabel = (
-          serviceOptions.find((opt) => opt.value === enquiry.serviceType)
-            ?.label || ""
-        ).toLowerCase();
-        const message = (enquiry.message || "").toLowerCase();
-        const note = (enquiry.note || "").toLowerCase();
-        const assignedUser = (enquiry.assigned_user_email || "").toLowerCase();
-
-        return (
-          fullName.includes(searchLower) ||
-          phoneNumber.includes(searchLower) ||
-          email.includes(searchLower) ||
-          serviceType.includes(searchLower) ||
-          serviceLabel.includes(searchLower) ||
-          message.includes(searchLower) ||
-          note.includes(searchLower) ||
-          assignedUser.includes(searchLower)
-        );
-      });
-    }
-
-    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    setFilteredEnquiries(filtered);
-  };
-
-  const handleFilter = (data) => {
-    applyFiltersAndSearch(data, searchQuery);
-  };
-
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    const filterData = filterForm.getValues();
-    applyFiltersAndSearch(filterData, value);
-  };
-
   const hasPermission = (page, action) => {
     if (isSuperadmin) return true;
     const perm = permissions.find((p) => p.page === page);
-    return perm && perm[`can_${action}`];
-  };
-
-  const getRecaptchaToken = () => {
-    return new Promise((resolve, reject) => {
-      if (!window.grecaptcha) {
-        reject(new Error("reCAPTCHA script failed to load. Please try again."));
-        return;
-      }
-      window.grecaptcha.ready(() => {
-        window.grecaptcha
-          .execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, {
-            action: RECAPTCHA_ACTION,
-          })
-          .then(resolve)
-          .catch(() =>
-            reject(
-              new Error("Failed to obtain reCAPTCHA token. Please try again.")
-            )
-          );
-      });
-    });
+    return perm?.[`can_${action}`] || false;
   };
 
   const extractErrorMessage = (error) => {
     if (error.response?.data) {
-      if (typeof error.response.data === "string") {
-        return error.response.data;
-      }
-      if (error.response.data.error) {
-        return error.response.data.error;
-      }
-      if (error.response.data.non_field_errors) {
-        return error.response.data.non_field_errors.join(", ");
-      }
+      if (typeof error.response.data === "string") return error.response.data;
+      if (error.response.data.error) return error.response.data.error;
+      if (error.response.data.detail) return error.response.data.detail;
+      if (error.response.data.non_field_errors) return error.response.data.non_field_errors.join(", ");
       return JSON.stringify(error.response.data);
     }
-    return "An unexpected error occurred. Please try again.";
+    return "An unexpected error occurred";
   };
 
-  // ✅ FIXED CODE
   const onAddSubmit = async (data) => {
-    if (!hasPermission("enquiries", "add")) {
-      setError("You do not have permission to add an enquiry.");
-      return;
-    }
-
+    if (!hasPermission("enquiries", "add")) return setError("Permission denied");
     setIsAddingEnquiry(true);
+    setError(null);
     try {
       const recaptchaToken = await getRecaptchaToken();
       const response = await apiClient.post("/contacts/enquiries/", {
@@ -399,70 +229,41 @@ const Enquiries = () => {
         recaptchaToken,
         submittedUrl: window.location.href,
       });
-
-      const updatedEnquiries = [response.data, ...enquiries].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
-      setEnquiries(updatedEnquiries);
-
-      // ✅ ONE LINE instead of 60!
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
+      const updated = [response.data, ...enquiries].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setEnquiries(updated);
+      setFilteredEnquiries(applyCurrentFilters(updated));
       setCurrentPage(1);
-
       setMessage("Enquiry created successfully");
       setTimeout(() => setMessage(null), 3000);
       setIsAddOpen(false);
       addForm.reset();
-    } catch (error) {
-      setError(extractErrorMessage(error));
+    } catch (err) {
+      setError(extractErrorMessage(err));
     } finally {
       setIsAddingEnquiry(false);
     }
   };
+
   const onEditSubmit = async (data) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to edit an enquiry.");
-      return;
-    }
-
+    if (!hasPermission("enquiries", "edit")) return setError("Permission denied");
     try {
-      const response = await apiClient.patch(
-        `/contacts/enquiries/${selectedEnquiry?.id}/`,
-        {
-          fullName: data.fullName,
-          phoneNumber: data.phoneNumber,
-          email: data.email,
-          serviceType: data.serviceType,
-          message: data.message,
-        }
-      );
-
-      const updatedEnquiries = enquiries
-        .map((enquiry) =>
-          enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-        )
+      const response = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry?.id}/`, data);
+      const updated = enquiries
+        .map((e) => (e.id === selectedEnquiry?.id ? response.data : e))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-      setEnquiries(updatedEnquiries);
-
-      // ✅ ONE LINE instead of 60!
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
-
+      setEnquiries(updated);
+      setFilteredEnquiries(applyCurrentFilters(updated));
       setMessage("Enquiry updated successfully");
       setTimeout(() => setMessage(null), 3000);
       setIsEditOpen(false);
       editForm.reset();
-    } catch (error) {
-      setError(extractErrorMessage(error));
+    } catch (err) {
+      setError(extractErrorMessage(err));
     }
   };
+
   const onAssignSubmit = async (data) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to assign an enquiry.");
-      return;
-    }
+    if (!hasPermission("enquiries", "edit")) return setError("Permission denied");
     setAssignData(data);
     setIsAssignOpen(false);
     setIsAssignConfirmOpen(true);
@@ -471,34 +272,21 @@ const Enquiries = () => {
   const confirmAssign = async () => {
     setIsAssigningEnquiry(true);
     try {
-      const response = await apiClient.patch(
-        `/contacts/enquiries/${selectedEnquiry?.id}/`,
-        {
-          assigned_user_email: assignData.emailReceiver || null,
-          note: assignData.note || null,
-        }
-      );
-
-      const updatedEnquiries = enquiries
-        .map((enquiry) =>
-          enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-        )
+      const response = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry?.id}/`, {
+        assigned_user_email: assignData.emailReceiver || null,
+        note: assignData.note || null,
+      });
+      const updated = enquiries
+        .map((e) => (e.id === selectedEnquiry?.id ? response.data : e))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-      setEnquiries(updatedEnquiries);
-
-      // ✅ ONE LINE instead of 60!
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
-
-      setMessage(
-        "Enquiry assigned successfully and email sent to assigned user"
-      );
+      setEnquiries(updated);
+      setFilteredEnquiries(applyCurrentFilters(updated));
+      setMessage("Enquiry assigned successfully");
       setTimeout(() => setMessage(null), 3000);
       setIsAssignConfirmOpen(false);
       assignForm.reset();
-    } catch (error) {
-      setError(extractErrorMessage(error));
+    } catch (err) {
+      setError(extractErrorMessage(err));
     } finally {
       setIsAssigningEnquiry(false);
       setAssigningEnquiryId(null);
@@ -507,42 +295,27 @@ const Enquiries = () => {
 
   const onDelete = async () => {
     if (!hasPermission("enquiries", "delete")) return;
-
     setIsDeleting(true);
     try {
       await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/`);
-
-      const updatedEnquiries = enquiries.filter(
-        (e) => e.id !== selectedEnquiry.id
-      );
-      setEnquiries(updatedEnquiries);
-
-      // ✅ ONE LINE instead of 60!
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
-
-      // Adjust pagination if needed
-      const totalPages = Math.ceil(filtered.length / itemsPerPage);
-      if (currentPage > totalPages && totalPages > 0) {
-        setCurrentPage(totalPages);
-      }
-
+      const updated = enquiries.filter((e) => e.id !== selectedEnquiry.id);
+      setEnquiries(updated);
+      setFilteredEnquiries(applyCurrentFilters(updated));
+      const newTotalPages = Math.ceil(updated.length / itemsPerPage);
+      if (currentPage > newTotalPages && newTotalPages > 0) setCurrentPage(newTotalPages);
       setMessage("Enquiry deleted successfully");
       setTimeout(() => setMessage(null), 3000);
       setIsDeleteOpen(false);
       setSelectedEnquiry(null);
-    } catch (error) {
-      setError(extractErrorMessage(error) || "Failed to delete enquiry");
+    } catch (err) {
+      setError(extractErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }
   };
 
   const openEditModal = (enquiry) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to edit an enquiry.");
-      return;
-    }
+    if (!hasPermission("enquiries", "edit")) return setError("Permission denied");
     setSelectedEnquiry(enquiry);
     editForm.reset({
       fullName: enquiry.fullName,
@@ -555,23 +328,17 @@ const Enquiries = () => {
   };
 
   const openAssignModal = (enquiry) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to assign an enquiry.");
-      return;
-    }
+    if (!hasPermission("enquiries", "edit")) return setError("Permission denied");
     setSelectedEnquiry(enquiry);
     assignForm.reset({
-      emailReceiver: enquiry.assigned_user_email,
-      note: enquiry.note,
+      emailReceiver: enquiry.assigned_user_email || "",
+      note: enquiry.note || "",
     });
     setIsAssignOpen(true);
   };
 
   const openDeleteModal = (enquiry) => {
-    if (!hasPermission("enquiries", "delete")) {
-      setError("You do not have permission to delete an enquiry.");
-      return;
-    }
+    if (!hasPermission("enquiries", "delete")) return setError("Permission denied");
     setSelectedEnquiry(enquiry);
     setIsDeleteOpen(true);
   };
@@ -596,6 +363,17 @@ const Enquiries = () => {
     assignForm.reset();
   };
 
+  const handleFilter = () => {
+    setFilteredEnquiries(applyCurrentFilters(enquiries));
+    setCurrentPage(1);
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    setFilteredEnquiries(applyCurrentFilters(enquiries));
+    setCurrentPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -605,238 +383,117 @@ const Enquiries = () => {
   }
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto p-4">
       {error && (
-        <motion.div
-          className="mb-4 p-4 bg-red-100 text-red-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div className="mb-4 p-4 bg-red-100 text-red-700 rounded" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {error}
         </motion.div>
       )}
       {message && (
-        <motion.div
-          className="mb-4 p-4 bg-green-100 text-green-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div className="mb-4 p-4 bg-green-100 text-green-700 rounded" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {message}
         </motion.div>
       )}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-        <div className="w-full sm:w-auto">
-          <button
-            onClick={() => setIsAddOpen(true)}
-            className="relative top-0 sm:top-3 w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
-          >
-            {isAddingEnquiry ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Adding
-              </>
-            ) : (
-              "Add New Enquiry"
-            )}
-          </button>
-        </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <button
+          onClick={() => setIsAddOpen(true)}
+          disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
+          className="w-full sm:w-auto bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-6 rounded flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isAddingEnquiry ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Adding...
+            </>
+          ) : (
+            "Add New Enquiry"
+          )}
+        </button>
+
         <FormProvider {...filterForm}>
-          <form
-            onSubmit={filterForm.handleSubmit(handleFilter)}
-            className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
-          >
-            <div className="w-full sm:w-auto">
-              <Input
-                label="Filter By *"
-                name="filterType"
-                type="select"
-                options={filterOptions}
-                rules={{ required: "Filter type is required" }}
-              />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Input
-                label="From Date"
-                name="fromDate"
-                type="date"
-                placeholder="dd-mm-yyyy"
-              />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Input
-                label="To Date"
-                name="toDate"
-                type="date"
-                placeholder="dd-mm-yyyy"
-              />
-            </div>
-            <button
-              type="submit"
-              className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
-            >
-              Apply Filter
+          <form onSubmit={filterForm.handleSubmit(handleFilter)} className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Input label="Filter" name="filterType" type="select" options={filterOptions} />
+            <Input label="From" name="fromDate" type="date" />
+            <Input label="To" name="toDate" type="date" />
+            <button type="submit" className="mt-6 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-5 rounded">
+              Apply
             </button>
           </form>
         </FormProvider>
       </div>
-      <div className="mb-4">
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search by name, phone, email, service, message, note, or assigned user..."
-            value={searchQuery}
-            onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors"
-          />
-        </div>
+
+      <div className="relative mb-6">
+        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={handleSearch}
+          className="w-full pl-10 pr-4 py-2 border focus:outline-indigo-500 rounded"
+        />
       </div>
 
       {filteredEnquiries.length === 0 ? (
-        <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
-          No Enquiries Found
-        </div>
+        <div className="text-center py-10 bg-white rounded shadow">No Enquiries Found</div>
       ) : (
         <>
+          {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Sl No
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Date & Time
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Customer Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Phone
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Email
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Service
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Message
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Note
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Assigned To
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sl No</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentEnquiries.map((enquiry, index) => {
-                  const globalIndex =
-                    filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
+              <tbody className="divide-y">
+                {currentEnquiries.map((enquiry) => {
+                  const idx = filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
                   return (
-                    <motion.tr
-                      key={enquiry.id}
-                      className="hover:bg-gray-50"
-                      variants={rowVariants}
-                      initial="rest"
-                      whileHover="hover"
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {globalIndex}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {new Date(enquiry.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.fullName || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                    <motion.tr key={enquiry.id} variants={rowVariants} initial="rest" whileHover="hover">
+                      <td className="px-4 py-3 text-sm">{idx}</td>
+                      <td className="px-4 py-3 text-sm">{new Date(enquiry.created_at).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm">{enquiry.fullName || "-"}</td>
+                      <td className="px-4 py-3 text-sm">
                         {enquiry.phoneNumber ? (
-                          <button
-                            onClick={() => openPhoneModal(enquiry)}
-                            className="flex items-center gap-2 text-[#4c7085]"
-                          >
-                            <FaPhoneAlt className="w-3 h-3" />{" "}
-                            {enquiry.phoneNumber}
+                          <button onClick={() => openPhoneModal(enquiry)} className="text-[#4c7085] flex items-center gap-1">
+                            <FaPhoneAlt className="w-4 h-4" /> {enquiry.phoneNumber}
                           </button>
-                        ) : (
-                          "-"
-                        )}
+                        ) : "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-3 text-sm">
                         {enquiry.email ? (
-                          <a
-                            href={`mailto:${enquiry.email}`}
-                            className="flex items-center gap-2 text-[#4c7085]"
-                          >
-                            <FaEnvelope className="w-3 h-3" /> {enquiry.email}
+                          <a href={`mailto:${enquiry.email}`} className="text-[#4c7085] flex items-center gap-1">
+                            <FaEnvelope className="w-4 h-4" /> {enquiry.email}
                           </a>
-                        ) : (
-                          "-"
-                        )}
+                        ) : "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {serviceOptions.find(
-                          (opt) => opt.value === enquiry.serviceType
-                        )?.label ||
-                          enquiry.serviceType ||
-                          "-"}
+                      <td className="px-4 py-3 text-sm">
+                        {serviceOptions.find((o) => o.value === enquiry.serviceType)?.label || "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.message || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.note || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.assigned_user_email || "Unassigned"}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                      <td className="px-4 py-3 text-sm">{enquiry.message || "-"}</td>
+                      <td className="px-4 py-3 text-sm">{enquiry.note || "-"}</td>
+                      <td className="px-4 py-3 text-sm">{enquiry.assigned_user_email || "Unassigned"}</td>
+                      <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2">
                           <button
-                            onClick={() => {
-                              setAssigningEnquiryId(enquiry.id);
-                              openAssignModal(enquiry);
-                            }}
-                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={
-                              !hasPermission("enquiries", "edit") ||
-                              (isAssigningEnquiry &&
-                                assigningEnquiryId === enquiry.id)
-                            }
+                            onClick={() => { setAssigningEnquiryId(enquiry.id); openAssignModal(enquiry); }}
+                            disabled={!hasPermission("enquiries", "edit") || (isAssigningEnquiry && assigningEnquiryId === enquiry.id)}
+                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-3 py-1 rounded text-xs"
                           >
-                            {isAssigningEnquiry &&
-                            assigningEnquiryId === enquiry.id ? (
-                              <>
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Assigning
-                              </>
-                            ) : (
-                              "Assign"
-                            )}
+                            {isAssigningEnquiry && assigningEnquiryId === enquiry.id ? "..." : "Assign"}
                           </button>
-                          <button
-                            onClick={() => openEditModal(enquiry)}
-                            className="bg-gray-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!hasPermission("enquiries", "edit")}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(enquiry)}
-                            className="bg-red-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!hasPermission("enquiries", "delete")}
-                          >
-                            Delete
-                          </button>
+                          <button onClick={() => openEditModal(enquiry)} disabled={!hasPermission("enquiries", "edit")} className="bg-gray-600 text-white px-3 py-1 rounded text-xs">Edit</button>
+                          <button onClick={() => openDeleteModal(enquiry)} disabled={!hasPermission("enquiries", "delete")} className="bg-red-600 text-white px-3 py-1 rounded text-xs">Delete</button>
                         </div>
                       </td>
                     </motion.tr>
@@ -846,603 +503,151 @@ const Enquiries = () => {
             </table>
           </div>
 
-          {/* Pagination for Desktop */}
-          {filteredEnquiries.length > 0 && (
-            <div className="hidden md:flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Show:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span className="text-sm text-gray-700 whitespace-nowrap">
-                  enquiries per page
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-
-                <span className="text-sm text-gray-700">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-700">
-                Showing {indexOfFirstItem + 1}-
-                {Math.min(indexOfLastItem, filteredEnquiries.length)} of{" "}
-                {filteredEnquiries.length} enquiries
-              </div>
-            </div>
-          )}
-          {/* Cards for Mobile */}
-          <div className="md:hidden space-y-3">
-            {currentEnquiries.map((enquiry, index) => {
-              const isExpanded = expandedEnquiries.has(enquiry.id);
-              const globalIndex =
-                filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
-
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4">
+            {currentEnquiries.map((enquiry) => {
+              const idx = filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
+              const expanded = expandedEnquiries.has(enquiry.id);
               return (
-                <motion.div
-                  key={enquiry.id}
-                  className="rounded-lg p-4 bg-white shadow-sm border border-gray-200"
-                  variants={rowVariants}
-                  initial="rest"
-                  whileHover="hover"
-                >
-                  {/* Collapsed View */}
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#2d4a5e]">
-                        <strong>SI No:</strong> {globalIndex}
-                      </p>
-                      <p className="text-sm text-[#2d4a5e] mt-1">
-                        <strong>Customer:</strong> {enquiry.fullName || "-"}
-                      </p>
+                <motion.div key={enquiry.id} className="bg-white rounded-lg shadow p-4" variants={rowVariants} initial="rest" whileHover="hover">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium"><strong>{idx}</strong> - {enquiry.fullName || "No name"}</p>
+                      <p className="text-xs text-gray-600">{new Date(enquiry.created_at).toLocaleString()}</p>
                     </div>
-                    <button
-                      onClick={() => toggleEnquiryExpand(enquiry.id)}
-                      className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
-                    >
-                      {isExpanded ? (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 15l7-7 7 7"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      )}
+                    <button onClick={() => setExpandedEnquiries(prev => {
+                      const n = new Set(prev);
+                      n.has(enquiry.id) ? n.delete(enquiry.id) : n.add(enquiry.id);
+                      return n;
+                    })} className="text-[#4c7085]">
+                      {expanded ? "Hide" : "Show"} Details
                     </button>
                   </div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-[#2d4a5e] text-sm">
-                          <p>
-                            <strong>Date & Time:</strong>{" "}
-                            {new Date(enquiry.created_at).toLocaleString()}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Phone:</strong>
-                            {enquiry.phoneNumber ? (
-                              <button
-                                onClick={() => openPhoneModal(enquiry)}
-                                className="flex items-center gap-2 text-[#4c7085]"
-                              >
-                                <FaPhoneAlt className="w-3 h-3" />{" "}
-                                {enquiry.phoneNumber}
-                              </button>
-                            ) : (
-                              "-"
-                            )}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Email:</strong>
-                            {enquiry.email ? (
-                              <a
-                                href={`mailto:${enquiry.email}`}
-                                className="flex items-center gap-2 text-[#4c7085]"
-                              >
-                                <FaEnvelope className="w-3 h-3" />{" "}
-                                {enquiry.email}
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </p>
-                          <p>
-                            <strong>Service:</strong>{" "}
-                            {serviceOptions.find(
-                              (opt) => opt.value === enquiry.serviceType
-                            )?.label ||
-                              enquiry.serviceType ||
-                              "-"}
-                          </p>
-                          <p>
-                            <strong>Message:</strong> {enquiry.message || "-"}
-                          </p>
-                          <p>
-                            <strong>Note:</strong> {enquiry.note || "-"}
-                          </p>
-                          <p>
-                            <strong>Assigned To:</strong>{" "}
-                            {enquiry.assigned_user_email || "Unassigned"}
-                          </p>
-                          <div className="flex flex-wrap gap-2 pt-3">
-                            <button
-                              onClick={() => {
-                                setAssigningEnquiryId(enquiry.id);
-                                openAssignModal(enquiry);
-                              }}
-                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={
-                                !hasPermission("enquiries", "edit") ||
-                                (isAssigningEnquiry &&
-                                  assigningEnquiryId === enquiry.id)
-                              }
-                            >
-                              {isAssigningEnquiry &&
-                              assigningEnquiryId === enquiry.id ? (
-                                <>
-                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  Assigning
-                                </>
-                              ) : (
-                                "Assign"
-                              )}
-                            </button>
-                            <button
-                              onClick={() => openEditModal(enquiry)}
-                              className="bg-gray-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={!hasPermission("enquiries", "edit")}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(enquiry)}
-                              className="bg-red-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={!hasPermission("enquiries", "delete")}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {expanded && (
+                    <div className="mt-4 space-y-2 text-sm">
+                      <p><strong>Phone:</strong> {enquiry.phoneNumber || "-"}</p>
+                      <p><strong>Email:</strong> {enquiry.email || "-"}</p>
+                      <p><strong>Service:</strong> {serviceOptions.find(o => o.value === enquiry.serviceType)?.label || "-"}</p>
+                      <p><strong>Message:</strong> {enquiry.message || "-"}</p>
+                      <p><strong>Note:</strong> {enquiry.note || "-"}</p>
+                      <p><strong>Assigned:</strong> {enquiry.assigned_user_email || "Unassigned"}</p>
+                      <div className="flex gap-2 mt-4">
+                        <button onClick={() => openAssignModal(enquiry)} className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-3 py-1 rounded text-xs">Assign</button>
+                        <button onClick={() => openEditModal(enquiry)} className="bg-gray-600 text-white px-3 py-1 rounded text-xs">Edit</button>
+                        <button onClick={() => openDeleteModal(enquiry)} className="bg-red-600 text-white px-3 py-1 rounded text-xs">Delete</button>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center gap-3">
+              <button onClick={() => setCurrentPage(p => Math.max(p-1, 1))} disabled={currentPage === 1} className="px-4 py-2 border rounded disabled:opacity-50">Previous</button>
+              <span className="px-4 py-2">Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(p+1, totalPages))} disabled={currentPage === totalPages} className="px-4 py-2 border rounded disabled:opacity-50">Next</button>
+            </div>
+          )}
         </>
       )}
-      {filteredEnquiries.length > 0 && (
-        <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-700">Show:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-            >
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Previous
-            </button>
-
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* Modals */}
       <AnimatePresence>
-        <Modal
-          isOpen={isAddOpen}
-          onClose={closeAddModal}
-          title="Add New Enquiry"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={closeAddModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isAddingEnquiry}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="add-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
-              >
-                {isAddingEnquiry ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Adding
-                  </>
-                ) : (
-                  "Add Enquiry"
-                )}
-              </button>
-            </>
-          }
-        >
+        {/* Add Modal */}
+        <Modal isOpen={isAddOpen} onClose={closeAddModal} title="Add New Enquiry" footer={
+          <>
+            <button onClick={closeAddModal} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <button type="submit" form="add-form" disabled={isAddingEnquiry} className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-6 rounded flex items-center gap-2">
+              {isAddingEnquiry ? "Adding..." : "Add Enquiry"}
+            </button>
+          </>
+        }>
           <FormProvider {...addForm}>
-            <form
-              id="add-enquiry-form"
-              onSubmit={addForm.handleSubmit(onAddSubmit)}
-              className="space-y-4"
-            >
-              <p className="text-sm text-gray-600">
-                Note: Serial Number and Date & Time are auto-generated by the
-                system.
-              </p>
-              <Input
-                label="Customer Name"
-                name="fullName"
-                type="text"
-                rules={{ required: "Customer Name is required" }}
-              />
-              <Input
-                label="Phone Number"
-                name="phoneNumber"
-                type="text"
-                rules={{
-                  required: "Phone Number is required",
-                  pattern: {
-                    value: /^\+?[0-9]{7,15}$/,
-                    message:
-                      "Enter a valid phone number (7-15 digits, optional +)",
-                  },
-                }}
-              />
-              <Input
-                label="Email Id"
-                name="email"
-                type="email"
-                rules={{
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email",
-                  },
-                }}
-              />
-              <Input
-                label="Service Required"
-                name="serviceType"
-                type="select"
-                options={serviceOptions}
-                rules={{ required: "Service Required is required" }}
-              />
-              <Input
-                label="Message"
-                name="message"
-                type="textarea"
-                rules={{ required: "Message is required" }}
-              />
+            <form id="add-form" onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
+              <Input label="Customer Name *" name="fullName" rules={{ required: "Required" }} />
+              <Input label="Phone Number *" name="phoneNumber" rules={{ required: "Required", pattern: { value: /^\+?[0-9]{7,15}$/, message: "Invalid phone" } }} />
+              <Input label="Email *" name="email" type="email" rules={{ required: "Required", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email" } }} />
+              <Input label="Service Required *" name="serviceType" type="select" options={serviceOptions} rules={{ required: "Required" }} />
+              <Input label="Message *" name="message" type="textarea" rules={{ required: "Required" }} />
             </form>
           </FormProvider>
         </Modal>
-        <Modal
-          isOpen={isEditOpen}
-          onClose={closeEditModal}
-          title="Edit Enquiry"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={closeEditModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="edit-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("enquiries", "edit")}
-              >
-                Update Enquiry
-              </button>
-            </>
-          }
-        >
+
+        {/* Edit Modal */}
+        <Modal isOpen={isEditOpen} onClose={closeEditModal} title="Edit Enquiry" footer={
+          <>
+            <button onClick={closeEditModal} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <button type="submit" form="edit-form" className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-6 rounded">Update</button>
+          </>
+        }>
           <FormProvider {...editForm}>
-            <form
-              id="edit-enquiry-form"
-              onSubmit={editForm.handleSubmit(onEditSubmit)}
-              className="space-y-4"
-            >
-              <Input
-                label="Customer Name"
-                name="fullName"
-                type="text"
-                rules={{ required: "Customer Name is required" }}
-              />
-              <Input
-                label="Phone Number"
-                name="phoneNumber"
-                type="text"
-                rules={{
-                  required: "Phone Number is required",
-                  pattern: {
-                    value: /^\+?[0-9]{7,15}$/,
-                    message:
-                      "Enter a valid phone number (7-15 digits, optional +)",
-                  },
-                }}
-              />
-              <Input
-                label="Email Id"
-                name="email"
-                type="email"
-                rules={{
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email",
-                  },
-                }}
-              />
-              <Input
-                label="Service Required"
-                name="serviceType"
-                type="select"
-                options={serviceOptions}
-                rules={{ required: "Service Required is required" }}
-              />
-              <Input
-                label="Message"
-                name="message"
-                type="textarea"
-                rules={{ required: "Message is required" }}
-              />
+            <form id="edit-form" onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <Input label="Customer Name *" name="fullName" rules={{ required: true }} />
+              <Input label="Phone Number *" name="phoneNumber" rules={{ required: true }} />
+              <Input label="Email *" name="email" type="email" rules={{ required: true }} />
+              <Input label="Service Required *" name="serviceType" type="select" options={serviceOptions} rules={{ required: true }} />
+              <Input label="Message *" name="message" type="textarea" rules={{ required: true }} />
             </form>
           </FormProvider>
         </Modal>
-        <Modal
-          isOpen={isAssignOpen}
-          onClose={closeAssignModal}
-          title="Assign Enquiry"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={closeAssignModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isAssigningEnquiry}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="assign-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={
-                  !hasPermission("enquiries", "edit") || isAssigningEnquiry
-                }
-              >
-                {isAssigningEnquiry ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Assigning
-                  </>
-                ) : (
-                  "Assign"
-                )}
-              </button>
-            </>
-          }
-        >
+
+        {/* Assign Modal */}
+        <Modal isOpen={isAssignOpen} onClose={closeAssignModal} title="Assign Enquiry" footer={
+          <>
+            <button onClick={closeAssignModal} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <button type="submit" form="assign-form" className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-6 rounded">Assign</button>
+          </>
+        }>
           <FormProvider {...assignForm}>
-            <form
-              id="assign-enquiry-form"
-              onSubmit={assignForm.handleSubmit(onAssignSubmit)}
-              className="space-y-4"
-            >
-              <Input
-                label="Assign To"
-                name="emailReceiver"
-                type="select"
-                options={[...emailReceivers]}
-                rules={{ required: false }}
-              />
+            <form id="assign-form" onSubmit={assignForm.handleSubmit(onAssignSubmit)} className="space-y-4">
+              <Input label="Assign To" name="emailReceiver" type="select" options={emailReceivers} />
               <Input label="Note (Optional)" name="note" type="textarea" />
             </form>
           </FormProvider>
         </Modal>
-        <Modal
-          isOpen={isAssignConfirmOpen}
-          onClose={() => setIsAssignConfirmOpen(false)}
-          title="Confirm Assignment"
-          footer={
-            <>
-              <button
-                onClick={() => setIsAssignConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isAssigningEnquiry}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmAssign}
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={
-                  !hasPermission("enquiries", "edit") || isAssigningEnquiry
-                }
-              >
-                {isAssigningEnquiry ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Assigning
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-            </>
-          }
-        >
-          <p className="text-[#2d4a5e] text-sm">
-            Are you sure you want to assign this enquiry to{" "}
-            {emailReceivers.find(
-              (opt) => opt.value === assignData?.emailReceiver
-            )?.label || "Unassigned"}
-            {assignData?.note ? ` with note: "${assignData.note}"` : ""}?
-          </p>
+
+        {/* Confirm Assign */}
+        <Modal isOpen={isAssignConfirmOpen} onClose={() => setIsAssignConfirmOpen(false)} title="Confirm Assignment" footer={
+          <>
+            <button onClick={() => setIsAssignConfirmOpen(false)} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <button onClick={confirmAssign} disabled={isAssigningEnquiry} className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-6 rounded">
+              {isAssigningEnquiry ? "Assigning..." : "Confirm"}
+            </button>
+          </>
+        }>
+          <p>Assign to {emailReceivers.find(o => o.value === assignData?.emailReceiver)?.label || "Unassigned"}?</p>
         </Modal>
-        <Modal
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
-          title="Delete Enquiry"
-          footer={
-            <>
-              <button
-                onClick={() => setIsDeleteOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onDelete}
-                disabled={isDeleting}
-                className="bg-red-500 text-white py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </>
-          }
-        >
-          <p className="text-[#2d4a5e] text-sm">
-            Are you sure you want to delete this enquiry?
-          </p>
+
+        {/* Delete Modal */}
+        <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Delete Enquiry" footer={
+          <>
+            <button onClick={() => setIsDeleteOpen(false)} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <button onClick={onDelete} disabled={isDeleting} className="bg-red-600 text-white py-2 px-6 rounded">
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
+          </>
+        }>
+          <p>Are you sure you want to delete this enquiry?</p>
         </Modal>
-        <Modal
-          isOpen={isPhoneModalOpen}
-          onClose={() => setIsPhoneModalOpen(false)}
-          title="Contact Options"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsPhoneModalOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-            </>
-          }
-        >
+
+        {/* Phone Modal */}
+        <Modal isOpen={isPhoneModalOpen} onClose={() => setIsPhoneModalOpen(false)} title="Contact Options">
           <div className="space-y-4">
-            <p className="text-[#2d4a5e] text-sm">
-              Choose how to contact {selectedEnquiry?.fullName || ""}:
-            </p>
-            <div className="flex flex-col gap-3">
-              {selectedEnquiry?.phoneNumber ? (
-                <>
-                  <a
-                    href={`tel:${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                  >
-                    <FaPhoneAlt className="w-5 h-5" /> Call
-                  </a>
-                  <a
-                    href={`https://wa.me/${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 bg-green-500 text-white py-2 px-4 rounded"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FaWhatsapp className="w-5 h-5" /> WhatsApp
-                  </a>
-                </>
-              ) : (
-                <p className="text-[#2d4a5e] text-sm">
-                  No phone number available
-                </p>
-              )}
-            </div>
+            {selectedEnquiry?.phoneNumber ? (
+              <>
+                <a href={`tel:${selectedEnquiry.phoneNumber}`} className="block text-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded">
+                  <FaPhoneAlt className="inline mr-2" /> Call
+                </a>
+                <a href={`https://wa.me/${selectedEnquiry.phoneNumber}`} target="_blank" rel="noopener noreferrer" className="block text-center bg-green-500 text-white py-3 rounded">
+                  <FaWhatsapp className="inline mr-2" /> WhatsApp
+                </a>
+              </>
+            ) : (
+              <p>No phone number</p>
+            )}
           </div>
         </Modal>
       </AnimatePresence>
