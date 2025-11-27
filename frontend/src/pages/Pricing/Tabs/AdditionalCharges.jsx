@@ -43,7 +43,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     fetchData();
   }, []);
 
-  const handleAddOrUpdate = () => {
+  const handleAddOrUpdate = async () => {
     if (!selectedServiceId) {
       alert("Please select a service");
       return;
@@ -71,19 +71,54 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       rate_type: rateType,
     };
 
-    if (editingId) {
-      setRows(rows.map((r) => (r.id === editingId ? newRow : r)));
-      setEditingId(null);
-    } else {
-      setRows([...rows, newRow]);
-    }
+    try {
+      // If editing an existing row (has real ID, not temp ID)
+      if (editingId && !String(editingId).startsWith("temp_")) {
+        console.log("🔄 Updating existing row:", editingId);
+        
+        // Prepare payload for update (exclude service object, only send service_id)
+        const updatePayload = {
+          service_id: serviceObj.id,
+          currency: currency ? parseInt(currency) : null,
+          price_per_unit: parseFloat(price),
+          per_unit_quantity: parseInt(perUnitQty) || 1,
+          rate_type: rateType,
+        };
 
-    setSelectedServiceId("");
-    setCurrency("");
-    setPrice("");
-    setPerUnitQty("1");
-    setRateType("FIX");
+        // Send PATCH request to update in backend
+        await apiClient.patch(`/quotation-additional-charges/${editingId}/`, updatePayload);
+        
+        console.log("✅ Row updated in backend");
+        
+        // Update frontend state
+        setRows(rows.map((r) => (r.id === editingId ? newRow : r)));
+      } else {
+        // For new rows or temporary rows, just update frontend
+        if (editingId) {
+          setRows(rows.map((r) => (r.id === editingId ? newRow : r)));
+        } else {
+          setRows([...rows, newRow]);
+        }
+      }
+
+      // Reset form
+      setEditingId(null);
+      setSelectedServiceId("");
+      setCurrency("");
+      setPrice("");
+      setPerUnitQty("1");
+      setRateType("FIX");
+      
+    } catch (err) {
+      console.error("❌ Update failed:", err);
+      console.error("Error response:", err.response?.data);
+      alert(
+        "Failed to update service:\n" +
+        JSON.stringify(err.response?.data || err.message, null, 2)
+      );
+    }
   };
+
 
   const startEdit = (row) => {
     setEditingId(row.id);
