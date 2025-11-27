@@ -114,7 +114,6 @@ const Enquiries = () => {
   const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
   const RECAPTCHA_ACTION = "submit_enquiry";
 
-  // Load reCAPTCHA v3 Script Properly
   useEffect(() => {
     const loadRecaptcha = () => {
       if (document.querySelector(`script[src*="recaptcha"]`)) return;
@@ -131,7 +130,6 @@ const Enquiries = () => {
     loadRecaptcha();
   }, [RECAPTCHA_SITE_KEY]);
 
-  // Generate reCAPTCHA Token (with retry & debug)
   const getRecaptchaToken = async () => {
     return new Promise((resolve, reject) => {
       if (!window.grecaptcha) {
