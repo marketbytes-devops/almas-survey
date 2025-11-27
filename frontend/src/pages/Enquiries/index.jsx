@@ -585,11 +585,11 @@ const Enquiries = () => {
         }>
           <FormProvider {...editForm}>
             <form id="edit-form" onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-              <Input label="Customer Name *" name="fullName" rules={{ required: true }} />
-              <Input label="Phone Number *" name="phoneNumber" rules={{ required: true }} />
-              <Input label="Email *" name="email" type="email" rules={{ required: true }} />
-              <Input label="Service Required *" name="serviceType" type="select" options={serviceOptions} rules={{ required: true }} />
-              <Input label="Message *" name="message" type="textarea" rules={{ required: true }} />
+              <Input label="Customer Name" name="fullName" rules={{ required: true }} />
+              <Input label="Phone Number" name="phoneNumber" rules={{ required: true }} />
+              <Input label="Email" name="email" type="email" rules={{ required: true }} />
+              <Input label="Service Required" name="serviceType" type="select" options={serviceOptions} rules={{ required: true }} />
+              <Input label="Message" name="message" type="textarea" rules={{ required: true }} />
             </form>
           </FormProvider>
         </Modal>
