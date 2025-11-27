@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import SignatureModal from "../../components/SignatureModal/SignatureModal";
+import { FaArrowLeft } from "react-icons/fa"; // 🔥 ADDED BACK ICON
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -55,6 +56,9 @@ export default function QuotationCreate() {
     excludedServices: {},
   });
 
+  // 🔥 ADDED: Track if form has been submitted to prevent auto-save on back
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
   // Fetch survey data
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -94,7 +98,7 @@ export default function QuotationCreate() {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const currenciesRes = await apiClient.get("/currencies/"); // Adjust endpoint as needed
+        const currenciesRes = await apiClient.get("/currencies/");
         setDropdownData({
           currencies: currenciesRes.data || [],
         });
@@ -110,33 +114,22 @@ export default function QuotationCreate() {
   useEffect(() => {
     const fetchAdditionalCharges = async () => {
       try {
-        // First get all pricing charges
-        const chargesRes = await apiClient.get(
-          "/quotation-additional-charges/"
-        );
+        const chargesRes = await apiClient.get("/quotation-additional-charges/");
         console.log("✅ All pricing charges:", chargesRes.data);
 
-        // Get survey data to see which services were selected
         const surveyRes = await apiClient.get(`/surveys/${id}/`);
         const surveyData = surveyRes.data;
-        const selectedServiceIds =
-          surveyData.additional_services?.map((service) => service.id) || [];
+        const selectedServiceIds = surveyData.additional_services?.map((service) => service.id) || [];
 
         console.log("✅ Survey selected service IDs:", selectedServiceIds);
-        console.log(
-          "✅ Survey selected services:",
-          surveyData.additional_services
-        );
+        console.log("✅ Survey selected services:", surveyData.additional_services);
 
         // Filter: Only include charges for services that were selected in the survey
         const filteredCharges = chargesRes.data.filter((charge) =>
           selectedServiceIds.includes(charge.service.id)
         );
 
-        console.log(
-          "✅ Filtered additional charges for quotation:",
-          filteredCharges
-        );
+        console.log("✅ Filtered additional charges for quotation:", filteredCharges);
         setAdditionalCharges(filteredCharges);
       } catch (err) {
         console.error("❌ Failed to load additional charges:", err);
@@ -170,9 +163,7 @@ export default function QuotationCreate() {
         setPriceError("");
       } catch (err) {
         console.error("Failed to fetch pricing:", err);
-        setPriceError(
-          `No pricing found for ${destinationCity}. Please contact administrator.`
-        );
+        setPriceError(`No pricing found for ${destinationCity}. Please contact administrator.`);
         setPricingRanges([]);
       }
     };
@@ -240,9 +231,7 @@ export default function QuotationCreate() {
     );
 
     if (!applicableRange) {
-      setPriceError(
-        `No pricing range found for volume ${volume} CBM in ${destinationCity}.`
-      );
+      setPriceError(`No pricing range found for volume ${volume} CBM in ${destinationCity}.`);
       setForm((prev) => ({ ...prev, baseAmount: "", amount: "" }));
       return;
     }
@@ -263,9 +252,8 @@ export default function QuotationCreate() {
   useEffect(() => {
     let additionalTotal = 0;
 
-    // Calculate total for only the filtered additional charges (survey-selected services)
     additionalCharges.forEach((charge) => {
-      const quantity = charge.per_unit_quantity || 1; // Use the quantity from pricing settings
+      const quantity = charge.per_unit_quantity || 1;
       const price = charge.price_per_unit || 0;
       additionalTotal += price * quantity;
     });
@@ -299,6 +287,12 @@ export default function QuotationCreate() {
     }));
   }, [form.baseAmount, form.additionalChargesTotal]);
 
+  // 🔥 ADDED: Manual Back Button Handler - No Save
+  const handleManualBack = () => {
+    console.log("🚫 Manual back clicked - navigating without saving");
+    navigate("/quotation-list");
+  };
+
   const openSignatureModal = () => setIsSignatureModalOpen(true);
 
   const handleSignatureSave = async (file) => {
@@ -324,6 +318,7 @@ export default function QuotationCreate() {
     }
   };
 
+  // 🔥 UPDATED: Handle Create - Only save when this is called
   const handleCreate = async () => {
     if (!form.amount) return alert("Amount is not calculated.");
     if (priceError) return alert(priceError);
@@ -340,7 +335,6 @@ export default function QuotationCreate() {
       excluded_services: Object.keys(form.excludedServices).filter(
         (k) => form.excludedServices[k]
       ),
-      // 🔥 Include additional charges data
       additional_charges: additionalCharges.map((charge) => ({
         service_id: charge.service.id,
         service_name: charge.service.name,
@@ -352,14 +346,13 @@ export default function QuotationCreate() {
     };
 
     try {
+      setIsSubmitted(true); // 🔥 MARK AS SUBMITTED
       await apiClient.post("/quotation-create/", payload);
       alert("Quotation created successfully!");
       navigate("/quotation-list");
     } catch (err) {
-      alert(
-        "Error: " +
-          (err.response?.data?.detail || "Failed to create quotation.")
-      );
+      setIsSubmitted(false); // 🔥 RESET IF FAILED
+      alert("Error: " + (err.response?.data?.detail || "Failed to create quotation."));
     }
   };
 
@@ -380,12 +373,25 @@ export default function QuotationCreate() {
         customerName={form.client}
       />
 
-      <div className="mx-auto  bg-white rounded-lg shadow-xl overflow-hidden">
+      <div className="mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        {/* 🔥 UPDATED: Header with Manual Back Button */}
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center">
-          <h2 className="text-xl font-medium">Create Quotation</h2>
+          <div className="flex items-center gap-4">
+            {/* 🔥 MANUAL BACK BUTTON */}
+            <button
+              onClick={handleManualBack}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition text-sm font-medium"
+              title="Go back without saving"
+            >
+              <FaArrowLeft className="w-4 h-4" />
+              Back to List
+            </button>
+            <h2 className="text-xl font-medium">Create Quotation</h2>
+          </div>
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleManualBack} // 🔥 ALSO USE MANUAL BACK FOR CLOSE
             className="text-4xl hover:opacity-80"
+            title="Close without saving"
           >
             ×
           </button>
@@ -400,14 +406,10 @@ export default function QuotationCreate() {
         <div className="p-8 space-y-8">
           {/* Pricing Location */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">
-              Pricing Location
-            </h3>
+            <h3 className="text-sm font-medium text-blue-800 mb-2">Pricing Location</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">
-                  Destination City
-                </label>
+                <label className="block text-xs font-medium text-blue-700 mb-1">Destination City</label>
                 <input
                   type="text"
                   value={destinationCity || "Not specified"}
@@ -416,9 +418,7 @@ export default function QuotationCreate() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">
-                  Country
-                </label>
+                <label className="block text-xs font-medium text-blue-700 mb-1">Country</label>
                 <input
                   type="text"
                   value="Qatar"
@@ -432,9 +432,7 @@ export default function QuotationCreate() {
           {/* Basic Fields */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Quotation No.
-              </label>
+              <label className="block text-sm font-medium mb-1">Quotation No.</label>
               <input
                 type="text"
                 value={form.serialNo}
@@ -456,9 +454,7 @@ export default function QuotationCreate() {
           <div className="grid grid-cols-3 gap-6">
             {["Client Name", "Mobile", "Email"].map((label, i) => (
               <div key={i}>
-                <label className="block text-sm font-medium mb-1">
-                  {label}
-                </label>
+                <label className="block text-sm font-medium mb-1">{label}</label>
                 <input
                   type="text"
                   value={[form.client, form.mobile, form.email][i]}
@@ -472,34 +468,24 @@ export default function QuotationCreate() {
           {/* 🔥 UPDATED: Additional Charges Display - Only Survey Selected Services */}
           {additionalCharges.length > 0 && (
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-6">
-              <h3 className="text-xl font-bold text-purple-900 mb-4">
-                💼 Additional Services
-              </h3>
+              <h3 className="text-xl font-bold text-purple-900 mb-4">💼 Additional Services</h3>
               <p className="text-sm text-purple-700 mb-4">
-                Automatically included from survey selection with pricing
-                settings
+                Automatically included from survey selection with pricing settings
               </p>
 
               <div className="space-y-3">
                 {additionalCharges.map((charge) => {
-                  // 🔥 FIX: Handle missing dropdownData gracefully
-                  const currencyName = charge.currency_name || "QAR"; // Use the currency_name from API
+                  const currencyName = charge.currency_name || "QAR";
                   const quantity = charge.per_unit_quantity || 1;
                   const subtotal = charge.price_per_unit * quantity;
 
                   return (
-                    <div
-                      key={charge.id}
-                      className="bg-white border-2 border-purple-200 rounded-lg p-4"
-                    >
+                    <div key={charge.id} className="bg-white border-2 border-purple-200 rounded-lg p-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-semibold text-gray-800">
-                            {charge.service.name}
-                          </div>
+                          <div className="font-semibold text-gray-800">{charge.service.name}</div>
                           <div className="text-sm text-gray-600">
-                            {charge.price_per_unit} {currencyName} × {quantity}{" "}
-                            unit(s)
+                            {charge.price_per_unit} {currencyName} × {quantity} unit(s)
                           </div>
                           <div className="text-xs text-gray-500 capitalize mt-1">
                             Rate: {charge.rate_type?.toLowerCase() || "fix"}
@@ -519,77 +505,52 @@ export default function QuotationCreate() {
           )}
 
           {/* Survey Additional Services Info */}
-          {survey?.additional_services?.length > 0 &&
-            additionalCharges.length === 0 && (
-              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-yellow-900 mb-3">
-                  📋 Services Requested in Survey
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {survey.additional_services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="flex items-center gap-2 bg-white p-3 rounded-lg border border-yellow-300"
-                    >
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span className="text-sm font-medium">
-                        {service.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-yellow-700 mt-3">
-                  Note: These services were selected in the survey but no
-                  pricing has been configured yet. Please add pricing in the
-                  Additional Settings tab.
-                </p>
+          {survey?.additional_services?.length > 0 && additionalCharges.length === 0 && (
+            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-yellow-900 mb-3">📋 Services Requested in Survey</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {survey.additional_services.map((service) => (
+                  <div key={service.id} className="flex items-center gap-2 bg-white p-3 rounded-lg border border-yellow-300">
+                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-sm font-medium">{service.name}</span>
+                  </div>
+                ))}
               </div>
-            )}
+              <p className="text-xs text-yellow-700 mt-3">
+                Note: These services were selected in the survey but no pricing has been configured yet. 
+                Please add pricing in the Additional Settings tab.
+              </p>
+            </div>
+          )}
 
           {/* Pricing Summary */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-            <h3 className="text-xl font-medium text-center mb-4">
-              💰 Quotation Breakdown
-            </h3>
+            <h3 className="text-xl font-medium text-center mb-4">💰 Quotation Breakdown</h3>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b border-gray-300">
                 <div>
-                  <span className="text-sm text-gray-600">
-                    Base Amount (Volume Pricing)
-                  </span>
-                  <div className="text-xs text-gray-500">
-                    {totalVolume} CBM × {destinationCity}
-                  </div>
+                  <span className="text-sm text-gray-600">Base Amount (Volume Pricing)</span>
+                  <div className="text-xs text-gray-500">{totalVolume} CBM × {destinationCity}</div>
                 </div>
-                <span className="text-2xl font-bold text-blue-700">
-                  {form.baseAmount || "0.00"} QAR
-                </span>
+                <span className="text-2xl font-bold text-blue-700">{form.baseAmount || "0.00"} QAR</span>
               </div>
 
               {form.additionalChargesTotal > 0 && (
                 <div className="flex justify-between items-center pb-3 border-b border-gray-300">
                   <div>
-                    <span className="text-sm text-gray-600">
-                      Additional Services
-                    </span>
+                    <span className="text-sm text-gray-600">Additional Services</span>
                     <div className="text-xs text-gray-500">
                       {additionalCharges.length} service(s) selected in survey
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-purple-700">
-                    + {form.additionalChargesTotal.toFixed(2)} QAR
-                  </span>
+                  <span className="text-2xl font-bold text-purple-700">+ {form.additionalChargesTotal.toFixed(2)} QAR</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center pt-2">
-                <span className="text-lg font-semibold text-gray-800">
-                  Total Quotation Amount
-                </span>
-                <span className="text-4xl font-bold text-green-600">
-                  {form.amount || "0.00"} QAR
-                </span>
+                <span className="text-lg font-semibold text-gray-800">Total Quotation Amount</span>
+                <span className="text-4xl font-bold text-green-600">{form.amount || "0.00"} QAR</span>
               </div>
             </div>
 
@@ -602,19 +563,12 @@ export default function QuotationCreate() {
 
           {/* Includes/Excludes */}
           <div className="grid grid-cols-2 border-2 border-gray-300 rounded-lg overflow-hidden">
-            <div className="bg-gray-700 text-white p-4 text-center font-medium">
-              Service Includes
-            </div>
-            <div className="bg-red-700 text-white p-4 text-center font-medium">
-              Service Excludes
-            </div>
+            <div className="bg-gray-700 text-white p-4 text-center font-medium">Service Includes</div>
+            <div className="bg-red-700 text-white p-4 text-center font-medium">Service Excludes</div>
 
             <div className="p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
               {dynamicIncludes.map((service) => (
-                <label
-                  key={service.id}
-                  className="flex items-center space-x-3 cursor-pointer"
-                >
+                <label key={service.id} className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.includedServices[service.id] || false}
@@ -636,10 +590,7 @@ export default function QuotationCreate() {
 
             <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200 max-h-80 overflow-y-auto">
               {dynamicExcludes.map((service) => (
-                <label
-                  key={service.id}
-                  className="flex items-center space-x-3 cursor-pointer"
-                >
+                <label key={service.id} className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.excludedServices[service.id] || false}
@@ -663,9 +614,7 @@ export default function QuotationCreate() {
           {/* Payment Details */}
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <label className="block font-medium text-sm mb-1">
-                Total Amount
-              </label>
+              <label className="block font-medium text-sm mb-1">Total Amount</label>
               <input
                 type="text"
                 readOnly
@@ -689,13 +638,7 @@ export default function QuotationCreate() {
               <input
                 type="text"
                 readOnly
-                value={
-                  form.amount && form.advance
-                    ? `${(
-                        parseFloat(form.amount) - parseFloat(form.advance)
-                      ).toFixed(2)} QAR`
-                    : ""
-                }
+                value={form.amount && form.advance ? `${(parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)} QAR` : ""}
                 className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-bold text-green-700"
               />
             </div>
@@ -706,9 +649,7 @@ export default function QuotationCreate() {
             <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
             <div className="bg-gray-50 p-6 rounded-lg border flex justify-between items-center">
               <p className="text-sm text-gray-600">
-                {survey?.signature_uploaded
-                  ? "✓ Signature added"
-                  : "Add customer signature"}
+                {survey?.signature_uploaded ? "✓ Signature added" : "Add customer signature"}
               </p>
               <button
                 onClick={openSignatureModal}
@@ -728,12 +669,15 @@ export default function QuotationCreate() {
             </div>
           </div>
 
-          {/* Create Button */}
-          <div className="text-center pt-4">
+          {/* 🔥 UPDATED: Action Buttons */}
+          <div className="flex gap-4 pt-4">
+            {/* Back Button - No Save */}
+
+            {/* Create Button - With Save */}
             <button
               onClick={handleCreate}
               disabled={!form.amount || priceError}
-              className={`w-full max-w-md mx-auto py-4 px-8 text-lg font-bold rounded-lg shadow-lg transition ${
+              className={`flex-1 py-4 px-8 text-lg font-bold rounded-lg shadow-lg transition ${
                 !form.amount || priceError
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                   : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"

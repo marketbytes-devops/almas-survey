@@ -37,8 +37,9 @@ const Input = ({
       {type === "select" ? (
         <select
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
-            }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
+            error ? "border-red-500" : ""
+          }`}
           aria-label={label}
         >
           <option value="">Select an option</option>
@@ -51,8 +52,9 @@ const Input = ({
       ) : type === "textarea" ? (
         <textarea
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
-            }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
+            error ? "border-red-500" : ""
+          }`}
           rows={4}
           aria-label={label}
         />
@@ -60,8 +62,9 @@ const Input = ({
         <input
           type={type}
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
-            }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
+            error ? "border-red-500" : ""
+          }`}
           aria-label={label}
           {...props}
         />
@@ -107,6 +110,58 @@ const Enquiries = () => {
       toDate: "",
     },
   });
+
+  const applyCurrentFilters = (dataToFilter) => {
+    const filterData = filterForm.getValues();
+    let filtered = [...dataToFilter];
+
+    // Apply filter type
+    if (filterData.filterType === "assigned") {
+      filtered = filtered.filter((enquiry) => enquiry.assigned_user_email);
+    } else if (filterData.filterType === "non-assigned") {
+      filtered = filtered.filter((enquiry) => !enquiry.assigned_user_email);
+    }
+
+    // Apply date filters
+    if (filterData.fromDate || filterData.toDate) {
+      const from = filterData.fromDate ? new Date(filterData.fromDate) : null;
+      const to = filterData.toDate ? new Date(filterData.toDate) : null;
+      if (to) to.setHours(23, 59, 59, 999);
+
+      filtered = filtered.filter((enquiry) => {
+        const createdAt = new Date(enquiry.created_at);
+        return (
+          (from ? createdAt >= from : true) && (to ? createdAt <= to : true)
+        );
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery && searchQuery.trim() !== "") {
+      const searchLower = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((enquiry) => {
+        const fullName = (enquiry.fullName || "").toLowerCase();
+        const phoneNumber = (enquiry.phoneNumber || "").toLowerCase();
+        const email = (enquiry.email || "").toLowerCase();
+        const serviceType = (enquiry.serviceType || "").toLowerCase();
+        const message = (enquiry.message || "").toLowerCase();
+        const note = (enquiry.note || "").toLowerCase();
+        const assignedUser = (enquiry.assigned_user_email || "").toLowerCase();
+
+        return (
+          fullName.includes(searchLower) ||
+          phoneNumber.includes(searchLower) ||
+          email.includes(searchLower) ||
+          serviceType.includes(searchLower) ||
+          message.includes(searchLower) ||
+          note.includes(searchLower) ||
+          assignedUser.includes(searchLower)
+        );
+      });
+    }
+
+    return filtered;
+  };
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -200,8 +255,9 @@ const Enquiries = () => {
       );
       if (!existingScript) {
         const script = document.createElement("script");
-        script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY
-          }`;
+        script.src = `https://www.google.com/recaptcha/api.js?render=${
+          import.meta.env.VITE_RECAPTCHA_SITE_KEY
+        }`;
         script.async = true;
         document.body.appendChild(script);
       }
@@ -244,9 +300,10 @@ const Enquiries = () => {
         const phoneNumber = (enquiry.phoneNumber || "").toLowerCase();
         const email = (enquiry.email || "").toLowerCase();
         const serviceType = (enquiry.serviceType || "").toLowerCase();
-        const serviceLabel = (serviceOptions.find(
-          (opt) => opt.value === enquiry.serviceType
-        )?.label || "").toLowerCase();
+        const serviceLabel = (
+          serviceOptions.find((opt) => opt.value === enquiry.serviceType)
+            ?.label || ""
+        ).toLowerCase();
         const message = (enquiry.message || "").toLowerCase();
         const note = (enquiry.note || "").toLowerCase();
         const assignedUser = (enquiry.assigned_user_email || "").toLowerCase();
@@ -323,6 +380,7 @@ const Enquiries = () => {
     return "An unexpected error occurred. Please try again.";
   };
 
+  // ✅ FIXED CODE
   const onAddSubmit = async (data) => {
     if (!hasPermission("enquiries", "add")) {
       setError("You do not have permission to add an enquiry.");
@@ -341,13 +399,19 @@ const Enquiries = () => {
         recaptchaToken,
         submittedUrl: window.location.href,
       });
+
       const updatedEnquiries = [response.data, ...enquiries].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
       setEnquiries(updatedEnquiries);
-      const filterData = filterForm.getValues();
-      applyFiltersAndSearch(filterData, searchQuery);
+
+      // ✅ ONE LINE instead of 60!
+      const filtered = applyCurrentFilters(updatedEnquiries);
+      setFilteredEnquiries(filtered);
+      setCurrentPage(1);
+
       setMessage("Enquiry created successfully");
+      setTimeout(() => setMessage(null), 3000);
       setIsAddOpen(false);
       addForm.reset();
     } catch (error) {
@@ -356,12 +420,12 @@ const Enquiries = () => {
       setIsAddingEnquiry(false);
     }
   };
-
   const onEditSubmit = async (data) => {
     if (!hasPermission("enquiries", "edit")) {
       setError("You do not have permission to edit an enquiry.");
       return;
     }
+
     try {
       const response = await apiClient.patch(
         `/contacts/enquiries/${selectedEnquiry?.id}/`,
@@ -373,20 +437,27 @@ const Enquiries = () => {
           message: data.message,
         }
       );
-      const updatedEnquiries = enquiries.map((enquiry) =>
-        enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-      ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      const updatedEnquiries = enquiries
+        .map((enquiry) =>
+          enquiry.id === selectedEnquiry?.id ? response.data : enquiry
+        )
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
       setEnquiries(updatedEnquiries);
-      const filterData = filterForm.getValues();
-      applyFiltersAndSearch(filterData, searchQuery);
+
+      // ✅ ONE LINE instead of 60!
+      const filtered = applyCurrentFilters(updatedEnquiries);
+      setFilteredEnquiries(filtered);
+
       setMessage("Enquiry updated successfully");
+      setTimeout(() => setMessage(null), 3000);
       setIsEditOpen(false);
       editForm.reset();
     } catch (error) {
       setError(extractErrorMessage(error));
     }
   };
-
   const onAssignSubmit = async (data) => {
     if (!hasPermission("enquiries", "edit")) {
       setError("You do not have permission to assign an enquiry.");
@@ -407,15 +478,23 @@ const Enquiries = () => {
           note: assignData.note || null,
         }
       );
-      const updatedEnquiries = enquiries.map((enquiry) =>
-        enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-      ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      const updatedEnquiries = enquiries
+        .map((enquiry) =>
+          enquiry.id === selectedEnquiry?.id ? response.data : enquiry
+        )
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
       setEnquiries(updatedEnquiries);
-      const filterData = filterForm.getValues();
-      applyFiltersAndSearch(filterData, searchQuery);
+
+      // ✅ ONE LINE instead of 60!
+      const filtered = applyCurrentFilters(updatedEnquiries);
+      setFilteredEnquiries(filtered);
+
       setMessage(
         "Enquiry assigned successfully and email sent to assigned user"
       );
+      setTimeout(() => setMessage(null), 3000);
       setIsAssignConfirmOpen(false);
       assignForm.reset();
     } catch (error) {
@@ -433,11 +512,23 @@ const Enquiries = () => {
     try {
       await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/`);
 
-      const updatedEnquiries = enquiries.filter(e => e.id !== selectedEnquiry.id);
+      const updatedEnquiries = enquiries.filter(
+        (e) => e.id !== selectedEnquiry.id
+      );
       setEnquiries(updatedEnquiries);
-      applyFiltersAndSearch(filterForm.getValues(), searchQuery);
+
+      // ✅ ONE LINE instead of 60!
+      const filtered = applyCurrentFilters(updatedEnquiries);
+      setFilteredEnquiries(filtered);
+
+      // Adjust pagination if needed
+      const totalPages = Math.ceil(filtered.length / itemsPerPage);
+      if (currentPage > totalPages && totalPages > 0) {
+        setCurrentPage(totalPages);
+      }
 
       setMessage("Enquiry deleted successfully");
+      setTimeout(() => setMessage(null), 3000);
       setIsDeleteOpen(false);
       setSelectedEnquiry(null);
     } catch (error) {
@@ -723,7 +814,7 @@ const Enquiries = () => {
                             }
                           >
                             {isAssigningEnquiry &&
-                              assigningEnquiryId === enquiry.id ? (
+                            assigningEnquiryId === enquiry.id ? (
                               <>
                                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 Assigning
@@ -945,7 +1036,7 @@ const Enquiries = () => {
                               }
                             >
                               {isAssigningEnquiry &&
-                                assigningEnquiryId === enquiry.id ? (
+                              assigningEnquiryId === enquiry.id ? (
                                 <>
                                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                   Assigning
