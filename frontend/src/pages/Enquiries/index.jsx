@@ -111,6 +111,18 @@ const Enquiries = () => {
     },
   });
 
+  const toggleEnquiryExpand = (id) => {
+  setExpandedEnquiries((prev) => {
+    const newSet = new Set(prev);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    return newSet;
+  });
+};
+
   const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
   const RECAPTCHA_ACTION = "submit_enquiry";
 
