@@ -557,185 +557,198 @@ const SurveyDetails = () => {
       setMessage("Article removed!");
       setTimeout(() => setMessage(null), 3000);
     };
+const ItemForm = ({ item, onAdd, onCancel }) => {
+  // Initialize formData with master item values (this is the key!)
+  const [formData, setFormData] = useState({
+    [`length_${item.name}`]: item.length || "",
+    [`width_${item.name}`]: item.width || "",
+    [`height_${item.name}`]: item.height || "",
+    [`volume_${item.name}`]: item.volume || "",
+    [`weight_${item.name}`]: item.weight || "",
+    [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
+    [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
+    [`handyman_${item.name}`]: "",
+    [`packingOption_${item.name}`]: "",
+  });
 
-    const ItemForm = ({ item, onAdd, onCancel }) => {
-      const [formData, setFormData] = useState({
-        [`length_${item.name}`]: "",
-        [`width_${item.name}`]: "",
-        [`height_${item.name}`]: "",
-        [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
-        [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
-        [`handyman_${item.name}`]: "",
-        [`packingOption_${item.name}`]: "",
-      });
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
 
-      const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    const l = field === `length_${item.name}` ? value : formData[`length_${item.name}`];
+    const w = field === `width_${item.name}` ? value : formData[`width_${item.name}`];
+    const h = field === `height_${item.name}` ? value : formData[`height_${item.name}`];
 
-        const l = field === `length_${item.name}` ? value : formData[`length_${item.name}`];
-        const w = field === `width_${item.name}` ? value : formData[`width_${item.name}`];
-        const h = field === `height_${item.name}` ? value : formData[`height_${item.name}`];
+    if (l && w && h) {
+      const vol = calculateVolume(l, w, h);
+      const wt = calculateWeight(vol);
 
-        if (l && w && h) {
-          const vol = calculateVolume(l, w, h);
-          const wt = calculateWeight(vol);
-          setFormData(prev => ({
-            ...prev,
-            [`volume_${item.name}`]: vol.toFixed(4),
-            [`weight_${item.name}`]: wt.toFixed(2),
-          }));
-        }
-      };
+      setFormData(prev => ({
+        ...prev,
+        [`volume_${item.name}`]: vol.toFixed(4),
+        [`weight_${item.name}`]: wt.toFixed(2),
+      }));
+    }
+  };
 
-      const volume = calculateVolume(
-        formData[`length_${item.name}`],
-        formData[`width_${item.name}`],
-        formData[`height_${item.name}`]
-      );
-      const weight = calculateWeight(volume);
+  // Re-calculate volume/weight whenever L/W/H changes (live update)
+  const currentLength = formData[`length_${item.name}`];
+  const currentWidth = formData[`width_${item.name}`];
+  const currentHeight = formData[`height_${item.name}`];
 
-      return (
-        <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            <div className="col-span-full">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions</h4>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Length (cm)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData[`length_${item.name}`]}
-                    onChange={(e) => handleInputChange(`length_${item.name}`, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Width (cm)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData[`width_${item.name}`]}
-                    onChange={(e) => handleInputChange(`width_${item.name}`, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Height (cm)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData[`height_${item.name}`]}
-                    onChange={(e) => handleInputChange(`height_${item.name}`, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
+  const volume = currentLength && currentWidth && currentHeight
+    ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(4)
+    : (item.volume || "0.0000");
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Volume (m³)</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={volume.toFixed(4)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
-                  <select
-                    value={formData[`volumeUnit_${item.name}`]}
-                    onChange={(e) => setFormData(prev => ({ ...prev, [`volumeUnit_${item.name}`]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                  >
-                    {apiData.volumeUnits.map(unit => (
-                      <option key={unit.value} value={unit.value}>{unit.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+  const weight = volume
+    ? calculateWeight(parseFloat(volume)).toFixed(2)
+    : (item.weight || "0.00");
+
+  return (
+    <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="col-span-full">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions</h4>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Length (cm)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData[`length_${item.name}`]}
+                onChange={(e) => handleInputChange(`length_${item.name}`, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                placeholder={item.length ? `${item.length} (default)` : "0.00"}
+              />
             </div>
-
-            <div className="col-span-full">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Weight</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Weight (kg)</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={weight.toFixed(2)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
-                  <select
-                    value={formData[`weightUnit_${item.name}`]}
-                    onChange={(e) => setFormData(prev => ({ ...prev, [`weightUnit_${item.name}`]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                  >
-                    {apiData.weightUnits.map(unit => (
-                      <option key={unit.value} value={unit.value}>{unit.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Width (cm)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData[`width_${item.name}`]}
+                onChange={(e) => handleInputChange(`width_${item.name}`, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                placeholder={item.width ? `${item.width} (default)` : "0.00"}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Height (cm)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData[`height_${item.name}`]}
+                onChange={(e) => handleInputChange(`height_${item.name}`, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                placeholder={item.height ? `${item.height} (default)` : "0.00"}
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Volume (m³) <span className="text-green-600 text-xs">(auto)</span>
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={volume}
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
               <select
-                value={formData[`handyman_${item.name}`]}
-                onChange={(e) => setFormData(prev => ({ ...prev, [`handyman_${item.name}`]: e.target.value }))}
+                value={formData[`volumeUnit_${item.name}`]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [`volumeUnit_${item.name}`]: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
               >
-                <option value="">Select</option>
-                {apiData.handymanTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
+                {apiData.volumeUnits.map(unit => (
+                  <option key={unit.value} value={unit.value}>{unit.label}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
-              <select
-                value={formData[`packingOption_${item.name}`]}
-                onChange={(e) => setFormData(prev => ({ ...prev, [`packingOption_${item.name}`]: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-              >
-                <option value="">Select</option>
-                {apiData.packingTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex gap-3 justify-end mt-4">
-            <button
-              type="button"
-              onClick={() => onAdd(item.name, formData)}
-              className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition"
-            >
-              Add to Survey
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
-            >
-              Cancel
-            </button>
           </div>
         </div>
-      );
-    };
+
+        <div className="col-span-full">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Weight</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Weight (kg) <span className="text-green-600 text-xs">(est.)</span>
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={weight}
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
+              <select
+                value={formData[`weightUnit_${item.name}`]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [`weightUnit_${item.name}`]: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+              >
+                {apiData.weightUnits.map(unit => (
+                  <option key={unit.value} value={unit.value}>{unit.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+          <select
+            value={formData[`handyman_${item.name}`]}
+            onChange={(e) => setFormData(prev => ({ ...prev, [`handyman_${item.name}`]: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+          >
+            <option value="">Select</option>
+            {apiData.handymanTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
+          <select
+            value={formData[`packingOption_${item.name}`]}
+            onChange={(e) => setFormData(prev => ({ ...prev, [`packingOption_${item.name}`]: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+          >
+            <option value="">Select</option>
+            {apiData.packingTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex gap-3 justify-end mt-4">
+        <button
+          type="button"
+          onClick={() => onAdd(item.name, formData)}
+          className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition"
+        >
+          Add to Survey
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
 
     const ItemRow = ({ item }) => {
       const isSelected = selectedItems[item.name] || false;
