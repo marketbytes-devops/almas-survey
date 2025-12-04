@@ -86,7 +86,14 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ["id", "name", "room", "room_name", "description"]
+        fields = [
+            "id", "name", "room", "room_name", "description",
+            "length", "width", "height", "volume", "weight"
+        ]
+        extra_kwargs = {
+            'volume': {'required': False},
+            'weight': {'required': False},
+        }
 
 
 class CurrencySerializer(serializers.ModelSerializer):

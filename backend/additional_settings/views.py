@@ -110,7 +110,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         room_id = self.request.query_params.get("room_id")
         if room_id:
             queryset = queryset.filter(room_id=room_id)
-        return queryset
+        return queryset.select_related('room')
 
 
 class CurrencyViewSet(viewsets.ModelViewSet):
