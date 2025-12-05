@@ -10,7 +10,7 @@ import {
   FaEye,
   FaEyeSlash,
   FaTimes,
-  FaClone, // Correct copy icon
+  FaClone,
 } from "react-icons/fa";
 
 const Room = () => {
@@ -26,7 +26,6 @@ const Room = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Form rows
   const [itemRows, setItemRows] = useState([
     {
       id: Date.now(),
@@ -42,7 +41,6 @@ const Room = () => {
 
   const [roomForm, setRoomForm] = useState({ name: "", description: "" });
 
-  // COPY MODAL
   const [copyModal, setCopyModal] = useState(null);
   const [targetRoomId, setTargetRoomId] = useState("");
 
@@ -80,7 +78,6 @@ const Room = () => {
     });
   };
 
-  // ROOM CRUD
   const handleEditRoom = (room) => {
     setEditingRoomId(room.id);
     setRoomForm({ name: room.name, description: room.description || "" });
@@ -114,7 +111,6 @@ const Room = () => {
     }
   };
 
-  // EDIT ITEM EDIT
   const handleEditItem = (item) => {
     setItemRows([
       {
@@ -149,7 +145,6 @@ const Room = () => {
     ]);
   };
 
-  // ROW UPDATE
   const updateRow = (id, field, value) => {
     setItemRows((prev) =>
       prev.map((row) => {
