@@ -8,6 +8,11 @@ import PricingTab from "./Tabs/Pricing";
 import AdditionalChargesTab from "./Tabs/AdditionalCharges";
 import IncludesTab from "./Tabs/Includes";
 import ExcludesTab from "./Tabs/Exclude";
+import InsuranceTab from "./Tabs/InsuranceTab";
+import PaymentTermsTab from "./Tabs/PaymentTermsTab";
+import NoteTab from "./Tabs/NoteTab";
+import TruckTypeTab from "./Tabs/TruckTypeTab";
+import RemarksTab from "./Tabs/RemarksTab";
 
 const TAB_LIST = [
   { id: "pricing", label: "PRICING", component: PricingTab },
@@ -18,11 +23,11 @@ const TAB_LIST = [
   },
   { id: "includes", label: "INCLUDES", component: IncludesTab },
   { id: "excludes", label: "EXCLUDES", component: ExcludesTab },
-  { id: "insurance", label: "INSURANCE", component: null },
-  { id: "payment-terms", label: "PAYMENT TERMS", component: null },
-  { id: "note", label: "NOTE", component: null },
-  { id: "truck-type", label: "TRUCK TYPE", component: null },
-  { id: "remarks", label: "REMARKS", component: null },
+  { id: "insurance", label: "INSURANCE", component: InsuranceTab },
+  { id: "payment-terms", label: "PAYMENT TERMS", component: PaymentTermsTab },
+  { id: "note", label: "NOTE", component: NoteTab },
+  { id: "truck-type", label: "TRUCK TYPE", component: TruckTypeTab },
+  { id: "remarks", label: "REMARKS", component: RemarksTab },
   { id: "locations", label: "LOCATIONS", component: null },
   { id: "services", label: "SERVICES", component: null },
 ];

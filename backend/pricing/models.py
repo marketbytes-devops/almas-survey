@@ -134,3 +134,227 @@ class QuotationAdditionalCharge(models.Model):
 
     def __str__(self):
         return f"{self.service.name} - {self.price_per_unit} {self.currency}"
+    
+    
+# pricing/models.py
+
+from django.db import models
+
+class InsurancePlan(models.Model):
+    CALCULATION_CHOICES = [
+        ('free', 'Free (Included in Base Price)'),
+        ('percentage', 'Percentage of Total Quote Value'),
+        ('fixed', 'Fixed Amount'),
+        ('per_item', 'Fixed Amount Per High-Value Item'),
+    ]
+
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(help_text="Shown to customer in quote")
+    
+    calculation_type = models.CharField(
+        max_length=20,
+        choices=CALCULATION_CHOICES,
+        default='percentage'
+    )
+    
+    rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="e.g. 3.50 for 3.5% or 250.00 for QAR 250 fixed"
+    )
+    
+    minimum_premium = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Minimum charge even if calculation is lower"
+    )
+    
+    maximum_coverage = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Maximum amount this plan covers (optional)"
+    )
+    
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Auto-selected when generating quote"
+    )
+    
+    is_mandatory = models.BooleanField(
+        default=False,
+        help_text="Customer cannot unselect this"
+    )
+    
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0, help_text="Display order")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = "Insurance Plan"
+        verbose_name_plural = "Insurance Plans"
+
+    def __str__(self):
+        return f"{self.name} - {self.get_calculation_type_display()}"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one plan is default
+        if self.is_default:
+            InsurancePlan.objects.filter(is_default=True).update(is_default=False)
+            self.is_default = True
+        super().save(*args, **kwargs)
+        
+        
+# pricing/models.py (add this model)
+
+class PaymentTerm(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(help_text="Shown in quote to customer")
+    
+    advance_percentage = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=50.00,
+        help_text="e.g. 50.00 = 50% advance"
+    )
+    
+    due_on_choices = [
+        ('survey', 'Upon Survey Confirmation'),
+        ('packing', 'Before Packing'),
+        ('delivery', 'On Delivery'),
+        ('after_delivery', 'After Delivery (Net 7/15/30)'),
+    ]
+    advance_due_on = models.CharField(max_length=20, choices=due_on_choices, default='survey')
+    
+    balance_due_on = models.CharField(max_length=20, choices=due_on_choices, default='delivery')
+    
+    is_default = models.BooleanField(default=False, help_text="Auto-selected in quote")
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = "Payment Term"
+        verbose_name_plural = "Payment Terms"
+
+    def __str__(self):
+        return f"{self.name} ({self.advance_percentage}% advance)"
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            PaymentTerm.objects.filter(is_default=True).update(is_default=False)
+        super().save(*args, **kwargs)
+        
+# pricing/models.py
+
+class QuoteNote(models.Model):
+    CATEGORY_CHOICES = [
+        ('general', 'General'),
+        ('packing', 'Packing'),
+        ('delivery', 'Delivery'),
+        ('storage', 'Storage'),
+        ('payment', 'Payment'),
+        ('legal', 'Legal / Terms'),
+        ('custom', 'Custom'),
+    ]
+
+    title = models.CharField(max_length=150)
+    content = models.TextField(help_text="Full note text shown in quote")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
+    
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Automatically included in every new quote"
+    )
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'title']
+        verbose_name = "Quote Note"
+        verbose_name_plural = "Quote Notes"
+
+    def __str__(self):
+        return self.title
+    
+# pricing/models.py
+
+class TruckType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    capacity_cbm = models.DecimalField(
+        max_digits=6, decimal_places=2,
+        help_text="Volume capacity in cubic meters (CBM)"
+    )
+    capacity_kg = models.PositiveIntegerField(
+        help_text="Weight capacity in kilograms"
+    )
+    price_per_trip = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text="Base price per trip in QAR"
+    )
+    
+    length_meters = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    width_meters = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    height_meters = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False, help_text="Auto-selected in new surveys")
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = "Truck Type"
+        verbose_name_plural = "Truck Types"
+
+    def __str__(self):
+        return f"{self.name} ({self.capacity_cbm} CBM / {self.capacity_kg} KG)"
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            TruckType.objects.filter(is_default=True).update(is_default=False)
+        super().save(*args, **kwargs)
+
+
+# pricing/models.py
+
+class SurveyRemark(models.Model):
+    CATEGORY_CHOICES = [
+        ('access', 'Access Issues'),
+        ('packing', 'Packing Related'),
+        ('items', 'Special Items'),
+        ('building', 'Building / Elevator'),
+        ('timing', 'Timing / Scheduling'),
+        ('other', 'Other'),
+    ]
+
+    title = models.CharField(max_length=150, unique=True)
+    description = models.TextField(blank=True, help_text="Optional longer explanation")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'title']
+        verbose_name = "Survey Remark"
+        verbose_name_plural = "Survey Remarks"
+
+    def __str__(self):
+        return self.title

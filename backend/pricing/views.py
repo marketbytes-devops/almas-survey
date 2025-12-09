@@ -5,7 +5,7 @@ from .models import (
     Price,
     AdditionalService,
     QuotationAdditionalCharge,
-    InclusionExclusion,
+    InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark
 )
 from django.shortcuts import get_object_or_404
 from .serializers import (
@@ -13,7 +13,7 @@ from .serializers import (
     AdditionalServiceSerializer,
     SurveyAdditionalServiceSerializer,
     QuotationAdditionalChargeSerializer,
-    InclusionExclusionSerializer,
+    InclusionExclusionSerializer,InsurancePlanSerializer,PaymentTermSerializer,QuoteNoteSerializer,TruckTypeSerializer,SurveyRemarkSerializer
 )
 from django.db import transaction
 from rest_framework import status
@@ -253,3 +253,95 @@ class QuotationAdditionalChargeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=201)
+    
+class InsurancePlanViewSet(viewsets.ModelViewSet):
+    queryset = InsurancePlan.objects.all()
+    serializer_class = InsurancePlanSerializer
+
+    def get_queryset(self):
+        return InsurancePlan.objects.all().order_by('order', 'name')
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        plan = self.get_object()
+        plan.is_active = not plan.is_active
+        plan.save()
+        return Response({'status': 'toggled', 'is_active': plan.is_active})
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        # Remove default from all others
+        InsurancePlan.objects.filter(is_default=True).update(is_default=False)
+        plan = self.get_object()
+        plan.is_default = True
+        plan.save()
+        return Response({'status': 'default set'})
+    
+
+
+# pricing/views.py
+
+from .models import PaymentTerm
+from .serializers import PaymentTermSerializer
+
+class PaymentTermViewSet(viewsets.ModelViewSet):
+    queryset = PaymentTerm.objects.all()
+    serializer_class = PaymentTermSerializer
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        term = self.get_object()
+        term.is_active = not term.is_active
+        term.save()
+        return Response({'status': 'toggled', 'is_active': term.is_active})
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        PaymentTerm.objects.filter(is_default=True).update(is_default=False)
+        term = self.get_object()
+        term.is_default = True
+        term.save()
+        return Response({'status': 'default set'})
+
+
+
+class QuoteNoteViewSet(viewsets.ModelViewSet):
+    queryset = QuoteNote.objects.all()
+    serializer_class = QuoteNoteSerializer
+
+    @action(detail=True, methods=['post'])           # ← CORRECT
+    def toggle_active(self, request, pk=None):
+        note = self.get_object()
+        note.is_active = not note.is_active
+        note.save()
+        return Response({'status': 'toggled', 'is_active': note.is_active})
+class TruckTypeViewSet(viewsets.ModelViewSet):
+    queryset = TruckType.objects.all()
+    serializer_class = TruckTypeSerializer
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        truck = self.get_object()
+        truck.is_active = not truck.is_active
+        truck.save()
+        return Response({'is_active': truck.is_active})
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        TruckType.objects.filter(is_default=True).update(is_default=False)
+        truck = self.get_object()
+        truck.is_default = True
+        truck.save()
+        return Response({'status': 'default set'})
+    
+    
+class SurveyRemarkViewSet(viewsets.ModelViewSet):
+    queryset = SurveyRemark.objects.all()
+    serializer_class = SurveyRemarkSerializer
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        remark = self.get_object()
+        remark.is_active = not remark.is_active
+        remark.save()
+        return Response({'is_active': remark.is_active})
