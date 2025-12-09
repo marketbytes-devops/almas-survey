@@ -3,7 +3,7 @@ from .models import (
     Price,
     AdditionalService,
     QuotationAdditionalCharge,
-    InclusionExclusion,
+    InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark
 )
 from survey.models import SurveyAdditionalService
 
@@ -75,3 +75,94 @@ class InclusionExclusionSerializer(serializers.ModelSerializer):
         # Default to Qatar if not provided
         validated_data.setdefault("country", "Qatar")
         return super().create(validated_data)
+    
+    
+    
+class InsurancePlanSerializer(serializers.ModelSerializer):
+    calculation_type_display = serializers.CharField(source='get_calculation_type_display', read_only=True)
+
+    class Meta:
+        model = InsurancePlan
+        fields = [
+            'id',
+            'name',
+            'description',
+            'calculation_type',
+            'calculation_type_display',
+            'rate',
+            'minimum_premium',
+            'maximum_coverage',
+            'is_default',
+            'is_mandatory',
+            'is_active',
+            'order',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+        
+        
+# pricing/serializers.py
+
+class PaymentTermSerializer(serializers.ModelSerializer):
+    advance_due_display = serializers.CharField(source='get_advance_due_on_display', read_only=True)
+    balance_due_display = serializers.CharField(source='get_balance_due_on_display', read_only=True)
+
+    class Meta:
+        model = PaymentTerm
+        fields = [
+            'id', 'name', 'description', 'advance_percentage',
+            'advance_due_on', 'advance_due_display',
+            'balance_due_on', 'balance_due_display',
+            'is_default', 'is_active', 'order',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+# pricing/serializers.py
+
+class QuoteNoteSerializer(serializers.ModelSerializer):
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+
+    class Meta:
+        
+        model = QuoteNote
+        fields = [
+            'id', 'title', 'content', 'category', 'category_display',
+            'is_default', 'is_active', 'order',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+        
+# pricing/serializers.py
+
+class TruckTypeSerializer(serializers.ModelSerializer):
+    dimensions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TruckType
+        fields = [
+            'id', 'name', 'capacity_cbm', 'capacity_kg',
+            'price_per_trip', 'length_meters', 'width_meters', 'height_meters',
+            'dimensions', 'is_default', 'is_active', 'order',
+            'created_at', 'updated_at'
+        ]
+
+    def get_dimensions(self, obj):
+        if obj.length_meters and obj.width_meters and obj.height_meters:
+            return f"{obj.length_meters} × {obj.width_meters} × {obj.height_meters} m"
+        return "Not specified"
+    
+# pricing/serializers.py
+
+class SurveyRemarkSerializer(serializers.ModelSerializer):
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+
+    class Meta:
+        model = SurveyRemark
+        fields = [
+            'id', 'title', 'description', 'category',
+            'category_display', 'is_active', 'order',
+            'created_at', 'updated_at'
+        ]
