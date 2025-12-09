@@ -45,7 +45,7 @@ class QuotationAdditionalChargeSerializer(serializers.ModelSerializer):
         queryset=SurveyAdditionalService.objects.all(),
         source="service",
         write_only=True,
-        required=True,  # Make it required for both create and update
+        required=True,  
     )
     currency_name = serializers.CharField(
         source="currency.name", read_only=True, default="QAR"
@@ -102,7 +102,6 @@ class InsurancePlanSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
         
         
-# pricing/serializers.py
 
 class PaymentTermSerializer(serializers.ModelSerializer):
     advance_due_display = serializers.CharField(source='get_advance_due_on_display', read_only=True)
@@ -120,7 +119,6 @@ class PaymentTermSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
 
-# pricing/serializers.py
 
 class QuoteNoteSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)
@@ -135,7 +133,6 @@ class QuoteNoteSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at', 'updated_at']
         
-# pricing/serializers.py
 
 class TruckTypeSerializer(serializers.ModelSerializer):
     dimensions = serializers.SerializerMethodField()
@@ -154,7 +151,6 @@ class TruckTypeSerializer(serializers.ModelSerializer):
             return f"{obj.length_meters} × {obj.width_meters} × {obj.height_meters} m"
         return "Not specified"
     
-# pricing/serializers.py
 
 class SurveyRemarkSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)

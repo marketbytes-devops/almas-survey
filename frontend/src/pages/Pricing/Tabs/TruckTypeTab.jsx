@@ -28,7 +28,6 @@ const TruckTypeTab = () => {
     height_meters: "",
     is_default: false,
     is_active: true,
-    is_active: true,
     order: 0,
   });
 

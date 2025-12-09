@@ -21,7 +21,6 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from survey.models import SurveyAdditionalService
 
-
 class InclusionExclusionViewSet(viewsets.ModelViewSet):
     queryset = InclusionExclusion.objects.filter(is_active=True).order_by('text')
     serializer_class = InclusionExclusionSerializer
@@ -270,19 +269,11 @@ class InsurancePlanViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def set_default(self, request, pk=None):
-        # Remove default from all others
         InsurancePlan.objects.filter(is_default=True).update(is_default=False)
         plan = self.get_object()
         plan.is_default = True
         plan.save()
         return Response({'status': 'default set'})
-    
-
-
-# pricing/views.py
-
-from .models import PaymentTerm
-from .serializers import PaymentTermSerializer
 
 class PaymentTermViewSet(viewsets.ModelViewSet):
     queryset = PaymentTerm.objects.all()
@@ -309,7 +300,7 @@ class QuoteNoteViewSet(viewsets.ModelViewSet):
     queryset = QuoteNote.objects.all()
     serializer_class = QuoteNoteSerializer
 
-    @action(detail=True, methods=['post'])           # ← CORRECT
+    @action(detail=True, methods=['post'])          
     def toggle_active(self, request, pk=None):
         note = self.get_object()
         note.is_active = not note.is_active
