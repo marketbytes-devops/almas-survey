@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaTrash, FaEdit, FaSave, FaCheckCircle } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import Input from "../../../components/Input";
 
 const AdditionalChargesTab = ({ dropdownData }) => {
   const [rows, setRows] = useState([]);
@@ -20,26 +21,18 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
         const [servicesRes, chargesRes] = await Promise.all([
           apiClient.get("/survey-additional-services/"),
           apiClient.get("/quotation-additional-charges/"),
         ]);
-
-        console.log("✅ Loaded services:", servicesRes.data);
-        console.log("✅ Loaded charges:", chargesRes.data);
-
         setMasterServices(servicesRes.data);
         setRows(chargesRes.data || []);
       } catch (err) {
-        console.error("❌ Failed to load data:", err);
-        console.error("Error details:", err.response?.data);
         alert("Could not load additional services. Check console for details.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -53,9 +46,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       return;
     }
 
-    const serviceObj = masterServices.find(
-      (s) => s.id === parseInt(selectedServiceId)
-    );
+    const serviceObj = masterServices.find((s) => s.id === parseInt(selectedServiceId));
     if (!serviceObj) {
       alert("Service not found");
       return;
@@ -72,11 +63,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     };
 
     try {
-      // If editing an existing row (has real ID, not temp ID)
       if (editingId && !String(editingId).startsWith("temp_")) {
-        console.log("🔄 Updating existing row:", editingId);
-        
-        // Prepare payload for update (exclude service object, only send service_id)
         const updatePayload = {
           service_id: serviceObj.id,
           currency: currency ? parseInt(currency) : null,
@@ -84,16 +71,9 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           per_unit_quantity: parseInt(perUnitQty) || 1,
           rate_type: rateType,
         };
-
-        // Send PATCH request to update in backend
         await apiClient.patch(`/quotation-additional-charges/${editingId}/`, updatePayload);
-        
-        console.log("✅ Row updated in backend");
-        
-        // Update frontend state
         setRows(rows.map((r) => (r.id === editingId ? newRow : r)));
       } else {
-        // For new rows or temporary rows, just update frontend
         if (editingId) {
           setRows(rows.map((r) => (r.id === editingId ? newRow : r)));
         } else {
@@ -101,24 +81,16 @@ const AdditionalChargesTab = ({ dropdownData }) => {
         }
       }
 
-      // Reset form
       setEditingId(null);
       setSelectedServiceId("");
       setCurrency("");
       setPrice("");
       setPerUnitQty("1");
       setRateType("FIX");
-      
     } catch (err) {
-      console.error("❌ Update failed:", err);
-      console.error("Error response:", err.response?.data);
-      alert(
-        "Failed to update service:\n" +
-        JSON.stringify(err.response?.data || err.message, null, 2)
-      );
+      alert("Failed to update service:\n" + JSON.stringify(err.response?.data || err.message, null, 2));
     }
   };
-
 
   const startEdit = (row) => {
     setEditingId(row.id);
@@ -129,38 +101,20 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     setRateType(row.rate_type);
   };
 
-  // 🔥 FIXED: Delete from database AND frontend
   const deleteRow = async (id) => {
-    // Check if it's a temporary row (not saved yet)
     if (String(id).startsWith("temp_")) {
       setRows(rows.filter((r) => r.id !== id));
       return;
     }
 
-    // Confirm deletion
-    if (!window.confirm("Are you sure you want to delete this service?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this service?")) return;
 
     try {
-      console.log(`🗑️ Deleting service with ID: ${id}`);
-      
-      // Delete from database
       await apiClient.delete(`/quotation-additional-charges/${id}/`);
-      
-      console.log("✅ Service deleted from database");
-      
-      // Remove from frontend state
       setRows(rows.filter((r) => r.id !== id));
-      
       alert("Service deleted successfully!");
     } catch (err) {
-      console.error("❌ Delete failed:", err);
-      console.error("Error response:", err.response?.data);
-      alert(
-        "Failed to delete service:\n" +
-        JSON.stringify(err.response?.data || err.message, null, 2)
-      );
+      alert("Failed to delete service:\n" + JSON.stringify(err.response?.data || err.message, null, 2));
     }
   };
 
@@ -170,9 +124,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       return;
     }
 
-    // Filter out already saved rows (those with real IDs)
-    const unsavedRows = rows.filter(r => String(r.id).startsWith("temp_"));
-    
+    const unsavedRows = rows.filter((r) => String(r.id).startsWith("temp_"));
     if (unsavedRows.length === 0) {
       alert("All services are already saved!");
       return;
@@ -186,34 +138,17 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       rate_type: r.rate_type,
     }));
 
-    console.log("💾 Saving payload:", payload);
-
     try {
       setSaving(true);
       setSaveSuccess(false);
-
-      const response = await apiClient.post(
-        "/quotation-additional-charges/",
-        payload
-      );
-
-      console.log("✅ Save successful:", response.data);
-
-      // Refresh from server to get real DB IDs
+      await apiClient.post("/quotation-additional-charges/", payload);
       const refreshRes = await apiClient.get("/quotation-additional-charges/");
       setRows(refreshRes.data);
-
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-
-      alert(`✅ ${unsavedRows.length} service(s) saved successfully!`);
+      alert(`${unsavedRows.length} service(s) saved successfully!`);
     } catch (err) {
-      console.error("❌ Save failed:", err);
-      console.error("Error response:", err.response?.data);
-      alert(
-        "Save failed:\n" +
-        JSON.stringify(err.response?.data || err.message, null, 2)
-      );
+      alert("Save failed:\n" + JSON.stringify(err.response?.data || err.message, null, 2));
     } finally {
       setSaving(false);
     }
@@ -228,170 +163,169 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     );
   }
 
-  // Count unsaved rows
-  const unsavedCount = rows.filter(r => String(r.id).startsWith("temp_")).length;
+  const unsavedCount = rows.filter((r) => String(r.id).startsWith("temp_")).length;
+
+  const serviceOptions = masterServices.map((s) => ({
+    value: s.id,
+    label: s.name,
+  }));
+
+  const currencyOptions = (dropdownData.currencies || []).map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
+
+  const rateTypeOptions = [
+    { value: "FIX", label: "FIX" },
+    { value: "VARIABLE", label: "VARIABLE" },
+  ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {saveSuccess && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg flex items-center gap-3">
-          <FaCheckCircle className="text-2xl" />
-          <span className="font-medium">
-            All services saved successfully! Data will persist after refresh.
-          </span>
+        <div className="mx-4 p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium flex items-center justify-center gap-3">
+          <FaCheckCircle className="text-xl sm:text-2xl" />
+          <span>All services saved successfully!</span>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          Additional Services
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
-          <select
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-6">Additional Services Pricing</h2>
+
+        {/* Mobile-first Form */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+          <Input
+            label="Service *"
+            type="select"
             value={selectedServiceId}
             onChange={(e) => setSelectedServiceId(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
-          >
-            <option value="">Select Service</option>
-            {masterServices.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <select
+            options={[{ value: "", label: "Select Service" }, ...serviceOptions]}
+          />
+
+          <Input
+            label="Currency"
+            type="select"
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
-          >
-            <option value="">Currency</option>
-            {(dropdownData.currencies || []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <input
+            options={[{ value: "", label: "Select Currency" }, ...currencyOptions]}
+          />
+
+          <Input
+            label="Price per Unit *"
             type="number"
             step="0.01"
-            placeholder="Price"
+            placeholder="0.00"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
           />
-          <input
+
+          <Input
+            label="Per Unit Quantity"
             type="number"
-            placeholder="Per Unit Qty"
+            placeholder="1"
             value={perUnitQty}
             onChange={(e) => setPerUnitQty(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
           />
-          <select
+
+          <Input
+            label="Rate Type"
+            type="select"
             value={rateType}
             onChange={(e) => setRateType(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none"
-          >
-            <option value="FIX">FIX</option>
-            <option value="VARIABLE">VARIABLE</option>
-          </select>
-          <button
-            onClick={handleAddOrUpdate}
-            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-6 py-2 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
-          >
-            {editingId ? (
-              <>
-                <FaSave /> Update
-              </>
-            ) : (
-              <>
-                <FaPlus /> Add
-              </>
-            )}
-          </button>
+            options={rateTypeOptions}
+          />
+
+          <div className="flex items-end">
+            <button
+              onClick={handleAddOrUpdate}
+              className="w-full px-4 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:scale-105 transition font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              {editingId ? (
+                <>
+                  <FaSave /> Update
+                </>
+              ) : (
+                <>
+                  <FaPlus /> Add
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        <div className="flex justify-end mb-4">
+
+        {/* Save All Button */}
+        <div className="flex justify-center sm:justify-end mb-6">
           <button
             onClick={handleSaveAll}
             disabled={saving || unsavedCount === 0}
-            className={`flex items-center gap-2 px-8 py-3 rounded-lg font-semibold shadow-lg transition ${
+            className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium shadow-lg transition flex items-center justify-center gap-3 text-sm sm:text-base ${
               saving || unsavedCount === 0
-                ? "bg-gray-400 cursor-not-allowed"
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                 : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
             }`}
           >
             <FaSave />
-            {saving 
-              ? "Saving..." 
-              : unsavedCount > 0 
-              ? `SAVE ${unsavedCount} NEW SERVICE${unsavedCount > 1 ? 'S' : ''}`
+            {saving
+              ? "Saving..."
+              : unsavedCount > 0
+              ? `SAVE ${unsavedCount} NEW SERVICE${unsavedCount > 1 ? "S" : ""}`
               : "ALL SAVED"}
           </button>
         </div>
-        <div className="overflow-x-auto border-2 border-gray-300 rounded-lg">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-800 text-white">
+
+        {/* Responsive Table */}
+        <div className="overflow-x-auto rounded-lg border-2 border-gray-300">
+          {/* Desktop Table */}
+          <table className="hidden md:table w-full">
+            <thead className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
               <tr>
-                <th className="px-4 py-3 text-left">STATUS</th>
-                <th className="px-4 py-3 text-left">SERVICE NAME</th>
-                <th className="px-4 py-3 text-left">CURRENCY</th>
-                <th className="px-4 py-3 text-left">PRICE PER UNIT</th>
-                <th className="px-4 py-3 text-left">PER UNIT QTY</th>
-                <th className="px-4 py-3 text-left">RATE TYPE</th>
-                <th className="px-4 py-3 text-center">ACTIONS</th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium">STATUS</th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium">SERVICE NAME</th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium">CURRENCY</th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium">PRICE</th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium">QTY</th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium">RATE TYPE</th>
+                <th className="px-4 py-3 text-center text-xs sm:text-sm font-medium">ACTIONS</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {rows.map((row) => {
-                const currencyName =
-                  dropdownData.currencies?.find((c) => c.id === row.currency)
-                    ?.name || "QAR";
+                const currencyName = dropdownData.currencies?.find((c) => c.id === row.currency)?.name || "QAR";
                 const isSaved = !String(row.id).startsWith("temp_");
 
                 return (
-                  <tr key={row.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      {isSaved ? (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
-                          SAVED
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-semibold">
-                          UNSAVED
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium">
-                      {row.service.name}
-                    </td>
-                    <td className="px-4 py-3">{currencyName}</td>
-                    <td className="px-4 py-3">{row.price_per_unit}</td>
-                    <td className="px-4 py-3">{row.per_unit_quantity}</td>
+                  <tr key={row.id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          row.rate_type === "FIX"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-purple-100 text-purple-700"
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          isSaved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {isSaved ? "SAVED" : "UNSAVED"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-800 text-sm">{row.service.name}</td>
+                    <td className="px-4 py-3 text-gray-700 text-sm">{currencyName}</td>
+                    <td className="px-4 py-3 text-gray-700 text-sm">{row.price_per_unit.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-gray-700 text-sm">{row.per_unit_quantity}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          row.rate_type === "FIX" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
                         }`}
                       >
                         {row.rate_type}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center flex gap-3 justify-center">
-                      <button
-                        onClick={() => startEdit(row)}
-                        className="text-blue-600 hover:text-blue-800 transition"
-                        title="Edit"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => deleteRow(row.id)}
-                        className="text-red-600 hover:text-red-800 transition"
-                        title="Delete"
-                      >
-                        <FaTrash />
-                      </button>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-4">
+                        <button onClick={() => startEdit(row)} className="text-[#4c7085] hover:text-[#6b8ca3] transition" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                        <button onClick={() => deleteRow(row.id)} className="text-red-600 hover:text-red-800 transition" title="Delete">
+                          <FaTrash size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -399,8 +333,63 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             </tbody>
           </table>
 
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4 p-4">
+            {rows.map((row) => {
+              const currencyName = dropdownData.currencies?.find((c) => c.id === row.currency)?.name || "QAR";
+              const isSaved = !String(row.id).startsWith("temp_");
+
+              return (
+                <div key={row.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        isSaved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {isSaved ? "SAVED" : "UNSAVED"}
+                    </span>
+                    <div className="flex gap-3">
+                      <button onClick={() => startEdit(row)} className="text-[#4c7085] hover:text-[#6b8ca3]">
+                        <FaEdit size={20} />
+                      </button>
+                      <button onClick={() => deleteRow(row.id)} className="text-red-600 hover:text-red-800">
+                        <FaTrash size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="font-medium text-gray-800">{row.service.name}</div>
+                    <div className="grid grid-cols-2 gap-4 text-gray-700">
+                      <div>
+                        <span className="font-medium">Currency:</span> {currencyName}
+                      </div>
+                      <div>
+                        <span className="font-medium">Price:</span> {row.price_per_unit.toFixed(2)}
+                      </div>
+                      <div>
+                        <span className="font-medium">Qty:</span> {row.per_unit_quantity}
+                      </div>
+                      <div>
+                        <span className="font-medium">Type:</span>
+                        <span
+                          className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                            row.rate_type === "FIX" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                          }`}
+                        >
+                          {row.rate_type}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {rows.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-16 text-gray-500">
               <p className="text-lg mb-2">No additional services added yet.</p>
               <p className="text-sm">Use the form above to add services.</p>
             </div>

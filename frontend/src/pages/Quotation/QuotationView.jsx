@@ -1,4 +1,3 @@
-// QuotationView.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaSignature, FaEye, FaPrint } from "react-icons/fa";
@@ -229,75 +228,88 @@ export default function QuotationView() {
       )}
 
       {isSignatureModalOpen && currentSignature && (
-        <div className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">Digital Signature</h3>
+              <h3 className="font-medium text-lg">Digital Signature</h3>
               <button onClick={() => { setIsSignatureModalOpen(false); setCurrentSignature(null); }} className="text-3xl">×</button>
             </div>
             <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
-            <button onClick={() => { setIsSignatureModalOpen(false); setCurrentSignature(null); }} className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg">
+            <button onClick={() => { setIsSignatureModalOpen(false); setCurrentSignature(null); }} className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg font-medium">
               Close
             </button>
           </div>
         </div>
       )}
 
-      <div className="bg-gray-50 min-h-screen">
-        <div className="mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-8 flex justify-between items-center">
-            <h2 className="text-lg sm:text-xl font-medium">Quotation Details</h2>
-            <div className="flex gap-3">
-              <button onClick={handlePrint} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition">
-                <FaPrint /> Print
+      <div className="bg-gray-50">
+        <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6 flex justify-between items-center sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition text-sm font-medium"
+                title="Go back"
+              >
+                <FaArrowLeft className="w-5 h-5" />
+                <span className="hidden sm:inline">Back</span>
               </button>
-              <button onClick={() => navigate(-1)} className="text-4xl hover:opacity-80">×</button>
+              <h2 className="text-lg sm:text-xl font-medium">Quotation Details</h2>
             </div>
+            <button
+              onClick={() => navigate(-1)}
+              className="text-3xl sm:text-4xl hover:opacity-80"
+              title="Close"
+            >
+              ×
+            </button>
           </div>
 
-          <div className="p-8 space-y-8">
+          <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-sm font-medium text-blue-800 mb-2">Quotation Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-blue-700 mb-1">Quotation ID</label>
+                  <label className="block text-xs font-medium text-[#4c7085] mb-1">Quotation ID</label>
                   <input type="text" value={quotation.quotation_id || "Not specified"} readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-blue-700 mb-1">Serial No</label>
+                  <label className="block text-xs font-medium text-[#4c7085] mb-1">Serial No</label>
                   <input type="text" value={quotation.serial_no || "Not specified"} readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-blue-700 mb-1">Date</label>
+                  <label className="block text-xs font-medium text-[#4c7085] mb-1">Date</label>
                   <input type="text" value={quotation.date || "Not specified"} readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               {["Client Name", "Mobile", "Email"].map((label, i) => (
                 <div key={i}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                  <label className="block text-sm font-medium mb-1">{label}</label>
                   <input type="text" value={[name, phone, email][i]} readOnly className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
                 </div>
               ))}
             </div>
 
-            {[
-              { label: "Service Required", value: service },
-              { label: "Moving From", value: get(survey.origin_address) },
-              { label: "Moving To", value: movingTo },
-              { label: "Date of Move", value: moveDate },
-            ].map(item => (
-              <div key={item.label}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{item.label}</label>
-                <input type="text" value={item.value} readOnly className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
-              </div>
-            ))}
+            <div className="space-y-4">
+              {[
+                { label: "Service Required", value: service },
+                { label: "Moving From", value: get(survey.origin_address) },
+                { label: "Moving To", value: movingTo },
+                { label: "Date of Move", value: moveDate },
+              ].map((item) => (
+                <div key={item.label}>
+                  <label className="block text-sm font-medium mb-1">{item.label}</label>
+                  <input type="text" value={item.value} readOnly className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
+                </div>
+              ))}
+            </div>
 
             {additionalCharges.length > 0 && (
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-6">
-                <h3 className="text-xl font-bold text-purple-900 mb-4">Additional Services</h3>
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-medium text-purple-900 mb-4">Additional Services</h3>
                 <div className="space-y-3">
                   {additionalCharges.map(charge => {
                     const currencyName = charge.currency_name || "QAR";
@@ -305,13 +317,18 @@ export default function QuotationView() {
                     const subtotal = charge.price_per_unit * quantity;
                     return (
                       <div key={charge.id} className="bg-white border-2 border-purple-200 rounded-lg p-4">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row justify-between gap-3">
                           <div>
-                            <div className="font-semibold text-gray-800">{charge.service.name}</div>
+                            <div className="font-medium text-gray-800">{charge.service.name}</div>
                             <div className="text-sm text-gray-600">{charge.price_per_unit} {currencyName} × {quantity} unit(s)</div>
+                            <div className="text-xs text-gray-500 capitalize mt-1">
+                              Rate: {charge.rate_type?.toLowerCase() || "fix"}
+                            </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-bold text-purple-700">= {subtotal.toFixed(2)} {currencyName}</div>
+                            <div className="text-lg font-medium text-purple-700">
+                              = {subtotal.toFixed(2)} {currencyName}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -321,82 +338,104 @@ export default function QuotationView() {
               </div>
             )}
 
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-              <h3 className="text-xl font-medium text-center mb-4">Quotation Breakdown</h3>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl border-2 border-blue-200">
+              <h3 className="text-lg sm:text-xl font-medium text-center mb-4">Quotation Breakdown</h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-gray-300">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
                   <div>
                     <span className="text-sm text-gray-600">Base Amount (Volume Pricing)</span>
                     <div className="text-xs text-gray-500">{totalVolume} CBM × {destinationCity}</div>
                   </div>
-                  <span className="text-2xl font-bold text-blue-700">{baseAmount.toFixed(2)} QAR</span>
+                  <span className="text-xl sm:text-2xl font-medium text-[#4c7085]">{baseAmount.toFixed(2)} QAR</span>
                 </div>
                 {additionalChargesTotal > 0 && (
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-300">
-                    <div to="div">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
+                    <div>
                       <span className="text-sm text-gray-600">Additional Services</span>
                       <div className="text-xs text-gray-500">{additionalCharges.length} service(s)</div>
                     </div>
-                    <span className="text-2xl font-bold text-purple-700">+ {additionalChargesTotal.toFixed(2)} QAR</span>
+                    <span className="text-xl sm:text-2xl font-medium text-purple-700">+ {additionalChargesTotal.toFixed(2)} QAR</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-lg font-semibold text-gray-800">Total Quotation Amount</span>
-                  <span className="text-4xl font-bold text-green-600">{totalAmount.toFixed(2)} QAR</span>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-2 gap-2">
+                  <span className="text-xl font-medium text-gray-900">Total Quotation Amount</span>
+                  <span className="text-2xl sm:text-4xl font-medium text-green-600">{totalAmount.toFixed(2)} QAR</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-gray-300 rounded-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4 text-center text-lg font-medium">Service Includes</div>
-              <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 text-center text-lg font-medium">Service Excludes</div>
-              <div className="p-6 space-y-4 bg-gray-50">
+              <div className="bg-gray-700 text-white p-4 text-center font-medium">Service Includes</div>
+              <div className="bg-red-700 text-white p-4 text-center font-medium">Service Excludes</div>
+
+              <div className="p-4 sm:p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
                 {includedServices.length > 0 ? includedServices.map((service, i) => (
-                  <div key={`inc-${i}`} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>
-                    <span className="text-sm font-medium text-gray-800">{service}</span>
+                  <div key={`inc-${i}`} className="flex items-start space-x-3">
+                    <span className="text-blue-600 mt-0.5">✓</span>
+                    <span className="text-sm font-medium relative top-1">{service}</span>
                   </div>
                 )) : <p className="text-gray-500 text-sm">No services included</p>}
               </div>
-              <div className="p-6 space-y-4 bg-red-50 border-l-2 border-red-200">
+
+              <div className="p-4 sm:p-6 space-y-4 bg-red-50 border-l-2 border-red-200 max-h-80 overflow-y-auto">
                 {excludedServices.length > 0 ? excludedServices.map((service, i) => (
-                  <div key={`exc-${i}`} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 rounded bg-red-600 flex items-center justify-center"><span className="text-white text-xs">✕</span></div>
-                    <span className="text-sm font-medium text-gray-800">{service}</span>
+                  <div key={`exc-${i}`} className="flex items-start space-x-3">
+                    <span className="text-red-600 mt-0.5">✕</span>
+                    <span className="text-sm font-medium relative top-1">{service}</span>
                   </div>
                 )) : <p className="text-gray-500 text-sm">No services excluded</p>}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div><label className="block font-medium">Total Amount</label><input type="text" readOnly value={`${totalAmount.toFixed(2)} QAR`} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" /></div>
-              <div><label className="block font-medium">Advance</label><input type="text" readOnly value={`${advance.toFixed(2)} QAR`} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" /></div>
-              <div><label className="block font-medium">Balance</label><input type="text" readOnly value={`${balance} QAR`} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700" /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div>
+                <label className="block font-medium text-sm mb-1">Total Amount</label>
+                <input type="text" readOnly value={`${totalAmount.toFixed(2)} QAR`} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-blue-50 font-medium text-[#4c7085]" />
+              </div>
+              <div>
+                <label className="block font-medium text-sm mb-1">Advance</label>
+                <input type="text" readOnly value={`${advance.toFixed(2)} QAR`} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50" />
+              </div>
+              <div>
+                <label className="block font-medium text-sm mb-1">Balance</label>
+                <input type="text" readOnly value={`${balance} QAR`} className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700" />
+              </div>
             </div>
 
             <div>
-              <h3 className="font-medium mb-1">Digital Signature</h3>
-              <div className="bg-gray-50 p-6 rounded-lg border text-center">
+              <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 {hasSignature ? (
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 md:gap-0">
-                    <div className="text-center md:text-left">
-                      <p className="font-medium text-green-700">Digitally Signed</p>
+                  <>
+                    <div>
+                      <p className="text-sm font-medium text-green-700">✓ Digitally Signed</p>
                       <p className="text-sm text-gray-600">Customer signature is attached</p>
                     </div>
-                    <button onClick={viewSignature} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700"><FaEye /> View</button>
-                  </div>
+                    <button
+                      onClick={viewSignature}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 font-medium"
+                    >
+                      <FaEye /> View Signature
+                    </button>
+                  </>
                 ) : (
-                  <div className="flex flex-col items-center">
+                  <div className="text-center w-full">
                     <p className="text-gray-600 mb-4">No signature uploaded yet</p>
-                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center"><FaSignature className="text-gray-500 text-xl" /></div>
+                    <div className="w-16 h-16 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
+                      <FaSignature className="text-gray-500 text-2xl" />
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="text-center">
-              <button onClick={handlePrint} className="w-full max-w-md mx-auto py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow-lg transition transform hover:from-[#3a586d] hover:to-[#54738a] hover:scale-105 flex items-center justify-center gap-2">
-                <FaPrint /> Print Quotation (PDF Ready)
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handlePrint}
+                className="w-full py-2 px-8 text-sm font-medium rounded-lg shadow-lg transition bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex items-center justify-center gap-3"
+              >
+                <FaPrint className="text-xl" />
+                Print Quotation (PDF Ready)
               </button>
             </div>
           </div>

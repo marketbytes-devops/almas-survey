@@ -336,7 +336,7 @@ export default function QuotationList() {
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center whitespace-nowrap">
                               <Link
                                 to={`/quotation-create/${s.survey_id}`}
                                 className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
@@ -347,7 +347,7 @@ export default function QuotationList() {
                           )}
                         </td>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4 text-center  whitespace-nowrap">
                         {s.signature_uploaded ? (
                           <button
                             onClick={() => viewSignature(s)}
@@ -498,8 +498,6 @@ export default function QuotationList() {
                               </div>
                             )}
                           </div>
-
-                          {/* Signature */}
                           <div className="pt-2">
                             <p className="font-medium mb-2">Signature:</p>
                             {s.signature_uploaded ? (
