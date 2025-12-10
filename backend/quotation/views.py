@@ -15,12 +15,12 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(csrf_exempt, name='dispatch')  # ADD THIS LINE
+@method_decorator(csrf_exempt, name='dispatch') 
 class QuotationViewSet(viewsets.ModelViewSet):
     queryset = Quotation.objects.select_related("survey", "currency").all()
     serializer_class = QuotationSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]  # ADD THIS LINE
+    authentication_classes = [JWTAuthentication]  
     lookup_field = "quotation_id"
     
     def get_queryset(self):

@@ -94,7 +94,7 @@ const IncludesTab = () => {
                 key={item.id}
                 className="flex items-center justify-between bg-gray-50 p-5 rounded-xl hover:bg-gray-100 transition shadow-sm"
               >
-                <span className="text-gray-800 font-medium">• {item.text}</span>
+                <span className="text-gray-800 font-medium">{item.text}</span>
                 <button
                   onClick={() => deleteItem(item.id)}
                   disabled={deletingId === item.id}

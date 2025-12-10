@@ -5,6 +5,7 @@ import Modal from "../../components/Modal";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import { useNavigate } from "react-router";
 
 const rowVariants = {
   hover: { backgroundColor: "#f3f4f6" },
@@ -37,9 +38,8 @@ const Input = ({
       {type === "select" ? (
         <select
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
+            }`}
           aria-label={label}
         >
           <option value="">Select an option</option>
@@ -52,9 +52,8 @@ const Input = ({
       ) : type === "textarea" ? (
         <textarea
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
+            }`}
           rows={4}
           aria-label={label}
         />
@@ -62,9 +61,8 @@ const Input = ({
         <input
           type={type}
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${
-            error ? "border-red-500" : ""
-          }`}
+          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
+            }`}
           aria-label={label}
           {...props}
         />
@@ -75,6 +73,7 @@ const Input = ({
 };
 
 const Enquiries = () => {
+  const navigate = useNavigate();
   const [enquiries, setEnquiries] = useState([]);
   const [filteredEnquiries, setFilteredEnquiries] = useState([]);
   const [emailReceivers, setEmailReceivers] = useState([]);
@@ -112,16 +111,16 @@ const Enquiries = () => {
   });
 
   const toggleEnquiryExpand = (id) => {
-  setExpandedEnquiries((prev) => {
-    const newSet = new Set(prev);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    return newSet;
-  });
-};
+    setExpandedEnquiries((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
   const RECAPTCHA_ACTION = "submit_enquiry";
@@ -283,7 +282,7 @@ const Enquiries = () => {
     return error.response?.data?.error || error.response?.data?.detail || "An error occurred.";
   };
 
-const onAddSubmit = async (data) => {
+  const onAddSubmit = async (data) => {
     if (!hasPermission("enquiries", "add")) {
       setError("Permission denied.");
       return;
@@ -342,11 +341,10 @@ const onAddSubmit = async (data) => {
         .map((enquiry) =>
           enquiry.id === selectedEnquiry?.id ? response.data : enquiry
         )
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        .sort((a, b) => new Date(b.created_at) - new Date(a, b));
 
       setEnquiries(updatedEnquiries);
 
-      // ✅ ONE LINE instead of 60!
       const filtered = applyCurrentFilters(updatedEnquiries);
       setFilteredEnquiries(filtered);
 
@@ -358,6 +356,7 @@ const onAddSubmit = async (data) => {
       setError(extractErrorMessage(error));
     }
   };
+
   const onAssignSubmit = async (data) => {
     if (!hasPermission("enquiries", "edit")) {
       setError("You do not have permission to assign an enquiry.");
@@ -387,7 +386,6 @@ const onAddSubmit = async (data) => {
 
       setEnquiries(updatedEnquiries);
 
-      // ✅ ONE LINE instead of 60!
       const filtered = applyCurrentFilters(updatedEnquiries);
       setFilteredEnquiries(filtered);
 
@@ -417,11 +415,9 @@ const onAddSubmit = async (data) => {
       );
       setEnquiries(updatedEnquiries);
 
-      // ✅ ONE LINE instead of 60!
       const filtered = applyCurrentFilters(updatedEnquiries);
       setFilteredEnquiries(filtered);
 
-      // Adjust pagination if needed
       const totalPages = Math.ceil(filtered.length / itemsPerPage);
       if (currentPage > totalPages && totalPages > 0) {
         setCurrentPage(totalPages);
@@ -714,7 +710,7 @@ const onAddSubmit = async (data) => {
                             }
                           >
                             {isAssigningEnquiry &&
-                            assigningEnquiryId === enquiry.id ? (
+                              assigningEnquiryId === enquiry.id ? (
                               <>
                                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 Assigning
@@ -802,6 +798,7 @@ const onAddSubmit = async (data) => {
               </div>
             </div>
           )}
+
           {/* Cards for Mobile */}
           <div className="md:hidden space-y-3">
             {currentEnquiries.map((enquiry, index) => {
@@ -832,32 +829,12 @@ const onAddSubmit = async (data) => {
                       className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
                     >
                       {isExpanded ? (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 15l7-7 7 7"
-                          />
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                         </svg>
                       ) : (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       )}
                     </button>
@@ -936,7 +913,7 @@ const onAddSubmit = async (data) => {
                               }
                             >
                               {isAssigningEnquiry &&
-                              assigningEnquiryId === enquiry.id ? (
+                                assigningEnquiryId === enquiry.id ? (
                                 <>
                                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                   Assigning
@@ -970,6 +947,8 @@ const onAddSubmit = async (data) => {
           </div>
         </>
       )}
+
+      {/* Pagination for Mobile */}
       {filteredEnquiries.length > 0 && (
         <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
           <div className="flex items-center gap-2">

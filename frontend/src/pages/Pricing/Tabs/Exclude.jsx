@@ -102,7 +102,7 @@ const ExcludesTab = () => {
                 key={item.id}
                 className="flex items-center justify-between bg-red-50 p-5 rounded-xl hover:bg-red-100 transition shadow-sm border border-red-200"
               >
-                <span className="text-gray-800 font-medium">• {item.text}</span>
+                <span className="text-gray-800 font-medium">{item.text}</span>
                 <button
                   onClick={() => deleteItem(item.id)}
                   disabled={deletingId === item.id}

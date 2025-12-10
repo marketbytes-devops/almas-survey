@@ -489,7 +489,7 @@ export default function QuotationEdit() {
                       }
                       className="w-5 h-5 text-blue-600"
                     />
-                    <span className="text-sm font-medium">• {service.text}</span>
+                    <span className="text-sm font-medium">{service.text}</span>
                   </label>
                 ))}
               </div>
@@ -511,7 +511,7 @@ export default function QuotationEdit() {
                       }
                       className="w-5 h-5 text-red-600"
                     />
-                    <span className="text-sm font-medium">• {service.text}</span>
+                    <span className="text-sm font-medium">{service.text}</span>
                   </label>
                 ))}
               </div>
@@ -520,7 +520,7 @@ export default function QuotationEdit() {
 
           {/* Quotation Breakdown */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-            <h3 className="text-xl font-medium text-center mb-4">💰 Quotation Breakdown</h3>
+            <h3 className="text-xl font-medium text-center mb-4">Quotation Breakdown</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b border-gray-300">
                 <div>
