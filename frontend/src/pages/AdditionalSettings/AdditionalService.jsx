@@ -199,10 +199,10 @@ const AdditionalServices = () => {
                       key={service.id}
                       className="bg-gray-50 rounded-lg border border-gray-300 p-4"
                     >
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex justify-center items-center mb-2">
                         <h4 className="font-medium text-gray-900">{service.name}</h4>
                       </div>
-                      <div className="flex justify-end">
+                      <div className="flex justify-center items-center">
                         <button
                           onClick={() => handleDelete(service.id, service.name)}
                           disabled={deletingId === service.id}

@@ -177,13 +177,13 @@ const Manpower = () => {
                 <div className="sm:hidden space-y-3 p-4">
                   {manpower.map((man) => (
                     <div key={man.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex justify-center items-center mb-2">
                         <h4 className="font-medium text-gray-900">{man.name}</h4>
                       </div>
-                      <p className="text-sm text-gray-600 mb-4">
+                      <p className="flex justify-center items-center text-sm text-gray-600 mb-4">
                         {man.description || "No description"}
                       </p>
-                      <div className="flex justify-end">
+                      <div className="flex justify-center items-center">
                         <button
                           onClick={() => handleDeleteManpower(man.id)}
                           className="text-sm font-medium px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
