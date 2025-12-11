@@ -165,7 +165,7 @@ const SurveyTypes = () => {
           )}
 
           {/* Add Form Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
             <FormProvider {...methods}>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 {/* Category Selection - Responsive Wrap */}
@@ -224,7 +224,7 @@ const SurveyTypes = () => {
           </div>
 
           {/* List Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
               <h3 className="text-xs sm:text-lg font-medium">
                 {CATEGORY_LABEL[selectedCategory]} ({currentList.length})

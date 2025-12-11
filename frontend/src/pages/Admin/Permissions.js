@@ -1,15 +1,13 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaCog } from "react-icons/fa";
-import Button from "../../components/Button";
-import Modal from "../../components/Modal";
-import Loading from "../../components/Loading";
+/* src/pages/AdditionalSettings/Permissions.jsx */
+import React, { useState, useEffect } from "react";
 import apiClient from "../../api/apiClient";
+import Loading from "../../components/Loading";
+import { FaCog } from "react-icons/fa";
 
 const Permissions = () => {
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
-  const [permissions, setPermissions] = useState({}); // { Dashboard: { view: true, add: false, ... } }
+  const [permissions, setPermissions] = useState({});
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -17,7 +15,6 @@ const Permissions = () => {
   const [permissionsData, setPermissionsData] = useState([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
 
-  // Mapping: frontend key → backend page name
   const pageNameMap = {
     Dashboard: "Dashboard",
     Profile: "Profile",
@@ -104,7 +101,6 @@ const Permissions = () => {
     }
   };
 
-  // Select All – toggles ALL 4 actions for ALL pages
   const handleSelectAll = () => {
     const allChecked = Object.values(permissions).every(
       p => p.view && p.add && p.edit && p.delete
@@ -198,14 +194,17 @@ const Permissions = () => {
 
         if (perm.id) {
           return apiClient.put(`/auth/permissions/${perm.id}/`, payload);
-        } else {
-          return apiClient.post(`/auth/permissions/`, payload);
+        } else if (perm.view || perm.add || perm.edit || perm.delete) {
+          return apiClient.post("/auth/permissions/", payload);
         }
-      });
+      }).filter(Boolean);
 
       await Promise.all(promises);
       setMessage(`Permissions updated for "${selectedRole.name}"`);
-      setTimeout(() => setSelectedRole(null), 1500);
+      setTimeout(() => {
+        setSelectedRole(null);
+        setMessage("");
+      }, 2000);
     } catch (err) {
       console.error(err);
       setError("Failed to save permissions.");
@@ -223,145 +222,194 @@ const Permissions = () => {
   }
 
   return (
-    <motion.div className="min-h-screen mx-auto">
-      <h1 className="text-lg sm:text-xl font-medium mb-6">Permissions Management</h1>
-
-      {error && (
-        <motion.div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
-        </motion.div>
-      )}
-      {message && (
-        <motion.div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-          {message}
-        </motion.div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-lg">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {roles.map(role => (
-                <tr key={role.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{role.name}</td>
-                  <td className="px-6 py-4">
-                    <Button
-                      onClick={() => openPermissionsModal(role)}
-                      disabled={!hasPermission("permissions", "edit")}
-                      className={`flex items-center gap-2 px-4 py-2 text-xs rounded-md ${
-                        hasPermission("permissions", "edit")
-                          ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                    >
-                      <FaCog /> Permissions
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {roles.length === 0 && (
-                <tr><td colSpan={2} className="text-center py-8 text-gray-500">No roles found</td></tr>
-              )}
-            </tbody>
-          </table>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
+          <h1 className="text-xs sm:text-lg font-medium">Permissions Management</h1>
+          <p className="text-sm sm:text-base text-gray-200 mt-1">
+            Fine-tune role-based access control for all modules
+          </p>
         </div>
-      </div>
 
-      <AnimatePresence>
-        {selectedRole && (
-          <Modal
-            isOpen={!!selectedRole}
-            onClose={() => setSelectedRole(null)}
-            title={`Permissions – ${selectedRole.name}`}
-          >
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <label className="flex items-center cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected()}
-                  onChange={handleSelectAll}
-                  className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
-                />
-                <span className="ml-3 text-lg font-medium text-gray-700">
-                  Select All Permissions
-                </span>
-              </label>
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Messages */}
+          {message && (
+            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
+              {message}
+            </div>
+          )}
+          {error && (
+            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Roles List Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
+              <h3 className="text-xs sm:text-lg font-medium">
+                Roles ({roles.length})
+              </h3>
             </div>
 
-            <div className="overflow-x-auto max-h-96">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Page</th>
-                    {["view", "add", "edit", "delete"].map(act => (
-                      <th key={act} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                        {act.charAt(0).toUpperCase() + act.slice(1)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {Object.keys(permissions).map(key => (
-                    <tr key={key} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {displayNames[key] || key}
-                      </td>
-                      {["view", "add", "edit", "delete"].map(action => (
-                        <td key={action} className="px-6 py-4 text-center">
-                          <input
-                            type="checkbox"
-                            checked={permissions[key][action] || false}
-                            onChange={() => handlePermissionChange(key, action)}
-                            disabled={!hasPermission("permissions", "edit")}
-                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
-                          />
-                        </td>
+            {roles.length > 0 ? (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Role Name</th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {roles.map((role) => (
+                        <tr key={role.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
+                            {role.name}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-center">
+                            <button
+                              onClick={() => openPermissionsModal(role)}
+                              disabled={!hasPermission("permissions", "edit")}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 mx-auto ${
+                                !hasPermission("permissions", "edit")
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                              }`}
+                            >
+                              <FaCog /> Permissions
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </tbody>
+                  </table>
+                </div>
 
-            <div className="mt-8 flex justify-end gap-4">
-              <Button
-                onClick={() => setSelectedRole(null)}
-                className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSavePermissions}
-                disabled={isSaving || !hasPermission("permissions", "edit")}
-                className={`px-8 py-2 rounded-lg flex items-center gap-2 ${
-                  isSaving || !hasPermission("permissions", "edit")
-                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                }`}
-              >
-                {isSaving ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  "Save Permissions"
-                )}
-              </Button>
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3 p-4">
+                  {roles.map((role) => (
+                    <div key={role.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                      <div className="flex justify-center items-center">
+                        <h4 className="text-xs sm:text-lg font-medium">{role.name}</h4>
+                      </div>
+                      <div className="flex justify-center mt-4">
+                        <button
+                          onClick={() => openPermissionsModal(role)}
+                          disabled={!hasPermission("permissions", "edit")}
+                          className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 ${
+                            !hasPermission("permissions", "edit")
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                          }`}
+                        >
+                          <FaCog /> Permissions
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-base sm:text-lg mb-2">No roles available.</p>
+                <p className="text-sm">Create roles in the Roles section first.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Permissions Modal */}
+        {selectedRole && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sm:p-8 max-w-5xl w-full my-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xs sm:text-lg font-medium">
+                  Permissions – {selectedRole.name}
+                </h3>
+                <button
+                  onClick={() => setSelectedRole(null)}
+                  className="text-gray-500 hover:text-gray-700 transition text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Select All */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-300">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected()}
+                    onChange={handleSelectAll}
+                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
+                  />
+                  <span className="text-xs sm:text-lg font-medium">Select All Permissions</span>
+                </label>
+              </div>
+
+              {/* Permissions Table */}
+              <div className="overflow-x-auto max-h-96 border border-gray-300 rounded-lg">
+                <table className="w-full">
+                  <thead className="bg-gray-50 sticky top-0 border-b border-gray-300">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Module</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">View</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Add</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Edit</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {Object.keys(permissions).map((key) => (
+                      <tr key={key} className="hover:bg-gray-50 transition">
+                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                          {displayNames[key] || key}
+                        </td>
+                        {["view", "add", "edit", "delete"].map((action) => (
+                          <td key={action} className="px-4 py-4 text-center">
+                            <input
+                              type="checkbox"
+                              checked={permissions[key][action] || false}
+                              onChange={() => handlePermissionChange(key, action)}
+                              disabled={!hasPermission("permissions", "edit")}
+                              className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085] disabled:opacity-50"
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8">
+                <button
+                  onClick={() => setSelectedRole(null)}
+                  className="w-full sm:w-auto text-sm font-medium px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSavePermissions}
+                  disabled={isSaving || !hasPermission("permissions", "edit")}
+                  className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                    isSaving || !hasPermission("permissions", "edit")
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                  }`}
+                >
+                  {isSaving ? "Saving..." : "Save Permissions"}
+                </button>
+              </div>
             </div>
-          </Modal>
+          </div>
         )}
-      </AnimatePresence>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 

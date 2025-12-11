@@ -1,3 +1,4 @@
+/* src/pages/AdditionalSettings/Tax.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
@@ -76,7 +77,7 @@ const Tax = () => {
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
-          <h1 className="text-xs sm:text-lg font-medium">Tax Management</h1>
+          <h1 className="text-lg sm:text-2xl font-medium">Tax Management</h1>
         </div>
 
         <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
@@ -98,7 +99,7 @@ const Tax = () => {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6">
                   <Input
-                    label="Tax Name *"
+                    label="Tax Name"
                     name="tax_name"
                     type="text"
                     placeholder="e.g. VAT 5%, Service Tax"
@@ -134,7 +135,7 @@ const Tax = () => {
           {/* Taxes List Card */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
-              <h3 className="text-base sm:text-lg font-bold">
+              <h3 className="text-base sm:text-lg font-medium">
                 Taxes ({taxes.length})
               </h3>
             </div>
@@ -177,7 +178,7 @@ const Tax = () => {
                   {taxes.map((tax) => (
                     <div key={tax.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-gray-900">{tax.tax_name}</h4>
+                        <h4 className="font-medium text-gray-900">{tax.tax_name}</h4>
                       </div>
                       <p className="text-sm text-gray-600 mb-4">
                         {tax.description || "No description"}

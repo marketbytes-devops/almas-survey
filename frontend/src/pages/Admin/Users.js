@@ -1,12 +1,10 @@
+/* src/pages/AdditionalSettings/Users.jsx */
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaSearch, FaTrashAlt, FaEdit } from "react-icons/fa";
 import { FormProvider, useForm } from "react-hook-form";
-import Button from "../../components/Button";
-import Modal from "../../components/Modal";
-import Loading from "../../components/Loading";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
+import Loading from "../../components/Loading";
+import { FaSearch, FaTrashAlt, FaEdit } from "react-icons/fa";
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -15,28 +13,23 @@ const Users = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [permissions, setPermissions] = useState([]);
-  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editUser, setEditUser] = useState(null);
 
   const createForm = useForm({
-    defaultValues: {
-      email: "",
-      name: "",
-      role_id: "",
-    },
+    defaultValues: { email: "", name: "", role_id: "" },
   });
 
   const editForm = useForm({
-    defaultValues: {
-      email: "",
-      name: "",
-      role_id: "",
-    },
+    defaultValues: { email: "", name: "", role_id: "" },
   });
+
+  const { reset: resetCreateForm } = createForm;
+  const { reset: resetEditForm } = editForm;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,6 +37,7 @@ const Users = () => {
         const response = await apiClient.get("/auth/profile/");
         const user = response.data;
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+
         const roleId = user.role?.id;
         if (roleId) {
           const res = await apiClient.get(`/auth/roles/${roleId}/`);
@@ -59,6 +53,7 @@ const Users = () => {
         setIsLoadingPermissions(false);
       }
     };
+
     fetchProfile();
     fetchUsers();
     fetchRoles();
@@ -104,14 +99,16 @@ const Users = () => {
         ...data,
         role_id: parseInt(data.role_id),
       });
-      setUsers([...users, response.data]);
+      setUsers((prev) => [...prev, response.data]);
+      resetCreateForm();
       setMessage("User created successfully");
-      createForm.reset();
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       setError(
         error.response?.data?.detail ||
-          "Failed to create user. Please try again."
+          "Failed to create user. Please check the details."
       );
+      setTimeout(() => setError(""), 4000);
     } finally {
       setIsCreating(false);
     }
@@ -130,17 +127,19 @@ const Users = () => {
         ...data,
         role_id: parseInt(data.role_id),
       });
-      setUsers(
-        users.map((user) => (user.id === editUser.id ? response.data : user))
+      setUsers((prev) =>
+        prev.map((user) => (user.id === editUser.id ? response.data : user))
       );
       setMessage("User updated successfully");
       setEditUser(null);
-      editForm.reset();
+      resetEditForm();
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       setError(
         error.response?.data?.detail ||
           "Failed to update user. Please try again."
       );
+      setTimeout(() => setError(""), 4000);
     } finally {
       setIsEditing(false);
     }
@@ -151,14 +150,16 @@ const Users = () => {
       setError("You do not have permission to delete a user.");
       return;
     }
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      try {
-        await apiClient.delete(`/auth/users/${id}/`);
-        setUsers(users.filter((user) => user.id !== id));
-        setMessage("User deleted successfully");
-      } catch (error) {
-        setError("Failed to delete user. Please try again.");
-      }
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      await apiClient.delete(`/auth/users/${id}/`);
+      setUsers((prev) => prev.filter((user) => user.id !== id));
+      setMessage("User deleted successfully");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setError("Failed to delete user. Please try again.");
+      setTimeout(() => setError(""), 4000);
     }
   };
 
@@ -167,21 +168,17 @@ const Users = () => {
       setError("You do not have permission to edit a user.");
       return;
     }
-    setEditUser({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role_id: user.role?.id || "",
-    });
+    setEditUser(user);
     editForm.reset({
       email: user.email,
-      name: user.name,
+      name: user.name || "",
       role_id: user.role?.id || "",
     });
   };
 
   const filteredUsers = users.filter((user) =>
-    user.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (isLoading || isLoadingPermissions) {
@@ -193,232 +190,57 @@ const Users = () => {
   }
 
   return (
-    <motion.div
-      className="min-h-screen mx-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h1 className="text-lg sm:text-xl font-medium mb-6">User Management</h1>
-      <p className="text-gray-600 mb-8">
-        Create and manage users and their roles.
-      </p>
-      {error && (
-        <motion.div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {error}
-        </motion.div>
-      )}
-      {message && (
-        <motion.div
-          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {message}
-        </motion.div>
-      )}
-      <div className="grid grid-cols-1 gap-8">
-        <motion.div
-          className="bg-white rounded-2xl shadow-xl p-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-semibold mb-4">Create User</h3>
-          <FormProvider {...createForm}>
-            <form
-              onSubmit={createForm.handleSubmit(onCreateUser)}
-              className="space-y-4"
-            >
-              <Input
-                type="email"
-                label="Email address"
-                name="email"
-                rules={{
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email",
-                  },
-                }}
-                disabled={isCreating}
-              />
-              <Input
-                type="text"
-                label="Name"
-                name="name"
-                rules={{ required: "Name is required" }}
-                disabled={isCreating}
-              />
-              <Input
-                label="User Role"
-                name="role_id"
-                type="select"
-                options={[
-                  { value: "", label: "Select Role" },
-                  ...roles.map((role) => ({
-                    value: role.id,
-                    label: role.name,
-                  })),
-                ]}
-                rules={{ required: "Role is required" }}
-                disabled={isCreating}
-              />
-              <Button
-                type="submit"
-                disabled={isCreating || !hasPermission("users", "add")}
-                className={`w-full p-3 rounded-lg transition duration-300 ${
-                  isCreating || !hasPermission("users", "add")
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-indigo-500 text-white hover:bg-indigo-600"
-                }`}
-              >
-                {isCreating ? "Creating..." : "Create User"}
-              </Button>
-            </form>
-          </FormProvider>
-        </motion.div>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
+          <h1 className="text-xs sm:text-lg font-medium">User Management</h1>
+          <p className="text-sm sm:text-base text-gray-200 mt-1">
+            Create and manage users and their roles
+          </p>
+        </div>
 
-        <motion.div
-          className="bg-white rounded-2xl shadow-xl p-6"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-semibold mb-4">Existing Users</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 items-center mb-4 gap-4">
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 text-sm pr-4 py-1.5  border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Messages */}
+          {message && (
+            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
+              {message}
             </div>
-            {searchQuery && (
-              <Button
-                onClick={() => setSearchQuery("")}
-                className="p-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Clear Search
-              </Button>
-            )}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {user.email}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {user.name || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {user.role?.name || "-"}
-                      </td>
-                      <td className="flex px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        <Button
-                          onClick={() => openEditModal(user)}
-                          disabled={!hasPermission("users", "edit")}
-                          className={`flex items-center justify-center px-3 py-1 text-xs rounded mr-2 transition duration-300 ${
-                            hasPermission("users", "edit")
-                              ? "bg-blue-500 text-white hover:bg-blue-600"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          }`}
-                        >
-                          <FaEdit className="w-4 h-4 mr-1" /> Edit
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={!hasPermission("users", "delete")}
-                          className={`flex items-center justify-center px-3 py-1 text-xs rounded transition duration-300 ${
-                            hasPermission("users", "delete")
-                              ? "bg-red-600 text-white hover:bg-red-700"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          }`}
-                        >
-                          <FaTrashAlt className="w-4 h-4 mr-1" /> Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="4"
-                      className="px-4 py-8 text-center text-gray-500"
-                    >
-                      {searchQuery
-                        ? "No users match the search."
-                        : "No users found."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      </div>
+          )}
+          {error && (
+            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
+              {error}
+            </div>
+          )}
 
-      <AnimatePresence>
-        {editUser && (
-          <Modal
-            isOpen={!!editUser}
-            onClose={() => setEditUser(null)}
-            title="Edit User"
-          >
-            <FormProvider {...editForm}>
-              <form
-                onSubmit={editForm.handleSubmit(onEditUser)}
-                className="space-y-4"
-              >
-                <Input
-                  type="email"
-                  label="Email address"
-                  name="email"
-                  rules={{
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Enter a valid email",
-                    },
-                  }}
-                  disabled={isEditing}
-                />
-                <Input
-                  type="text"
-                  label="Name"
-                  name="name"
-                  rules={{ required: "Name is required" }}
-                  disabled={isEditing}
-                />
+          {/* Create User Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
+            <FormProvider {...createForm}>
+              <form onSubmit={createForm.handleSubmit(onCreateUser)} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <Input
+                    label="Email Address"
+                    name="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    rules={{
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Enter a valid email",
+                      },
+                    }}
+                    disabled={isCreating}
+                  />
+                  <Input
+                    label="Full Name"
+                    name="name"
+                    type="text"
+                    placeholder="John Doe"
+                    rules={{ required: "Name is required" }}
+                    disabled={isCreating}
+                  />
+                </div>
+
                 <Input
                   label="User Role"
                   name="role_id"
@@ -431,34 +253,221 @@ const Users = () => {
                     })),
                   ]}
                   rules={{ required: "Role is required" }}
-                  disabled={isEditing}
+                  disabled={isCreating}
                 />
-                <div className="flex justify-end space-x-4 pt-4">
-                  <Button
-                    type="button"
-                    onClick={() => setEditUser(null)}
-                    className="p-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isEditing || !hasPermission("users", "edit")}
-                    className={`p-3 rounded-lg transition duration-300 ${
-                      isEditing || !hasPermission("users", "edit")
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-indigo-500 text-white hover:bg-indigo-600"
-                    }`}
-                  >
-                    {isEditing ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
+
+                <button
+                  type="submit"
+                  disabled={isCreating || !hasPermission("users", "add")}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                    isCreating || !hasPermission("users", "add")
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                  }`}
+                >
+                  {isCreating ? "Creating..." : "Create User"}
+                </button>
               </form>
             </FormProvider>
-          </Modal>
+          </div>
+
+          {/* Users List Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
+              <h3 className="text-xs sm:text-lg font-medium">
+                Users ({users.length})
+              </h3>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="relative">
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none transition text-sm sm:text-base"
+                />
+              </div>
+            </div>
+
+            {filteredUsers.length > 0 ? (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Email</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Name</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Role</th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {filteredUsers.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{user.email}</td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-900">{user.name || "—"}</td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                            {user.role?.name || "—"}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-center space-x-2">
+                            <button
+                              onClick={() => openEditModal(user)}
+                              disabled={!hasPermission("users", "edit")}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
+                                !hasPermission("users", "edit")
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                              }`}
+                            >
+                              <FaEdit className="inline mr-2" /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              disabled={!hasPermission("users", "delete")}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
+                                !hasPermission("users", "delete")
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-red-600 text-white hover:bg-red-700"
+                              }`}
+                            >
+                              <FaTrashAlt className="inline mr-2" /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3 p-4">
+                  {filteredUsers.map((user) => (
+                    <div key={user.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-900">{user.name || "—"}</span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p><strong>Email:</strong> {user.email}</p>
+                          <p><strong>Role:</strong> {user.role?.name || "—"}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        <button
+                          onClick={() => openEditModal(user)}
+                          disabled={!hasPermission("users", "edit")}
+                          className={`flex-1 text-sm font-medium px-6 py-2 rounded-lg transition ${
+                            !hasPermission("users", "edit")
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                          }`}
+                        >
+                          <FaEdit className="inline mr-2" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={!hasPermission("users", "delete")}
+                          className={`flex-1 text-sm font-medium px-6 py-2 rounded-lg transition ${
+                            !hasPermission("users", "delete")
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
+                        >
+                          <FaTrashAlt className="inline mr-2" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-base sm:text-lg mb-2">
+                  {searchQuery ? "No users match your search." : "No users found."}
+                </p>
+                <p className="text-sm">Create your first user using the form above!</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Edit User Modal */}
+        {editUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sm:p-8 max-w-md w-full">
+              <h3 className="text-xs sm:text-lg font-medium mb-6">Edit User</h3>
+
+              <FormProvider {...editForm}>
+                <form onSubmit={editForm.handleSubmit(onEditUser)} className="space-y-6">
+                  <Input
+                    label="Email Address"
+                    name="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    rules={{
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Enter a valid email",
+                      },
+                    }}
+                    disabled={isEditing}
+                  />
+                  <Input
+                    label="Full Name"
+                    name="name"
+                    type="text"
+                    placeholder="John Doe"
+                    rules={{ required: "Name is required" }}
+                    disabled={isEditing}
+                  />
+                  <Input
+                    label="User Role"
+                    name="role_id"
+                    type="select"
+                    options={[
+                      { value: "", label: "Select Role" },
+                      ...roles.map((role) => ({
+                        value: role.id,
+                        label: role.name,
+                      })),
+                    ]}
+                    rules={{ required: "Role is required" }}
+                    disabled={isEditing}
+                  />
+
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setEditUser(null)}
+                      className="w-full sm:w-auto text-sm font-medium px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isEditing || !hasPermission("users", "edit")}
+                      className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                        isEditing || !hasPermission("users", "edit")
+                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                          : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                      }`}
+                    >
+                      {isEditing ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              </FormProvider>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 

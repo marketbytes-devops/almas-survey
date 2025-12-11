@@ -1,7 +1,7 @@
+/* src/pages/AdditionalSettings/AdditionalServices.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import apiClient from "../../api/apiClient"; 
-import Button from "../../components/Button";
+import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
 
@@ -48,7 +48,7 @@ const AdditionalServices = () => {
       const response = await apiClient.post("/survey-additional-services/", payload);
 
       const newService = response.data;
-      setServices(prev => {
+      setServices((prev) => {
         const updated = [...prev, newService];
         return updated.sort((a, b) => a.name.localeCompare(b.name));
       });
@@ -74,7 +74,7 @@ const AdditionalServices = () => {
 
     try {
       await apiClient.delete(`/survey-additional-services/${id}/`);
-      setServices(prev => prev.filter(s => s.id !== id));
+      setServices((prev) => prev.filter((s) => s.id !== id));
       setSuccess("Service deleted successfully!");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -94,25 +94,29 @@ const AdditionalServices = () => {
   }
 
   return (
-    <div className="p-4 mx-auto bg-white rounded-lg shadow-md">
-      {success && (
-        <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-          {success}
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
+          <h1 className="text-xs sm:text-lg font-medium">Additional Services Management</h1>
         </div>
-      )}
-      {error && (
-        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
 
-      <div className="space-y-8">
-        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h2 className="text-lg sm:text-xl font-medium mb-6">Add New Survey Additional Service</h2>
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Success/Error Messages */}
+          {success && (
+            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
+              {success}
+            </div>
+          )}
+          {error && (
+            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
+              {error}
+            </div>
+          )}
 
-          <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="w-full">
+          {/* Add New Service Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
+            <FormProvider {...methods}>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <Input
                   label="Service Name"
                   name="name"
@@ -124,61 +128,104 @@ const AdditionalServices = () => {
                   }}
                   disabled={saving}
                 />
-              </div>
 
-              <Button
-                type="submit"
-                disabled={!watchedName?.trim() || saving}
-                className="w-full sm:w-auto"
-              >
-                {saving ? "Saving..." : "Add Service"}
-              </Button>
-            </form>
-          </FormProvider>
-        </div>
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <h3 className="bg-gray-50 px-6 py-4 text-lg font-semibold text-gray-900 border-b border-gray-200">
-            Survey Additional Services ({services.length})
-          </h3>
+                <button
+                  type="submit"
+                  disabled={!watchedName?.trim() || saving}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                    !watchedName?.trim() || saving
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
+                  }`}
+                >
+                  {saving ? "Saving..." : "Add Service"}
+                </button>
+              </form>
+            </FormProvider>
+          </div>
 
-          {services.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+          {/* Services List Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
+              <h3 className="text-xs sm:text-lg font-medium">
+                Survey Additional Services ({services.length})
+              </h3>
+            </div>
+
+            {services.length > 0 ? (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                          Name
+                        </th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {services.map((service) => (
+                        <tr key={service.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
+                            {service.name}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-center">
+                            <button
+                              onClick={() => handleDelete(service.id, service.name)}
+                              disabled={deletingId === service.id}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
+                                deletingId === service.id
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-red-600 text-white hover:bg-red-700"
+                              }`}
+                            >
+                              {deletingId === service.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3 p-4">
                   {services.map((service) => (
-                    <tr key={service.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {service.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Button
+                    <div
+                      key={service.id}
+                      className="bg-gray-50 rounded-lg border border-gray-300 p-4"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">{service.name}</h4>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
                           onClick={() => handleDelete(service.id, service.name)}
                           disabled={deletingId === service.id}
-                          className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded disabled:opacity-50"
+                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
+                            deletingId === service.id
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
                         >
                           {deletingId === service.id ? "Deleting..." : "Delete"}
-                        </Button>
-                      </td>
-                    </tr>
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              No additional services yet. Add one using the form above!
-            </div>
-          )}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-base sm:text-lg mb-2">No additional services yet.</p>
+                <p className="text-sm">Add one using the form above!</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

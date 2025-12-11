@@ -1,11 +1,10 @@
+/* src/pages/AdditionalSettings/Roles.jsx */
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FaSearch, FaTrashAlt } from "react-icons/fa";
 import { FormProvider, useForm } from "react-hook-form";
-import Button from "../../components/Button";
-import Loading from "../../components/Loading";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
+import Loading from "../../components/Loading";
+import { FaSearch, FaTrashAlt } from "react-icons/fa";
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
@@ -13,17 +12,16 @@ const Roles = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [permissions, setPermissions] = useState([]);
-  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   const createForm = useForm({
-    defaultValues: {
-      name: "",
-      description: "",
-    },
+    defaultValues: { name: "", description: "" },
   });
+
+  const { handleSubmit, reset } = createForm;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -31,6 +29,7 @@ const Roles = () => {
         const response = await apiClient.get("/auth/profile/");
         const user = response.data;
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+
         const roleId = user.role?.id;
         if (roleId) {
           const res = await apiClient.get(`/auth/roles/${roleId}/`);
@@ -46,6 +45,7 @@ const Roles = () => {
         setIsLoadingPermissions(false);
       }
     };
+
     fetchProfile();
     fetchRoles();
   }, []);
@@ -78,14 +78,16 @@ const Roles = () => {
     setIsCreating(true);
     try {
       const response = await apiClient.post("/auth/roles/", data);
-      setRoles([...roles, response.data]);
+      setRoles((prev) => [...prev, response.data]);
+      reset();
       setMessage("Role created successfully");
-      createForm.reset();
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       setError(
         error.response?.data?.detail ||
           "Failed to create role. Please try again."
       );
+      setTimeout(() => setError(""), 4000);
     } finally {
       setIsCreating(false);
     }
@@ -96,14 +98,16 @@ const Roles = () => {
       setError("You do not have permission to delete a role.");
       return;
     }
-    if (window.confirm("Are you sure you want to delete this role?")) {
-      try {
-        await apiClient.delete(`/auth/roles/${id}/`);
-        setRoles(roles.filter((role) => role.id !== id));
-        setMessage("Role deleted successfully");
-      } catch (error) {
-        setError("Failed to delete role. Please try again.");
-      }
+    if (!window.confirm("Are you sure you want to delete this role?")) return;
+
+    try {
+      await apiClient.delete(`/auth/roles/${id}/`);
+      setRoles((prev) => prev.filter((role) => role.id !== id));
+      setMessage("Role deleted successfully");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setError("Failed to delete role. Please try again.");
+      setTimeout(() => setError(""), 4000);
     }
   };
 
@@ -120,164 +124,166 @@ const Roles = () => {
   }
 
   return (
-    <motion.div
-      className="min-h-screen"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h1 className="text-lg sm:text-xl font-medium mb-6">Roles Management</h1>
-      <p className="text-gray-600 mb-8">Create and manage roles for users.</p>
-      {error && (
-        <motion.div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {error}
-        </motion.div>
-      )}
-      {message && (
-        <motion.div
-          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {message}
-        </motion.div>
-      )}
-      <div className="grid grid-cols-1 gap-8">
-        <motion.div
-          className="bg-white rounded-2xl shadow-xl p-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-semibold mb-4">Create Role</h3>
-          <FormProvider {...createForm}>
-            <form
-              onSubmit={createForm.handleSubmit(onCreateRole)}
-              className="space-y-4"
-            >
-              <Input
-                type="text"
-                label="Role Name"
-                name="name"
-                rules={{ required: "Role name is required" }}
-                disabled={isCreating}
-              />
-              <Input
-                type="textarea"
-                label="Description"
-                name="description"
-                rules={{ required: false }}
-                disabled={isCreating}
-              />
-              <Button
-                type="submit"
-                disabled={isCreating || !hasPermission("roles", "add")}
-                className={`w-full p-3 rounded-lg transition duration-300 ${
-                  isCreating || !hasPermission("roles", "add")
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-indigo-500 text-white hover:bg-indigo-600"
-                }`}
-              >
-                {isCreating ? "Creating..." : "Create Role"}
-              </Button>
-            </form>
-          </FormProvider>
-        </motion.div>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
+          <h1 className="text-xs sm:text-lg font-medium">Roles Management</h1>
+          <p className="text-sm sm:text-base text-gray-200 mt-1">
+            Create and manage user roles and permissions
+          </p>
+        </div>
 
-        <motion.div
-          className="bg-white rounded-2xl shadow-xl p-6"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-semibold mb-4">Existing Roles</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 items-center mb-4 gap-4">
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by role name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 text-sm pr-4 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Messages */}
+          {message && (
+            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
+              {message}
             </div>
-            {searchQuery && (
-              <Button
-                onClick={() => setSearchQuery("")}
-                className="p-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Clear Search
-              </Button>
-            )}
+          )}
+          {error && (
+            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Create Role Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
+            <FormProvider {...createForm}>
+              <form onSubmit={handleSubmit(onCreateRole)} className="space-y-6">
+                <Input
+                  label="Role Name"
+                  name="name"
+                  type="text"
+                  placeholder="e.g. Sales Manager, Surveyor"
+                  rules={{ required: "Role name is required" }}
+                  disabled={isCreating}
+                />
+
+                <Input
+                  label="Description (optional)"
+                  name="description"
+                  type="textarea"
+                  rows={3}
+                  placeholder="Describe the purpose of this role..."
+                  disabled={isCreating}
+                />
+
+                <button
+                  type="submit"
+                  disabled={isCreating || !hasPermission("roles", "add")}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                    isCreating || !hasPermission("roles", "add")
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                  }`}
+                >
+                  {isCreating ? "Creating..." : "Create Role"}
+                </button>
+              </form>
+            </FormProvider>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRoles.length > 0 ? (
-                  filteredRoles.map((role) => (
-                    <tr key={role.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {role.name}
-                      </td>
-                      <td
-                        className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate"
-                        title={role.description || "No description"}
-                      >
+
+          {/* Roles List Card */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
+              <h3 className="text-xs sm:text-lg font-medium">
+                Existing Roles ({roles.length})
+              </h3>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="relative">
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search roles by name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none transition text-sm sm:text-base"
+                />
+              </div>
+            </div>
+
+            {filteredRoles.length > 0 ? (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Role Name</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Description</th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {filteredRoles.map((role) => (
+                        <tr key={role.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
+                            {role.name}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                            {role.description || "—"}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-center">
+                            <button
+                              onClick={() => handleDeleteRole(role.id)}
+                              disabled={!hasPermission("roles", "delete")}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
+                                !hasPermission("roles", "delete")
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-red-600 text-white hover:bg-red-700"
+                              }`}
+                            >
+                              <FaTrashAlt className="inline mr-2" /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3 p-4">
+                  {filteredRoles.map((role) => (
+                    <div key={role.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                      <div className="flex justify-center items-center mb-3">
+                        <h4 className="font-medium text-gray-900">{role.name}</h4>
+                      </div>
+                      <p className="text-sm text-gray-600 flex justify-center items-center mb-4">
                         {role.description || "No description"}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        <Button
+                      </p>
+                      <div className="flex justify-center items-center">
+                        <button
                           onClick={() => handleDeleteRole(role.id)}
                           disabled={!hasPermission("roles", "delete")}
-                          className={`flex items-center justify-center px-3 py-1 text-xs rounded transition duration-300 ${
-                            hasPermission("roles", "delete")
-                              ? "bg-red-600 text-white hover:bg-red-700"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
+                            !hasPermission("roles", "delete")
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-red-600 text-white hover:bg-red-700"
                           }`}
                         >
-                          <FaTrashAlt className="w-4 h-4 mr-1" /> Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="3"
-                      className="px-4 py-8 text-center text-gray-500"
-                    >
-                      {searchQuery
-                        ? "No roles match the search."
-                        : "No roles found."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                          <FaTrashAlt className="inline mr-2" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-base sm:text-lg mb-2">
+                  {searchQuery ? "No matching roles found." : "No roles available."}
+                </p>
+                <p className="text-sm">Create your first role using the form above!</p>
+              </div>
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
