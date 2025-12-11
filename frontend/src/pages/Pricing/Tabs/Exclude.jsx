@@ -62,7 +62,7 @@ const ExcludesTab = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-        <h2 className="text-lg sm:text-2xl font-bold text-red-700 mb-6">What is Excluded</h2>
+        <h2 className="text-lg sm:text-2xl font-medium text-red-700 mb-6">What is Excluded</h2>
         <div className="grid gap-4 mb-6">
           <Input
             label="Add New Exclusion"
@@ -76,7 +76,7 @@ const ExcludesTab = () => {
           <button
             onClick={addItem}
             disabled={saving || !newText.trim()}
-            className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition shadow-lg flex items-center justify-center gap-2 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition shadow-lg flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving ? (
               "Adding..."

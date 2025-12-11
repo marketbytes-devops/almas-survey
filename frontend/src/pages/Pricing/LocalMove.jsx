@@ -159,7 +159,7 @@ const LocalMove = () => {
                 <tab.component {...sharedProps} />
               ) : (
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
-                  <p className="text-3xl font-bold text-gray-700 mb-4">
+                  <p className="text-3xl font-medium text-gray-700 mb-4">
                     {tab.label}
                   </p>
                   <p className="text-lg text-gray-500">Coming Soon...</p>

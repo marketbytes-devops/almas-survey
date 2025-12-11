@@ -1,8 +1,6 @@
-/* src/pages/AdditionalSettings/SurveyTypes.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
-import Button from "../../components/Button";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
 
@@ -13,8 +11,8 @@ const CATEGORY_ENDPOINT = {
   pet: "/pet-types/",
   packing: "/packing-types/",
   hub: "/hub/",
-  move: "/move-types/",       // New endpoint for Move Type
-  tariff: "/tariff-types/",  // New endpoint for Tariff Type
+  move: "/move-types/",
+  tariff: "/tariff-types/",
 };
 
 const CATEGORY_LABEL = {
@@ -24,8 +22,8 @@ const CATEGORY_LABEL = {
   pet: "Pet Types",
   packing: "Packing Types",
   hub: "Hub Types",
-  move: "Move Types",        // New label for Move Type
-  tariff: "Tariff Types",    // New label for Tariff Type
+  move: "Move Types",
+  tariff: "Tariff Types",
 };
 
 const SurveyTypes = () => {
@@ -38,7 +36,6 @@ const SurveyTypes = () => {
   const { handleSubmit, reset, watch, setError, clearErrors, formState } = methods;
   const { errors } = formState;
 
-  /* -------------------------------------------------- FETCH -------------------------------------------------- */
   useEffect(() => {
     const fetchAll = async () => {
       const init = {};
@@ -74,7 +71,6 @@ const SurveyTypes = () => {
     fetchAll();
   }, []);
 
-  /* -------------------------------------------------- HELPERS ------------------------------------------------- */
   const showMsg = (text, type = "success") => {
     setMsg({ text, type });
     setTimeout(() => setMsg({ text: "", type: "" }), 3000);
@@ -89,7 +85,6 @@ const SurveyTypes = () => {
     clearErrors();
   };
 
-  /* -------------------------------------------------- CREATE -------------------------------------------------- */
   const onSubmit = async (data) => {
     if (!data.name?.trim()) return;
 
@@ -122,7 +117,6 @@ const SurveyTypes = () => {
     }
   };
 
-  /* -------------------------------------------------- DELETE -------------------------------------------------- */
   const deleteItem = async (id) => {
     if (!window.confirm("Delete this item?")) return;
 
@@ -143,133 +137,165 @@ const SurveyTypes = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen"><Loading/></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
     );
   }
 
   return (
-    <div className="p-4 mx-auto bg-white rounded-lg shadow-md">
-      {/* Toast */}
-      {msg.text && (
-        <div
-          className={`mb-4 px-4 py-2 rounded border ${
-            msg.type === "error"
-              ? "bg-red-100 border-red-400 text-red-700"
-              : "bg-green-100 border-green-400 text-green-700"
-          }`}
-        >
-          {msg.text}
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
+          <h1 className="text-xs sm:text-lg font-medium">Additional Settings - Types</h1>
         </div>
-      )}
 
-      {/* ---------- ADD FORM ---------- */}
-      <div className="p-4 border border-gray-200 rounded-lg mb-6">
-        <h2 className="text-lg sm:text-xl font-medium mb-6">Add New Type</h2>
-        <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Category radios */}
-            <div className="flex flex-wrap gap-4 mb-4">
-              {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
-                <label key={value} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="category"
-                    value={value}
-                    checked={selectedCategory === value}
-                    onChange={onCategoryChange}
-                    className="form-radio text-indigo-600 h-4 w-4"
-                  />
-                  <span className="text-sm font-medium">{label}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* Fields */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Input
-                  label="Name"
-                  name="name"
-                  type="text"
-                  placeholder="Enter type name"
-                  rules={{ required: "Name is required" }}
-                  disabled={saving}
-                  error={errors.name?.message}
-                />
-              </div>
-              <div>
-                <Input
-                  label="Description (optional)"
-                  name="description"
-                  type="textarea"
-                  placeholder="Optional description"
-                  disabled={saving}
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={saving || !watch("name")?.trim()}
-              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white"
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Toast Message */}
+          {msg.text && (
+            <div
+              className={`p-4 rounded-lg text-center font-medium ${
+                msg.type === "error"
+                  ? "bg-red-100 text-red-700 border border-red-400"
+                  : "bg-green-100 text-green-700 border border-green-400"
+              }`}
             >
-              {saving ? "Saving…" : "Save Type"}
-            </Button>
-          </form>
-        </FormProvider>
-      </div>
+              {msg.text}
+            </div>
+          )}
 
-      {/* ---------- LIST TABLE ---------- */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <h3 className="bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
-          {CATEGORY_LABEL[selectedCategory]} ({currentList.length})
-        </h3>
-        {currentList.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentList.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {item.name}
-                    </td>
-                    <td
-                      className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate"
-                      title={item.description || ""}
+          {/* Add Form Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+            <FormProvider {...methods}>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Category Selection - Responsive Wrap */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className="flex items-center gap-2 cursor-pointer text-sm sm:text-base"
                     >
-                      {item.description || "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button
-                        onClick={() => deleteItem(item.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <input
+                        type="radio"
+                        name="category"
+                        value={value}
+                        checked={selectedCategory === value}
+                        onChange={onCategoryChange}
+                        className="w-4 h-4 text-[#4c7085] focus:ring-[#4c7085]"
+                      />
+                      <span className="font-medium">{label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 gap-6">
+                  <Input
+                    label="Name"
+                    name="name"
+                    type="text"
+                    placeholder="Enter type name"
+                    rules={{ required: "Name is required" }}
+                    disabled={saving}
+                  />
+
+                  <Input
+                    label="Description (optional)"
+                    name="description"
+                    type="textarea"
+                    placeholder="Optional description"
+                    disabled={saving}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={saving || !watch("name")?.trim()}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                    saving || !watch("name")?.trim()
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
+                  }`}
+                >
+                  {saving ? "Saving..." : "Save Type"}
+                </button>
+              </form>
+            </FormProvider>
           </div>
-        ) : (
-          <p className="text-center py-8 text-gray-500">
-            No {CATEGORY_LABEL[selectedCategory].toLowerCase()} found. Add one above!
-          </p>
-        )}
+
+          {/* List Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
+              <h3 className="text-xs sm:text-lg font-medium">
+                {CATEGORY_LABEL[selectedCategory]} ({currentList.length})
+              </h3>
+            </div>
+
+            {currentList.length > 0 ? (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Name</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Description</th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {currentList.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{item.name}</td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                            {item.description || "—"}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-center">
+                            <button
+                              onClick={() => deleteItem(item.id)}
+                              className="text-sm font-medium px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3 p-4">
+                  {currentList.map((item) => (
+                    <div key={item.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">{item.name}</h4>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {item.description || "No description"}
+                      </p>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => deleteItem(item.id)}
+                          className="text-sm font-medium px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-base sm:text-lg mb-2">
+                  No {CATEGORY_LABEL[selectedCategory].toLowerCase()} found.
+                </p>
+                <p className="text-sm">Add one using the form above!</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

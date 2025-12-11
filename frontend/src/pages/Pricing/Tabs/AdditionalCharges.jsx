@@ -26,7 +26,13 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           apiClient.get("/quotation-additional-charges/"),
         ]);
         setMasterServices(servicesRes.data);
-        setRows(chargesRes.data || []);
+
+        const normalizedCharges = (chargesRes.data || []).map(row => ({
+          ...row,
+          price_per_unit: Number(row.price_per_unit),
+          per_unit_quantity: Number(row.per_unit_quantity),
+        }));
+        setRows(normalizedCharges);
       } catch (err) {
         alert("Could not load additional services. Check console for details.");
       } finally {
@@ -35,6 +41,12 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     };
     fetchData();
   }, []);
+
+  const formatPrice = (value) => {
+    if (value == null) return "—";
+    const num = Number(value);
+    return isNaN(num) ? "—" : num.toFixed(2);
+  };
 
   const handleAddOrUpdate = async () => {
     if (!selectedServiceId) {
@@ -143,7 +155,12 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       setSaveSuccess(false);
       await apiClient.post("/quotation-additional-charges/", payload);
       const refreshRes = await apiClient.get("/quotation-additional-charges/");
-      setRows(refreshRes.data);
+      const normalized = (refreshRes.data || []).map(row => ({
+        ...row,
+        price_per_unit: Number(row.price_per_unit),
+        per_unit_quantity: Number(row.per_unit_quantity),
+      }));
+      setRows(normalized);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       alert(`${unsavedRows.length} service(s) saved successfully!`);
@@ -190,9 +207,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       )}
 
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-        <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-6">Additional Services Pricing</h2>
-
-        {/* Mobile-first Form */}
+        <h2 className="text-lg sm:text-2xl font-medium text-gray-800 mb-6">Additional Services Pricing</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           <Input
             label="Service *"
@@ -238,7 +253,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           <div className="flex items-end">
             <button
               onClick={handleAddOrUpdate}
-              className="w-full px-4 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:scale-105 transition font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="w-full px-4 py-2.5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:scale-105 transition font-medium flex items-center justify-center gap-2 text-sm"
             >
               {editingId ? (
                 <>
@@ -253,12 +268,11 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           </div>
         </div>
 
-        {/* Save All Button */}
         <div className="flex justify-center sm:justify-end mb-6">
           <button
             onClick={handleSaveAll}
             disabled={saving || unsavedCount === 0}
-            className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium shadow-lg transition flex items-center justify-center gap-3 text-sm sm:text-base ${
+            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium shadow-lg transition flex items-center justify-center gap-3 text-sm ${
               saving || unsavedCount === 0
                 ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                 : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
@@ -273,9 +287,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           </button>
         </div>
 
-        {/* Responsive Table */}
         <div className="overflow-x-auto rounded-lg border-2 border-gray-300">
-          {/* Desktop Table */}
           <table className="hidden md:table w-full">
             <thead className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
               <tr>
@@ -306,7 +318,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-800 text-sm">{row.service.name}</td>
                     <td className="px-4 py-3 text-gray-700 text-sm">{currencyName}</td>
-                    <td className="px-4 py-3 text-gray-700 text-sm">{row.price_per_unit.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-gray-700 text-sm">{formatPrice(row.price_per_unit)}</td>
                     <td className="px-4 py-3 text-gray-700 text-sm">{row.per_unit_quantity}</td>
                     <td className="px-4 py-3">
                       <span
@@ -333,7 +345,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             </tbody>
           </table>
 
-          {/* Mobile Cards */}
           <div className="md:hidden space-y-4 p-4">
             {rows.map((row) => {
               const currencyName = dropdownData.currencies?.find((c) => c.id === row.currency)?.name || "QAR";
@@ -366,7 +377,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                         <span className="font-medium">Currency:</span> {currencyName}
                       </div>
                       <div>
-                        <span className="font-medium">Price:</span> {row.price_per_unit.toFixed(2)}
+                        <span className="font-medium">Price:</span> {formatPrice(row.price_per_unit)}
                       </div>
                       <div>
                         <span className="font-medium">Qty:</span> {row.per_unit_quantity}

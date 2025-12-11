@@ -60,7 +60,7 @@ const IncludesTab = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-        <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-6">What is Included</h2>
+        <h2 className="text-lg sm:text-2xl font-medium text-gray-800 mb-6">What is Included</h2>
         <div className="grid gap-4 mb-6">
           <Input
             label="Add New Inclusion"

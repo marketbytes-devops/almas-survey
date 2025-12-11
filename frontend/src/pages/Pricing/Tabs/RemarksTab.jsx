@@ -8,6 +8,7 @@ import {
   FaCommentDots,
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import Input from "../../../components/Input";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
@@ -92,149 +93,177 @@ const RemarksTab = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this remark permanently?")) return;
-    await apiClient.delete(`${API_BASE}/survey-remarks/${id}/`);
-    fetchRemarks();
+    try {
+      await apiClient.delete(`${API_BASE}/survey-remarks/${id}/`);
+      fetchRemarks();
+    } catch (err) {
+      alert("Delete failed");
+    }
   };
 
   const toggleActive = async (remark) => {
-    await apiClient.post(`${API_BASE}/survey-remarks/${remark.id}/toggle_active/`);
-    fetchRemarks();
+    try {
+      await apiClient.post(`${API_BASE}/survey-remarks/${remark.id}/toggle_active/`);
+      fetchRemarks();
+    } catch (err) {
+      alert("Failed");
+    }
   };
 
-  if (loading) return <div className="p-10 text-center text-gray-600">Loading remarks...</div>;
+  if (loading) {
+    return (
+      <div className="text-center py-16 text-gray-600">
+        <div className="text-xl mb-2">Loading remarks...</div>
+        <div className="text-sm text-gray-500">Please wait</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          Survey Remarks
-        </h2>
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg font-medium"
-        >
-          Add Remark
-        </button>
-      </div>
-
-      <div className="grid gap-5">
-        {remarks.map((remark) => (
-          <div
-            key={remark.id}
-            className={`bg-white rounded-xl shadow-md border p-6 hover:shadow-lg transition ${
-              !remark.is_active ? "opacity-70" : ""
-            }`}
+    <div className="space-y-6 sm:space-y-8">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-xl sm:text-2xl font-medium text-gray-800 flex items-center gap-3">
+            <FaCommentDots className="text-[#4c7085]" />
+            Survey Remarks
+          </h2>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg transition shadow-lg flex items-center justify-center gap-2 font-medium text-sm"
           >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <FaCommentDots className="text-xl text-[#4c7085]" />
-                  <h3 className="text-lg font-semibold">{remark.title}</h3>
-                  <span className="text-xs bg-gray-100 px-3 py-1 rounded-full">
-                    {remark.category_display}
-                  </span>
-                </div>
-                {remark.description && (
-                  <p className="text-gray-600 text-sm mt-1 italic">{remark.description}</p>
-                )}
-              </div>
+            <FaPlus size={16} className="sm:w-5 sm:h-5" />
+            Add Remark
+          </button>
+        </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => openEdit(remark)}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(remark.id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Trash
-                </button>
-                <button onClick={() => toggleActive(remark)}>
-                  {remark.is_active ? (
-                    <FaToggleOn className="text-2xl text-green-600" />
-                  ) : (
-                    <FaToggleOff className="text-2xl text-gray-400" />
-                  )}
-                </button>
-              </div>
+        {/* Remarks List - Responsive */}
+        <div className="space-y-4">
+          {remarks.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-base sm:text-lg mb-2">No remarks added yet.</p>
+              <p className="text-sm">Create your first remark using the button above.</p>
             </div>
-          </div>
-        ))}
+          ) : (
+            remarks.map((remark) => (
+              <div
+                key={remark.id}
+                className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 transition-all hover:shadow-lg ${
+                  !remark.is_active ? "opacity-75 border-gray-300" : "border-gray-200"
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                      <FaCommentDots className="text-lg sm:text-xl text-[#4c7085]" />
+                      <h3 className="text-lg sm:text-xl font-medium text-gray-800">{remark.title}</h3>
+                      <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                        {remark.category_display || remark.category}
+                      </span>
+                    </div>
+                    {remark.description && (
+                      <p className="text-gray-600 text-sm sm:text-base italic mt-2">
+                        {remark.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <button
+                      onClick={() => openEdit(remark)}
+                      className="text-sm font-medium text-[#4c7085] hover:text-[#6b8ca3] transition"
+                      title="Edit"
+                    >
+                      <FaEdit size={18} className="sm:w-5 sm:h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(remark.id)}
+                      className="text-sm font-medium text-red-600 hover:text-red-800 transition"
+                      title="Delete"
+                    >
+                      <FaTrash size={18} className="sm:w-5 sm:h-5" />
+                    </button>
+                    <button
+                      onClick={() => toggleActive(remark)}
+                      className="transition text-sm font-medium"
+                      title={remark.is_active ? "Deactivate" : "Activate"}
+                    >
+                      {remark.is_active ? (
+                        <FaToggleOn className="text-2xl sm:text-3xl text-green-600" />
+                      ) : (
+                        <FaToggleOff className="text-2xl sm:text-3xl text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal - Add/Edit Remark */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
-            <h3 className="text-2xl font-bold mb-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sm:p-8 max-w-2xl w-full my-8">
+            <h3 className="text-xl sm:text-2xl font-medium text-gray-800 mb-6">
               {editingRemark ? "Edit" : "Add"} Remark
             </h3>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block font-semibold mb-1">Title (shown in dropdown)</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:border-[#4c7085] outline-none"
-                  placeholder="e.g. Long carry > 20 meters"
-                />
-              </div>
 
-              <div>
-                <label className="block font-semibold mb-1">Category</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <Input
+                label="Title (shown in dropdown) *"
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Long carry > 20 meters"
+                required
+              />
 
-              <div>
-                <label className="block font-semibold mb-1">Description (optional)</label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:border-[#4c7085] outline-none"
-                  placeholder="Extra details for surveyor..."
-                />
-              </div>
+              <Input
+                label="Category"
+                type="select"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                options={categories}
+              />
 
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2">
+              <Input
+                label="Description (optional)"
+                type="textarea"
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Extra details for surveyor..."
+              />
+
+              <div className="flex items-center gap-6 text-sm">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.is_active}
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
                   />
                   <span>Active</span>
                 </label>
               </div>
 
-              <div className="flex justify-end gap-4 mt-8">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 border rounded-lg hover:bg-gray-100"
+                  className="w-full sm:w-auto px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg font-medium"
+                  className="w-full sm:w-auto px-8 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg text-sm font-medium transition shadow-lg"
                 >
-                  {editingRemark ? "Update" : "Create"} Remark
+                  {editingRemark ? "Update Remark" : "Create Remark"}
                 </button>
               </div>
             </form>
