@@ -67,7 +67,8 @@ const ProtectedRoute = ({
         const perms = roleResponse.data.permissions || [];
         const pagePerm = perms.find((p) => p.page === requiredPage);
 
-        const allowed = !requiredPage || (pagePerm && pagePerm[`can_${requiredAction}`]);
+        const allowed =
+          !requiredPage || (pagePerm && pagePerm[`can_${requiredAction}`]);
         setHasPermission(allowed);
       } catch (error) {
         console.error("Failed to fetch permissions:", error);
@@ -106,7 +107,10 @@ function App() {
     {
       path: "/",
       element: (
-        <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="Dashboard">
+        <ProtectedRoute
+          isAuthenticated={isAuthenticated}
+          requiredPage="Dashboard"
+        >
           <Layout
             isAuthenticated={isAuthenticated}
             setIsAuthenticated={setIsAuthenticated}
@@ -123,7 +127,10 @@ function App() {
         {
           path: "/enquiries",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="enquiries">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="enquiries"
+            >
               <Enquiries />
             </ProtectedRoute>
           ),
@@ -131,7 +138,10 @@ function App() {
         {
           path: "/scheduled-surveys",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="scheduled_surveys">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="scheduled_surveys"
+            >
               <ScheduledSurveys />
             </ProtectedRoute>
           ),
@@ -139,7 +149,10 @@ function App() {
         {
           path: "/new-enquiries",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="new_enquiries">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="new_enquiries"
+            >
               <NewAssignedEnquiries />
             </ProtectedRoute>
           ),
@@ -147,7 +160,10 @@ function App() {
         {
           path: "/processing-enquiries",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="processing_enquiries">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="processing_enquiries"
+            >
               <ProcessingEnquiries />
             </ProtectedRoute>
           ),
@@ -155,7 +171,10 @@ function App() {
         {
           path: "/follow-ups",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="follow_ups">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="follow_ups"
+            >
               <FollowUps />
             </ProtectedRoute>
           ),
@@ -163,7 +182,10 @@ function App() {
         {
           path: "/survey/:surveyId/survey-details",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_details">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="survey_details"
+            >
               <SurveyDetails />
             </ProtectedRoute>
           ),
@@ -171,7 +193,10 @@ function App() {
         {
           path: "/survey/:surveyId/survey-summary",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="survey_summary"
+            >
               <SurveySummary />
             </ProtectedRoute>
           ),
@@ -179,7 +204,10 @@ function App() {
         {
           path: "/survey/survey-summary",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="survey_summary">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="survey_summary"
+            >
               <SurveySummary />
             </ProtectedRoute>
           ),
@@ -187,7 +215,10 @@ function App() {
         {
           path: "/pricing/local-move",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="local_move">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="local_move"
+            >
               <LocalMove />
             </ProtectedRoute>
           ),
@@ -195,7 +226,10 @@ function App() {
         {
           path: "/pricing/international-move",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="international_move">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="international_move"
+            >
               <InternationalMove />
             </ProtectedRoute>
           ),
@@ -203,23 +237,47 @@ function App() {
         {
           path: "/quotation-list",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="quotation"
+            >
               <QuotationList />
             </ProtectedRoute>
           ),
         },
         {
-          path: "/quotation-create/:id",
+          path: "/quotation-create/survey/:id",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="quotation"
+            >
               <QuotationCreate />
             </ProtectedRoute>
           ),
         },
         {
+          path: "/quotation-create/enquiry/:id",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="quotation"
+            >
+              <QuotationCreate />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/quotation-create/:id",
+          element: <Navigate to="/quotation-list" replace />,
+        },
+        {
           path: "/quotation-edit/:id",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="quotation"
+            >
               <QuotationEdit />
             </ProtectedRoute>
           ),
@@ -227,7 +285,10 @@ function App() {
         {
           path: "/quotation-view/:id",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="quotation"
+            >
               <QuotationView />
             </ProtectedRoute>
           ),
@@ -235,7 +296,10 @@ function App() {
         {
           path: "/quotation-template-local-move",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="quotation">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="quotation"
+            >
               <QuotationLocalMove />
             </ProtectedRoute>
           ),
@@ -243,7 +307,10 @@ function App() {
         {
           path: "/additional-settings/types",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="types">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="types"
+            >
               <SurveyTypes />
             </ProtectedRoute>
           ),
@@ -251,7 +318,10 @@ function App() {
         {
           path: "/additional-settings/units",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="units">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="units"
+            >
               <Units />
             </ProtectedRoute>
           ),
@@ -259,7 +329,10 @@ function App() {
         {
           path: "/additional-settings/currency",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="currency">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="currency"
+            >
               <Currency />
             </ProtectedRoute>
           ),
@@ -267,7 +340,10 @@ function App() {
         {
           path: "/additional-settings/tax",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="tax">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="tax"
+            >
               <Tax />
             </ProtectedRoute>
           ),
@@ -275,7 +351,10 @@ function App() {
         {
           path: "/additional-settings/handyman",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="handyman">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="handyman"
+            >
               <Handyman />
             </ProtectedRoute>
           ),
@@ -283,7 +362,10 @@ function App() {
         {
           path: "/additional-settings/manpower",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="manpower">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="manpower"
+            >
               <Manpower />
             </ProtectedRoute>
           ),
@@ -291,14 +373,21 @@ function App() {
         {
           path: "/additional-settings/room",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="room">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="room"
+            >
               <Room />
             </ProtectedRoute>
           ),
-        }, {
+        },
+        {
           path: "/additional-settings/additional-services",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="additional-services">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="additional-services"
+            >
               <AdditionalServices />
             </ProtectedRoute>
           ),
@@ -306,7 +395,10 @@ function App() {
         {
           path: "/profile",
           element: (
-            <ProtectedRoute isAuthenticated={isAuthenticated} requiredPage="Profile">
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="Profile"
+            >
               <Profile />
             </ProtectedRoute>
           ),
