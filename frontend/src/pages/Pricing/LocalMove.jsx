@@ -13,6 +13,7 @@ import PaymentTermsTab from "./Tabs/PaymentTermsTab";
 import NoteTab from "./Tabs/NoteTab";
 import TruckTypeTab from "./Tabs/TruckTypeTab";
 import RemarksTab from "./Tabs/RemarksTab";
+import ServicesTab from "./Tabs/ServicesTab";
 
 const TAB_LIST = [
   { id: "pricing", label: "PRICING", component: PricingTab },
@@ -29,7 +30,7 @@ const TAB_LIST = [
   { id: "truck-type", label: "TRUCK TYPE", component: TruckTypeTab },
   { id: "remarks", label: "REMARKS", component: RemarksTab },
   { id: "locations", label: "LOCATIONS", component: null },
-  { id: "services", label: "SERVICES", component: null },
+  { id: "services", label: "SERVICES", component: ServicesTab },
 ];
 
 const QATAR_CITIES = [
