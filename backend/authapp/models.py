@@ -75,6 +75,8 @@ def set_default_permissions(sender, instance, created, **kwargs):
             # Pricing Pages
             {'page': 'local_move', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
             {'page': 'international_move', 'can_view': True, 'can_add': False, 'can_edit': False, 'can_delete': False},
+            # THIS LINE WAS MISSING — NOW QUOTATION WILL APPEAR!
+            {'page': 'quotation', 'can_view': True, 'can_add': True, 'can_edit': True, 'can_delete': True},
         ]
         for perm in default_permissions:
             Permission.objects.create(

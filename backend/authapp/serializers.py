@@ -4,7 +4,39 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.conf import settings
 from django.core.mail import send_mail
 import random
-import string
+import string# In your UserCreateSerializer
+# backend/authapp/serializers.py
+from contact.tasks import send_user_creation_email   # ← Correct name!
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    role_id = serializers.PrimaryKeyRelatedField(
+        queryset=Role.objects.all(), source='role', required=True
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'username', 'name', 'role_id']
+
+    def create(self, validated_data):
+        password_length = 12
+        characters = string.ascii_letters + string.digits + string.punctuation
+        random_password = ''.join(random.choice(characters) for _ in range(password_length))
+
+        user = CustomUser(**validated_data)
+        user.set_password(random_password)
+        user.save()
+
+        # OLD: send_mail() → blocks for 5-10 seconds
+        # NEW: Celery → instant response!
+        send_user_creation_email.delay(
+                {
+                    'name': user.name or user.email.split('@')[0],
+                    'email': user.email,
+                },
+                random_password
+            )
+
+        return user
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -78,45 +110,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'username', 'name', 'role', 'role_id']
         read_only_fields = ['id']
 
-class UserCreateSerializer(serializers.ModelSerializer):
-    role_id = serializers.PrimaryKeyRelatedField(
-        queryset=Role.objects.all(), source='role', required=True
-    )
 
-    class Meta:
-        model = CustomUser
-        fields = ['email', 'username', 'name', 'role_id']
-
-    def create(self, validated_data):
-        password_length = 12
-        characters = string.ascii_letters + string.digits + string.punctuation
-        random_password = ''.join(random.choice(characters) for _ in range(password_length))
-
-        user = CustomUser(**validated_data)
-        user.set_password(random_password)
-        user.save()
-
-        subject = 'Your Account Credentials'
-        message = (
-            f'Hello {user.name},\n\n'
-            f'Your account has been created successfully. Here are your login credentials:\n'
-            f'Email: {user.email}\n'
-            f'Password: {random_password}\n\n'
-            f'Please log in and change your password after your first login.\n\n'
-            f'Regards,\nYour Team'
-        )
-        from_email = settings.EMAIL_HOST_USER
-        recipient_list = [user.email]
-
-        send_mail(
-            subject,
-            message,
-            from_email,
-            recipient_list,
-            fail_silently=False,
-        )
-
-        return user
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
