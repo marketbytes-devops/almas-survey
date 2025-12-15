@@ -476,9 +476,9 @@ const SurveyDetails = () => {
       setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
     };
 
-  const updateQuantity = (itemName, qty) => {
-  setItemQuantities((prev) => ({ ...prev, [itemName]: Math.max(0, qty) })); // Allow 0
-};
+    const updateQuantity = (itemName, qty) => {
+      setItemQuantities(prev => ({ ...prev, [itemName]: Math.max(1, qty) }));
+    };
 
     const toggleItemSelection = (itemName) => {
       setSelectedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
@@ -522,49 +522,35 @@ const SurveyDetails = () => {
       setMessage("Article added!");
       setTimeout(() => setMessage(null), 3000);
       toggleExpandedItem(itemName);
-
+      setItemQuantities(prev => ({ ...prev, [itemName]: 1 }));
     };
-  const addMultipleArticles = () => {
-    const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
-    if (selectedItemNames.length === 0) return setError("Select at least one item");
 
-    const newArticles = selectedItemNames.map(itemName => {
-      // Find the actual item object from apiData.items
-      const item = apiData.items.find(i => i.name === itemName && i.room === selectedRoom.id);
+    const addMultipleArticles = () => {
+      const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
+      if (selectedItemNames.length === 0) return setError("Select at least one item");
 
-      // Use default dimensions if available
-      const length = item?.length || "";
-      const width = item?.width || "";
-      const height = item?.height || "";
-
-      // Calculate volume using the same logic as single add
-      const volumeValue = calculateVolume(length, width, height);
-      const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
-      const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
-
-      return {
+      const newArticles = selectedItemNames.map(itemName => ({
         id: uuidv4(),
         itemName,
-        quantity: itemQuantities[itemName] > 0 ? itemQuantities[itemName] : 1,
-        volume,
-        volumeUnit: apiData.volumeUnits[0]?.value || "",
-        weight,
-        weightUnit: apiData.weightUnits[0]?.value || "",
+        quantity: itemQuantities[itemName] || 1,
+        volume: "",
+        volumeUnit: "",
+        weight: "",
+        weightUnit: "",
         handyman: "",
         packingOption: "",
         moveStatus: "new",
         room: selectedRoom?.value || "",
-        length,
-        width,
-        height,
-      };
-    });
+        length: "",
+        width: "",
+        height: "",
+      }));
 
-    setValue("articles", [...watch("articles"), ...newArticles]);
-    setMessage(`${newArticles.length} articles added!`);
-    setTimeout(() => setMessage(null), 3000);
-    setSelectedItems({});
-  };
+      setValue("articles", [...watch("articles"), ...newArticles]);
+      setMessage(`${newArticles.length} articles added!`);
+      setTimeout(() => setMessage(null), 3000);
+      setSelectedItems({});
+    };
 
     const removeArticle = (id) => {
       setValue("articles", watch("articles").filter(a => a.id !== id));
@@ -764,130 +750,86 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
   );
 };
 
-  const ItemRow = ({ item }) => {
-    const qty = itemQuantities[item.name] || 0;
-    const isSelected = selectedItems[item.name] || false;
+    const ItemRow = ({ item }) => {
+      const isSelected = selectedItems[item.name] || false;
+      const qty = itemQuantities[item.name] || 1;
 
-    return (
-      <div className="border-b border-gray-200 last:border-0">
-        <div
-          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4
-                    hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
-                    transition-all rounded-lg"
-        >
-          <div className="flex items-start sm:items-center gap-4 flex-1 w-full">
-            {/* Custom Round Selection Button */}
-            <button
-              type="button"
-              onClick={() => toggleItemSelection(item.name)}
-              className="focus:outline-none"
-            >
-              <div
-                className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all duration-200 ${
-                  isSelected
-                    ? "bg-[#4c7085] border-[#4c7085]"
-                    : "bg-white border-gray-400"
-                }`}
-              >
-                {isSelected && (
-                  <div className="w-4 h-4 bg-white rounded-full" />
-                )}
-              </div>
-            </button>
+      return (
+<div className="border-b border-gray-200 last:border-0">
+  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 
+                  hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 
+                  transition-all rounded-lg">
+    <div className="flex items-start sm:items-center gap-4 flex-1 w-full">
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={() => toggleItemSelection(item.name)}
+        className="w-5 h-5 text-[#4c7085] rounded border-gray-300 focus:ring-[#4c7085]"
+      />
 
-            <div className="flex-1">
-              <div className="font-semibold text-gray-800 text-sm sm:text-base">
-                {item.name}
-              </div>
-              {item.description && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {item.description}
-                </div>
-              )}
-              {(item.length || item.width || item.height) && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {item.length && `L:${item.length}cm`}
-                  {item.width && ` × W:${item.width}cm`}
-                  {item.height && ` × H:${item.height}cm`}
-                </div>
-              )}
-            </div>
+      <div className="flex-1">
+        <div className="font-semibold text-gray-800 text-sm sm:text-base">{item.name}</div>
+
+        {item.description && (
+          <div className="text-xs text-gray-500 mt-1">{item.description}</div>
+        )}
+
+        {(item.length || item.width || item.height) && (
+          <div className="text-xs text-gray-500 mt-1">
+            {item.length && `L:${item.length}cm`}
+            {item.width && ` × W:${item.width}cm`}
+            {item.height && ` × H:${item.height}cm`}
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center justify-between w-full sm:w-auto bg-white border border-gray-300 rounded-lg shadow-sm">
-              <button
-                type="button"
-                onClick={() =>
-                  updateQuantity(item.name, Math.max(0, qty - 1))
-                }
-                className="p-3 text-gray-600 hover:bg-gray-100 rounded-l-lg transition w-1/3 sm:w-auto"
-              >
-                <FaMinus className="w-4 h-4" />
-              </button>
-              <input
-                type="text"
-                value={qty}
-                readOnly
-                className="w-full sm:w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-2"
-              />
-              <button
-                type="button"
-                onClick={() => updateQuantity(item.name, qty + 1)}
-                className="p-3 text-gray-600 hover:bg-gray-100 rounded-r-lg transition w-1/3 sm:w-auto"
-              >
-                <FaPlus className="w-4 h-4" />
-              </button>
-            </div>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-
-                  // Save current scroll position
-                  const scrollPosition = window.scrollY;
-
-                  // Toggle expand/collapse
-                  toggleExpandedItem(item.name);
-
-                  // After state update, restore scroll position
-                  setTimeout(() => {
-                    window.scrollTo({
-                      top: scrollPosition,
-                      behavior: 'smooth'
-                    });
-
-                    // Optional: also bring the row into view gently
-                    e.currentTarget.closest('.border-b')?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'nearest'
-                    });
-                  }, 100);
-                }}
-                className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
-              >
-                Item Options{" "}
-                {expandedItems[item.name] ? (
-                  <FaChevronUp className="w-4 h-4" />
-                ) : (
-                  <FaChevronDown className="w-4 h-4" />
-                )}
-              </button>
-          </div>
-        </div>
-
-        {expandedItems[item.name] && (
-          <ItemForm
-            item={item}
-            onAdd={addArticle}
-            onCancel={() => toggleExpandedItem(item.name)}
-          />
         )}
       </div>
-    );
-  };
+    </div>
+    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+      <div className="flex items-center justify-between w-full sm:w-auto bg-white border border-gray-300 rounded-lg shadow-sm">
+        <button
+          type="button"
+          onClick={() => updateQuantity(item.name, qty - 1)}
+          className="p-3 text-gray-600 hover:bg-gray-100 rounded-l-lg transition w-1/3 sm:w-auto"
+        >
+          <FaMinus className="w-4 h-4" />
+        </button>
+        <input
+          type="text"
+          value={qty}
+          readOnly
+          className="w-full sm:w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-2"
+        />
+
+        <button
+          type="button"
+          onClick={() => updateQuantity(item.name, qty + 1)}
+          className="p-3 text-gray-600 hover:bg-gray-100 rounded-r-lg transition w-1/3 sm:w-auto"
+        >
+          <FaPlus className="w-4 h-4" />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => toggleExpandedItem(item.name)}
+        className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
+      >
+        Item Options {expandedItems[item.name] ? <FaChevronUp className="w-4 h-4" /> : <FaChevronDown className="w-4 h-4" />}
+      </button>
+
+    </div>
+  </div>
+
+  {expandedItems[item.name] && (
+    <ItemForm
+      item={item}
+      onAdd={addArticle}
+      onCancel={() => toggleExpandedItem(item.name)}
+    />
+  )}
+</div>
+      );
+    };
+
   const AddedArticlesSidebar = () => {
     const articles = watch("articles");
     const [editingArticle, setEditingArticle] = useState(null);
