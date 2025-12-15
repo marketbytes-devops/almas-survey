@@ -35,6 +35,10 @@ export default function QuotationCreate() {
 
   const [additionalCharges, setAdditionalCharges] = useState([]);
 
+  // New: Fetch all services from /api/services/
+  const [allServices, setAllServices] = useState([]);
+  const [serviceSelections, setServiceSelections] = useState({});
+
   const [form, setForm] = useState({
     serialNo: "1001",
     date: today,
@@ -109,10 +113,13 @@ export default function QuotationCreate() {
   useEffect(() => {
     const fetchAdditionalCharges = async () => {
       try {
-        const chargesRes = await apiClient.get("/quotation-additional-charges/");
+        const chargesRes = await apiClient.get(
+          "/quotation-additional-charges/"
+        );
         const surveyRes = await apiClient.get(`/surveys/${id}/`);
         const surveyData = surveyRes.data;
-        const selectedServiceIds = surveyData.additional_services?.map((service) => service.id) || [];
+        const selectedServiceIds =
+          surveyData.additional_services?.map((service) => service.id) || [];
 
         const filteredCharges = chargesRes.data.filter((charge) =>
           selectedServiceIds.includes(charge.service.id)
@@ -150,7 +157,9 @@ export default function QuotationCreate() {
         setPriceError("");
       } catch (err) {
         console.error("Failed to fetch pricing:", err);
-        setPriceError(`No pricing found for ${destinationCity}. Please contact administrator.`);
+        setPriceError(
+          `No pricing found for ${destinationCity}. Please contact administrator.`
+        );
         setPricingRanges([]);
       }
     };
@@ -196,6 +205,22 @@ export default function QuotationCreate() {
     }));
   }, [dynamicIncludes, dynamicExcludes]);
 
+  // NEW: Fetch services from /api/services/
+  useEffect(() => {
+    const fetchAllServices = async () => {
+      try {
+        const res = await apiClient.get("/services/");
+        const services = Array.isArray(res.data.results)
+          ? res.data.results
+          : res.data;
+        setAllServices(services);
+      } catch (err) {
+        console.error("Failed to fetch services:", err);
+      }
+    };
+    fetchAllServices();
+  }, []);
+
   const totalVolume =
     survey?.articles
       ?.reduce(
@@ -216,7 +241,9 @@ export default function QuotationCreate() {
     );
 
     if (!applicableRange) {
-      setPriceError(`No pricing range found for volume ${volume} CBM in ${destinationCity}.`);
+      setPriceError(
+        `No pricing range found for volume ${volume} CBM in ${destinationCity}.`
+      );
       setForm((prev) => ({ ...prev, baseAmount: "", amount: "" }));
       return;
     }
@@ -321,7 +348,10 @@ export default function QuotationCreate() {
       navigate("/quotation-list");
     } catch (err) {
       setIsSubmitted(false);
-      alert("Error: " + (err.response?.data?.detail || "Failed to create quotation."));
+      alert(
+        "Error: " +
+          (err.response?.data?.detail || "Failed to create quotation.")
+      );
     }
   };
 
@@ -372,10 +402,14 @@ export default function QuotationCreate() {
 
         <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">Pricing Location</h3>
+            <h3 className="text-sm font-medium text-blue-800 mb-2">
+              Pricing Location
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-[#4c7085] mb-1">Destination City</label>
+                <label className="block text-xs font-medium text-[#4c7085] mb-1">
+                  Destination City
+                </label>
                 <input
                   type="text"
                   value={destinationCity || "Not specified"}
@@ -384,7 +418,9 @@ export default function QuotationCreate() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#4c7085] mb-1">Country</label>
+                <label className="block text-xs font-medium text-[#4c7085] mb-1">
+                  Country
+                </label>
                 <input
                   type="text"
                   value="Qatar"
@@ -397,7 +433,9 @@ export default function QuotationCreate() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium mb-1">Quotation No.</label>
+              <label className="block text-sm font-medium mb-1">
+                Quotation No.
+              </label>
               <input
                 type="text"
                 value={form.serialNo}
@@ -419,7 +457,9 @@ export default function QuotationCreate() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             {["Client Name", "Mobile", "Email"].map((label, i) => (
               <div key={i}>
-                <label className="block text-sm font-medium mb-1">{label}</label>
+                <label className="block text-sm font-medium mb-1">
+                  {label}
+                </label>
                 <input
                   type="text"
                   value={[form.client, form.mobile, form.email][i]}
@@ -432,9 +472,12 @@ export default function QuotationCreate() {
 
           {additionalCharges.length > 0 && (
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-medium text-purple-900 mb-4">Additional Services</h3>
+              <h3 className="text-lg sm:text-xl font-medium text-purple-900 mb-4">
+                Additional Services
+              </h3>
               <p className="text-sm text-purple-700 mb-4">
-                Automatically included from survey selection with pricing settings
+                Automatically included from survey selection with pricing
+                settings
               </p>
 
               <div className="space-y-3">
@@ -444,12 +487,18 @@ export default function QuotationCreate() {
                   const subtotal = charge.price_per_unit * quantity;
 
                   return (
-                    <div key={charge.id} className="bg-white border-2 border-purple-200 rounded-lg p-4">
+                    <div
+                      key={charge.id}
+                      className="bg-white border-2 border-purple-200 rounded-lg p-4"
+                    >
                       <div className="flex flex-col sm:flex-row justify-between gap-3">
                         <div>
-                          <div className="font-medium text-gray-800">{charge.service.name}</div>
+                          <div className="font-medium text-gray-800">
+                            {charge.service.name}
+                          </div>
                           <div className="text-sm text-gray-600">
-                            {charge.price_per_unit} {currencyName} × {quantity} unit(s)
+                            {charge.price_per_unit} {currencyName} × {quantity}{" "}
+                            unit(s)
                           </div>
                           <div className="text-xs text-gray-500 capitalize mt-1">
                             Rate: {charge.rate_type?.toLowerCase() || "fix"}
@@ -468,51 +517,108 @@ export default function QuotationCreate() {
             </div>
           )}
 
-          {survey?.additional_services?.length > 0 && additionalCharges.length === 0 && (
-            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 sm:p-6">
-              <h3 className="text-lg font-medium text-yellow-900 mb-3">Services Requested in Survey</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {survey.additional_services.map((service) => (
-                  <div key={service.id} className="flex items-center gap-2 bg-white p-3 rounded-lg border border-yellow-300">
-                    <span className="text-green-600 font-medium">✓</span>
-                    <span className="text-sm font-medium">{service.name}</span>
-                  </div>
-                ))}
+          {survey?.additional_services?.length > 0 &&
+            additionalCharges.length === 0 && (
+              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 sm:p-6">
+                <h3 className="text-lg font-medium text-yellow-900 mb-3">
+                  Services Requested in Survey
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {survey.additional_services.map((service) => (
+                    <div
+                      key={service.id}
+                      className="flex items-center gap-2 bg-white p-3 rounded-lg border border-yellow-300"
+                    >
+                      <span className="text-green-600 font-medium">✓</span>
+                      <span className="text-sm font-medium">
+                        {service.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-yellow-700 mt-3">
+                  Note: These services were selected in the survey but no
+                  pricing has been configured yet. Please add pricing in the
+                  Additional Settings tab.
+                </p>
               </div>
-              <p className="text-xs text-yellow-700 mt-3">
-                Note: These services were selected in the survey but no pricing has been configured yet. 
-                Please add pricing in the Additional Settings tab.
-              </p>
-            </div>
-          )}
+            )}
 
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl border-2 border-blue-200">
-            <h3 className="text-lg sm:text-xl font-medium text-center mb-4">Quotation Breakdown</h3>
+            <h3 className="text-lg sm:text-xl font-medium text-center mb-4">
+              Your Rate
+            </h3>
 
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
-                <div>
-                  <span className="text-sm text-gray-600">Base Amount (Volume Pricing)</span>
-                  <div className="text-xs text-gray-500">{totalVolume} CBM × {destinationCity}</div>
-                </div>
-                <span className="text-xl sm:text-2xl font-medium text-[#4c7085]">{form.baseAmount || "0.00"} QAR</span>
+              {/* NEW: Services from /api/services/ with radio buttons */}
+              <div className="space-y-5">
+                {allServices.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">
+                    No services available
+                  </p>
+                ) : (
+                  allServices.map((service) => {
+                    const isSelected = serviceSelections[service.id] === true;
+
+                    return (
+                      <div
+                        key={service.id}
+                        className="bg-white rounded-lg p-5 shadow-md border border-gray-200 flex items-center justify-between"
+                      >
+                        <div className="text-lg font-medium text-gray-800">
+                          {service.name}
+                        </div>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setServiceSelections((prev) => ({
+                                ...prev,
+                                [service.id]: !prev[service.id], // Toggle true/false
+                              }))
+                            }
+                            className="focus:outline-none"
+                          >
+                            <div
+                              className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                                isSelected
+                                  ? "bg-blue-600 border-blue-600"
+                                  : "bg-white border-gray-400"
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="w-3 h-3 bg-white rounded-full" />
+                              )}
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
               {form.additionalChargesTotal > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
                   <div>
-                    <span className="text-sm text-gray-600">Additional Services</span>
+                    <span className="text-sm text-gray-600">
+                      Additional Services
+                    </span>
                     <div className="text-xs text-gray-500">
                       {additionalCharges.length} service(s) selected in survey
                     </div>
                   </div>
-                  <span className="text-xl sm:text-2xl font-medium text-purple-700">+ {form.additionalChargesTotal.toFixed(2)} QAR</span>
+                  <span className="text-xl sm:text-2xl font-medium text-purple-700">
+                    + {form.additionalChargesTotal.toFixed(2)} QAR
+                  </span>
                 </div>
               )}
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-2 gap-2">
-                <span className="text-xl font-medium text-gray-900">Total Quotation Amount</span>
-                <span className="text-2xl sm:text-4xl font-medium text-green-600">{form.amount || "0.00"} QAR</span>
+
+                <span className="text-2xl sm:text-4xl font-medium text-green-600">
+                  {form.amount || "0.00"} QAR
+                </span>
               </div>
             </div>
 
@@ -524,12 +630,19 @@ export default function QuotationCreate() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 items-center justify-center border-2 border-gray-300 rounded-lg overflow-hidden">
-            <div className="bg-gray-700 text-white p-4 text-center font-medium">Service Includes</div>
-            <div className="bg-red-700 text-white p-4 text-center font-medium">Service Excludes</div>
+            <div className="bg-gray-700 text-white p-4 text-center font-medium">
+              Service Includes
+            </div>
+            <div className="bg-red-700 text-white p-4 text-center font-medium">
+              Service Excludes
+            </div>
 
             <div className=" p-4 sm:p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
               {dynamicIncludes.map((service) => (
-                <label key={service.id} className="flex items-center space-x-3 cursor-pointer">
+                <label
+                  key={service.id}
+                  className="flex items-center space-x-3 cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={form.includedServices[service.id] || false}
@@ -544,14 +657,19 @@ export default function QuotationCreate() {
                     }
                     className="mt-1 w-5 h-5 text-blue-600"
                   />
-                  <span className="text-sm font-medium relative top-0.5">{service.text}</span>
+                  <span className="text-sm font-medium relative top-0.5">
+                    {service.text}
+                  </span>
                 </label>
               ))}
             </div>
 
             <div className="p-4 sm:p-6 space-y-4 bg-red-50 border-l-2 border-red-200 max-h-80 overflow-y-auto">
               {dynamicExcludes.map((service) => (
-                <label key={service.id} className="flex items-start space-x-3 cursor-pointer">
+                <label
+                  key={service.id}
+                  className="flex items-start space-x-3 cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={form.excludedServices[service.id] || false}
@@ -566,7 +684,9 @@ export default function QuotationCreate() {
                     }
                     className="mt-1 w-5 h-5 text-red-600"
                   />
-                  <span className="text-sm font-medium relative top-1">{service.text}</span>
+                  <span className="text-sm font-medium relative top-1">
+                    {service.text}
+                  </span>
                 </label>
               ))}
             </div>
@@ -574,7 +694,9 @@ export default function QuotationCreate() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div>
-              <label className="block font-medium text-sm mb-1">Total Amount</label>
+              <label className="block font-medium text-sm mb-1">
+                Total Amount
+              </label>
               <input
                 type="text"
                 readOnly
@@ -598,7 +720,13 @@ export default function QuotationCreate() {
               <input
                 type="text"
                 readOnly
-                value={form.amount && form.advance ? `${(parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)} QAR` : ""}
+                value={
+                  form.amount && form.advance
+                    ? `${(
+                        parseFloat(form.amount) - parseFloat(form.advance)
+                      ).toFixed(2)} QAR`
+                    : ""
+                }
                 className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700"
               />
             </div>
@@ -608,7 +736,9 @@ export default function QuotationCreate() {
             <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
             <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <p className="text-sm text-gray-600">
-                {survey?.signature_uploaded ? "✓ Signature added" : "Add customer signature"}
+                {survey?.signature_uploaded
+                  ? "✓ Signature added"
+                  : "Add customer signature"}
               </p>
               <button
                 onClick={openSignatureModal}

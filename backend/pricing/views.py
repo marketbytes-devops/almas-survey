@@ -4,22 +4,23 @@ from rest_framework.decorators import action
 from .models import (
     Price,
     AdditionalService,
-    QuotationAdditionalCharge,
-    InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark
-)
+        QuotationAdditionalCharge,
+        InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark
+,Service)
 from django.shortcuts import get_object_or_404
 from .serializers import (
     PriceSerializer,
     AdditionalServiceSerializer,
     SurveyAdditionalServiceSerializer,
     QuotationAdditionalChargeSerializer,
-    InclusionExclusionSerializer,InsurancePlanSerializer,PaymentTermSerializer,QuoteNoteSerializer,TruckTypeSerializer,SurveyRemarkSerializer
+    InclusionExclusionSerializer,InsurancePlanSerializer,PaymentTermSerializer,QuoteNoteSerializer,TruckTypeSerializer,SurveyRemarkSerializer, ServiceSerializer
 )
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from survey.models import SurveyAdditionalService
+from rest_framework import viewsets, filters
 
 class InclusionExclusionViewSet(viewsets.ModelViewSet):
     queryset = InclusionExclusion.objects.filter(is_active=True).order_by('text')
@@ -336,3 +337,24 @@ class SurveyRemarkViewSet(viewsets.ModelViewSet):
         remark.is_active = not remark.is_active
         remark.save()
         return Response({'is_active': remark.is_active})
+    
+
+class ServiceViewSet(viewsets.ModelViewSet):
+    queryset = Service.objects.filter(is_active=True)
+    serializer_class = ServiceSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name', 'created_at']
+    ordering = ['name']
+
+    # Optional: Include inactive ones for admin (if needed later)
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Service.objects.all()
+        return Service.objects.filter(is_active=True)
+
+    # Custom bulk update (optional, not needed now)
+    @action(detail=False, methods=['patch'], url_path='bulk-update')
+    def bulk_update(self, request):
+        # Not needed for now — but safe to keep
+        return Response({"detail": "Not implemented"}, status=400)

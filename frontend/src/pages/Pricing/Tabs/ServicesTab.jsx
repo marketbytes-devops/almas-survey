@@ -1,6 +1,13 @@
 // frontend/src/components/Pricing/Tabs/ServicesTab.jsx
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaTrash, FaSave, FaEdit2, FaCheck } from "react-icons/fa";
+import {
+  FaCopy,
+  FaSave,
+  FaPlus,
+  FaTrash,
+  FaPencilAlt, // Correct icon imported
+  FaCheck,
+} from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 
 const ServicesTab = () => {
@@ -11,17 +18,32 @@ const ServicesTab = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+  const API_BASE_URL =
+    apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
   // Fetch all services
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get(`${API_BASE_URL}/additional-services/`);
-      setServices(res.data.results || res.data);
+      const res = await apiClient.get(`${API_BASE_URL}/services/`);
+
+      const data = res.data;
+
+      if (Array.isArray(data.results)) {
+        setServices(data.results);
+      } else if (Array.isArray(data)) {
+        setServices(data);
+      } else {
+        console.warn(
+          "Unexpected response format for additional-services:",
+          data
+        );
+        setServices([]);
+      }
     } catch (err) {
       console.error("Failed to fetch services:", err);
-      alert("Failed to load services");
+      alert("Failed to load services. Check console/network tab.");
+      setServices([]); // ← important: always reset to array on error
     } finally {
       setLoading(false);
     }
@@ -40,7 +62,7 @@ const ServicesTab = () => {
 
     setSaving(true);
     try {
-      const res = await apiClient.post(`${API_BASE_URL}/additional-services/`, {
+      const res = await apiClient.post(`${API_BASE_URL}/services/`, {
         name: newServiceName.trim(),
       });
       setServices([...services, res.data]);
@@ -67,10 +89,13 @@ const ServicesTab = () => {
     }
 
     try {
-      const res = await apiClient.patch(`${API_BASE_URL}/additional-services/${id}/`, {
-        name: editName.trim(),
-      });
-      setServices(services.map(s => s.id === id ? res.data : s));
+      const res = await apiClient.patch(
+        `${API_BASE_URL}/services/${id}/`,
+        {
+          name: editName.trim(),
+        }
+      );
+      setServices(services.map((s) => (s.id === id ? res.data : s)));
       setEditingId(null);
       setEditName("");
     } catch (err) {
@@ -85,11 +110,12 @@ const ServicesTab = () => {
 
   // Delete service
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this service?")) return;
+    if (!window.confirm("Are you sure you want to delete this service?"))
+      return;
 
     try {
-      await apiClient.delete(`${API_BASE_URL}/additional-services/${id}/`);
-      setServices(services.filter(s => s.id !== id));
+      await apiClient.delete(`${API_BASE_URL}/services/${id}/`);
+      setServices(services.filter((s) => s.id !== id));
       alert("Service deleted");
     } catch (err) {
       alert("Cannot delete: This service might be used in surveys/quotations");
@@ -108,7 +134,9 @@ const ServicesTab = () => {
     <div className="space-y-8">
       {/* Add New Service */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New Service</h3>
+        <h3 className="text-2xl font-bold text-gray-800 mb-6">
+          Add New Service
+        </h3>
         <div className="flex gap-4 max-w-2xl">
           <input
             type="text"
@@ -132,7 +160,9 @@ const ServicesTab = () => {
       {/* Services List */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-2xl font-bold text-gray-800">All Additional Services ({services.length})</h3>
+          <h3 className="text-2xl font-bold text-gray-800">
+            All Additional Services ({services.length})
+          </h3>
         </div>
 
         {services.length === 0 ? (
@@ -169,12 +199,13 @@ const ServicesTab = () => {
                       <button
                         onClick={() => saveEdit(service.id)}
                         className="p-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
+                        title="Save"
                       >
                         <FaCheck size={18} />
                       </button>
                       <button
                         onClick={cancelEdit}
-                        className="p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                        className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
                       >
                         Cancel
                       </button>
@@ -184,12 +215,14 @@ const ServicesTab = () => {
                       <button
                         onClick={() => startEdit(service)}
                         className="p-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                        title="Edit"
                       >
-                        <FaEdit2 size={18} />
+                        <FaPencilAlt size={18} /> {/* FIXED HERE */}
                       </button>
                       <button
                         onClick={() => handleDelete(service.id)}
                         className="p-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
+                        title="Delete"
                       >
                         <FaTrash size={18} />
                       </button>
