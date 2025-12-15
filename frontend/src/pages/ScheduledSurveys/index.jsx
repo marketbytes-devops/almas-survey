@@ -515,7 +515,7 @@ const ScheduledSurveys = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     Survey Status
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                     Actions
                   </th>
                 </tr>
@@ -609,8 +609,7 @@ const ScheduledSurveys = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
-                        <div className="flex flex-wrap gap-2">
-                          {/* NEW: Create Quote Button - Only if no survey OR cancelled */}
+                        <div className="flex gap-2">
                           {(!enquiry.survey_status ||
                             enquiry.survey_status === "cancelled") && (
                             <button
