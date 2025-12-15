@@ -14,7 +14,6 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-
 @method_decorator(csrf_exempt, name="dispatch")
 class QuotationViewSet(viewsets.ModelViewSet):
     queryset = Quotation.objects.select_related("survey", "currency").all()
