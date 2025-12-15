@@ -522,7 +522,6 @@ export default function QuotationEdit() {
           )}
 
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl border-2 border-blue-200">
-            <h3 className="text-lg sm:text-xl font-medium text-center mb-4">Quotation Breakdown</h3>
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
                 <div>
@@ -543,7 +542,7 @@ export default function QuotationEdit() {
               )}
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-2 gap-2">
-                <span className="text-xl font-medium text-gray-900">Total Quotation Amount</span>
+                <span className="text-xl font-medium text-gray-900">Total Amount</span>
                 <span className="text-2xl sm:text-4xl font-medium text-green-600">{form.amount || "0.00"} QAR</span>
               </div>
             </div>

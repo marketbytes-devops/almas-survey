@@ -35,10 +35,12 @@ export default function QuotationCreate() {
 
   const [additionalCharges, setAdditionalCharges] = useState([]);
 
+  // New: Fetch all services from /api/services/
   const [allServices, setAllServices] = useState([]);
   const [serviceSelections, setServiceSelections] = useState({});
 
   const [form, setForm] = useState({
+    serialNo: "1001",
     date: today,
     client: "",
     mobile: "",
@@ -203,6 +205,7 @@ export default function QuotationCreate() {
     }));
   }, [dynamicIncludes, dynamicExcludes]);
 
+  // NEW: Fetch services from /api/services/
   useEffect(() => {
     const fetchAllServices = async () => {
       try {
@@ -318,6 +321,7 @@ export default function QuotationCreate() {
 
     const payload = {
       survey: parseInt(survey.id),
+      serial_no: form.serialNo,
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
@@ -429,6 +433,17 @@ export default function QuotationCreate() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
+              <label className="block text-sm font-medium mb-1">
+                Quotation No.
+              </label>
+              <input
+                type="text"
+                value={form.serialNo}
+                onChange={(e) => setForm({ ...form, serialNo: e.target.value })}
+                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-1">Date</label>
               <input
                 type="date"
@@ -535,6 +550,7 @@ export default function QuotationCreate() {
             </h3>
 
             <div className="space-y-4">
+              {/* NEW: Services from /api/services/ with radio buttons */}
               <div className="space-y-5">
                 {allServices.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
@@ -558,7 +574,7 @@ export default function QuotationCreate() {
                             onClick={() =>
                               setServiceSelections((prev) => ({
                                 ...prev,
-                                [service.id]: !prev[service.id],
+                                [service.id]: !prev[service.id], // Toggle true/false
                               }))
                             }
                             className="focus:outline-none"
@@ -599,6 +615,7 @@ export default function QuotationCreate() {
               )}
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-2 gap-2">
+
                 <span className="text-2xl sm:text-4xl font-medium text-green-600">
                   {form.amount || "0.00"} QAR
                 </span>
@@ -720,14 +737,14 @@ export default function QuotationCreate() {
             <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <p className="text-sm text-gray-600">
                 {survey?.signature_uploaded
-                  ? "✓ Signature added (can be changed)"
+                  ? "✓ Signature added"
                   : "Add customer signature"}
               </p>
               <button
                 onClick={openSignatureModal}
-                disabled={isSignatureUploading}
+                disabled={isSignatureUploading || survey?.signature_uploaded}
                 className={`px-6 py-3 rounded-lg font-medium ${
-                  isSignatureUploading
+                  survey?.signature_uploaded || isSignatureUploading
                     ? "bg-gray-400 text-white cursor-not-allowed"
                     : "bg-red-600 hover:bg-red-700 text-white"
                 }`}
@@ -735,7 +752,7 @@ export default function QuotationCreate() {
                 {isSignatureUploading
                   ? "Uploading..."
                   : survey?.signature_uploaded
-                  ? "Change Signature"
+                  ? "Signature Added"
                   : "Add Signature"}
               </button>
             </div>
@@ -748,7 +765,7 @@ export default function QuotationCreate() {
               className={`w-full py-2 px-8 text-sm font-medium rounded-lg shadow-lg transition ${
                 !form.amount || priceError
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
               }`}
             >
               Save Quotation
