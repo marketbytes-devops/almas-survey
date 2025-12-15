@@ -3,7 +3,6 @@ from django.utils import timezone
 from survey.models import Survey
 from additional_settings.models import Currency
 from django.core.validators import MinValueValidator
-import json
 
 
 class Quotation(models.Model):
@@ -15,7 +14,6 @@ class Quotation(models.Model):
         blank=True,
     )
     quotation_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    serial_no = models.CharField(max_length=20, default="1001", null=True, blank=True)
     pricing_mode = models.CharField(
         max_length=20,
         choices=[('variable', 'Variable'), ('fixed', 'Fixed')],
@@ -46,11 +44,11 @@ class Quotation(models.Model):
 
     included_services = models.JSONField(
         default=list, null=True, blank=True,
-        help_text="List of included services (e.g., ['Packing Service', 'Loading'])"
+        help_text="List of included services IDs"
     )
     excluded_services = models.JSONField(
         default=list, null=True, blank=True,
-        help_text="List of excluded services (e.g., ['Insurance', 'Storage'])"
+        help_text="List of excluded services IDs"
     )
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -71,10 +69,6 @@ class Quotation(models.Model):
         if not self.quotation_id and self.survey:
             timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
             self.quotation_id = f"QUOT-{self.survey.id}-{timestamp}"
-
-        if not self.serial_no:
-            last = Quotation.objects.order_by("-id").first()
-            self.serial_no = str(int(last.serial_no or "1000") + 1) if last else "1001"
 
         if not isinstance(self.included_services, list):
             self.included_services = []

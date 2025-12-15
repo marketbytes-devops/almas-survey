@@ -1,238 +1,131 @@
-// frontend/src/components/Pricing/Tabs/ServicesTab.jsx
 import React, { useState, useEffect } from "react";
-import {
-  FaCopy,
-  FaSave,
-  FaPlus,
-  FaTrash,
-  FaPencilAlt, // Correct icon imported
-  FaCheck,
-} from "react-icons/fa";
+import { FaPlus, FaTrash } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import Input from "../../../components/Input";
 
 const ServicesTab = () => {
-  const [services, setServices] = useState([]);
-  const [newServiceName, setNewServiceName] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [newText, setNewText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
-  const API_BASE_URL =
-    apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
-  // Fetch all services
-  const fetchServices = async () => {
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async () => {
     try {
-      setLoading(true);
       const res = await apiClient.get(`${API_BASE_URL}/services/`);
-
       const data = res.data;
-
       if (Array.isArray(data.results)) {
-        setServices(data.results);
+        setItems(data.results);
       } else if (Array.isArray(data)) {
-        setServices(data);
+        setItems(data);
       } else {
-        console.warn(
-          "Unexpected response format for additional-services:",
-          data
-        );
-        setServices([]);
+        setItems([]);
       }
     } catch (err) {
-      console.error("Failed to fetch services:", err);
-      alert("Failed to load services. Check console/network tab.");
-      setServices([]); // ← important: always reset to array on error
-    } finally {
-      setLoading(false);
+      console.error("Failed to load services");
     }
   };
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  // Add new service
-  const handleAddService = async () => {
-    if (!newServiceName.trim()) {
-      alert("Service name is required");
-      return;
-    }
+  const addItem = async () => {
+    const text = newText.trim();
+    if (!text) return;
 
     setSaving(true);
     try {
       const res = await apiClient.post(`${API_BASE_URL}/services/`, {
-        name: newServiceName.trim(),
+        name: text,
       });
-      setServices([...services, res.data]);
-      setNewServiceName("");
-      alert("Service added successfully!");
+      setItems([...items, res.data]);
+      setNewText("");
     } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.name?.[0] || "Failed to add service");
+      alert("Failed to add service");
     } finally {
       setSaving(false);
     }
   };
 
-  // Update service
-  const startEdit = (service) => {
-    setEditingId(service.id);
-    setEditName(service.name);
-  };
+  const deleteItem = async (id) => {
+    if (!window.confirm("Delete this service permanently?")) return;
 
-  const saveEdit = async (id) => {
-    if (!editName.trim()) {
-      alert("Service name cannot be empty");
-      return;
-    }
-
-    try {
-      const res = await apiClient.patch(
-        `${API_BASE_URL}/services/${id}/`,
-        {
-          name: editName.trim(),
-        }
-      );
-      setServices(services.map((s) => (s.id === id ? res.data : s)));
-      setEditingId(null);
-      setEditName("");
-    } catch (err) {
-      alert("Failed to update service");
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditName("");
-  };
-
-  // Delete service
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this service?"))
-      return;
-
+    setDeletingId(id);
     try {
       await apiClient.delete(`${API_BASE_URL}/services/${id}/`);
-      setServices(services.filter((s) => s.id !== id));
-      alert("Service deleted");
+      setItems(items.filter((i) => i.id !== id));
     } catch (err) {
       alert("Cannot delete: This service might be used in surveys/quotations");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4c7085]"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      {/* Add New Service */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-lg sm:text-2xl font-medium text-gray-800 mb-6">
           Add New Service
-        </h3>
-        <div className="flex gap-4 max-w-2xl">
-          <input
+        </h2>
+        <div className="grid gap-4 mb-6">
+          <Input
+            label="Add New Service"
+            placeholder="e.g. Boom Truck, Curtain Installation, Handyman"
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
             type="text"
-            value={newServiceName}
-            onChange={(e) => setNewServiceName(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleAddService()}
-            placeholder="Enter service name (e.g., Boom Truck, Curtain Installation)"
-            className="flex-1 px-5 py-3 border border-gray-300 rounded-lg focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none text-lg"
+            disabled={saving}
           />
           <button
-            onClick={handleAddService}
-            disabled={saving || !newServiceName.trim()}
-            className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:from-[#3a586d] hover:to-[#54738a] transition disabled:opacity-60 font-medium"
+            onClick={addItem}
+            disabled={saving || !newText.trim()}
+            className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg transition shadow-lg flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <FaPlus size={20} />
-            <span>{saving ? "Adding..." : "Add Service"}</span>
+            {saving ? (
+              "Adding..."
+            ) : (
+              <>
+                <FaPlus size={16} className="sm:w-4 sm:h-4" /> Add
+              </>
+            )}
           </button>
         </div>
-      </div>
 
-      {/* Services List */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-2xl font-bold text-gray-800">
-            All Additional Services ({services.length})
-          </h3>
+        <div className="space-y-3">
+          {items.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-base sm:text-lg mb-2">No services added yet.</p>
+              <p className="text-sm">Add your first service above.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between bg-gray-50 p-4 sm:p-5 rounded-xl hover:bg-gray-100 transition shadow-sm border border-gray-200"
+                >
+                  <span className="text-gray-800 font-medium text-sm sm:text-base flex-1">
+                    {item.name}
+                  </span>
+                  <button
+                    onClick={() => deleteItem(item.id)}
+                    disabled={deletingId === item.id}
+                    className="ml-4 p-2 text-red-600 hover:text-red-800 disabled:opacity-50 transition rounded-lg"
+                    title="Delete permanently"
+                  >
+                    {deletingId === item.id ? (
+                      <span className="text-xs sm:text-sm">Deleting...</span>
+                    ) : (
+                      <FaTrash size={16} className="sm:w-4 sm:h-4" />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
-        {services.length === 0 ? (
-          <div className="p-20 text-center text-gray-500">
-            <p className="text-xl">No services added yet.</p>
-            <p>Add your first service above</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {services.map((service) => (
-              <div
-                key={service.id}
-                className="p-6 hover:bg-gray-50 transition flex items-center justify-between"
-              >
-                <div className="flex-1">
-                  {editingId === service.id ? (
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="px-4 py-2 border border-[#4c7085] rounded-lg text-lg font-medium focus:outline-none focus:ring-4 focus:ring-[#4c7085]/20"
-                      autoFocus
-                    />
-                  ) : (
-                    <span className="text-lg font-medium text-gray-800">
-                      {service.name}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {editingId === service.id ? (
-                    <>
-                      <button
-                        onClick={() => saveEdit(service.id)}
-                        className="p-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
-                        title="Save"
-                      >
-                        <FaCheck size={18} />
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => startEdit(service)}
-                        className="p-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
-                        title="Edit"
-                      >
-                        <FaPencilAlt size={18} /> {/* FIXED HERE */}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(service.id)}
-                        className="p-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
-                        title="Delete"
-                      >
-                        <FaTrash size={18} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

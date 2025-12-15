@@ -45,11 +45,10 @@ class QuotationViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         survey_id = instance.survey.survey_id if instance.survey else "unknown"
         instance.delete()
-        logger.info(f"Quotation {instance.quotation_id} deleted for survey {survey_id}")
+        logger.info(f"Quotation deleted for survey {survey_id}")
 
     @action(detail=False, methods=["get"], url_path="check")
     def check_quotation(self, request):
-        """GET /api/quotation-create/check/?survey_id=..."""
         survey_id = request.query_params.get("survey_id")
         if not survey_id:
             return Response({"detail": "survey_id is required"}, status=400)
@@ -67,12 +66,10 @@ class QuotationViewSet(viewsets.ModelViewSet):
             return Response({"detail": "survey_id is required"}, status=400)
 
         try:
-            # FIXED: Use primary key 'id', not 'survey_id' string
             survey = Survey.objects.get(id=survey_id)
         except Survey.DoesNotExist:
             return Response({"detail": "Survey not found"}, status=404)
 
-        # Check if quotation already exists
         if Quotation.objects.filter(survey=survey).exists():
             quotation = Quotation.objects.get(survey=survey)
             return Response(
@@ -83,16 +80,9 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 status=200,
             )
 
-        # Create draft quotation
         with transaction.atomic():
-            last_quot = Quotation.objects.order_by("-serial_no").first()
-            next_serial = (
-                str(int(last_quot.serial_no or "1000") + 1) if last_quot else "1001"
-            )
-
             quotation = Quotation.objects.create(
                 survey=survey,
-                serial_no=next_serial,
                 date=timezone.now().date(),
                 amount=0,
                 advance=0,

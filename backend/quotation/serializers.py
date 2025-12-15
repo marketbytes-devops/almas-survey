@@ -15,12 +15,12 @@ class QuotationSerializer(serializers.ModelSerializer):
     currency_code = serializers.CharField(source='currency.name', read_only=True, allow_null=True)
 
     included_services = serializers.ListField(
-        child=serializers.CharField(max_length=200),
+        child=serializers.IntegerField(), 
         required=False,
         allow_empty=True
     )
     excluded_services = serializers.ListField(
-        child=serializers.CharField(max_length=200),
+        child=serializers.IntegerField(),
         required=False,
         allow_empty=True
     )
@@ -29,7 +29,7 @@ class QuotationSerializer(serializers.ModelSerializer):
         model = Quotation
         fields = [
             'id', 'survey', 'survey_id', 'quotation_id',
-            'serial_no', 'date', 'amount', 'advance',
+            'date', 'amount', 'advance',
             'currency', 'currency_code', 'notes',
             'included_services', 'excluded_services',
             'created_at', 'updated_at'
