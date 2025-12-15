@@ -4,16 +4,28 @@ from rest_framework.decorators import action
 from .models import (
     Price,
     AdditionalService,
-        QuotationAdditionalCharge,
-        InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark
-,Service)
+    QuotationAdditionalCharge,
+    InclusionExclusion,
+    InsurancePlan,
+    PaymentTerm,
+    QuoteNote,
+    TruckType,
+    SurveyRemark,
+    Service,
+)
 from django.shortcuts import get_object_or_404
 from .serializers import (
     PriceSerializer,
     AdditionalServiceSerializer,
     SurveyAdditionalServiceSerializer,
     QuotationAdditionalChargeSerializer,
-    InclusionExclusionSerializer,InsurancePlanSerializer,PaymentTermSerializer,QuoteNoteSerializer,TruckTypeSerializer,SurveyRemarkSerializer, ServiceSerializer
+    InclusionExclusionSerializer,
+    InsurancePlanSerializer,
+    PaymentTermSerializer,
+    QuoteNoteSerializer,
+    TruckTypeSerializer,
+    SurveyRemarkSerializer,
+    ServiceSerializer,
 )
 from django.db import transaction
 from rest_framework import status
@@ -22,24 +34,23 @@ from rest_framework.response import Response
 from survey.models import SurveyAdditionalService
 from rest_framework import viewsets, filters
 
+
 class InclusionExclusionViewSet(viewsets.ModelViewSet):
-    queryset = InclusionExclusion.objects.filter(is_active=True).order_by('text')
+    queryset = InclusionExclusion.objects.filter(is_active=True).order_by("text")
     serializer_class = InclusionExclusionSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        item_type = self.request.query_params.get('type')
-        city = self.request.query_params.get('city')
+        item_type = self.request.query_params.get("type")
+        city = self.request.query_params.get("city")
 
-        if item_type in ['include', 'exclude']:
+        if item_type in ["include", "exclude"]:
             qs = qs.filter(type=item_type)
         if city:
             qs = qs.filter(city=city)
         return qs
 
-    # THIS IS THE GOLDEN METHOD — 100% SAFE & RECOMMENDED
     def create(self, request, *args, **kwargs):
-        # Support both: single object {}  AND  list of objects [{}]
         is_list = isinstance(request.data, list)
         many = is_list
 
@@ -48,7 +59,10 @@ class InclusionExclusionViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
 
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
 
 @api_view(["GET", "POST"])
 def additional_services_list_create(request):
@@ -153,7 +167,6 @@ class PriceViewSet(viewsets.ModelViewSet):
 
             with transaction.atomic():
                 if request.method == "POST":
-                    # Deactivate old entries for this city and move type
                     filters = {"pricing_country": "Qatar", "is_active": True}
                     if pricing_city:
                         filters["pricing_city"] = pricing_city
@@ -173,14 +186,12 @@ class PriceViewSet(viewsets.ModelViewSet):
 
                 response_data = []
 
-                # Create new entries
                 if to_create:
                     create_serializer = self.get_serializer(data=to_create, many=True)
                     create_serializer.is_valid(raise_exception=True)
                     created_instances = create_serializer.save()
                     response_data.extend(create_serializer.data)
 
-                # Update existing entries
                 if to_update and request.method in ["PATCH", "PUT"]:
                     for item in to_update:
                         try:
@@ -245,7 +256,6 @@ class QuotationAdditionalChargeViewSet(viewsets.ModelViewSet):
     serializer_class = QuotationAdditionalChargeSerializer
 
     def create(self, request, *args, **kwargs):
-        # Support bulk create (sending list)
         if isinstance(request.data, list):
             serializer = self.get_serializer(data=request.data, many=True)
         else:
@@ -253,108 +263,108 @@ class QuotationAdditionalChargeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=201)
-    
+
+
 class InsurancePlanViewSet(viewsets.ModelViewSet):
     queryset = InsurancePlan.objects.all()
     serializer_class = InsurancePlanSerializer
 
     def get_queryset(self):
-        return InsurancePlan.objects.all().order_by('order', 'name')
+        return InsurancePlan.objects.all().order_by("order", "name")
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def toggle_active(self, request, pk=None):
         plan = self.get_object()
         plan.is_active = not plan.is_active
         plan.save()
-        return Response({'status': 'toggled', 'is_active': plan.is_active})
+        return Response({"status": "toggled", "is_active": plan.is_active})
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def set_default(self, request, pk=None):
         InsurancePlan.objects.filter(is_default=True).update(is_default=False)
         plan = self.get_object()
         plan.is_default = True
         plan.save()
-        return Response({'status': 'default set'})
+        return Response({"status": "default set"})
+
 
 class PaymentTermViewSet(viewsets.ModelViewSet):
     queryset = PaymentTerm.objects.all()
     serializer_class = PaymentTermSerializer
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def toggle_active(self, request, pk=None):
         term = self.get_object()
         term.is_active = not term.is_active
         term.save()
-        return Response({'status': 'toggled', 'is_active': term.is_active})
+        return Response({"status": "toggled", "is_active": term.is_active})
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def set_default(self, request, pk=None):
         PaymentTerm.objects.filter(is_default=True).update(is_default=False)
         term = self.get_object()
         term.is_default = True
         term.save()
-        return Response({'status': 'default set'})
-
+        return Response({"status": "default set"})
 
 
 class QuoteNoteViewSet(viewsets.ModelViewSet):
     queryset = QuoteNote.objects.all()
     serializer_class = QuoteNoteSerializer
 
-    @action(detail=True, methods=['post'])          
+    @action(detail=True, methods=["post"])
     def toggle_active(self, request, pk=None):
         note = self.get_object()
         note.is_active = not note.is_active
         note.save()
-        return Response({'status': 'toggled', 'is_active': note.is_active})
+        return Response({"status": "toggled", "is_active": note.is_active})
+
+
 class TruckTypeViewSet(viewsets.ModelViewSet):
     queryset = TruckType.objects.all()
     serializer_class = TruckTypeSerializer
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def toggle_active(self, request, pk=None):
         truck = self.get_object()
         truck.is_active = not truck.is_active
         truck.save()
-        return Response({'is_active': truck.is_active})
+        return Response({"is_active": truck.is_active})
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def set_default(self, request, pk=None):
         TruckType.objects.filter(is_default=True).update(is_default=False)
         truck = self.get_object()
         truck.is_default = True
         truck.save()
-        return Response({'status': 'default set'})
-    
-    
+        return Response({"status": "default set"})
+
+
 class SurveyRemarkViewSet(viewsets.ModelViewSet):
     queryset = SurveyRemark.objects.all()
     serializer_class = SurveyRemarkSerializer
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def toggle_active(self, request, pk=None):
         remark = self.get_object()
         remark.is_active = not remark.is_active
         remark.save()
-        return Response({'is_active': remark.is_active})
-    
+        return Response({"is_active": remark.is_active})
+
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.filter(is_active=True)
     serializer_class = ServiceSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name']
-    ordering_fields = ['name', 'created_at']
-    ordering = ['name']
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at"]
+    ordering = ["name"]
 
-    # Optional: Include inactive ones for admin (if needed later)
     def get_queryset(self):
         if self.request.user.is_staff:
             return Service.objects.all()
         return Service.objects.filter(is_active=True)
 
-    # Custom bulk update (optional, not needed now)
-    @action(detail=False, methods=['patch'], url_path='bulk-update')
+    @action(detail=False, methods=["patch"], url_path="bulk-update")
     def bulk_update(self, request):
-        # Not needed for now — but safe to keep
         return Response({"detail": "Not implemented"}, status=400)
