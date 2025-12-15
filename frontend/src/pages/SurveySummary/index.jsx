@@ -531,7 +531,7 @@ const SurveySummary = () => {
               </div>
 
               <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-end">
-                <Button onClick={() => openStatusModal({ ...survey, newStatus: survey.status })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">Change Status</Button>
+                <Button onClick={() => openStatusModal({ ...survey, newStatus: survey.status })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">Update Survey Status</Button>
                 
                 {survey.hasQuotation ? (
                   <>
@@ -571,7 +571,7 @@ const SurveySummary = () => {
         {statusModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4" onClick={() => setStatusModal(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-              <h3 className="text-sm font-medium mb-4">Update Status - {statusModal.survey_id}</h3>
+              <h3 className="text-sm font-medium mb-4">Update Survey Status - {statusModal.survey_id}</h3>
               <select
                 value={statusModal.newStatus || ""}
                 onChange={e => setStatusModal(prev => ({ ...prev, newStatus: e.target.value }))}
@@ -584,7 +584,7 @@ const SurveySummary = () => {
               <div className="flex justify-end gap-3">
                 <Button onClick={() => setStatusModal(null)} className="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</Button>
                 <Button onClick={updateSurveyStatus} disabled={updatingStatus || !statusModal.newStatus} className="px-5 py-2 bg-[#4c7085] hover:bg-[#6b8ca3] text-white rounded-lg disabled:opacity-50">
-                  {updatingStatus ? "Updating..." : "Update Status"}
+                  {updatingStatus ? "Updating..." : "Update Survey Status"}
                 </Button>
               </div>
             </motion.div>
