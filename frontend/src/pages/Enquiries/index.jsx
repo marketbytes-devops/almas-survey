@@ -546,7 +546,7 @@ const Enquiries = () => {
           >
             <div className="w-full sm:w-auto">
               <Input
-                label="Filter By *"
+                label="Filter By"
                 name="filterType"
                 type="select"
                 options={filterOptions}
