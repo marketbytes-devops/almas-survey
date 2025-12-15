@@ -9,6 +9,7 @@ import {
   FaSignature,
   FaTrash,
   FaSearch,
+  FaWhatsapp
 } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
@@ -35,8 +36,8 @@ export default function QuotationList() {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSurveys, setExpandedSurveys] = useState(new Set());
-
-  // Signature modal state
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [selectedSurvey, setSelectedSurvey] = useState(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
 
@@ -53,13 +54,25 @@ export default function QuotationList() {
               const checkRes = await apiClient.get(
                 `/quotation-create/check/?survey_id=${s.survey_id}`
               );
+              let quotationCreatedAt = null;
+              let quotationId = null;
+              if (checkRes.data.exists && checkRes.data.quotation_id) {
+                try {
+                  const quotRes = await apiClient.get(`/quotation-create/${checkRes.data.quotation_id}/`);
+                  quotationCreatedAt = quotRes.data.created_at;
+                  quotationId = checkRes.data.quotation_id;
+                } catch (err) {
+                  console.warn("Could not fetch quotation details");
+                }
+              }
               return {
                 ...s,
                 hasQuotation: checkRes.data.exists,
-                quotation_id: checkRes.data.quotation_id,
+                quotation_id: quotationId,
+                quotation_created_at: quotationCreatedAt,
               };
             } catch {
-              return { ...s, hasQuotation: false };
+              return { ...s, hasQuotation: false, quotation_id: null, quotation_created_at: null };
             }
           })
         );
@@ -74,13 +87,23 @@ export default function QuotationList() {
     load();
   }, []);
 
-  // Apply search filter
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredSurveys(surveys);
       return;
     }
-
     const searchLower = searchQuery.toLowerCase().trim();
     const filtered = surveys.filter((s) => {
       const name = (s.full_name || s.enquiry?.fullName || "").toLowerCase();
@@ -96,7 +119,6 @@ export default function QuotationList() {
         ""
       ).toLowerCase();
       const surveyId = (s.survey_id || "").toLowerCase();
-
       return (
         name.includes(searchLower) ||
         phone.includes(searchLower) ||
@@ -105,7 +127,6 @@ export default function QuotationList() {
         surveyId.includes(searchLower)
       );
     });
-
     setFilteredSurveys(filtered);
   }, [searchQuery, surveys]);
 
@@ -121,43 +142,52 @@ export default function QuotationList() {
     });
   };
 
-  // 🔥 FIXED: Simplified - Just navigate, no draft creation needed
   const handleCreateQuotation = (surveyId) => {
-    console.log("🎯 Creating quotation for survey:", surveyId);
-    // Navigate to quotation create page with correct route structure
     navigate(`/quotation-create/survey/${surveyId}`);
   };
 
   const handleDeleteQuotation = async (surveyId, quotationId) => {
-    if (!window.confirm("Are you sure you want to delete this quotation?"))
-      return;
+    if (!window.confirm("Are you sure you want to delete this quotation?\nThis will also permanently delete the customer's digital signature if it exists.")) return;
 
     try {
+      // First: Delete the quotation
       await apiClient.delete("/quotation-create/delete/", {
         data: { quotation_id: quotationId },
       });
 
+      // Second: Delete the signature if it exists
+      try {
+        await apiClient.delete(`/surveys/${surveyId}/signature/`);
+        console.log("Signature deleted successfully");
+      } catch (sigErr) {
+        // If signature doesn't exist or already deleted, ignore error
+        if (sigErr.response?.status !== 404) {
+          console.warn("Could not delete signature:", sigErr);
+        }
+      }
+
+      // Update UI
       setSurveys((prev) =>
         prev.map((s) =>
           s.survey_id === surveyId
-            ? { ...s, hasQuotation: false, quotation_id: null }
+            ? { ...s, hasQuotation: false, quotation_id: null, signature_uploaded: false }
             : s
         )
       );
       setFilteredSurveys((prev) =>
         prev.map((s) =>
           s.survey_id === surveyId
-            ? { ...s, hasQuotation: false, quotation_id: null }
+            ? { ...s, hasQuotation: false, quotation_id: null, signature_uploaded: false }
             : s
         )
       );
-      setMessage("Quotation deleted successfully");
+
+      setMessage("Quotation and signature deleted successfully");
     } catch (err) {
       setError("Failed to delete quotation");
     }
   };
 
-  // View signature
   const viewSignature = async (survey) => {
     try {
       const signatureRes = await apiClient.get(
@@ -168,6 +198,11 @@ export default function QuotationList() {
     } catch (err) {
       setError("Failed to load signature");
     }
+  };
+
+  const openPhoneModal = (survey) => {
+    setSelectedSurvey(survey);
+    setIsPhoneModalOpen(true);
   };
 
   if (loading)
@@ -182,39 +217,106 @@ export default function QuotationList() {
 
   return (
     <div className="container mx-auto">
-      {/* Signature View Modal */}
-      {isSignatureModalOpen && currentSignature && (
-        <div className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">Digital Signature</h3>
+      <AnimatePresence>
+        {isPhoneModalOpen && selectedSurvey && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setIsPhoneModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium">Contact {selectedSurvey.full_name || selectedSurvey.enquiry?.fullName}</h3>
+                <button
+                  onClick={() => setIsPhoneModalOpen(false)}
+                  className="text-3xl text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="space-y-4">
+                <a
+                  href={`tel:${selectedSurvey.phone_number || selectedSurvey.enquiry?.phoneNumber}`}
+                  className="flex items-center justify-center gap-3 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 px-6 rounded-lg hover:opacity-90 transition"
+                >
+                  <FaPhoneAlt className="w-5 h-5" /> Call
+                </a>
+                <a
+                  href={`https://wa.me/${(selectedSurvey.phone_number || selectedSurvey.enquiry?.phoneNumber)?.replace(/[^\d+]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-3 bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition"
+                >
+                  <FaWhatsapp className="w-5 h-5" /> WhatsApp
+                </a>
+              </div>
+              <button
+                onClick={() => setIsPhoneModalOpen(false)}
+                className="mt-6 w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isSignatureModalOpen && currentSignature && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setIsSignatureModalOpen(false);
+              setCurrentSignature(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium">Digital Signature</h3>
+                <button
+                  onClick={() => {
+                    setIsSignatureModalOpen(false);
+                    setCurrentSignature(null);
+                  }}
+                  className="text-3xl"
+                >
+                  ×
+                </button>
+              </div>
+              <img
+                src={currentSignature}
+                alt="Signature"
+                className="w-full rounded-lg border"
+              />
               <button
                 onClick={() => {
                   setIsSignatureModalOpen(false);
                   setCurrentSignature(null);
                 }}
-                className="text-3xl"
+                className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg"
               >
-                ×
+                Close
               </button>
-            </div>
-            <img
-              src={currentSignature}
-              alt="Signature"
-              className="w-full rounded-lg border"
-            />
-            <button
-              onClick={() => {
-                setIsSignatureModalOpen(false);
-                setCurrentSignature(null);
-              }}
-              className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {error && (
         <motion.div
@@ -236,7 +338,6 @@ export default function QuotationList() {
         </motion.div>
       )}
 
-      {/* Search Bar */}
       <div className="mb-6">
         <div className="relative">
           <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -256,19 +357,24 @@ export default function QuotationList() {
         </div>
       ) : (
         <>
-          {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto rounded-lg shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
                 <tr>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
-                    S.No
+                    Sl.No
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Quotation ID               
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
                     Survey ID
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
                     Customer
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Quotation Date
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
                     Phone
@@ -280,7 +386,7 @@ export default function QuotationList() {
                     Service
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium uppercase">
-                    Quotation
+                    Actions
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium uppercase">
                     Signature
@@ -296,7 +402,6 @@ export default function QuotationList() {
                     SERVICE_TYPE_DISPLAY[s.service_type] ||
                     SERVICE_TYPE_DISPLAY[s.enquiry?.serviceType] ||
                     "—";
-
                   return (
                     <motion.tr
                       key={s.survey_id}
@@ -309,20 +414,48 @@ export default function QuotationList() {
                         {idx + 1}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
+                        {s.hasQuotation ? (
+                          <span className="text-green-600 font-medium">
+                            {s.quotation_id}
+                          </span>
+                        ) : (
+                          <span className="text-green-600 font-medium">
+                            No Quotation is Created
+                          </span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
                         {s.survey_id}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
                         {name}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
-                        <span className="flex items-center gap-2">
-                          <FaPhoneAlt className="w-3 h-3" /> {phone}
-                        </span>
+                        {s.quotation_created_at ? formatDateTime(s.quotation_created_at) : "—"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
-                        <span className="flex items-center gap-2">
-                          <FaEnvelope className="w-3 h-3" /> {email}
-                        </span>
+                        {phone !== "—" ? (
+                          <button
+                            onClick={() => openPhoneModal(s)}
+                            className="flex items-center gap-2 text-[#4c7085] hover:underline"
+                          >
+                            <FaPhoneAlt className="w-3 h-3" /> {phone}
+                          </button>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
+                        {email !== "—" ? (
+                          <a
+                            href={`mailto:${email}`}
+                            className="flex items-center gap-2 text-[#4c7085] hover:underline"
+                          >
+                            <FaEnvelope className="w-3 h-3" /> {email}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
                         {service}
@@ -336,14 +469,12 @@ export default function QuotationList() {
                             >
                               <FaEye /> View
                             </Link>
-
                             <Link
-                              to={`/quotation-edit/survey/${s.survey_id}`}
+                              to={`/quotation-edit/${s.survey_id}`}
                               className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
                             >
                               <FaEdit /> Edit
                             </Link>
-
                             <button
                               onClick={() =>
                                 handleDeleteQuotation(
@@ -389,8 +520,6 @@ export default function QuotationList() {
               </tbody>
             </table>
           </div>
-
-          {/* Mobile Card View */}
           <div className="md:hidden space-y-4">
             {filteredSurveys.map((s, idx) => {
               const isExpanded = expandedSurveys.has(s.survey_id);
@@ -401,7 +530,6 @@ export default function QuotationList() {
                 SERVICE_TYPE_DISPLAY[s.service_type] ||
                 SERVICE_TYPE_DISPLAY[s.enquiry?.serviceType] ||
                 "—";
-
               return (
                 <motion.div
                   key={s.survey_id}
@@ -410,7 +538,6 @@ export default function QuotationList() {
                   initial="rest"
                   whileHover="hover"
                 >
-                  {/* Collapsed View */}
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-[#2d4a5e]">
@@ -428,32 +555,12 @@ export default function QuotationList() {
                       className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
                     >
                       {isExpanded ? (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 15l7-7 7 7"
-                          />
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                         </svg>
                       ) : (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       )}
                     </button>
@@ -484,10 +591,16 @@ export default function QuotationList() {
                           <p>
                             <strong>Service:</strong> {service}
                           </p>
-
-                          {/* Quotation Actions */}
+                          <p>
+                            <strong>Quotation:</strong>{" "}
+                            {s.hasQuotation ? (
+                              <span className="text-green-600">Quotation ID: {s.quotation_id}</span>
+                            ) : (
+                              <span className="text-red-600">No Quotation is Created</span>
+                            )}
+                          </p>
                           <div className="pt-2">
-                            <p className="font-medium mb-2">Quotation:</p>
+                            <p className="font-medium mb-2">Actions:</p>
                             {s.hasQuotation ? (
                               <div className="flex flex-wrap gap-2">
                                 <Link
@@ -496,14 +609,12 @@ export default function QuotationList() {
                                 >
                                   <FaEye /> View
                                 </Link>
-
                                 <Link
-                                  to={`/quotation-edit/survey/${s.survey_id}`}
+                                  to={`/quotation-edit/${s.survey_id}`}
                                   className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
                                 >
                                   <FaEdit /> Edit
                                 </Link>
-
                                 <button
                                   onClick={() =>
                                     handleDeleteQuotation(
@@ -527,8 +638,6 @@ export default function QuotationList() {
                               </button>
                             )}
                           </div>
-
-                          {/* Signature */}
                           <div className="pt-2">
                             <p className="font-medium mb-2">Signature:</p>
                             {s.signature_uploaded ? (

@@ -7,6 +7,7 @@ import Button from "../../components/Button";
 import Loading from "../../components/Loading";
 import ReactDOMServer from 'react-dom/server';
 import SurveyPrint from "../SurveyPrint";
+import { FaEye, FaEdit, FaTrash, FaSignature } from "react-icons/fa";
 
 const SurveySummary = () => {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ const SurveySummary = () => {
   const [printing, setPrinting] = useState(null);
   const [statusModal, setStatusModal] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [signatureModal, setSignatureModal] = useState(null);
+  const [quotationStatus, setQuotationStatus] = useState({});
 
   const statusOptions = [
     { value: "pending", label: "Pending" },
@@ -25,6 +28,14 @@ const SurveySummary = () => {
     { value: "completed", label: "Completed" },
     { value: "cancelled", label: "Cancelled" },
   ];
+
+  const SERVICE_TYPE_DISPLAY = {
+    localMove: "Local Move",
+    internationalMove: "International Move",
+    carExport: "Car Import and Export",
+    storageServices: "Storage Services",
+    logistics: "Logistics",
+  };
 
   const formatStatus = (status) => {
     const map = { pending: "Pending", in_progress: "In Progress", completed: "Completed", cancelled: "Cancelled" };
@@ -36,7 +47,31 @@ const SurveySummary = () => {
       setLoading(true);
       try {
         const response = await apiClient.get("/surveys/");
-        setSurveys(response.data);
+        const surveysWithQuotationStatus = await Promise.all(
+          response.data.map(async (survey) => {
+            try {
+              const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${survey.survey_id}`);
+              let quotationCreatedAt = null;
+              if (checkRes.data.exists && checkRes.data.quotation_id) {
+                try {
+                  const quotRes = await apiClient.get(`/quotation-create/${checkRes.data.quotation_id}/`);
+                  quotationCreatedAt = quotRes.data.created_at;
+                } catch (err) {
+                  console.warn("Could not fetch quotation details for date");
+                }
+              }
+              return {
+                ...survey,
+                hasQuotation: checkRes.data.exists,
+                quotation_id: checkRes.data.quotation_id,
+                quotation_created_at: quotationCreatedAt,
+              };
+            } catch {
+              return { ...survey, hasQuotation: false, quotation_created_at: null };
+            }
+          })
+        );
+        setSurveys(surveysWithQuotationStatus);
       } catch (err) {
         setError("Failed to fetch surveys. Please try again.");
       } finally {
@@ -188,6 +223,52 @@ const SurveySummary = () => {
     return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${period}`;
   };
   const formatBoolean = (v) => v ? "Yes" : "No";
+  const formatVolume = (volume, unit) => {
+    if (!volume && volume !== 0) return "-";
+    const volumeStr = parseFloat(volume).toString();
+    const unitStr = unit ? ` ${unit}` : "";
+    return `${volumeStr}${unitStr}`;
+  };
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const handleCreateQuotation = (surveyId) => {
+    navigate(`/quotation-create/survey/${surveyId}`);
+  };
+
+  const handleDeleteQuotation = async (surveyId, quotationId) => {
+    if (!window.confirm("Are you sure you want to delete this quotation?")) return;
+    try {
+      await apiClient.delete("/quotation-create/delete/", {
+        data: { quotation_id: quotationId },
+      });
+      setSurveys(prev => prev.map(s => s.survey_id === surveyId ? { ...s, hasQuotation: false, quotation_id: null } : s));
+      setSuccess("Quotation deleted successfully");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch {
+      setError("Failed to delete quotation");
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const viewSignature = async (survey) => {
+    try {
+      const signatureRes = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+      setSignatureModal(signatureRes.data.signature_url);
+    } catch (err) {
+      setError("Failed to load signature");
+      setTimeout(() => setError(null), 3000);
+    }
+  };
 
   const SurveyDetailsView = ({ survey }) => {
     const getPhone = () => survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
@@ -195,55 +276,199 @@ const SurveySummary = () => {
 
     return (
       <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
-        <div className="section"><h4 className="font-semibold text-gray-800 mb-2">Customer Details</h4><div className="overflow-x-auto"><table className="w-full text-sm border border-gray-400"><thead className="bg-gray-200"><tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead><tbody>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Customer Type</td><td className="border border-gray-400 px-4 py-2">{survey.customer_type_name || "Not filled"}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Full Name</td><td className="border border-gray-400 px-4 py-2">{survey.full_name || survey.enquiry?.fullName || "Not filled"}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Mobile</td><td className="border border-gray-400 px-4 py-2">{getPhone()}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Email</td><td className="border border-gray-400 px-4 py-2">{survey.email || survey.enquiry?.email || "Not filled"}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Service Type</td><td className="border border-gray-400 px-4 py-2">{getService()}</td></tr>
-        </tbody></table></div></div>
+        <div className="section">
+          <h4 className="font-semibold text-gray-800 mb-2">Customer Details</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-gray-400">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="border border-gray-400 px-4 py-2 text-left">Field</th>
+                  <th className="border border-gray-400 px-4 py-2 text-left">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Customer Type</td>
+                  <td className="border border-gray-400 px-4 py-2">{survey.customer_type_name || "Not filled"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Full Name</td>
+                  <td className="border border-gray-400 px-4 py-2">{survey.full_name || survey.enquiry?.fullName || "Not filled"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Mobile</td>
+                  <td className="border border-gray-400 px-4 py-2">{getPhone()}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Email</td>
+                  <td className="border border-gray-400 px-4 py-2">{survey.email || survey.enquiry?.email || "Not filled"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Service Type</td>
+                  <td className="border border-gray-400 px-4 py-2">{getService()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        <div className="section"><h4 className="font-semibold text-gray-800 mb-2">Survey Details</h4><div className="overflow-x-auto"><table className="w-full text-sm border border-gray-400"><thead className="bg-gray-200"><tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead><tbody>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Status</td><td className="border border-gray-400 px-4 py-2">{formatStatus(survey.status)}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Survey Date</td><td className="border border-gray-400 px-4 py-2">{formatDate(survey.survey_date)}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Start Time</td><td className="border border-gray-400 px-4 py-2">{formatTime(survey.survey_start_time)}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">End Time</td><td className="border border-gray-400 px-4 py-2">{formatTime(survey.survey_end_time)}</td></tr>
-        </tbody></table></div></div>
+        <div className="section">
+          <h4 className="font-semibold text-gray-800 mb-2">Survey Details</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-gray-400">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="border border-gray-400 px-4 py-2 text-left">Field</th>
+                  <th className="border border-gray-400 px-4 py-2 text-left">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Status</td>
+                  <td className="border border-gray-400 px-4 py-2">{formatStatus(survey.status)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Survey Date</td>
+                  <td className="border border-gray-400 px-4 py-2">{formatDate(survey.survey_date)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Start Time</td>
+                  <td className="border border-gray-400 px-4 py-2">{formatTime(survey.survey_start_time)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">End Time</td>
+                  <td className="border border-gray-400 px-4 py-2">{formatTime(survey.survey_end_time)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        <div className="section"><h4 className="font-semibold text-gray-800 mb-2">Origin Address</h4><div className="overflow-x-auto"><table className="w-full text-sm border border-gray-400"><thead className="bg-gray-200"><tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead><tbody>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray- immunoprecipitation px-4 py-2">{survey.origin_address || "Not filled"}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">City</td><td className="border border-gray-400 px-4 py-2">{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">Country</td><td className="border border-gray-400 px-4 py-2">{getCountryName(survey.origin_country)}</td></tr>
-          <tr><td className="border border-gray-400 px-4 py-2 font-medium">State</td><td className="border border-gray-400 px-4 py-2">{getStateName(survey.origin_country, survey.origin_state)}</td></tr>
-        </tbody></table></div></div>
+        <div className="section">
+          <h4 className="font-semibold text-gray-800 mb-2">Origin Address</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-gray-400">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="border border-gray-400 px-4 py-2 text-left">Field</th>
+                  <th className="border border-gray-400 px-4 py-2 text-left">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Address</td>
+                  <td className="border border-gray-400 px-4 py-2">{survey.origin_address || "Not filled"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">City</td>
+                  <td className="border border-gray-400 px-4 py-2">{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">Country</td>
+                  <td className="border border-gray-400 px-4 py-2">{getCountryName(survey.origin_country)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2 font-medium">State</td>
+                  <td className="border border-gray-400 px-4 py-2">{getStateName(survey.origin_country, survey.origin_state)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {survey.destination_addresses?.length > 0 && (
-          <div className="section"><h4 className="font-semibold text-gray-800 mb-2">Destination Address(es)</h4>
+          <div className="section">
+            <h4 className="font-semibold text-gray-800 mb-2">Destination Address(es)</h4>
             {survey.destination_addresses.map((a, i) => (
-              <div key={i} className="mb-4"><h5 className="font-medium text-gray-700 mb-2">Address {i + 1}</h5><div className="overflow-x-auto"><table className="w-full text-sm border border-gray-400"><thead className="bg-gray-200"><tr><th className="border border-gray-400 px-4 py-2 text-left">Field</th><th className="border border-gray-400 px-4 py-2 text-left">Value</th></tr></thead><tbody>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Address</td><td className="border border-gray-400 px-4 py-2">{a.address || "Not filled"}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">City</td><td className="border border-gray-400 px-4 py-2">{getCityName(a.country, a.state, a.city)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">Country</td><td className="border border-gray-400 px-4 py-2">{getCountryName(a.country)}</td></tr>
-                <tr><td className="border border-gray-400 px-4 py-2 font-medium">State</td><td className="border border-gray-400 px-4 py-2">{getStateName(a.country, a.state)}</td></tr>
-              </tbody></table></div></div>
+              <div key={i} className="mb-4">
+                <h5 className="font-medium text-gray-700 mb-2">Address {i + 1}</h5>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border border-gray-400">
+                    <thead className="bg-gray-200">
+                      <tr>
+                        <th className="border border-gray-400 px-4 py-2 text-left">Field</th>
+                        <th className="border border-gray-400 px-4 py-2 text-left">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-400 px-4 py-2 font-medium">Address</td>
+                        <td className="border border-gray-400 px-4 py-2">{a.address || "Not filled"}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-400 px-4 py-2 font-medium">City</td>
+                        <td className="border border-gray-400 px-4 py-2">{getCityName(a.country, a.state, a.city)}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-400 px-4 py-2 font-medium">Country</td>
+                        <td className="border border-gray-400 px-4 py-2">{getCountryName(a.country)}</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-400 px-4 py-2 font-medium">State</td>
+                        <td className="border border-gray-400 px-4 py-2">{getStateName(a.country, a.state)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             ))}
           </div>
         )}
 
         {survey.vehicles?.length > 0 && (
-          <div className="section"><h4 className="font-semibold text-gray-800 mb-2">Vehicles</h4><div className="overflow-x-auto"><table className="w-full text-sm border border-gray-400"><thead className="bg-gray-200"><tr><th className="border border-gray-400 px-4 py-2">Type</th><th className="border border-gray-400 px-4 py-2">Make</th><th className="border border-gray-400 px-4 py-2">Model</th><th className="border border-gray-400 px-4 py-2">Insurance</th></tr></thead><tbody>
-            {survey.vehicles.map((v, i) => (
-              <tr key={i}><td className="border border-gray-400 px-4 py-2">{v.vehicle_type_name || "N/A"}</td><td className="border border-gray-400 px-4 py-2">{v.make || "N/A"}</td><td className="border border-gray-400 px-4 py-2">{v.model || "N/A"}</td><td className="border border-gray-400 px-4 py-2">{formatBoolean(v.insurance)}</td></tr>
-            ))}
-          </tbody></table></div></div>
+          <div className="section">
+            <h4 className="font-semibold text-gray-800 mb-2">Vehicles</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-gray-400">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="border border-gray-400 px-4 py-2">Type</th>
+                    <th className="border border-gray-400 px-4 py-2">Make</th>
+                    <th className="border border-gray-400 px-4 py-2">Model</th>
+                    <th className="border border-gray-400 px-4 py-2">Insurance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {survey.vehicles.map((v, i) => (
+                    <tr key={i}>
+                      <td className="border border-gray-400 px-4 py-2">{v.vehicle_type_name || "N/A"}</td>
+                      <td className="border border-gray-400 px-4 py-2">{v.make || "N/A"}</td>
+                      <td className="border border-gray-400 px-4 py-2">{v.model || "N/A"}</td>
+                      <td className="border border-gray-400 px-4 py-2">{formatBoolean(v.insurance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {survey.articles?.length > 0 && (
-          <div className="section"><h4 className="font-semibold text-gray-800 mb-2">Articles ({survey.articles.length})</h4><div className="overflow-x-auto"><table className="w-full text-sm border border-gray-400"><thead className="bg-gray-200"><tr><th className="border border-gray-400 px-3 py-2">Room</th><th className="border border-gray-400 px-3 py-2">Item</th><th className="border border-gray-400 px-3 py-2">Qty</th><th className="border border-gray-400 px-3 py-2">Volume</th></tr></thead><tbody>
-            {survey.articles.map((a, i) => (
-              <tr key={i}><td className="border border-gray-400 px-3 py-2">{a.room_name || "-"}</td><td className="border border-gray-400 px-3 py-2">{a.item_name || "-"}</td><td className="border border-gray-400 px-3 py-2">{a.quantity || "-"}</td><td className="border border-gray-400 px-3 py-2">{a.volume || "-"} {a.volume_unit_name || ""}</td></tr>
-            ))}
-          </tbody></table></div></div>
+          <div className="section">
+            <h4 className="font-semibold text-gray-800 mb-2">Articles ({survey.articles.length})</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-gray-400">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="border border-gray-400 px-3 py-2">Room</th>
+                    <th className="border border-gray-400 px-3 py-2">Item</th>
+                    <th className="border border-gray-400 px-3 py-2">Qty</th>
+                    <th className="border border-gray-400 px-3 py-2">Volume</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {survey.articles.map((a, i) => (
+                    <tr key={i}>
+                      <td className="border border-gray-400 px-3 py-2">{a.room_name || "-"}</td>
+                      <td className="border border-gray-400 px-3 py-2">{a.item_name || "-"}</td>
+                      <td className="border border-gray-400 px-3 py-2">{a.quantity || "-"}</td>
+                      <td className="border border-gray-400 px-3 py-2">{formatVolume(a.volume, a.volume_unit_name)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -267,6 +492,9 @@ const SurveySummary = () => {
         {surveys.map(survey => {
           const phone = survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
           const service = survey.service_type_display || survey.service_type_name || "N/A";
+          const surveyDate = formatDate(survey.survey_date);
+          const startTime = formatTime(survey.survey_start_time);
+          const endTime = formatTime(survey.survey_end_time);
 
           return (
             <motion.div key={survey.survey_id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border border-gray-300 rounded-lg overflow-hidden shadow-md">
@@ -276,18 +504,46 @@ const SurveySummary = () => {
                     <h3 className="text-xs sm:text-lg font-medium">{survey.survey_id}</h3>
                     <p className="text-xs sm:text-sm mt-2">{survey.full_name || survey.enquiry?.fullName || "N/A"}</p>
                     <p className="text-xs sm:text-sm mt-2">{phone}</p>
+                    <div className="mt-3 block sm:flex items-center justify-center space-x-4 space-y-2 sm:space-y-0 text-xs">
+                      <div>
+                        <span className="font-medium">Survey Date:</span> {surveyDate}
+                      </div>
+                      <div>
+                        <span className="font-medium">Start:</span> {startTime}
+                      </div>
+                      <div>
+                        <span className="font-medium">End:</span> {endTime}
+                      </div>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">{service}</p>
                     <p className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${survey.status === "completed" ? "bg-green-200 text-green-800" : survey.status === "cancelled" ? "bg-red-200 text-red-800" : "bg-yellow-200 text-yellow-800"}`}>
                       {formatStatus(survey.status)}
                     </p>
+                    {survey.quotation_created_at && (
+                      <p className="text-xs mt-1 text-white/80">
+                        Quotation: {formatDateTime(survey.quotation_created_at)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
               <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-end">
                 <Button onClick={() => openStatusModal({ ...survey, newStatus: survey.status })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">Change Status</Button>
+                
+                {survey.hasQuotation ? (
+                  <>
+                    <Button onClick={() => navigate(`/quotation-view/${survey.quotation_id}`)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2">
+                      <FaEye /> View Quotation
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => handleCreateQuotation(survey.survey_id)} className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 text-xs sm:text-sm font-medium rounded">
+                    Create Quotation
+                  </Button>
+                )}
                 <Button onClick={() => handleEditSurvey(survey)} className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 text-sm rounded">Edit</Button>
                 <Button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""}`}>
                   {printing === survey.survey_id ? <>Printing...</> : "Print"}
@@ -331,6 +587,23 @@ const SurveySummary = () => {
                   {updatingStatus ? "Updating..." : "Update Status"}
                 </Button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {signatureModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4" onClick={() => setSignatureModal(null)}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-lg max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium">Digital Signature</h3>
+                <button onClick={() => setSignatureModal(null)} className="text-3xl">×</button>
+              </div>
+              <img src={signatureModal} alt="Signature" className="w-full rounded-lg border" />
+              <Button onClick={() => setSignatureModal(null)} className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg">
+                Close
+              </Button>
             </motion.div>
           </motion.div>
         )}

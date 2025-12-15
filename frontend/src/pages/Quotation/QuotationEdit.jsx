@@ -43,7 +43,6 @@ export default function QuotationEdit() {
   const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
-    serialNo: "",
     date: today,
     client: "",
     mobile: "",
@@ -156,7 +155,6 @@ export default function QuotationEdit() {
         }
 
         setForm({
-          serialNo: q.serial_no || "",
           date: q.date || today,
           client: get(s.full_name, s.enquiry?.fullName),
           mobile: get(s.phone_number, s.enquiry?.phoneNumber),
@@ -277,7 +275,6 @@ export default function QuotationEdit() {
     if (!form.amount || !quotation?.quotation_id) return alert("Invalid data");
 
     const payload = {
-      serial_no: form.serialNo,
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
@@ -398,16 +395,7 @@ export default function QuotationEdit() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-1">Quotation No.</label>
-              <input
-                type="text"
-                value={form.serialNo}
-                onChange={(e) => setForm({ ...form, serialNo: e.target.value })}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3"
-              />
-            </div>
+          <div className="grid grid-cols-1 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium mb-1">Date</label>
               <input
@@ -636,7 +624,7 @@ export default function QuotationEdit() {
               className={`w-full py-2 px-8 text-sm font-medium rounded-lg shadow-lg transition ${
                 !form.amount || priceError
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
+                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
               }`}
             >
               Update Quotation

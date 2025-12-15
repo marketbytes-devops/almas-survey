@@ -268,14 +268,10 @@ export default function QuotationView() {
           <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-sm font-medium text-blue-800 mb-2">Quotation Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[#4c7085] mb-1">Quotation ID</label>
                   <input type="text" value={quotation.quotation_id || "Not specified"} readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#4c7085] mb-1">Serial No</label>
-                  <input type="text" value={quotation.serial_no || "Not specified"} readOnly className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-blue-900 font-medium" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#4c7085] mb-1">Date</label>
