@@ -840,18 +840,41 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => toggleExpandedItem(item.name)}
-              className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
-            >
-              Item Options{" "}
-              {expandedItems[item.name] ? (
-                <FaChevronUp className="w-4 h-4" />
-              ) : (
-                <FaChevronDown className="w-4 h-4" />
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  // Save current scroll position
+                  const scrollPosition = window.scrollY;
+
+                  // Toggle expand/collapse
+                  toggleExpandedItem(item.name);
+
+                  // After state update, restore scroll position
+                  setTimeout(() => {
+                    window.scrollTo({
+                      top: scrollPosition,
+                      behavior: 'smooth'
+                    });
+
+                    // Optional: also bring the row into view gently
+                    e.currentTarget.closest('.border-b')?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'nearest'
+                    });
+                  }, 100);
+                }}
+                className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
+              >
+                Item Options{" "}
+                {expandedItems[item.name] ? (
+                  <FaChevronUp className="w-4 h-4" />
+                ) : (
+                  <FaChevronDown className="w-4 h-4" />
+                )}
+              </button>
           </div>
         </div>
 
