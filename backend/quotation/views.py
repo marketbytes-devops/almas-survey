@@ -15,14 +15,14 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(csrf_exempt, name='dispatch') 
+@method_decorator(csrf_exempt, name="dispatch")
 class QuotationViewSet(viewsets.ModelViewSet):
     queryset = Quotation.objects.select_related("survey", "currency").all()
     serializer_class = QuotationSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]  
+    authentication_classes = [JWTAuthentication]
     lookup_field = "quotation_id"
-    
+
     def get_queryset(self):
         qs = super().get_queryset()
         survey_id = self.request.query_params.get("survey_id")
@@ -67,22 +67,28 @@ class QuotationViewSet(viewsets.ModelViewSet):
             return Response({"detail": "survey_id is required"}, status=400)
 
         try:
-            survey = Survey.objects.get(survey_id=survey_id)
+            # FIXED: Use primary key 'id', not 'survey_id' string
+            survey = Survey.objects.get(id=survey_id)
         except Survey.DoesNotExist:
             return Response({"detail": "Survey not found"}, status=404)
 
-        if hasattr(survey, "quotation"):
+        # Check if quotation already exists
+        if Quotation.objects.filter(survey=survey).exists():
+            quotation = Quotation.objects.get(survey=survey)
             return Response(
                 {
                     "detail": "Quotation already exists",
-                    "quotation_id": survey.quotation.quotation_id,
+                    "quotation_id": quotation.quotation_id,
                 },
                 status=200,
             )
 
+        # Create draft quotation
         with transaction.atomic():
             last_quot = Quotation.objects.order_by("-serial_no").first()
-            next_serial = str(int(last_quot.serial_no or "1000") + 1)
+            next_serial = (
+                str(int(last_quot.serial_no or "1000") + 1) if last_quot else "1001"
+            )
 
             quotation = Quotation.objects.create(
                 survey=survey,

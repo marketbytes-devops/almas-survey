@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     PriceViewSet,
     SurveyAdditionalServiceViewSet,     
-    QuotationAdditionalChargeViewSet,InclusionExclusionViewSet,InsurancePlanViewSet,PaymentTermViewSet,QuoteNoteViewSet,TruckTypeViewSet,SurveyRemarkViewSet
+    QuotationAdditionalChargeViewSet,InclusionExclusionViewSet,InsurancePlanViewSet,PaymentTermViewSet,QuoteNoteViewSet,TruckTypeViewSet,SurveyRemarkViewSet,ServiceViewSet
 )
 
 router = DefaultRouter()
@@ -16,6 +16,8 @@ router.register(r'payment-terms', PaymentTermViewSet)
 router.register(r'quote-notes', QuoteNoteViewSet)
 router.register(r'truck-types', TruckTypeViewSet)#
 router.register(r'survey-remarks', SurveyRemarkViewSet)
+router.register(r'services', ServiceViewSet)
+
 
 urlpatterns = [
     path('', include(router.urls)),

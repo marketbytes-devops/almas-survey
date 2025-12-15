@@ -3,7 +3,7 @@ from .models import (
     Price,
     AdditionalService,
     QuotationAdditionalCharge,
-    InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark
+    InclusionExclusion,InsurancePlan,PaymentTerm,QuoteNote,TruckType,SurveyRemark,Service
 )
 from survey.models import SurveyAdditionalService
 
@@ -162,3 +162,14 @@ class SurveyRemarkSerializer(serializers.ModelSerializer):
             'category_display', 'is_active', 'order',
             'created_at', 'updated_at'
         ]
+        
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        fields = ['id', 'name', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+    def validate_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Service name cannot be empty.")
+        return value.strip().title()

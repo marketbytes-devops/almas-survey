@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaEnvelope, FaEye, FaEdit, FaSignature, FaTrash, FaSearch } from "react-icons/fa";
+import {
+  FaPhoneAlt,
+  FaEnvelope,
+  FaEye,
+  FaEdit,
+  FaSignature,
+  FaTrash,
+  FaSearch,
+} from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
@@ -36,11 +44,15 @@ export default function QuotationList() {
     const load = async () => {
       try {
         const res = await apiClient.get("/surveys/");
-        const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const sorted = res.data.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
         const surveysWithQuot = await Promise.all(
           sorted.map(async (s) => {
             try {
-              const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${s.survey_id}`);
+              const checkRes = await apiClient.get(
+                `/quotation-create/check/?survey_id=${s.survey_id}`
+              );
               return {
                 ...s,
                 hasQuotation: checkRes.data.exists,
@@ -72,9 +84,17 @@ export default function QuotationList() {
     const searchLower = searchQuery.toLowerCase().trim();
     const filtered = surveys.filter((s) => {
       const name = (s.full_name || s.enquiry?.fullName || "").toLowerCase();
-      const phone = (s.phone_number || s.enquiry?.phoneNumber || "").toLowerCase();
+      const phone = (
+        s.phone_number ||
+        s.enquiry?.phoneNumber ||
+        ""
+      ).toLowerCase();
       const email = (s.email || s.enquiry?.email || "").toLowerCase();
-      const service = (SERVICE_TYPE_DISPLAY[s.service_type] || SERVICE_TYPE_DISPLAY[s.enquiry?.serviceType] || "").toLowerCase();
+      const service = (
+        SERVICE_TYPE_DISPLAY[s.service_type] ||
+        SERVICE_TYPE_DISPLAY[s.enquiry?.serviceType] ||
+        ""
+      ).toLowerCase();
       const surveyId = (s.survey_id || "").toLowerCase();
 
       return (
@@ -101,49 +121,16 @@ export default function QuotationList() {
     });
   };
 
-  const handleCreateQuotation = async (surveyId) => {
-    try {
-      const surveyRes = await apiClient.get(`/surveys/${surveyId}/`);
-      const survey = surveyRes.data;
-
-      const res = await apiClient.post("/quotation-create/create-draft/", {
-        survey_id: survey.id,
-      });
-
-      setSurveys((prev) =>
-        prev.map((s) =>
-          s.survey_id === surveyId
-            ? {
-              ...s,
-              hasQuotation: true,
-              quotation_id: res.data.quotation_id,
-            }
-            : s
-        )
-      );
-      setFilteredSurveys((prev) =>
-        prev.map((s) =>
-          s.survey_id === surveyId
-            ? {
-              ...s,
-              hasQuotation: true,
-              quotation_id: res.data.quotation_id,
-            }
-            : s
-        )
-      );
-
-      navigate(`/quotation-create/${surveyId}`);
-
-      setMessage("Draft quotation created! Opening editor...");
-    } catch (err) {
-      const msg = err.response?.data?.detail || "Failed to create draft quotation";
-      setError(msg);
-    }
+  // 🔥 FIXED: Simplified - Just navigate, no draft creation needed
+  const handleCreateQuotation = (surveyId) => {
+    console.log("🎯 Creating quotation for survey:", surveyId);
+    // Navigate to quotation create page with correct route structure
+    navigate(`/quotation-create/survey/${surveyId}`);
   };
 
   const handleDeleteQuotation = async (surveyId, quotationId) => {
-    if (!window.confirm("Are you sure you want to delete this quotation?")) return;
+    if (!window.confirm("Are you sure you want to delete this quotation?"))
+      return;
 
     try {
       await apiClient.delete("/quotation-create/delete/", {
@@ -173,7 +160,9 @@ export default function QuotationList() {
   // View signature
   const viewSignature = async (survey) => {
     try {
-      const signatureRes = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+      const signatureRes = await apiClient.get(
+        `/surveys/${survey.survey_id}/signature/`
+      );
       setCurrentSignature(signatureRes.data.signature_url);
       setIsSignatureModalOpen(true);
     } catch (err) {
@@ -181,15 +170,15 @@ export default function QuotationList() {
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <Loading />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
+    );
 
-  if (error && !message) return (
-    <div className="text-center text-red-600 p-5">{error}</div>
-  );
+  if (error && !message)
+    return <div className="text-center text-red-600 p-5">{error}</div>;
 
   return (
     <div className="container mx-auto">
@@ -209,7 +198,11 @@ export default function QuotationList() {
                 ×
               </button>
             </div>
-            <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
+            <img
+              src={currentSignature}
+              alt="Signature"
+              className="w-full rounded-lg border"
+            />
             <button
               onClick={() => {
                 setIsSignatureModalOpen(false);
@@ -268,14 +261,30 @@ export default function QuotationList() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
                 <tr>
-                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">S.No</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">Survey ID</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">Customer</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">Phone</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">Email</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">Service</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium uppercase">Quotation</th>
-                  <th className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium uppercase">Signature</th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    S.No
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Survey ID
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Customer
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Phone
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Email
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
+                    Service
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium uppercase">
+                    Quotation
+                  </th>
+                  <th className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium uppercase">
+                    Signature
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -296,9 +305,15 @@ export default function QuotationList() {
                       whileHover="hover"
                       className="hover:bg-gray-50"
                     >
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">{idx + 1}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">{s.survey_id}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">{name}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
+                        {idx + 1}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
+                        {s.survey_id}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
+                        {name}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
                         <span className="flex items-center gap-2">
                           <FaPhoneAlt className="w-3 h-3" /> {phone}
@@ -309,45 +324,52 @@ export default function QuotationList() {
                           <FaEnvelope className="w-3 h-3" /> {email}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">{service}</td>
-                      <td className="px-6 py-4">
-                        <td className="px-4 py-3">
-                          {s.hasQuotation ? (
-                            <div className="flex items-center justify-center gap-2">
-                              <Link
-                                to={`/quotation-view/${s.quotation_id}`}
-                                className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-                              >
-                                <FaEye /> View Quotation
-                              </Link>
-
-                              <Link
-                                to={`/quotation-edit/${s.survey_id}`}
-                                className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
-                              >
-                                <FaEdit /> Edit Quotation
-                              </Link>
-
-                              <button
-                                onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
-                                className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
-                              >
-                                Delete Quotation
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center whitespace-nowrap">
-                              <Link
-                                to={`/quotation-create/${s.survey_id}`}
-                                className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
-                              >
-                                Create Quotation
-                              </Link>
-                            </div>
-                          )}
-                        </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-normal text-gray-800">
+                        {service}
                       </td>
-                      <td className="px-6 py-4 text-center  whitespace-nowrap">
+                      <td className="px-6 py-4">
+                        {s.hasQuotation ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Link
+                              to={`/quotation-view/${s.quotation_id}`}
+                              className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                            >
+                              <FaEye /> View
+                            </Link>
+
+                            <Link
+                              to={`/quotation-edit/survey/${s.survey_id}`}
+                              className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
+                            >
+                              <FaEdit /> Edit
+                            </Link>
+
+                            <button
+                              onClick={() =>
+                                handleDeleteQuotation(
+                                  s.survey_id,
+                                  s.quotation_id
+                                )
+                              }
+                              className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
+                            >
+                              <FaTrash /> Delete
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <button
+                              onClick={() =>
+                                handleCreateQuotation(s.survey_id)
+                              }
+                              className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm font-medium transition shadow-md"
+                            >
+                              Create Quotation
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
                         {s.signature_uploaded ? (
                           <button
                             onClick={() => viewSignature(s)}
@@ -356,7 +378,9 @@ export default function QuotationList() {
                             <FaSignature /> View
                           </button>
                         ) : (
-                          <span className="text-gray-500 text-sm">No Signature</span>
+                          <span className="text-gray-500 text-sm">
+                            No Signature
+                          </span>
                         )}
                       </td>
                     </motion.tr>
@@ -465,39 +489,46 @@ export default function QuotationList() {
                           <div className="pt-2">
                             <p className="font-medium mb-2">Quotation:</p>
                             {s.hasQuotation ? (
-                              <div className="flex flex-wrap items-center justify-start gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <Link
                                   to={`/quotation-view/${s.quotation_id}`}
                                   className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
                                 >
-                                  <FaEye /> View Quotation
+                                  <FaEye /> View
                                 </Link>
 
                                 <Link
-                                  to={`/quotation-edit/${s.survey_id}`}
+                                  to={`/quotation-edit/survey/${s.survey_id}`}
                                   className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
                                 >
-                                  <FaEdit /> Edit Quotation
+                                  <FaEdit /> Edit
                                 </Link>
 
                                 <button
-                                  onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
+                                  onClick={() =>
+                                    handleDeleteQuotation(
+                                      s.survey_id,
+                                      s.quotation_id
+                                    )
+                                  }
                                   className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
                                 >
-                                  Delete Quotation
+                                  <FaTrash /> Delete
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-start">
-                                <Link
-                                  to={`/quotation-create/${s.survey_id}`}
-                                  className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm"
-                                >
-                                  Create Quotation
-                                </Link>
-                              </div>
+                              <button
+                                onClick={() =>
+                                  handleCreateQuotation(s.survey_id)
+                                }
+                                className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm font-medium transition shadow-md"
+                              >
+                                Create Quotation
+                              </button>
                             )}
                           </div>
+
+                          {/* Signature */}
                           <div className="pt-2">
                             <p className="font-medium mb-2">Signature:</p>
                             {s.signature_uploaded ? (
@@ -508,7 +539,9 @@ export default function QuotationList() {
                                 <FaSignature /> View Signature
                               </button>
                             ) : (
-                              <span className="text-gray-500 text-sm">No Signature</span>
+                              <span className="text-gray-500 text-sm">
+                                No Signature
+                              </span>
                             )}
                           </div>
                         </div>
