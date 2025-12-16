@@ -791,8 +791,8 @@ const SurveyDetails = () => {
               >
                 <div
                   className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all duration-200 ${isSelected
-                      ? "bg-[#4c7085] border-[#4c7085]"
-                      : "bg-white border-gray-400"
+                    ? "bg-[#4c7085] border-[#4c7085]"
+                    : "bg-white border-gray-400"
                     }`}
                 >
                   {isSelected && (
@@ -823,6 +823,7 @@ const SurveyDetails = () => {
               <div className="flex items-center justify-between w-full sm:w-auto bg-white border border-gray-300 rounded-lg shadow-sm">
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() =>
                     updateQuantity(item.name, Math.max(0, qty - 1))
                   }
@@ -838,6 +839,7 @@ const SurveyDetails = () => {
                 />
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => updateQuantity(item.name, qty + 1)}
                   className="p-3 text-gray-600 hover:bg-gray-100 rounded-r-lg transition w-1/3 sm:w-auto"
                 >
@@ -989,6 +991,7 @@ const SurveyDetails = () => {
                         <h4 className="font-medium text-sm text-gray-800">{article.itemName}</h4>
                         <div className="flex gap-1">
                           <button
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateArticle(article.id)}
                             className="text-green-600 hover:text-green-800 p-1"
                             title="Save"
@@ -996,6 +999,7 @@ const SurveyDetails = () => {
                             <FaCheck className="w-3 h-3" />
                           </button>
                           <button
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={cancelEdit}
                             className="text-gray-600 hover:text-gray-800 p-1"
                             title="Cancel"
@@ -1009,6 +1013,7 @@ const SurveyDetails = () => {
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleEditInputChange('quantity', Math.max(1, (editFormData.quantity || 1) - 1))}
                             className="p-1 bg-gray-200 rounded hover:bg-gray-300"
                           >
@@ -1023,6 +1028,7 @@ const SurveyDetails = () => {
                           />
                           <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleEditInputChange('quantity', (editFormData.quantity || 1) + 1)}
                             className="p-1 bg-gray-200 rounded hover:bg-gray-300"
                           >
@@ -1174,6 +1180,7 @@ const SurveyDetails = () => {
                       </div>
                       <div className="flex gap-1 ml-2">
                         <button
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => setEditingArticle(article.id)}
                           className="text-blue-600 hover:text-blue-800 p-1"
                           title="Edit"
@@ -1181,6 +1188,7 @@ const SurveyDetails = () => {
                           <FaEdit className="w-3 h-3" />
                         </button>
                         <button
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => removeArticle(article.id)}
                           className="text-red-600 hover:text-red-800 p-1"
                           title="Remove"

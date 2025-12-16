@@ -1037,6 +1037,7 @@ const ScheduledSurveys = () => {
                   timeIntervals={15}
                   dateFormat="yyyy-MM-dd HH:mm"
                   minDate={new Date()}
+                  wrapperClassName="w-full"
                   className="w-full p-2 border border-gray-300 rounded text-sm"
                   placeholderText="Select date and time"
                 />
