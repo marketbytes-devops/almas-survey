@@ -779,20 +779,20 @@ const SurveyDetails = () => {
         <div className="border-b border-gray-200 last:border-0">
           <div
             className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4
-                    hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
-                    transition-all rounded-lg"
+            hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
+            transition-all rounded-lg"
           >
             <div className="flex items-start sm:items-center gap-4 flex-1 w-full">
-              {/* Custom Round Selection Button */}
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => toggleItemSelection(item.name)}
                 className="focus:outline-none"
               >
                 <div
                   className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all duration-200 ${isSelected
-                    ? "bg-[#4c7085] border-[#4c7085]"
-                    : "bg-white border-gray-400"
+                      ? "bg-[#4c7085] border-[#4c7085]"
+                      : "bg-white border-gray-400"
                     }`}
                 >
                   {isSelected && (
@@ -800,7 +800,6 @@ const SurveyDetails = () => {
                   )}
                 </div>
               </button>
-
               <div className="flex-1">
                 <div className="font-semibold text-gray-800 text-sm sm:text-base">
                   {item.name}
@@ -847,8 +846,8 @@ const SurveyDetails = () => {
               </div>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
                   toggleExpandedItem(item.name);
                 }}
@@ -1318,6 +1317,7 @@ const SurveyDetails = () => {
                     {Object.values(selectedItems).filter(Boolean).length} item(s) selected
                   </span>
                   <button
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={addMultipleArticles}
                     className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
                   >
