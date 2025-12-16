@@ -28,7 +28,7 @@ class QuotationSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(),
         required=False,
         allow_empty=True,
-        write_only=False  # So it's returned in response too
+        write_only=False  
     )
 
     class Meta:
