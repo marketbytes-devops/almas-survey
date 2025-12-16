@@ -26,7 +26,8 @@ export default function QuotationEdit() {
   const [hasSignature, setHasSignature] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [isSignatureViewModalOpen, setIsSignatureViewModalOpen] = useState(false);
+  const [isSignatureViewModalOpen, setIsSignatureViewModalOpen] =
+    useState(false);
 
   const [pricingRanges, setPricingRanges] = useState([]);
   const [priceError, setPriceError] = useState("");
@@ -36,8 +37,13 @@ export default function QuotationEdit() {
   const [dynamicExcludes, setDynamicExcludes] = useState([]);
   const [loadingServices, setLoadingServices] = useState(true);
 
+  const [allServices, setAllServices] = useState([]);
+  const [serviceSelections, setServiceSelections] = useState({});
+
   const [additionalChargesPricing, setAdditionalChargesPricing] = useState([]);
-  const [additionalChargesBreakdown, setAdditionalChargesBreakdown] = useState([]);
+  const [additionalChargesBreakdown, setAdditionalChargesBreakdown] = useState(
+    []
+  );
   const [chargeQuantities, setChargeQuantities] = useState({});
 
   const today = new Date().toISOString().split("T")[0];
@@ -80,6 +86,21 @@ export default function QuotationEdit() {
   }, []);
 
   useEffect(() => {
+    const fetchAllServices = async () => {
+      try {
+        const res = await apiClient.get("/services/");
+        const services = Array.isArray(res.data.results)
+          ? res.data.results
+          : res.data;
+        setAllServices(services);
+      } catch (err) {
+        console.error("Failed to fetch services:", err);
+      }
+    };
+    fetchAllServices();
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         const surveyRes = await apiClient.get(`/surveys/${id}/`);
@@ -87,29 +108,43 @@ export default function QuotationEdit() {
         setSurvey(s);
         setDestinationCity(s.destination_addresses?.[0]?.city || "");
 
-        const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${id}`);
+        const checkRes = await apiClient.get(
+          `/quotation-create/check/?survey_id=${id}`
+        );
         if (!checkRes.data.exists) {
           setError("No quotation found.");
           setLoading(false);
           return;
         }
 
-        const qRes = await apiClient.get(`/quotation-create/${checkRes.data.quotation_id}/`);
+        const qRes = await apiClient.get(
+          `/quotation-create/${checkRes.data.quotation_id}/`
+        );
         const q = qRes.data;
         setQuotation(q);
 
-        const chargesRes = await apiClient.get("/quotation-additional-charges/");
+        const chargesRes = await apiClient.get(
+          "/quotation-additional-charges/"
+        );
         setAdditionalChargesPricing(chargesRes.data);
 
         const selectedServices = s.additional_services || [];
         const breakdown = selectedServices
           .map((service) => {
-            const pricing = chargesRes.data.find(p => p.service?.id === service.id);
+            const pricing = chargesRes.data.find(
+              (p) => p.service?.id === service.id
+            );
             if (!pricing) return null;
 
             const pricePerUnit = parseFloat(pricing.price_per_unit) || 0;
-            const quantity = pricing.rate_type === "FIX" ? 1 : (parseInt(pricing.per_unit_quantity) || 1);
-            const total = pricing.rate_type === "FIX" ? pricePerUnit : pricePerUnit * quantity;
+            const quantity =
+              pricing.rate_type === "FIX"
+                ? 1
+                : parseInt(pricing.per_unit_quantity) || 1;
+            const total =
+              pricing.rate_type === "FIX"
+                ? pricePerUnit
+                : pricePerUnit * quantity;
 
             return {
               id: pricing.id,
@@ -126,7 +161,7 @@ export default function QuotationEdit() {
         setAdditionalChargesBreakdown(breakdown);
 
         const qtyMap = {};
-        breakdown.forEach(c => {
+        breakdown.forEach((c) => {
           qtyMap[c.id] = c.quantity;
         });
         setChargeQuantities(qtyMap);
@@ -136,23 +171,32 @@ export default function QuotationEdit() {
         const includedServices = {};
         const excludedServices = {};
 
-        dynamicIncludes.forEach(service => {
+        dynamicIncludes.forEach((service) => {
           includedServices[service.id] = false;
         });
-        dynamicExcludes.forEach(service => {
+        dynamicExcludes.forEach((service) => {
           excludedServices[service.id] = false;
         });
 
         if (q.included_services) {
-          q.included_services.forEach(serviceId => {
+          q.included_services.forEach((serviceId) => {
             includedServices[serviceId] = true;
           });
         }
         if (q.excluded_services) {
-          q.excluded_services.forEach(serviceId => {
+          q.excluded_services.forEach((serviceId) => {
             excludedServices[serviceId] = true;
           });
         }
+
+        // Load saved selected_services
+        const serviceSelectionsInit = {};
+        if (q.selected_services && q.selected_services.length > 0) {
+          q.selected_services.forEach((serviceId) => {
+            serviceSelectionsInit[serviceId] = true;
+          });
+        }
+        setServiceSelections(serviceSelectionsInit);
 
         setForm({
           date: q.date || today,
@@ -165,7 +209,10 @@ export default function QuotationEdit() {
           moveDate: s.packing_date_from || today,
           jobType: s.service_type === "localMove" ? "Local" : "International",
           baseAmount: "",
-          additionalChargesTotal: breakdown.reduce((sum, c) => sum + c.total, 0),
+          additionalChargesTotal: breakdown.reduce(
+            (sum, c) => sum + c.total,
+            0
+          ),
           amount: q.amount?.toString() || "",
           advance: q.advance?.toString() || "",
           includedServices,
@@ -173,7 +220,9 @@ export default function QuotationEdit() {
         });
 
         try {
-          const sigRes = await apiClient.get(`/surveys/${s.survey_id}/signature/`);
+          const sigRes = await apiClient.get(
+            `/surveys/${s.survey_id}/signature/`
+          );
           setHasSignature(true);
           setCurrentSignature(sigRes.data.signature_url);
         } catch {
@@ -215,56 +264,65 @@ export default function QuotationEdit() {
 
   const totalVolume =
     survey?.articles
-      ?.reduce((sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0), 0)
+      ?.reduce(
+        (sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0),
+        0
+      )
       ?.toFixed(2) || "0.00";
 
   useEffect(() => {
     if (!totalVolume || totalVolume <= 0 || pricingRanges.length === 0) {
-      setForm(prev => ({ ...prev, baseAmount: "" }));
+      setForm((prev) => ({ ...prev, baseAmount: "" }));
       return;
     }
 
     const volume = parseFloat(totalVolume);
-    const range = pricingRanges.find(r => volume >= r.min && volume <= r.max);
+    const range = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
 
     if (!range) {
       setPriceError(`No pricing range found for volume ${volume} CBM`);
-      setForm(prev => ({ ...prev, baseAmount: "" }));
+      setForm((prev) => ({ ...prev, baseAmount: "" }));
       return;
     }
 
-    const baseAmount = range.rateType === "flat"
-      ? range.rate
-      : range.rate * volume;
+    const baseAmount =
+      range.rateType === "flat" ? range.rate : range.rate * volume;
 
-    setForm(prev => ({ ...prev, baseAmount: baseAmount.toFixed(2) }));
+    setForm((prev) => ({ ...prev, baseAmount: baseAmount.toFixed(2) }));
     setPriceError("");
   }, [totalVolume, pricingRanges]);
 
   useEffect(() => {
-    const recalculated = additionalChargesBreakdown.map(item => {
-      const qty = chargeQuantities[item.id] !== undefined ? chargeQuantities[item.id] : item.quantity;
-      const total = item.rate_type === "FIX"
-        ? item.price_per_unit
-        : item.price_per_unit * qty;
+    const recalculated = additionalChargesBreakdown.map((item) => {
+      const qty =
+        chargeQuantities[item.id] !== undefined
+          ? chargeQuantities[item.id]
+          : item.quantity;
+      const total =
+        item.rate_type === "FIX"
+          ? item.price_per_unit
+          : item.price_per_unit * qty;
 
       return { ...item, quantity: qty, total: parseFloat(total.toFixed(2)) };
     });
 
-    const totalAdditional = recalculated.reduce((sum, item) => sum + item.total, 0);
-    setForm(prev => ({ ...prev, additionalChargesTotal: totalAdditional }));
+    const totalAdditional = recalculated.reduce(
+      (sum, item) => sum + item.total,
+      0
+    );
+    setForm((prev) => ({ ...prev, additionalChargesTotal: totalAdditional }));
   }, [chargeQuantities, additionalChargesBreakdown]);
 
   useEffect(() => {
     const base = parseFloat(form.baseAmount) || 0;
     const additional = form.additionalChargesTotal || 0;
     const total = (base + additional).toFixed(2);
-    setForm(prev => ({ ...prev, amount: total }));
+    setForm((prev) => ({ ...prev, amount: total }));
   }, [form.baseAmount, form.additionalChargesTotal]);
 
   const handleQuantityChange = (chargeId, value) => {
     const qty = Math.max(0, parseInt(value) || 0);
-    setChargeQuantities(prev => ({ ...prev, [chargeId]: qty }));
+    setChargeQuantities((prev) => ({ ...prev, [chargeId]: qty }));
   };
 
   const handleManualBack = () => {
@@ -278,17 +336,30 @@ export default function QuotationEdit() {
       date: form.date,
       amount: parseFloat(form.amount),
       advance: form.advance ? parseFloat(form.advance) : 0,
-      included_services: Object.keys(form.includedServices).filter(k => form.includedServices[k]),
-      excluded_services: Object.keys(form.excludedServices).filter(k => form.excludedServices[k]),
-      additional_charges: additionalChargesBreakdown.map(c => ({
+      included_services: Object.keys(form.includedServices).filter(
+        (k) => form.includedServices[k]
+      ),
+      excluded_services: Object.keys(form.excludedServices).filter(
+        (k) => form.excludedServices[k]
+      ),
+      additional_charges: additionalChargesBreakdown.map((c) => ({
         service_id: c.id,
-        quantity: chargeQuantities[c.id] !== undefined ? chargeQuantities[c.id] : c.quantity,
+        quantity:
+          chargeQuantities[c.id] !== undefined
+            ? chargeQuantities[c.id]
+            : c.quantity,
         total: c.total,
       })),
+      selected_services: Object.keys(serviceSelections)
+        .filter((key) => serviceSelections[key])
+        .map((key) => parseInt(key)),
     };
 
     try {
-      await apiClient.patch(`/quotation-create/${quotation.quotation_id}/`, payload);
+      await apiClient.patch(
+        `/quotation-create/${quotation.quotation_id}/`,
+        payload
+      );
       setMessage("Quotation updated successfully!");
       setTimeout(() => navigate("/quotation-list"), 1500);
     } catch (err) {
@@ -296,8 +367,14 @@ export default function QuotationEdit() {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
-  if (error && !message) return <div className="text-center text-red-600 p-5">{error}</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
+    );
+  if (error && !message)
+    return <div className="text-center text-red-600 p-5">{error}</div>;
 
   return (
     <div className="bg-gray-50">
@@ -309,15 +386,19 @@ export default function QuotationEdit() {
           const formData = new FormData();
           formData.append("signature", file);
           setIsSignatureUploading(true);
-          apiClient.post(`/surveys/${survey.survey_id}/upload-signature/`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          }).then(() => {
-            setMessage("Signature updated successfully!");
-            setHasSignature(true);
-          }).catch(() => setError("Signature upload failed")).finally(() => {
-            setIsSignatureUploading(false);
-            setIsSignatureModalOpen(false);
-          });
+          apiClient
+            .post(`/surveys/${survey.survey_id}/upload-signature/`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+            .then(() => {
+              setMessage("Signature updated successfully!");
+              setHasSignature(true);
+            })
+            .catch(() => setError("Signature upload failed"))
+            .finally(() => {
+              setIsSignatureUploading(false);
+              setIsSignatureModalOpen(false);
+            });
         }}
         customerName={form.client}
       />
@@ -327,10 +408,22 @@ export default function QuotationEdit() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-lg">Digital Signature</h3>
-              <button onClick={() => setIsSignatureViewModalOpen(false)} className="text-3xl">×</button>
+              <button
+                onClick={() => setIsSignatureViewModalOpen(false)}
+                className="text-3xl"
+              >
+                ×
+              </button>
             </div>
-            <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
-            <button onClick={() => setIsSignatureViewModalOpen(false)} className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg font-medium">
+            <img
+              src={currentSignature}
+              alt="Signature"
+              className="w-full rounded-lg border"
+            />
+            <button
+              onClick={() => setIsSignatureViewModalOpen(false)}
+              className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg font-medium"
+            >
               Close
             </button>
           </div>
@@ -372,10 +465,14 @@ export default function QuotationEdit() {
 
         <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">Pricing Location</h3>
+            <h3 className="text-sm font-medium text-blue-800 mb-2">
+              Pricing Location
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-[#4c7085] mb-1">Destination City</label>
+                <label className="block text-xs font-medium text-[#4c7085] mb-1">
+                  Destination City
+                </label>
                 <input
                   type="text"
                   value={destinationCity || "Not specified"}
@@ -384,7 +481,9 @@ export default function QuotationEdit() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#4c7085] mb-1">Country</label>
+                <label className="block text-xs font-medium text-[#4c7085] mb-1">
+                  Country
+                </label>
                 <input
                   type="text"
                   value="Qatar"
@@ -410,7 +509,9 @@ export default function QuotationEdit() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             {["Client Name", "Mobile", "Email"].map((label, i) => (
               <div key={i}>
-                <label className="block text-sm font-medium mb-1">{label}</label>
+                <label className="block text-sm font-medium mb-1">
+                  {label}
+                </label>
                 <input
                   type="text"
                   value={[form.client, form.mobile, form.email][i]}
@@ -421,63 +522,158 @@ export default function QuotationEdit() {
             ))}
           </div>
 
-          {additionalChargesBreakdown.length > 0 && (
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-medium text-purple-900 mb-4">Additional Services</h3>
-              <p className="text-sm text-purple-700 mb-4">Edit quantities for variable rate services</p>
-              <div className="space-y-3">
-                {additionalChargesBreakdown.map((charge) => {
-                  const currencyName = charge.currency || "QAR";
-                  const quantity = chargeQuantities[charge.id] !== undefined ? chargeQuantities[charge.id] : charge.quantity;
-                  const subtotal = charge.rate_type === "FIX" ? charge.price_per_unit : charge.price_per_unit * quantity;
+          {/* Unified "Your Rate" Section - Everything in one block */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl border-2 border-blue-200">
+            <h3 className="text-lg sm:text-xl font-medium text-center mb-6">
+              Your Rate
+            </h3>
+
+            <div className="space-y-5">
+              {/* Selected Services (Round Toggle Buttons) */}
+              {allServices.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">
+                  No services available
+                </p>
+              ) : (
+                allServices.map((service) => {
+                  const isSelected = serviceSelections[service.id] === true;
 
                   return (
-                    <div key={charge.id} className="bg-white border-2 border-purple-200 rounded-lg p-4">
-                      <div className="flex flex-col sm:flex-row justify-between gap-4">
-                        <div>
-                          <div className="font-medium text-gray-800">{charge.service_name}</div>
-                          <div className="text-sm text-gray-600">
-                            {charge.price_per_unit} {currencyName} × {quantity} unit(s)
-                          </div>
-                          <div className="text-xs text-gray-500 capitalize mt-1">
-                            Rate: {charge.rate_type?.toLowerCase() || "fix"}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {charge.rate_type !== "FIX" && (
-                            <>
-                              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Quantity:</label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={quantity}
-                                onChange={(e) => handleQuantityChange(charge.id, e.target.value)}
-                                className="w-20 px-2 py-1 border-2 border-purple-300 rounded focus:border-purple-500 outline-none"
-                              />
-                            </>
+                    <div
+                      key={service.id}
+                      className="bg-white rounded-lg p-5 shadow-md border border-gray-200 flex items-center justify-between"
+                    >
+                      <div className="text-lg font-medium text-gray-800">
+                        {service.name}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setServiceSelections((prev) => ({
+                            ...prev,
+                            [service.id]: !prev[service.id],
+                          }))
+                        }
+                        className="focus:outline-none"
+                      >
+                        <div
+                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected
+                              ? "bg-blue-600 border-blue-600"
+                              : "bg-white border-gray-400"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-3 h-3 bg-white rounded-full" />
                           )}
-                          <div className="text-right">
-                            <div className="text-lg font-medium text-purple-700">
-                              = {subtotal.toFixed(2)} {currencyName}
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+
+              {/* Additional Services Breakdown with Quantity Edit */}
+              {additionalChargesBreakdown.length > 0 && (
+                <>
+                  <div className="text-sm font-medium text-gray-700 mb-3">
+                    Additional Services (from survey)
+                  </div>
+                  {additionalChargesBreakdown.map((charge) => {
+                    const currencyName = charge.currency || "QAR";
+                    const quantity =
+                      chargeQuantities[charge.id] !== undefined
+                        ? chargeQuantities[charge.id]
+                        : charge.quantity;
+                    const subtotal =
+                      charge.rate_type === "FIX"
+                        ? charge.price_per_unit
+                        : charge.price_per_unit * quantity;
+
+                    return (
+                      <div
+                        key={charge.id}
+                        className="bg-white/70 rounded-lg p-4 border border-gray-300"
+                      >
+                        <div className="flex flex-col sm:flex-row justify-between gap-4">
+                          <div>
+                            <div className="font-medium text-gray-800">
+                              {charge.service_name}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {charge.price_per_unit} {currencyName} ×{" "}
+                              {quantity} unit(s)
+                            </div>
+                            <div className="text-xs text-gray-500 capitalize mt-1">
+                              Rate: {charge.rate_type?.toLowerCase() || "fix"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {charge.rate_type !== "FIX" && (
+                              <>
+                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                  Qty:
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={quantity}
+                                  onChange={(e) =>
+                                    handleQuantityChange(
+                                      charge.id,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-20 px-2 py-1 border-2 border-gray-400 rounded focus:border-[#4c7085] outline-none"
+                                />
+                              </>
+                            )}
+                            <div className="text-right">
+                              <div className="text-lg font-medium text-purple-700">
+                                = {subtotal.toFixed(2)} {currencyName}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Final Total Amount */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-6 border-t-2 border-gray-400 gap-2">
+                <span className="text-xl font-medium text-gray-900">
+                  Total Amount
+                </span>
+                <span className="text-2xl sm:text-4xl font-bold text-green-600">
+                  {form.amount || "0.00"} QAR
+                </span>
               </div>
             </div>
-          )}
+
+            {priceError && (
+              <div className="mt-6 bg-red-100 border-2 border-red-400 rounded-lg p-4 text-center text-red-700 font-medium text-sm">
+                {priceError}
+              </div>
+            )}
+          </div>
 
           {!loadingServices && (
             <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-gray-300 rounded-lg overflow-hidden">
-              <div className="bg-gray-700 text-white p-4 text-center font-medium">Service Includes</div>
-              <div className="bg-red-700 text-white p-4 text-center font-medium">Service Excludes</div>
+              <div className="bg-gray-700 text-white p-4 text-center font-medium">
+                Service Includes
+              </div>
+              <div className="bg-red-700 text-white p-4 text-center font-medium">
+                Service Excludes
+              </div>
 
               <div className="p-4 sm:p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
                 {dynamicIncludes.map((service) => (
-                  <label key={service.id} className="flex items-center space-x-3 cursor-pointer">
+                  <label
+                    key={service.id}
+                    className="flex items-center space-x-3 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={form.includedServices[service.id] || false}
@@ -492,14 +688,19 @@ export default function QuotationEdit() {
                       }
                       className="mt-1 w-5 h-5 text-blue-600"
                     />
-                    <span className="text-sm font-medium relative top-0.5">{service.text}</span>
+                    <span className="text-sm font-medium relative top-0.5">
+                      {service.text}
+                    </span>
                   </label>
                 ))}
               </div>
 
               <div className="p-4 sm:p-6 space-y-4 bg-red-50 border-l-2 border-red-200 max-h-80 overflow-y-auto">
                 {dynamicExcludes.map((service) => (
-                  <label key={service.id} className="flex items-start space-x-3 cursor-pointer">
+                  <label
+                    key={service.id}
+                    className="flex items-start space-x-3 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={form.excludedServices[service.id] || false}
@@ -514,49 +715,20 @@ export default function QuotationEdit() {
                       }
                       className="mt-1 w-5 h-5 text-red-600"
                     />
-                    <span className="text-sm font-medium relative top-1">{service.text}</span>
+                    <span className="text-sm font-medium relative top-1">
+                      {service.text}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl border-2 border-blue-200">
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
-                <div>
-                  <span className="text-sm text-gray-600">Base Amount (Volume Pricing)</span>
-                  <div className="text-xs text-gray-500">{totalVolume} CBM × {destinationCity}</div>
-                </div>
-                <span className="text-xl sm:text-2xl font-medium text-[#4c7085]">{form.baseAmount || "0.00"} QAR</span>
-              </div>
-
-              {form.additionalChargesTotal > 0 && (
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
-                  <div>
-                    <span className="text-sm text-gray-600">Additional Services</span>
-                    <div className="text-xs text-gray-500">{additionalChargesBreakdown.length} service(s)</div>
-                  </div>
-                  <span className="text-xl sm:text-2xl font-medium text-purple-700">+ {form.additionalChargesTotal.toFixed(2)} QAR</span>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-2 gap-2">
-                <span className="text-xl font-medium text-gray-900">Total Amount</span>
-                <span className="text-2xl sm:text-4xl font-medium text-green-600">{form.amount || "0.00"} QAR</span>
-              </div>
-            </div>
-
-            {priceError && (
-              <div className="mt-4 bg-red-100 border-2 border-red-400 rounded-lg p-4 text-center text-red-700 font-medium text-sm">
-                {priceError}
-              </div>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div>
-              <label className="block font-medium text-sm mb-1">Total Amount</label>
+              <label className="block font-medium text-sm mb-1">
+                Total Amount
+              </label>
               <input
                 type="text"
                 readOnly
@@ -580,7 +752,13 @@ export default function QuotationEdit() {
               <input
                 type="text"
                 readOnly
-                value={form.amount && form.advance ? `${(parseFloat(form.amount) - parseFloat(form.advance)).toFixed(2)} QAR` : ""}
+                value={
+                  form.amount && form.advance
+                    ? `${(
+                        parseFloat(form.amount) - parseFloat(form.advance)
+                      ).toFixed(2)} QAR`
+                    : ""
+                }
                 className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700"
               />
             </div>
@@ -590,7 +768,9 @@ export default function QuotationEdit() {
             <h3 className="font-medium text-lg mb-3">Digital Signature</h3>
             <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <p className="text-sm text-gray-600">
-                {hasSignature ? "✓ Customer has digitally signed this quotation" : "Add customer signature"}
+                {hasSignature
+                  ? "✓ Customer has digitally signed this quotation"
+                  : "Add customer signature"}
               </p>
               <div className="flex gap-3">
                 {hasSignature && (

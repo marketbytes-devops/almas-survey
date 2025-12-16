@@ -50,6 +50,12 @@ class Quotation(models.Model):
         default=list, null=True, blank=True,
         help_text="List of excluded services IDs"
     )
+    selected_services = models.JSONField(
+        default=list,
+        null=True,
+        blank=True,
+        help_text="List of selected general services (from /services/) IDs chosen by user with round buttons"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
