@@ -319,27 +319,31 @@ export default function QuotationCreate() {
     if (!form.amount) return alert("Amount is not calculated.");
     if (priceError) return alert(priceError);
 
-    const payload = {
-      survey: parseInt(survey.id),
-      serial_no: form.serialNo,
-      date: form.date,
-      amount: parseFloat(form.amount),
-      advance: form.advance ? parseFloat(form.advance) : 0,
-      included_services: Object.keys(form.includedServices).filter(
-        (k) => form.includedServices[k]
-      ),
-      excluded_services: Object.keys(form.excludedServices).filter(
-        (k) => form.excludedServices[k]
-      ),
-      additional_charges: additionalCharges.map((charge) => ({
-        service_id: charge.service.id,
-        service_name: charge.service.name,
-        quantity: charge.per_unit_quantity || 1,
-        price_per_unit: charge.price_per_unit,
-        currency: charge.currency,
-        total: charge.price_per_unit * (charge.per_unit_quantity || 1),
-      })),
-    };
+  const payload = {
+    survey: parseInt(survey.id),
+    serial_no: form.serialNo,
+    date: form.date,
+    amount: parseFloat(form.amount),
+    advance: form.advance ? parseFloat(form.advance) : 0,
+    included_services: Object.keys(form.includedServices).filter(
+      (k) => form.includedServices[k]
+    ),
+    excluded_services: Object.keys(form.excludedServices).filter(
+      (k) => form.excludedServices[k]
+    ),
+    additional_charges: additionalCharges.map((charge) => ({
+      service_id: charge.service.id,
+      service_name: charge.service.name,
+      quantity: charge.per_unit_quantity || 1,
+      price_per_unit: charge.price_per_unit,
+      currency: charge.currency,
+      total: charge.price_per_unit * (charge.per_unit_quantity || 1),
+    })),
+    // 🔥 ADD THIS:
+    selected_services: Object.keys(serviceSelections)
+      .filter(key => serviceSelections[key])
+      .map(key => parseInt(key)),
+  };
 
     try {
       setIsSubmitted(true);

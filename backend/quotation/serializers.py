@@ -24,6 +24,12 @@ class QuotationSerializer(serializers.ModelSerializer):
         required=False,
         allow_empty=True
     )
+    selected_services = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        write_only=False  # So it's returned in response too
+    )
 
     class Meta:
         model = Quotation
@@ -32,7 +38,7 @@ class QuotationSerializer(serializers.ModelSerializer):
             'date', 'amount', 'advance',
             'currency', 'currency_code', 'notes',
             'included_services', 'excluded_services',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at','selected_services',
         ]
         read_only_fields = ['id', 'quotation_id', 'created_at', 'updated_at', 'survey_id']
 
@@ -49,4 +55,5 @@ class QuotationSerializer(serializers.ModelSerializer):
         ret = super().to_representation(instance)
         ret['included_services'] = instance.included_services or []
         ret['excluded_services'] = instance.excluded_services or []
+        ret['selected_services'] = instance.selected_services or []
         return ret
