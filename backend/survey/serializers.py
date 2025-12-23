@@ -15,14 +15,14 @@ STATUS_CHOICES = (
 )
 
 STORAGE_FREQUENCY_CHOICES = (
-    ('daily', 'Daily'),
-    ('weekly', 'Weekly'),
-    ('monthly', 'Monthly'),
+    ('short_term', 'Short Term'),
+    ('long_term', 'Long Term'),
 )
 
 STORAGE_MODE_CHOICES = (
-    ('warehouse', 'Warehouse'),
-    ('container', 'Container'),
+    ('ac', 'AC'),
+    ('non_ac', 'Non-AC'),
+    ('self_storage', 'Self Storage'),
 )
 
 TRANSPORT_MODE_CHOICES = (

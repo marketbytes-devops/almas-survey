@@ -100,10 +100,10 @@ const SurveyDetails = () => {
       surveyStartTime: initialCustomerData?.surveyStartTime || null,
       surveyEndTime: null,
       workDescription: "",
-originAddress: "",
-    originCity: "Doha",
-    originCountry: "QA",     // ← Qatar
-    originState: "Doha",      // ← Dubai
+      originAddress: "",
+      originCity: "Doha",
+      originCountry: "QA",     // ← Qatar
+      originState: "Doha",      // ← Dubai
       multipleAddresses: false,
       destinationAddresses: [{
         id: uuidv4(),
@@ -133,14 +133,14 @@ originAddress: "",
           const survey = res.data[0];
           setExistingSurvey(survey);
           if (survey.signature_uploaded) {
-              apiClient.get(`/surveys/${survey.survey_id}/signature/`)
-                .then((res) => {
-                  setSignatureImageUrl(res.data.signature_url);
-                })
-                .catch(() => {
-                  console.warn("Could not load signature image");
-                });
-            }
+            apiClient.get(`/surveys/${survey.survey_id}/signature/`)
+              .then((res) => {
+                setSignatureImageUrl(res.data.signature_url);
+              })
+              .catch(() => {
+                console.warn("Could not load signature image");
+              });
+          }
           setSignatureUploaded(survey.signature_uploaded || false);
           const surveyDateTime = survey.survey_date ? new Date(survey.survey_date) : null;
           const surveyStartTime = survey.survey_start_time ? new Date(`1970-01-01T${survey.survey_start_time}`) : null;
@@ -150,7 +150,7 @@ originAddress: "",
             enquiry: survey.enquiry || surveyId,
             // customerType: survey.customer_type?.id || "",
             customerType: survey.customer_type || "",
-            
+
             isMilitary: survey.is_military || false,
             salutation: survey.salutation || "",
             fullName: survey.full_name || initialCustomerData?.fullName || "",
@@ -348,8 +348,8 @@ originAddress: "",
       { value: "cancelled", label: "Cancelled" },
     ];
 
-    const frequencyOptions = [{ value: "ShortTerm", label: "ShortTerm" }, { value: "LongTerm", label: "LongTerm" },];
-    const storageModeOptions = [{ value: "AC", label: "AC" }, { value: "NON-AC", label: "NON-AC" },{ value: "SelfStorage", label: "SelfStorage" }];
+    const frequencyOptions = [{ value: "short_term", label: "Short Term" }, { value: "long_term", label: "Long Term" },];
+    const storageModeOptions = [{ value: "ac", label: "AC" }, { value: "non_ac", label: "Non-AC" }, { value: "self_storage", label: "Self Storage" }];
 
     const addAddress = () => {
       const newAddr = { id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" };
@@ -400,17 +400,17 @@ originAddress: "",
         ),
       },
       {
-    id: "origin-address",
-    title: "Origin Address",
-    content: (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input label="Origin Address" name="originAddress" />
-        <Input label="Country" name="originCountry" type="select" options={countryOptions} />
-        <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
-        <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
-      </div>
-    ),
-  },
+        id: "origin-address",
+        title: "Origin Address",
+        content: (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Origin Address" name="originAddress" />
+            <Input label="Country" name="originCountry" type="select" options={countryOptions} />
+            <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
+            <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+          </div>
+        ),
+      },
       {
         id: "destination-details",
         title: "Destination Details",
@@ -440,6 +440,8 @@ originAddress: "",
                         <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
                         <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
                         <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4">
                         <Input label="ZIP" name="destinationAddresses[0].zip" />
                       </div>
                     </div>
@@ -450,14 +452,17 @@ originAddress: "",
                 </button>
               </>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="Address" name="destinationAddresses[0].address" />
-                <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
-                <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
-                <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
-                <Input label="ZIP" name="destinationAddresses[0].zip" />
-
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input label="Address" name="destinationAddresses[0].address" />
+                  <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
+                  <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
+                  <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <Input label="ZIP" name="destinationAddresses[0].zip" />
+                </div>
+              </>
             )}
           </div>
         ),
@@ -466,50 +471,50 @@ originAddress: "",
         id: "move-details",
         title: "Move Details",
         content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <DatePickerInput label="Packing From" name="packingDateFrom" />
           </div>
         ),
       },
       {
-      id: "storage-details",
-      title: "Storage Details",
-      content: (
-        <div className="space-y-6">
-          {/* STORAGE REQUIRED CHECKBOX */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              {...register("storageRequired")}
-              className="w-6 h-6 text-[#4c7085] rounded focus:ring-[#4c7085]"
-            />
-            <span className="text-lg font-medium text-gray-800">Storage Required?</span>
-          </label>
+        id: "storage-details",
+        title: "Storage Details",
+        content: (
+          <div className="space-y-6">
+            {/* STORAGE REQUIRED CHECKBOX */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register("storageRequired")}
+                className="w-3 h-3 text-[#4c7085] rounded focus:ring-[#4c7085]"
+              />
+              <span className="text-sm font-medium text-gray-700">Storage Required?</span>
+            </label>
 
-          {/* CONDITIONAL FIELDS — ONLY SHOW IF STORAGE REQUIRED */}
-          {watch("storageRequired") && (
-            <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DatePickerInput label="Storage Start Date" name="storageStartDate" />
-                <Input 
-                  label="Frequency" 
-                  name="storageFrequency" 
-                  type="select" 
-                  options={frequencyOptions} 
-                />
-                <Input label="Duration" name="storageDuration" />
-                <Input 
-                  label="Mode" 
-                  name="storageMode" 
-                  type="select" 
-                  options={storageModeOptions} 
-                />
+            {/* CONDITIONAL FIELDS — ONLY SHOW IF STORAGE REQUIRED */}
+            {watch("storageRequired") && (
+              <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DatePickerInput label="Storage Start Date" name="storageStartDate" />
+                  <Input
+                    label="Frequency"
+                    name="storageFrequency"
+                    type="select"
+                    options={frequencyOptions}
+                  />
+                  <Input label="Duration" name="storageDuration" />
+                  <Input
+                    label="Mode"
+                    name="storageMode"
+                    type="select"
+                    options={storageModeOptions}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      ),
-    },
+            )}
+          </div>
+        ),
+      },
     ];
 
     return (
@@ -533,16 +538,16 @@ originAddress: "",
     const [selectedItems, setSelectedItems] = useState({});
     const dropdownRef = useRef(null);
     const [roomSearchQuery, setRoomSearchQuery] = useState("");
-  const [showManualAddForm, setShowManualAddForm] = useState(false);
-  const [manualFormData, setManualFormData] = useState({
-    itemName: "",
-    description: "",
-    length: "",
-    width: "",
-    height: "",
-  });
-  const [manualVolume, setManualVolume] = useState(0);
-  const [manualWeight, setManualWeight] = useState(0);
+    const [showManualAddForm, setShowManualAddForm] = useState(false);
+    const [manualFormData, setManualFormData] = useState({
+      itemName: "",
+      description: "",
+      length: "",
+      width: "",
+      height: "",
+    });
+    const [manualVolume, setManualVolume] = useState(0);
+    const [manualWeight, setManualWeight] = useState(0);
 
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -574,33 +579,33 @@ originAddress: "",
         return roomItems;
       }
 
-  const query = itemSearchQuery.toLowerCase().trim();
-  return roomItems.filter(item => {
-    const name = item.name?.toLowerCase() || '';
-    const description = item.description?.toLowerCase() || '';
-    return name.includes(query) || description.includes(query);
-  });
-}, [selectedRoom, apiData.items, itemSearchQuery]);
+      const query = itemSearchQuery.toLowerCase().trim();
+      return roomItems.filter(item => {
+        const name = item.name?.toLowerCase() || '';
+        const description = item.description?.toLowerCase() || '';
+        return name.includes(query) || description.includes(query);
+      });
+    }, [selectedRoom, apiData.items, itemSearchQuery]);
 
     const toggleExpandedItem = (itemName) => {
       setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
     };
 
-  const updateQuantity = (itemName, qty) => {
-    const newQty = Math.max(0, qty);
+    const updateQuantity = (itemName, qty) => {
+      const newQty = Math.max(0, qty);
 
-    // Update quantity
-    setItemQuantities((prev) => ({ ...prev, [itemName]: newQty }));
+      // Update quantity
+      setItemQuantities((prev) => ({ ...prev, [itemName]: newQty }));
 
-    // Auto-select if quantity > 0
-    if (newQty > 0) {
-      setSelectedItems((prev) => ({ ...prev, [itemName]: true }));
-    } 
-    // Auto-deselect if quantity goes back to 0
-    else {
-      setSelectedItems((prev) => ({ ...prev, [itemName]: false }));
-    }
-  };
+      // Auto-select if quantity > 0
+      if (newQty > 0) {
+        setSelectedItems((prev) => ({ ...prev, [itemName]: true }));
+      }
+      // Auto-deselect if quantity goes back to 0
+      else {
+        setSelectedItems((prev) => ({ ...prev, [itemName]: false }));
+      }
+    };
     const toggleItemSelection = (itemName) => {
       setSelectedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
     };
@@ -638,7 +643,7 @@ originAddress: "",
         width,
         height,
         isFlagged: false,
- // ← Add this line
+        // ← Add this line
       };
 
       setValue("articles", [...watch("articles"), newArticle]);
@@ -678,7 +683,7 @@ originAddress: "",
           width,
           height,
           isFlagged: false,
- // ← Add this line
+          // ← Add this line
 
         };
       });
@@ -696,58 +701,58 @@ originAddress: "",
     };
 
     // NEW: Manual Item Functions (MOVE THESE HERE)
-  const handleManualDimensionChange = (field, value) => {
-    setManualFormData(prev => ({ ...prev, [field]: value }));
+    const handleManualDimensionChange = (field, value) => {
+      setManualFormData(prev => ({ ...prev, [field]: value }));
 
-    const l = field === 'length' ? value : manualFormData.length;
-    const w = field === 'width' ? value : manualFormData.width;
-    const h = field === 'height' ? value : manualFormData.height;
+      const l = field === 'length' ? value : manualFormData.length;
+      const w = field === 'width' ? value : manualFormData.width;
+      const h = field === 'height' ? value : manualFormData.height;
 
-    if (l && w && h && !isNaN(l) && !isNaN(w) && !isNaN(h)) {
-      const vol = (parseFloat(l) * parseFloat(w) * parseFloat(h)) / 1000000;
-      setManualVolume(vol);
-      setManualWeight(vol * 110);
-    } else {
-      setManualVolume(0);
-      setManualWeight(0);
-    }
-  };
-
-  const addManualItem = () => {
-    if (!manualFormData.itemName.trim()) {
-      setError("Item name is required");
-      return;
-    }
-
-    const newArticle = {
-      id: uuidv4(),
-      itemName: manualFormData.itemName.trim(),
-      description: manualFormData.description || "",
-      quantity: 1,
-      length: manualFormData.length || "",
-      width: manualFormData.width || "",
-      height: manualFormData.height || "",
-      volume: manualVolume > 0 ? manualVolume.toFixed(4) : "",
-      volumeUnit: apiData.volumeUnits[0]?.value || "",
-      weight: manualWeight > 0 ? manualWeight.toFixed(2) : "",
-      weightUnit: apiData.weightUnits[0]?.value || "",
-      handyman: "",
-      packingOption: "",
-      moveStatus: "new",
-      room: selectedRoom?.value || "",
-      isFlagged: false
-
+      if (l && w && h && !isNaN(l) && !isNaN(w) && !isNaN(h)) {
+        const vol = (parseFloat(l) * parseFloat(w) * parseFloat(h)) / 1000000;
+        setManualVolume(vol);
+        setManualWeight(vol * 110);
+      } else {
+        setManualVolume(0);
+        setManualWeight(0);
+      }
     };
 
-    setValue("articles", [...watch("articles"), newArticle]);
-    setMessage("Custom item added successfully!");
-    setTimeout(() => setMessage(null), 3000);
+    const addManualItem = () => {
+      if (!manualFormData.itemName.trim()) {
+        setError("Item name is required");
+        return;
+      }
 
-    setShowManualAddForm(false);
-    setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
-    setManualVolume(0);
-    setManualWeight(0);
-  };
+      const newArticle = {
+        id: uuidv4(),
+        itemName: manualFormData.itemName.trim(),
+        description: manualFormData.description || "",
+        quantity: 1,
+        length: manualFormData.length || "",
+        width: manualFormData.width || "",
+        height: manualFormData.height || "",
+        volume: manualVolume > 0 ? manualVolume.toFixed(4) : "",
+        volumeUnit: apiData.volumeUnits[0]?.value || "",
+        weight: manualWeight > 0 ? manualWeight.toFixed(2) : "",
+        weightUnit: apiData.weightUnits[0]?.value || "",
+        handyman: "",
+        packingOption: "",
+        moveStatus: "new",
+        room: selectedRoom?.value || "",
+        isFlagged: false
+
+      };
+
+      setValue("articles", [...watch("articles"), newArticle]);
+      setMessage("Custom item added successfully!");
+      setTimeout(() => setMessage(null), 3000);
+
+      setShowManualAddForm(false);
+      setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+      setManualVolume(0);
+      setManualWeight(0);
+    };
 
 
     const ItemForm = ({ item, onAdd, onCancel }) => {
@@ -991,31 +996,31 @@ originAddress: "",
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => updateQuantity(item.name, qty - 1)}
-                disabled={qty <= 0}
-                className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FaMinus className="w-4 h-4" />
-              </button>
-              <input
-                type="text"
-                value={qty}
-                readOnly
-                className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-3 border-x border-gray-300"
-              />
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => updateQuantity(item.name, qty + 1)}
-                className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition"
-              >
-                <FaPlus className="w-4 h-4" />
-              </button>
-            </div>
+              <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => updateQuantity(item.name, qty - 1)}
+                  disabled={qty <= 0}
+                  className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaMinus className="w-4 h-4" />
+                </button>
+                <input
+                  type="text"
+                  value={qty}
+                  readOnly
+                  className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-3 border-x border-gray-300"
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => updateQuantity(item.name, qty + 1)}
+                  className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition"
+                >
+                  <FaPlus className="w-4 h-4" />
+                </button>
+              </div>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
@@ -1032,51 +1037,50 @@ originAddress: "",
                   <FaChevronDown className="w-4 h-4" />
                 )}
               </button>
-              {watch("articles").some(a => 
-                a.room === selectedRoom?.value && 
+              {watch("articles").some(a =>
+                a.room === selectedRoom?.value &&
                 a.itemName === item.name
               ) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const articles = watch("articles");
-                    const targetArticle = articles.find(a => 
-                      a.room === selectedRoom?.value && 
-                      a.itemName === item.name
-                    );
-
-                    if (targetArticle) {
-                      const updatedArticles = articles.map(a => 
-                        a.id === targetArticle.id 
-                          ? { ...a, isFlagged: !a.isFlagged }
-                          : a
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const articles = watch("articles");
+                      const targetArticle = articles.find(a =>
+                        a.room === selectedRoom?.value &&
+                        a.itemName === item.name
                       );
-                      setValue("articles", updatedArticles);
-                      setMessage(targetArticle.isFlagged ? "Flag removed" : "Item flagged as important!");
-                      setTimeout(() => setMessage(null), 3000);
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                    watch("articles").find(a => 
-                      a.room === selectedRoom?.value && 
+
+                      if (targetArticle) {
+                        const updatedArticles = articles.map(a =>
+                          a.id === targetArticle.id
+                            ? { ...a, isFlagged: !a.isFlagged }
+                            : a
+                        );
+                        setValue("articles", updatedArticles);
+                        setMessage(targetArticle.isFlagged ? "Flag removed" : "Item flagged as important!");
+                        setTimeout(() => setMessage(null), 3000);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${watch("articles").find(a =>
+                      a.room === selectedRoom?.value &&
                       a.itemName === item.name
                     )?.isFlagged
                       ? "bg-red-600 text-white hover:bg-red-700"
                       : "bg-red-100 text-red-700 hover:bg-red-200"
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4h14l-1.5 12H4.5L3 4z" />
-                    <path d="M13 4L10 1 7 4" stroke="currentColor" strokeWidth="2" fill="none" />
-                  </svg>
-                  {watch("articles").find(a => 
-                    a.room === selectedRoom?.value && 
-                    a.itemName === item.name
-                  )?.isFlagged 
-                    ? "Flagged" 
-                    : "Flag Item"}
-                </button>
-              )}
+                      }`}
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M3 4h14l-1.5 12H4.5L3 4z" />
+                      <path d="M13 4L10 1 7 4" stroke="currentColor" strokeWidth="2" fill="none" />
+                    </svg>
+                    {watch("articles").find(a =>
+                      a.room === selectedRoom?.value &&
+                      a.itemName === item.name
+                    )?.isFlagged
+                      ? "Flagged"
+                      : "Flag Item"}
+                  </button>
+                )}
             </div>
           </div>
 
@@ -1397,7 +1401,7 @@ originAddress: "",
                         <button
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => setEditingArticle(article.id)}
-                          className="text-blue-600 hover:text-blue-800 p-1"
+                          className="text-[#4c7085] hover:text-blue-800 p-1"
                           title="Edit"
                         >
                           <FaEdit className="w-3 h-3" />
@@ -1437,7 +1441,7 @@ originAddress: "",
               <button
                 type="button"
                 onClick={() => setShowArticlesSidebar(true)}
-                className="hidden sm:flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform hover:scale-105"
+                className="hidden sm:flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform "
               >
                 <FaBars /> View Added ({watch("articles").length})
               </button>
@@ -1485,7 +1489,7 @@ originAddress: "",
                         value={roomSearchQuery}
                         onChange={(e) => setRoomSearchQuery(e.target.value)}
                         placeholder="Search rooms..."
-                        className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6b8ca3] focus:border-transparent"
                         autoFocus
                       />
                       <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -1515,12 +1519,12 @@ originAddress: "",
                             setShowRoomDropdown(false);
                             setRoomSearchQuery("");
                           }}
-                          className={`w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all text-sm font-medium border-b border-gray-100 last:border-0 ${selectedRoom?.id === room.id ? 'bg-blue-50 text-blue-700' : 'text-gray-800'}`}
+                          className={`w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all text-sm font-medium border-b border-gray-100 last:border-0 ${selectedRoom?.id === room.id ? 'bg-blue-50 text-[#4c7085]' : 'text-gray-800'}`}
                         >
                           <div className="flex items-center justify-between">
                             <span>{room.label}</span>
                             {selectedRoom?.id === room.id && (
-                              <FaCheck className="w-4 h-4 text-blue-600" />
+                              <FaCheck className="w-4 h-4 text-[#4c7085]" />
                             )}
                           </div>
                         </button>
@@ -1532,82 +1536,78 @@ originAddress: "",
             </div>
           </div>
 
-{selectedRoom && (
-  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-    {/* Selected Items Banner */}
-    {Object.values(selectedItems).some(v => v) && (
-      <div className="p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex justify-between items-center">
-        <span className="font-medium">
-          {Object.values(selectedItems).filter(Boolean).length} item(s) selected
-        </span>
-        <button
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={addMultipleArticles}
-          className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
-        >
-          Add Selected
-        </button>
-      </div>
-    )}
+          {selectedRoom && (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+              {/* Selected Items Banner */}
+              {Object.values(selectedItems).some(v => v) && (
+                <div className="p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex justify-between items-center">
+                  <span className="font-medium">
+                    {Object.values(selectedItems).filter(Boolean).length} item(s) selected
+                  </span>
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={addMultipleArticles}
+                    className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
+                  >
+                    Add Selected
+                  </button>
+                </div>
+              )}
 
-    {/* Item Search */}
-    <div className="p-4 bg-gray-50 border-b border-gray-200">
-      <div className="relative">
-        <input
-          type="text"
-          value={itemSearchQuery}
-          onChange={(e) => setItemSearchQuery(e.target.value)}
-          placeholder="Search items in this room..."
-          className="w-full px-4 py-3 pl-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-        <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        {itemSearchQuery && (
-          <button
-            type="button"
-            onClick={() => setItemSearchQuery("")}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            <FaTimes className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-    </div>
+              {/* Item Search */}
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={itemSearchQuery}
+                    onChange={(e) => setItemSearchQuery(e.target.value)}
+                    placeholder="Search items in this room..."
+                    className="w-full px-4 py-3 pl-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                  <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  {itemSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setItemSearchQuery("")}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <FaTimes className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
 
-    {/* ADD ITEM MANUALLY BUTTON */}
-    <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
-      <button
-        type="button"
-        onClick={() => setShowManualAddForm(true)}
-        className="mx-auto px-8 py-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-4 text-lg"
-      >
-        <FaPlus className="w-6 h-6" />
-        Add Item Manually
-      </button>
-    </div>
+              {/* ADD ITEM MANUALLY BUTTON */}
+              <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+                <button
+                  type="button"
+                  onClick={() => setShowManualAddForm(true)}
+                  className="mx-auto px-8 py-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-xl shadow-xl hover:shadow-2xl transform transition-all duration-300 flex items-center gap-4"
+                >
+                  <FaPlus className="w-6 h-6" />
+                  Add Item Manually
+                </button>
+              </div>
 
-    {/* Items List */}
-    <div className="divide-y divide-gray-200">
-      {filteredItems.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">
-          <p className="text-lg">
-            {itemSearchQuery 
-              ? `No items found matching "${itemSearchQuery}"` 
-              : "No items in this room"}
-          </p>
-          <p className="text-sm mt-2 text-gray-400">
-            Use "Add Item Manually" to create custom items
-          </p>
-        </div>
-      ) : (
-        filteredItems.map(item => (
-          <ItemRow key={item.id} item={item} />
-        ))
-      )}
-    </div>
-
-
-             
-
+              {/* Items List */}
+              <div className="divide-y divide-gray-200">
+                {filteredItems.length === 0 ? (
+                  <div className="text-center py-16 text-gray-500">
+                    <p className="text-lg">
+                      {itemSearchQuery
+                        ? `No items found matching "${itemSearchQuery}"`
+                        : "No items in this room"}
+                    </p>
+                    <p className="text-sm mt-2 text-gray-400">
+                      Use "Add Item Manually" to create custom items
+                    </p>
+                  </div>
+                ) : (
+                  filteredItems.map(item => (
+                    <ItemRow key={item.id} item={item} />
+                  ))
+                )}
+              </div>
               {/* MANUAL ADD MODAL */}
               {showManualAddForm && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -1739,9 +1739,6 @@ originAddress: "",
                   </div>
                 </div>
               )}
-
-
-
             </div>
           )}
         </div>
@@ -1878,9 +1875,9 @@ originAddress: "",
                     type="checkbox"
                     checked={isServiceSelected(service.id)}
                     onChange={() => handleServiceToggle(service.id, service.name)}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#6b8ca3]"
                   />
-                  <span className={`font-medium ${isServiceSelected(service.id) ? "text-blue-700" : "text-gray-700"
+                  <span className={`font-medium ${isServiceSelected(service.id) ? "text-[#4c7085]" : "text-gray-700"
                     }`}>
                     {service.name}
                   </span>
@@ -1927,22 +1924,22 @@ originAddress: "",
     ];
 
     const sections = [
-    {
-      id: "survey-status",
-      title: "Survey Status",
-      content: (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Status" name="status" type="select" options={statusOptions} />
-            <Input
-              label="Work Description"
-              name="workDescription"
-              type="textarea"
-              placeholder="Enter any additional notes or description about the survey..."
-            />
-          </div>
+      {
+        id: "survey-status",
+        title: "Survey Status",
+        content: (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Status" name="status" type="select" options={statusOptions} />
+              <Input
+                label="Work Description"
+                name="workDescription"
+                type="textarea"
+                placeholder="Enter any additional notes or description about the survey..."
+              />
+            </div>
 
-          {/* DIGITAL SIGNATURE SECTION */}
+            {/* DIGITAL SIGNATURE SECTION */}
             <div className="mt-8">
               <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Digital Signature</h3>
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border-2 border-gray-300">
@@ -1959,9 +1956,9 @@ originAddress: "",
                     {signatureImageUrl && (
                       <div className="mt-4">
                         <p className="text-sm font-medium text-gray-700 mb-2">Current Signature:</p>
-                        <img 
-                          src={signatureImageUrl} 
-                          alt="Customer signature" 
+                        <img
+                          src={signatureImageUrl}
+                          alt="Customer signature"
                           className="max-w-xs border-2 border-gray-300 rounded-lg shadow-md"
                         />
                       </div>
@@ -1970,40 +1967,39 @@ originAddress: "",
 
                   <div className="flex flex-col gap-3">
                     {/* VIEW BUTTON - ONLY IF SIGNATURE EXISTS */}
-                    {signatureUploaded && signatureImageUrl && (
+                    {/* {signatureUploaded && signatureImageUrl && (
                       <button
                         onClick={() => setIsSignatureModalOpen(true)}
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition transform hover:scale-105"
+                        className="px-6 py-2 text-sm bg-[#4c7085] hover:bg-[#4c7085] text-white font-semibold rounded-lg shadow transition transform "
                       >
-                        👁️ View Signature
+                        View Signature
                       </button>
-                    )}
+                    )} */}
 
                     {/* UPDATE / ADD BUTTON */}
                     <button
                       onClick={openSignatureModal}
                       disabled={isSignatureUploading}
-                      className={`px-6 py-3 rounded-lg font-semibold transition-all shadow-lg ${
-                        isSignatureUploading
-                          ? "bg-gray-400 text-white cursor-not-allowed"
-                          : signatureUploaded
-                          ? "bg-orange-600 hover:bg-orange-700 text-white transform hover:scale-105"
-                          : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transform hover:scale-105"
-                      }`}
+                      className={`px-6 py-2 text-sm rounded-lg font-medium transition-all shadow-lg ${isSignatureUploading
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : signatureUploaded
+                          ? "px-6 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition transform"
+                          : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transform "
+                        }`}
                     >
                       {isSignatureUploading
                         ? "Uploading..."
                         : signatureUploaded
-                        ? "✏️ Update Signature"
-                        : "➕ Add Digital Signature"}
+                          ? "Update Signature"
+                          : "Add Digital Signature"}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-        </div>
-      ),
-},
+          </div>
+        ),
+      },
     ];
 
     return (
@@ -2212,7 +2208,7 @@ originAddress: "",
           onClose={() => setIsSignatureModalOpen(false)}
           onSave={handleSignatureSave}
           customerName={watch("fullName") || "Customer"}
-/>
+        />
       </div>
     </>
   );
