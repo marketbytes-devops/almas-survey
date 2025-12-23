@@ -9,6 +9,7 @@ import Loading from "../../components/Loading";
 import Input from "../../components/Input";
 import apiClient from "../../api/apiClient";
 import { Country, State, City } from "country-state-city";
+import SignatureModal from "../../components/SignatureModal/SignatureModal";
 
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
   const methods = useFormContext();
@@ -65,6 +66,10 @@ const SurveyDetails = () => {
   const [existingSurvey, setExistingSurvey] = useState(null);
   const { customerData: initialCustomerData } = location.state || {};
   const [showArticlesSidebar, setShowArticlesSidebar] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [isSignatureUploading, setIsSignatureUploading] = useState(false);
+  const [signatureUploaded, setSignatureUploaded] = useState(false);
+  const [signatureImageUrl, setSignatureImageUrl] = useState(null);
 
   const [apiData, setApiData] = useState({
     customerTypes: [],
@@ -95,25 +100,22 @@ const SurveyDetails = () => {
       surveyStartTime: initialCustomerData?.surveyStartTime || null,
       surveyEndTime: null,
       workDescription: "",
-      originAddress: "",
-      originCity: "",
-      originCountry: "",
-      originState: "",
-      originZip: "",
-      podPol: "",
+originAddress: "",
+    originCity: "Doha",
+    originCountry: "QA",     // ← Qatar
+    originState: "Doha",      // ← Dubai
       multipleAddresses: false,
-      destinationAddresses: [{ id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" }],
-      packingDateFrom: null,
-      packingDateTo: null,
-      loadingDate: null,
-      eta: null,
-      etd: null,
-      estDeliveryDate: null,
-      storageStartDate: null,
-      storageFrequency: "",
-      storageDuration: "",
-      storageMode: "",
-      transportMode: "road",
+      destinationAddresses: [{
+        id: uuidv4(),
+        address: "",
+        city: "Doha",          // ← Doha
+        country: "QA",         // ← Qatar
+        state: "",             // Qatar has no states in country-state-city lib
+        zip: "",
+        poe: ""
+      }],
+      // ... rest of your fields
+      storageRequired: false,
       articles: [],
       vehicles: [],
       additionalServices: [],
@@ -130,6 +132,16 @@ const SurveyDetails = () => {
         if (res.data.length > 0) {
           const survey = res.data[0];
           setExistingSurvey(survey);
+          if (survey.signature_uploaded) {
+              apiClient.get(`/surveys/${survey.survey_id}/signature/`)
+                .then((res) => {
+                  setSignatureImageUrl(res.data.signature_url);
+                })
+                .catch(() => {
+                  console.warn("Could not load signature image");
+                });
+            }
+          setSignatureUploaded(survey.signature_uploaded || false);
           const surveyDateTime = survey.survey_date ? new Date(survey.survey_date) : null;
           const surveyStartTime = survey.survey_start_time ? new Date(`1970-01-01T${survey.survey_start_time}`) : null;
           const surveyEndTime = survey.survey_end_time ? new Date(`1970-01-01T${survey.survey_end_time}`) : null;
@@ -138,6 +150,7 @@ const SurveyDetails = () => {
             enquiry: survey.enquiry || surveyId,
             // customerType: survey.customer_type?.id || "",
             customerType: survey.customer_type || "",
+            
             isMilitary: survey.is_military || false,
             salutation: survey.salutation || "",
             fullName: survey.full_name || initialCustomerData?.fullName || "",
@@ -266,6 +279,45 @@ const SurveyDetails = () => {
     setActiveTab(tabId);
   };
 
+  const openSignatureModal = () => setIsSignatureModalOpen(true);
+
+  const handleSignatureSave = async (file) => {
+    if (!existingSurvey || !file) return;
+
+    const formData = new FormData();
+    formData.append("signature", file);
+
+    setIsSignatureUploading(true);
+    try {
+      // Upload the new signature
+      await apiClient.post(
+        `/surveys/${existingSurvey.survey_id}/upload-signature/`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      setMessage("Digital signature uploaded successfully!");
+      setSignatureUploaded(true);
+
+      // Fetch the updated signature URL to display the new image
+      const res = await apiClient.get(`/surveys/${existingSurvey.survey_id}/signature/`);
+      setSignatureImageUrl(res.data.signature_url);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      console.error("Signature upload failed:", err);
+      setError("Failed to upload signature.");
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setIsSignatureUploading(false);
+      setIsSignatureModalOpen(false);
+    }
+  };
+
+
   const Customer = () => {
     const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
     const multipleAddresses = watch("multipleAddresses");
@@ -313,6 +365,7 @@ const SurveyDetails = () => {
         setValue("destinationAddresses", updated);
       }
     };
+
 
     const sections = [
       {
@@ -1874,10 +1927,11 @@ const SurveyDetails = () => {
     ];
 
     const sections = [
-      {
-        id: "survey-status",
-        title: "Survey Status",
-        content: (
+    {
+      id: "survey-status",
+      title: "Survey Status",
+      content: (
+        <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label="Status" name="status" type="select" options={statusOptions} />
             <Input
@@ -1887,8 +1941,69 @@ const SurveyDetails = () => {
               placeholder="Enter any additional notes or description about the survey..."
             />
           </div>
-        ),
-      },
+
+          {/* DIGITAL SIGNATURE SECTION */}
+            <div className="mt-8">
+              <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Digital Signature</h3>
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border-2 border-gray-300">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 mb-3">
+                      Capture customer's digital signature to confirm survey completion.
+                    </p>
+                    <p className={`font-medium text-lg ${signatureUploaded ? "text-green-600" : "text-gray-600"}`}>
+                      {signatureUploaded ? "✓ Signature has been added" : "No signature added yet"}
+                    </p>
+
+                    {/* SHOW SIGNATURE PREVIEW IF EXISTS */}
+                    {signatureImageUrl && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Current Signature:</p>
+                        <img 
+                          src={signatureImageUrl} 
+                          alt="Customer signature" 
+                          className="max-w-xs border-2 border-gray-300 rounded-lg shadow-md"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {/* VIEW BUTTON - ONLY IF SIGNATURE EXISTS */}
+                    {signatureUploaded && signatureImageUrl && (
+                      <button
+                        onClick={() => setIsSignatureModalOpen(true)}
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition transform hover:scale-105"
+                      >
+                        👁️ View Signature
+                      </button>
+                    )}
+
+                    {/* UPDATE / ADD BUTTON */}
+                    <button
+                      onClick={openSignatureModal}
+                      disabled={isSignatureUploading}
+                      className={`px-6 py-3 rounded-lg font-semibold transition-all shadow-lg ${
+                        isSignatureUploading
+                          ? "bg-gray-400 text-white cursor-not-allowed"
+                          : signatureUploaded
+                          ? "bg-orange-600 hover:bg-orange-700 text-white transform hover:scale-105"
+                          : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transform hover:scale-105"
+                      }`}
+                    >
+                      {isSignatureUploading
+                        ? "Uploading..."
+                        : signatureUploaded
+                        ? "✏️ Update Signature"
+                        : "➕ Add Digital Signature"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      ),
+},
     ];
 
     return (
@@ -2092,6 +2207,12 @@ const SurveyDetails = () => {
             </div>
           </form>
         </FormProvider>
+        <SignatureModal
+          isOpen={isSignatureModalOpen}
+          onClose={() => setIsSignatureModalOpen(false)}
+          onSave={handleSignatureSave}
+          customerName={watch("fullName") || "Customer"}
+/>
       </div>
     </>
   );
