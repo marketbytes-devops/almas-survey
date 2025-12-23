@@ -102,19 +102,18 @@ const SurveyDetails = () => {
       workDescription: "",
       originAddress: "",
       originCity: "Doha",
-      originCountry: "QA",     // ← Qatar
-      originState: "Doha",      // ← Dubai
+      originCountry: "QA",
+      originState: "",
       multipleAddresses: false,
       destinationAddresses: [{
         id: uuidv4(),
         address: "",
-        city: "Doha",          // ← Doha
-        country: "QA",         // ← Qatar
-        state: "",             // Qatar has no states in country-state-city lib
+        city: "Doha",
+        country: "QA",
+        state: "",
         zip: "",
         poe: ""
       }],
-      // ... rest of your fields
       storageRequired: false,
       articles: [],
       vehicles: [],
@@ -148,9 +147,7 @@ const SurveyDetails = () => {
 
           reset({
             enquiry: survey.enquiry || surveyId,
-            // customerType: survey.customer_type?.id || "",
             customerType: survey.customer_type || "",
-
             isMilitary: survey.is_military || false,
             salutation: survey.salutation || "",
             fullName: survey.full_name || initialCustomerData?.fullName || "",
@@ -167,8 +164,8 @@ const SurveyDetails = () => {
             workDescription: survey.work_description || "",
             includeVehicle: survey.include_vehicle || false,
             originAddress: survey.origin_address || "",
-            originCity: survey.origin_city || "",
-            originCountry: survey.origin_country || "",
+            originCity: survey.origin_city || "Doha",
+            originCountry: survey.origin_country || "QA",
             originState: survey.origin_state || "",
             originZip: survey.origin_zip || "",
             podPol: survey.pod_pol || "",
@@ -264,6 +261,20 @@ const SurveyDetails = () => {
     });
   }, []);
 
+  useEffect(() => {
+    if (!existingSurvey && !hasReset.current) {
+      const qatarStates = State.getStatesOfCountry("QA");
+      const dohaState = qatarStates.find(s =>
+        s.name.toLowerCase() === "doha" ||
+        s.name.toLowerCase().includes("doha")
+      );
+
+      if (dohaState) {
+        setValue("originState", dohaState.isoCode);
+      }
+    }
+  }, [existingSurvey, hasReset, setValue]);
+
   const tabs = [
     { id: "customer", label: "Customer" },
     { id: "items", label: "Article" },
@@ -289,7 +300,6 @@ const SurveyDetails = () => {
 
     setIsSignatureUploading(true);
     try {
-      // Upload the new signature
       await apiClient.post(
         `/surveys/${existingSurvey.survey_id}/upload-signature/`,
         formData,
@@ -301,11 +311,9 @@ const SurveyDetails = () => {
       setMessage("Digital signature uploaded successfully!");
       setSignatureUploaded(true);
 
-      // Fetch the updated signature URL to display the new image
       const res = await apiClient.get(`/surveys/${existingSurvey.survey_id}/signature/`);
       setSignatureImageUrl(res.data.signature_url);
 
-      // Clear success message after 3 seconds
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
       console.error("Signature upload failed:", err);
@@ -420,44 +428,95 @@ const SurveyDetails = () => {
               <input type="checkbox" {...register("multipleAddresses")} />
               <span className="text-sm font-medium text-gray-700">Multiple Addresses</span>
             </label>
+
             {multipleAddresses ? (
               <>
                 {destinationAddresses.map((addr, i) => {
                   const country = watch(`destinationAddresses[${i}].country`);
                   const state = watch(`destinationAddresses[${i}].state`);
+
                   return (
                     <div key={addr.id} className="bg-gray-100 p-4 rounded space-y-4">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">Address {i + 1}</h4>
                         {destinationAddresses.length > 1 && (
-                          <button type="button" onClick={() => removeAddress(i)} className="text-red-600">
+                          <button
+                            type="button"
+                            onClick={() => removeAddress(i)}
+                            className="text-red-600 hover:text-red-800"
+                          >
                             <FaTimes />
                           </button>
                         )}
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Address" name="destinationAddresses[0].address" />
-                        <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
-                        <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
-                        <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
+                        <Input
+                          label="Address"
+                          name={`destinationAddresses[${i}].address`}
+                        />
+                        <Input
+                          label="Country"
+                          name={`destinationAddresses[${i}].country`}
+                          type="select"
+                          options={countryOptions}
+                        />
+                        <Input
+                          label="State"
+                          name={`destinationAddresses[${i}].state`}
+                          type="select"
+                          options={getStateOptions(country)}
+                        />
+                        <Input
+                          label="City"
+                          name={`destinationAddresses[${i}].city`}
+                          type="select"
+                          options={getCityOptions(country, state)}
+                        />
                       </div>
                       <div className="grid grid-cols-1 gap-4">
-                        <Input label="ZIP" name="destinationAddresses[0].zip" />
+                        <Input
+                          label="ZIP"
+                          name={`destinationAddresses[${i}].zip`}
+                        />
                       </div>
                     </div>
                   );
                 })}
-                <button type="button" onClick={addAddress} className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition">
-                  Add Address
+
+                <button
+                  type="button"
+                  onClick={addAddress}
+                  className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
+                >
+                  Add Another Address
                 </button>
               </>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label="Address" name="destinationAddresses[0].address" />
-                  <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
-                  <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
-                  <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
+                  <Input
+                    label="Country"
+                    name="destinationAddresses[0].country"
+                    type="select"
+                    options={countryOptions}
+                  />
+                  <Input
+                    label="State"
+                    name="destinationAddresses[0].state"
+                    type="select"
+                    options={getStateOptions(watch("destinationAddresses[0].country"))}
+                  />
+                  <Input
+                    label="City"
+                    name="destinationAddresses[0].city"
+                    type="select"
+                    options={getCityOptions(
+                      watch("destinationAddresses[0].country"),
+                      watch("destinationAddresses[0].state")
+                    )}
+                  />
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   <Input label="ZIP" name="destinationAddresses[0].zip" />
@@ -481,7 +540,6 @@ const SurveyDetails = () => {
         title: "Storage Details",
         content: (
           <div className="space-y-6">
-            {/* STORAGE REQUIRED CHECKBOX */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -491,7 +549,6 @@ const SurveyDetails = () => {
               <span className="text-sm font-medium text-gray-700">Storage Required?</span>
             </label>
 
-            {/* CONDITIONAL FIELDS — ONLY SHOW IF STORAGE REQUIRED */}
             {watch("storageRequired") && (
               <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -594,14 +651,11 @@ const SurveyDetails = () => {
     const updateQuantity = (itemName, qty) => {
       const newQty = Math.max(0, qty);
 
-      // Update quantity
       setItemQuantities((prev) => ({ ...prev, [itemName]: newQty }));
 
-      // Auto-select if quantity > 0
       if (newQty > 0) {
         setSelectedItems((prev) => ({ ...prev, [itemName]: true }));
       }
-      // Auto-deselect if quantity goes back to 0
       else {
         setSelectedItems((prev) => ({ ...prev, [itemName]: false }));
       }
@@ -619,7 +673,7 @@ const SurveyDetails = () => {
       return volume ? parseFloat(volume) * 110 : 0;
     };
 
-    const addArticle = (itemName, formData = {}) => {
+    const addArticle = (itemName, formData = {}, isMoving = true) => {
       const length = formData[`length_${itemName}`] || "";
       const width = formData[`width_${itemName}`] || "";
       const height = formData[`height_${itemName}`] || "";
@@ -637,21 +691,19 @@ const SurveyDetails = () => {
         weightUnit: formData[`weightUnit_${itemName}`] || apiData.weightUnits[0]?.value || "",
         handyman: formData[`handyman_${itemName}`] || "",
         packingOption: formData[`packingOption_${itemName}`] || "",
-        moveStatus: "new",
+        moveStatus: isMoving ? "moving" : "not_moving",
         room: selectedRoom?.value || "",
         length,
         width,
         height,
-        isFlagged: false,
-        // ← Add this line
       };
 
       setValue("articles", [...watch("articles"), newArticle]);
       setMessage("Article added!");
       setTimeout(() => setMessage(null), 3000);
       toggleExpandedItem(itemName);
-
     };
+
     const addMultipleArticles = () => {
       const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
       if (selectedItemNames.length === 0) return setError("Select at least one item");
@@ -677,14 +729,11 @@ const SurveyDetails = () => {
           weightUnit: apiData.weightUnits[0]?.value || "",
           handyman: "",
           packingOption: "",
-          moveStatus: "new",
+          moveStatus: "moving",
           room: selectedRoom?.value || "",
           length,
           width,
           height,
-          isFlagged: false,
-          // ← Add this line
-
         };
       });
 
@@ -700,7 +749,6 @@ const SurveyDetails = () => {
       setTimeout(() => setMessage(null), 3000);
     };
 
-    // NEW: Manual Item Functions (MOVE THESE HERE)
     const handleManualDimensionChange = (field, value) => {
       setManualFormData(prev => ({ ...prev, [field]: value }));
 
@@ -723,7 +771,6 @@ const SurveyDetails = () => {
         setError("Item name is required");
         return;
       }
-
       const newArticle = {
         id: uuidv4(),
         itemName: manualFormData.itemName.trim(),
@@ -738,10 +785,8 @@ const SurveyDetails = () => {
         weightUnit: apiData.weightUnits[0]?.value || "",
         handyman: "",
         packingOption: "",
-        moveStatus: "new",
+        moveStatus: "moving",
         room: selectedRoom?.value || "",
-        isFlagged: false
-
       };
 
       setValue("articles", [...watch("articles"), newArticle]);
@@ -753,7 +798,6 @@ const SurveyDetails = () => {
       setManualVolume(0);
       setManualWeight(0);
     };
-
 
     const ItemForm = ({ item, onAdd, onCancel }) => {
       const [formData, setFormData] = useState({
@@ -767,8 +811,7 @@ const SurveyDetails = () => {
         [`handyman_${item.name}`]: "",
         [`packingOption_${item.name}`]: "",
       });
-
-      // Re-calculate volume/weight whenever L/W/H changes (live update)
+      const [isMoving, setIsMoving] = useState(true);
       const currentLength = formData[`length_${item.name}`];
       const currentWidth = formData[`width_${item.name}`];
       const currentHeight = formData[`height_${item.name}`];
@@ -802,6 +845,23 @@ const SurveyDetails = () => {
 
       return (
         <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
+          <div className="mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div
+                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isMoving ? 'bg-green-500 border-green-500' : 'bg-red-500 border-red-500'}`}
+                onClick={() => setIsMoving(!isMoving)}
+              >
+                {isMoving ? (
+                  <span className="text-white text-xs">M</span>
+                ) : (
+                  <span className="text-white text-xs">N</span>
+                )}
+              </div>
+              <span className="text-sm font-medium text-gray-700">
+                {isMoving ? "Moving" : "Not Moving"}
+              </span>
+            </label>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div className="col-span-full">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions</h4>
@@ -950,51 +1010,53 @@ const SurveyDetails = () => {
     const ItemRow = ({ item }) => {
       const qty = itemQuantities[item.name] || 0;
       const isSelected = selectedItems[item.name] || false;
+      const [isMoving, setIsMoving] = useState(true);
+
+      const toggleMovingStatus = () => {
+        setIsMoving(prev => !prev);
+      };
 
       return (
         <div className="border-b border-gray-200 last:border-0">
           <div
             className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4
-            hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
-            transition-all rounded-lg"
+        hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
+        transition-all rounded-lg"
           >
-            <div className="flex items-start sm:items-center gap-4 flex-1 w-full">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => toggleItemSelection(item.name)}
-                className="focus:outline-none"
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => toggleItemSelection(item.name)}
+              className="focus:outline-none"
+            >
+              <div
+                className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all duration-200 ${isSelected
+                  ? "bg-[#4c7085] border-[#4c7085]"
+                  : "bg-white border-gray-400"
+                  }`}
               >
-                <div
-                  className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all duration-200 ${isSelected
-                    ? "bg-[#4c7085] border-[#4c7085]"
-                    : "bg-white border-gray-400"
-                    }`}
-                >
-                  {isSelected && (
-                    <div className="w-4 h-4 bg-white rounded-full" />
-                  )}
-                </div>
-              </button>
-              <div className="flex-1">
-                <div className="font-semibold text-gray-800 text-sm sm:text-base">
-                  {item.name}
-                </div>
-                {item.description && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {item.description}
-                  </div>
-                )}
-                {(item.length || item.width || item.height) && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {item.length && `L:${item.length}cm`}
-                    {item.width && ` × W:${item.width}cm`}
-                    {item.height && ` × H:${item.height}cm`}
-                  </div>
+                {isSelected && (
+                  <div className="w-4 h-4 bg-white rounded-full" />
                 )}
               </div>
+            </button>
+            <div className="flex-1">
+              <div className="font-semibold text-gray-800 text-sm sm:text-base">
+                {item.name}
+              </div>
+              {item.description && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {item.description}
+                </div>
+              )}
+              {(item.length || item.width || item.height) && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {item.length && `L:${item.length}cm`}
+                  {item.width && ` × W:${item.width}cm`}
+                  {item.height && ` × H:${item.height}cm`}
+                </div>
+              )}
             </div>
-
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
                 <button
@@ -1021,6 +1083,26 @@ const SurveyDetails = () => {
                   <FaPlus className="w-4 h-4" />
                 </button>
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={toggleMovingStatus}
+                  className="flex items-center p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2"
+                  title={isMoving ? "Mark as Not Moving" : "Mark as Moving"}
+                >
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isMoving ? "bg-green-500 border-green-500" : "bg-red-500 border-red-500"}`}>
+                    {isMoving ? (
+                      <span className="text-white text-xs">M</span>
+                    ) : (
+                      <span className="text-white text-xs">N</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-600 hidden sm:inline">
+                    {isMoving ? "Moving" : "Not Moving"}
+                  </span>
+                </button>
+              </div>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
@@ -1037,57 +1119,15 @@ const SurveyDetails = () => {
                   <FaChevronDown className="w-4 h-4" />
                 )}
               </button>
-              {watch("articles").some(a =>
-                a.room === selectedRoom?.value &&
-                a.itemName === item.name
-              ) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const articles = watch("articles");
-                      const targetArticle = articles.find(a =>
-                        a.room === selectedRoom?.value &&
-                        a.itemName === item.name
-                      );
-
-                      if (targetArticle) {
-                        const updatedArticles = articles.map(a =>
-                          a.id === targetArticle.id
-                            ? { ...a, isFlagged: !a.isFlagged }
-                            : a
-                        );
-                        setValue("articles", updatedArticles);
-                        setMessage(targetArticle.isFlagged ? "Flag removed" : "Item flagged as important!");
-                        setTimeout(() => setMessage(null), 3000);
-                      }
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${watch("articles").find(a =>
-                      a.room === selectedRoom?.value &&
-                      a.itemName === item.name
-                    )?.isFlagged
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "bg-red-100 text-red-700 hover:bg-red-200"
-                      }`}
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3 4h14l-1.5 12H4.5L3 4z" />
-                      <path d="M13 4L10 1 7 4" stroke="currentColor" strokeWidth="2" fill="none" />
-                    </svg>
-                    {watch("articles").find(a =>
-                      a.room === selectedRoom?.value &&
-                      a.itemName === item.name
-                    )?.isFlagged
-                      ? "Flagged"
-                      : "Flag Item"}
-                  </button>
-                )}
             </div>
           </div>
 
           {expandedItems[item.name] && (
             <ItemForm
               item={item}
-              onAdd={addArticle}
+              onAdd={(itemName, formData) => {
+                addArticle(itemName, formData, isMoving);
+              }}
               onCancel={() => toggleExpandedItem(item.name)}
             />
           )}
@@ -1164,6 +1204,7 @@ const SurveyDetails = () => {
               weightUnit: editFormData.weightUnit || "",
               handyman: editFormData.handyman || "",
               packingOption: editFormData.packingOption || "",
+              moveStatus: editFormData.moveStatus || "moving",
             };
           }
           return article;
@@ -1256,6 +1297,25 @@ const SurveyDetails = () => {
                         </div>
                       </div>
                       <div>
+                        <div className="mb-3">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Moving Status</label>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setEditFormData(prev => ({ ...prev, moveStatus: 'moving' }))}
+                              className={`px-3 py-1 text-xs rounded ${(editFormData.moveStatus || article.moveStatus) === 'moving' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                            >
+                              Moving
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditFormData(prev => ({ ...prev, moveStatus: 'not_moving' }))}
+                              className={`px-3 py-1 text-xs rounded ${(editFormData.moveStatus || article.moveStatus) === 'not_moving' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
+                            >
+                              Not Moving
+                            </button>
+                          </div>
+                        </div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Dimensions (cm)</label>
                         <div className="grid grid-cols-3 gap-1">
                           <input
@@ -1604,7 +1664,7 @@ const SurveyDetails = () => {
                   </div>
                 ) : (
                   filteredItems.map(item => (
-                    <ItemRow key={item.id} item={item} />
+                    <ItemRow key={item.id} item={item} onRemove={removeArticle} />
                   ))
                 )}
               </div>
@@ -1771,7 +1831,7 @@ const SurveyDetails = () => {
         ) : (
           <div className="space-y-6">
             {vehicles.map((vehicle, index) => (
-              <div key={vehicle.id} className="rounded-lg p-6 bg-gray-100 relative">
+              <div key={vehicle.id} className="rounded-lg p-6 bg-gray-100 relative shadow-sm border border-gray-200">
                 <button type="button" onClick={() => removeVehicle(vehicle.id)} className="absolute top-4 right-4 text-red-600 hover:bg-red-100 p-2 rounded">
                   <FaTimes />
                 </button>
@@ -2070,7 +2130,7 @@ const SurveyDetails = () => {
         weight_unit: a.weightUnit || null,
         handyman: a.handyman || null,
         packing_option: a.packingOption || null,
-        move_status: a.moveStatus || "new",
+        move_status: a.moveStatus || "moving",
         length: a.length || null,
         width: a.width || null,
         height: a.height || null,

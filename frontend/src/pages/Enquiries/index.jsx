@@ -408,7 +408,7 @@ const Enquiries = () => {
 
     setIsDeleting(true);
     try {
-      await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/`);
+      await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/delete/`);
 
       const updatedEnquiries = enquiries.filter(
         (e) => e.id !== selectedEnquiry.id

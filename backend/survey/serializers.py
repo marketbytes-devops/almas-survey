@@ -57,7 +57,9 @@ class ArticleSerializer(serializers.ModelSerializer):
     handyman_name = serializers.CharField(source='handyman.type_name', read_only=True, allow_null=True)
     packing_option = serializers.PrimaryKeyRelatedField(queryset=PackingType.objects.all(), allow_null=True)
     packing_option_name = serializers.CharField(source='packing_option.name', read_only=True, allow_null=True)
-
+    is_flagged_display = serializers.SerializerMethodField()  # This line exists
+    move_status_display = serializers.SerializerMethodField()
+    
     class Meta:
         model = Article
         fields = [
@@ -65,9 +67,20 @@ class ArticleSerializer(serializers.ModelSerializer):
             'volume', 'volume_unit', 'volume_unit_name',
             'weight', 'weight_unit', 'weight_unit_name',
             'handyman', 'handyman_name', 'packing_option', 'packing_option_name',
-            'move_status', 'remarks', 'length', 'width', 'height', 'calculated_volume', 'created_at'
+            'move_status', 'move_status_display', 'remarks', 'length', 'width', 'height', 
+            'calculated_volume', 'created_at', 'is_flagged', 'is_flagged_display'
         ]
         read_only_fields = ['id', 'created_at', 'calculated_volume']
+    
+    def get_move_status_display(self, obj):
+        """Get human-readable moving status"""
+        if obj.move_status == 'not_moving':
+            return 'Not Moving'
+        return 'Moving'
+    
+    def get_is_flagged_display(self, obj):
+        """Get human-readable flagged status"""
+        return 'Flagged' if obj.is_flagged else 'Not Flagged'
 
 class VehicleSerializer(serializers.ModelSerializer):
     vehicle_type = serializers.PrimaryKeyRelatedField(queryset=VehicleType.objects.all(), allow_null=True)

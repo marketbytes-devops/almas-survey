@@ -614,24 +614,19 @@ const SurveySummary = () => {
                     <th className="border border-gray-400 px-3 py-2">Item</th>
                     <th className="border border-gray-400 px-3 py-2">Qty</th>
                     <th className="border border-gray-400 px-3 py-2">Volume</th>
+                    <th className="border border-gray-400 px-3 py-2">Moving Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {survey.articles.map((a, i) => (
                     <tr
                       key={i}
-                      className={
-                        a.isFlagged
-                          ? "bg-red-50 text-red-900 font-bold border-l-4 border-red-600"
-                          : ""
-                      }
                     >
                       <td className="border border-gray-400 px-3 py-2">
                         {a.room_name || "-"}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         {a.item_name || "-"}
-                        {a.isFlagged && " ⚡ IMPORTANT"}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         {a.quantity || "-"}
@@ -639,12 +634,18 @@ const SurveySummary = () => {
                       <td className="border border-gray-400 px-3 py-2">
                         {formatVolume(a.volume, a.volume_unit_name)}
                       </td>
+                      <td className="border border-gray-400 px-3 py-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.move_status === 'not_moving'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'}`}>
+                          {a.move_status === 'not_moving' ? 'Not Moving' : 'Moving'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
-                  {/* TOTAL VOLUME ROW */}
                   <tr className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium">
                     <td
-                      colSpan="3"
+                      colSpan="4"
                       className="border border-gray-400 px-3 py-3 text-right"
                     >
                       Total Volume:
@@ -760,10 +761,10 @@ const SurveySummary = () => {
                     <p className="text-sm font-medium">{service}</p>
                     <p
                       className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${survey.status === "completed"
-                          ? "bg-green-200 text-green-800"
-                          : survey.status === "cancelled"
-                            ? "bg-red-200 text-red-800"
-                            : "bg-yellow-200 text-yellow-800"
+                        ? "bg-green-200 text-green-800"
+                        : survey.status === "cancelled"
+                          ? "bg-red-200 text-red-800"
+                          : "bg-yellow-200 text-yellow-800"
                         }`}
                     >
                       {formatStatus(survey.status)}
