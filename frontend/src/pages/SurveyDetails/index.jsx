@@ -296,8 +296,8 @@ const SurveyDetails = () => {
       { value: "cancelled", label: "Cancelled" },
     ];
 
-    const frequencyOptions = [{ value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }, { value: "yearly", label: "Yearly" }];
-    const storageModeOptions = [{ value: "warehouse", label: "Warehouse" }, { value: "container", label: "Container" }];
+    const frequencyOptions = [{ value: "ShortTerm", label: "ShortTerm" }, { value: "LongTerm", label: "LongTerm" },];
+    const storageModeOptions = [{ value: "AC", label: "AC" }, { value: "NON-AC", label: "NON-AC" },{ value: "SelfStorage", label: "SelfStorage" }];
 
     const addAddress = () => {
       const newAddr = { id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" };
@@ -347,19 +347,17 @@ const SurveyDetails = () => {
         ),
       },
       {
-        id: "origin-address",
-        title: "Origin Address",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Origin Address" name="originAddress" />
-            <Input label="Country" name="originCountry" type="select" options={countryOptions} />
-            <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
-            <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
-            <Input label="ZIP" name="originZip" />
-            <Input label="POD/POL" name="podPol" />
-          </div>
-        ),
-      },
+    id: "origin-address",
+    title: "Origin Address",
+    content: (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input label="Origin Address" name="originAddress" />
+        <Input label="Country" name="originCountry" type="select" options={countryOptions} />
+        <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
+        <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+      </div>
+    ),
+  },
       {
         id: "destination-details",
         title: "Destination Details",
@@ -385,12 +383,11 @@ const SurveyDetails = () => {
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Address" name={`destinationAddresses[${i}].address`} />
-                        <Input label="Country" name={`destinationAddresses[${i}].country`} type="select" options={countryOptions} />
-                        <Input label="State" name={`destinationAddresses[${i}].state`} type="select" options={getStateOptions(country)} />
-                        <Input label="City" name={`destinationAddresses[${i}].city`} type="select" options={getCityOptions(country, state)} />
-                        <Input label="ZIP" name={`destinationAddresses[${i}].zip`} />
-                        <Input label="POE" name={`destinationAddresses[${i}].poe`} />
+                        <Input label="Address" name="destinationAddresses[0].address" />
+                        <Input label="Country" name="destinationAddresses[0].country" type="select" options={countryOptions} />
+                        <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
+                        <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
+                        <Input label="ZIP" name="destinationAddresses[0].zip" />
                       </div>
                     </div>
                   );
@@ -406,7 +403,7 @@ const SurveyDetails = () => {
                 <Input label="State" name="destinationAddresses[0].state" type="select" options={getStateOptions(destinationCountry)} />
                 <Input label="City" name="destinationAddresses[0].city" type="select" options={getCityOptions(destinationCountry, destinationState)} />
                 <Input label="ZIP" name="destinationAddresses[0].zip" />
-                <Input label="POE" name="destinationAddresses[0].poe" />
+
               </div>
             )}
           </div>
@@ -418,26 +415,48 @@ const SurveyDetails = () => {
         content: (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DatePickerInput label="Packing From" name="packingDateFrom" />
-            <DatePickerInput label="Packing To" name="packingDateTo" />
-            <DatePickerInput label="Loading Date" name="loadingDate" />
-            <DatePickerInput label="ETA" name="eta" />
-            <DatePickerInput label="ETD" name="etd" />
-            <DatePickerInput label="Est. Delivery" name="estDeliveryDate" />
           </div>
         ),
       },
       {
-        id: "storage-details",
-        title: "Storage Details",
-        content: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DatePickerInput label="Storage Start" name="storageStartDate" />
-            <Input label="Frequency" name="storageFrequency" type="select" options={frequencyOptions} />
-            <Input label="Duration" name="storageDuration" />
-            <Input label="Mode" name="storageMode" type="select" options={storageModeOptions} />
-          </div>
-        ),
-      },
+      id: "storage-details",
+      title: "Storage Details",
+      content: (
+        <div className="space-y-6">
+          {/* STORAGE REQUIRED CHECKBOX */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              {...register("storageRequired")}
+              className="w-6 h-6 text-[#4c7085] rounded focus:ring-[#4c7085]"
+            />
+            <span className="text-lg font-medium text-gray-800">Storage Required?</span>
+          </label>
+
+          {/* CONDITIONAL FIELDS — ONLY SHOW IF STORAGE REQUIRED */}
+          {watch("storageRequired") && (
+            <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DatePickerInput label="Storage Start Date" name="storageStartDate" />
+                <Input 
+                  label="Frequency" 
+                  name="storageFrequency" 
+                  type="select" 
+                  options={frequencyOptions} 
+                />
+                <Input label="Duration" name="storageDuration" />
+                <Input 
+                  label="Mode" 
+                  name="storageMode" 
+                  type="select" 
+                  options={storageModeOptions} 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ),
+    },
     ];
 
     return (
@@ -457,9 +476,20 @@ const SurveyDetails = () => {
     const [showRoomDropdown, setShowRoomDropdown] = useState(false);
     const [expandedItems, setExpandedItems] = useState({});
     const [itemQuantities, setItemQuantities] = useState({});
+    const [itemSearchQuery, setItemSearchQuery] = useState("");
     const [selectedItems, setSelectedItems] = useState({});
     const dropdownRef = useRef(null);
     const [roomSearchQuery, setRoomSearchQuery] = useState("");
+  const [showManualAddForm, setShowManualAddForm] = useState(false);
+  const [manualFormData, setManualFormData] = useState({
+    itemName: "",
+    description: "",
+    length: "",
+    width: "",
+    height: "",
+  });
+  const [manualVolume, setManualVolume] = useState(0);
+  const [manualWeight, setManualWeight] = useState(0);
 
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -483,14 +513,41 @@ const SurveyDetails = () => {
       });
     }, [roomSearchQuery, apiData.rooms]);
 
+    const filteredItems = useMemo(() => {
+      if (!selectedRoom) return [];
+      let roomItems = apiData.items.filter(i => i.room === selectedRoom.id);
+
+      if (!itemSearchQuery.trim()) {
+        return roomItems;
+      }
+
+  const query = itemSearchQuery.toLowerCase().trim();
+  return roomItems.filter(item => {
+    const name = item.name?.toLowerCase() || '';
+    const description = item.description?.toLowerCase() || '';
+    return name.includes(query) || description.includes(query);
+  });
+}, [selectedRoom, apiData.items, itemSearchQuery]);
+
     const toggleExpandedItem = (itemName) => {
       setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
     };
 
-    const updateQuantity = (itemName, qty) => {
-      setItemQuantities((prev) => ({ ...prev, [itemName]: Math.max(0, qty) }));
-    };
+  const updateQuantity = (itemName, qty) => {
+    const newQty = Math.max(0, qty);
 
+    // Update quantity
+    setItemQuantities((prev) => ({ ...prev, [itemName]: newQty }));
+
+    // Auto-select if quantity > 0
+    if (newQty > 0) {
+      setSelectedItems((prev) => ({ ...prev, [itemName]: true }));
+    } 
+    // Auto-deselect if quantity goes back to 0
+    else {
+      setSelectedItems((prev) => ({ ...prev, [itemName]: false }));
+    }
+  };
     const toggleItemSelection = (itemName) => {
       setSelectedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
     };
@@ -527,6 +584,8 @@ const SurveyDetails = () => {
         length,
         width,
         height,
+        isFlagged: false,
+ // ← Add this line
       };
 
       setValue("articles", [...watch("articles"), newArticle]);
@@ -565,6 +624,9 @@ const SurveyDetails = () => {
           length,
           width,
           height,
+          isFlagged: false,
+ // ← Add this line
+
         };
       });
 
@@ -579,6 +641,62 @@ const SurveyDetails = () => {
       setMessage("Article removed!");
       setTimeout(() => setMessage(null), 3000);
     };
+
+    // NEW: Manual Item Functions (MOVE THESE HERE)
+  const handleManualDimensionChange = (field, value) => {
+    setManualFormData(prev => ({ ...prev, [field]: value }));
+
+    const l = field === 'length' ? value : manualFormData.length;
+    const w = field === 'width' ? value : manualFormData.width;
+    const h = field === 'height' ? value : manualFormData.height;
+
+    if (l && w && h && !isNaN(l) && !isNaN(w) && !isNaN(h)) {
+      const vol = (parseFloat(l) * parseFloat(w) * parseFloat(h)) / 1000000;
+      setManualVolume(vol);
+      setManualWeight(vol * 110);
+    } else {
+      setManualVolume(0);
+      setManualWeight(0);
+    }
+  };
+
+  const addManualItem = () => {
+    if (!manualFormData.itemName.trim()) {
+      setError("Item name is required");
+      return;
+    }
+
+    const newArticle = {
+      id: uuidv4(),
+      itemName: manualFormData.itemName.trim(),
+      description: manualFormData.description || "",
+      quantity: 1,
+      length: manualFormData.length || "",
+      width: manualFormData.width || "",
+      height: manualFormData.height || "",
+      volume: manualVolume > 0 ? manualVolume.toFixed(4) : "",
+      volumeUnit: apiData.volumeUnits[0]?.value || "",
+      weight: manualWeight > 0 ? manualWeight.toFixed(2) : "",
+      weightUnit: apiData.weightUnits[0]?.value || "",
+      handyman: "",
+      packingOption: "",
+      moveStatus: "new",
+      room: selectedRoom?.value || "",
+      isFlagged: false
+
+    };
+
+    setValue("articles", [...watch("articles"), newArticle]);
+    setMessage("Custom item added successfully!");
+    setTimeout(() => setMessage(null), 3000);
+
+    setShowManualAddForm(false);
+    setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+    setManualVolume(0);
+    setManualWeight(0);
+  };
+
+
     const ItemForm = ({ item, onAdd, onCancel }) => {
       const [formData, setFormData] = useState({
         [`length_${item.name}`]: item.length || "",
@@ -591,6 +709,19 @@ const SurveyDetails = () => {
         [`handyman_${item.name}`]: "",
         [`packingOption_${item.name}`]: "",
       });
+
+      // Re-calculate volume/weight whenever L/W/H changes (live update)
+      const currentLength = formData[`length_${item.name}`];
+      const currentWidth = formData[`width_${item.name}`];
+      const currentHeight = formData[`height_${item.name}`];
+
+      const volume = currentLength && currentWidth && currentHeight
+        ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(4)
+        : (item.volume || "0.0000");
+
+      const weight = volume
+        ? calculateWeight(parseFloat(volume)).toFixed(2)
+        : (item.weight || "0.00");
 
       const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -610,19 +741,6 @@ const SurveyDetails = () => {
           }));
         }
       };
-
-      // Re-calculate volume/weight whenever L/W/H changes (live update)
-      const currentLength = formData[`length_${item.name}`];
-      const currentWidth = formData[`width_${item.name}`];
-      const currentHeight = formData[`height_${item.name}`];
-
-      const volume = currentLength && currentWidth && currentHeight
-        ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(4)
-        : (item.volume || "0.0000");
-
-      const weight = volume
-        ? calculateWeight(parseFloat(volume)).toFixed(2)
-        : (item.weight || "0.00");
 
       return (
         <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
@@ -820,32 +938,31 @@ const SurveyDetails = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <div className="flex items-center justify-between w-full sm:w-auto bg-white border border-gray-300 rounded-lg shadow-sm">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() =>
-                    updateQuantity(item.name, Math.max(0, qty - 1))
-                  }
-                  className="p-3 text-gray-600 hover:bg-gray-100 rounded-l-lg transition w-1/3 sm:w-auto"
-                >
-                  <FaMinus className="w-4 h-4" />
-                </button>
-                <input
-                  type="text"
-                  value={qty}
-                  readOnly
-                  className="w-full sm:w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-2"
-                />
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateQuantity(item.name, qty + 1)}
-                  className="p-3 text-gray-600 hover:bg-gray-100 rounded-r-lg transition w-1/3 sm:w-auto"
-                >
-                  <FaPlus className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => updateQuantity(item.name, qty - 1)}
+                disabled={qty <= 0}
+                className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaMinus className="w-4 h-4" />
+              </button>
+              <input
+                type="text"
+                value={qty}
+                readOnly
+                className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-3 border-x border-gray-300"
+              />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => updateQuantity(item.name, qty + 1)}
+                className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition"
+              >
+                <FaPlus className="w-4 h-4" />
+              </button>
+            </div>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
@@ -862,6 +979,51 @@ const SurveyDetails = () => {
                   <FaChevronDown className="w-4 h-4" />
                 )}
               </button>
+              {watch("articles").some(a => 
+                a.room === selectedRoom?.value && 
+                a.itemName === item.name
+              ) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const articles = watch("articles");
+                    const targetArticle = articles.find(a => 
+                      a.room === selectedRoom?.value && 
+                      a.itemName === item.name
+                    );
+
+                    if (targetArticle) {
+                      const updatedArticles = articles.map(a => 
+                        a.id === targetArticle.id 
+                          ? { ...a, isFlagged: !a.isFlagged }
+                          : a
+                      );
+                      setValue("articles", updatedArticles);
+                      setMessage(targetArticle.isFlagged ? "Flag removed" : "Item flagged as important!");
+                      setTimeout(() => setMessage(null), 3000);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                    watch("articles").find(a => 
+                      a.room === selectedRoom?.value && 
+                      a.itemName === item.name
+                    )?.isFlagged
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "bg-red-100 text-red-700 hover:bg-red-200"
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4h14l-1.5 12H4.5L3 4z" />
+                    <path d="M13 4L10 1 7 4" stroke="currentColor" strokeWidth="2" fill="none" />
+                  </svg>
+                  {watch("articles").find(a => 
+                    a.room === selectedRoom?.value && 
+                    a.itemName === item.name
+                  )?.isFlagged 
+                    ? "Flagged" 
+                    : "Flag Item"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1317,36 +1479,216 @@ const SurveyDetails = () => {
             </div>
           </div>
 
-          {selectedRoom && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              {Object.values(selectedItems).some(v => v) && (
-                <div className="p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex justify-between items-center">
-                  <span className="font-medium">
-                    {Object.values(selectedItems).filter(Boolean).length} item(s) selected
-                  </span>
-                  <button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={addMultipleArticles}
-                    className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
-                  >
-                    Add Selected
-                  </button>
+{selectedRoom && (
+  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+    {/* Selected Items Banner */}
+    {Object.values(selectedItems).some(v => v) && (
+      <div className="p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex justify-between items-center">
+        <span className="font-medium">
+          {Object.values(selectedItems).filter(Boolean).length} item(s) selected
+        </span>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={addMultipleArticles}
+          className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
+        >
+          Add Selected
+        </button>
+      </div>
+    )}
+
+    {/* Item Search */}
+    <div className="p-4 bg-gray-50 border-b border-gray-200">
+      <div className="relative">
+        <input
+          type="text"
+          value={itemSearchQuery}
+          onChange={(e) => setItemSearchQuery(e.target.value)}
+          placeholder="Search items in this room..."
+          className="w-full px-4 py-3 pl-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+        <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        {itemSearchQuery && (
+          <button
+            type="button"
+            onClick={() => setItemSearchQuery("")}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <FaTimes className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </div>
+
+    {/* ADD ITEM MANUALLY BUTTON */}
+    <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+      <button
+        type="button"
+        onClick={() => setShowManualAddForm(true)}
+        className="mx-auto px-8 py-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-4 text-lg"
+      >
+        <FaPlus className="w-6 h-6" />
+        Add Item Manually
+      </button>
+    </div>
+
+    {/* Items List */}
+    <div className="divide-y divide-gray-200">
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-16 text-gray-500">
+          <p className="text-lg">
+            {itemSearchQuery 
+              ? `No items found matching "${itemSearchQuery}"` 
+              : "No items in this room"}
+          </p>
+          <p className="text-sm mt-2 text-gray-400">
+            Use "Add Item Manually" to create custom items
+          </p>
+        </div>
+      ) : (
+        filteredItems.map(item => (
+          <ItemRow key={item.id} item={item} />
+        ))
+      )}
+    </div>
+
+
+             
+
+              {/* MANUAL ADD MODAL */}
+              {showManualAddForm && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white p-6 rounded-t-2xl flex justify-between items-center">
+                      <h3 className="text-2xl font-bold">Add Custom Item — {selectedRoom?.label}</h3>
+                      <button
+                        onClick={() => {
+                          setShowManualAddForm(false);
+                          setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+                          setManualVolume(0);
+                          setManualWeight(0);
+                        }}
+                        className="text-white hover:bg-white/20 p-3 rounded-full transition"
+                      >
+                        <FaTimes className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    <div className="p-8 space-y-8">
+                      <div>
+                        <label className="block text-lg font-medium text-gray-700 mb-3">
+                          Item Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={manualFormData.itemName}
+                          onChange={(e) => setManualFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                          className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none"
+                          placeholder="e.g., Antique Piano"
+                          autoFocus
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-lg font-medium text-gray-700 mb-3">Description (Optional)</label>
+                        <textarea
+                          value={manualFormData.description}
+                          onChange={(e) => setManualFormData(prev => ({ ...prev, description: e.target.value }))}
+                          rows={4}
+                          className="w-full px-6 py-4 text-base border-2 border-gray-300 rounded-xl focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none resize-none"
+                          placeholder="Any special notes..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-lg font-medium text-gray-700 mb-4">Dimensions (cm)</label>
+                        <div className="grid grid-cols-3 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">Length (cm)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={manualFormData.length}
+                              onChange={(e) => handleManualDimensionChange('length', e.target.value)}
+                              className="w-full px-6 py-4 text-center text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085]"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">Width (cm)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={manualFormData.width}
+                              onChange={(e) => handleManualDimensionChange('width', e.target.value)}
+                              className="w-full px-6 py-4 text-center text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085]"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">Height (cm)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={manualFormData.height}
+                              onChange={(e) => handleManualDimensionChange('height', e.target.value)}
+                              className="w-full px-6 py-4 text-center text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085]"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-8">
+                        <div>
+                          <label className="block text-lg font-medium text-gray-700 mb-3">Volume (m³)</label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={manualVolume.toFixed(4)}
+                            className="w-full px-6 py-4 text-center text-2xl font-bold bg-gray-100 rounded-xl"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-lg font-medium text-gray-700 mb-3">Weight (kg) <span className="text-sm font-normal text-gray-500">(estimated)</span></label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={manualWeight.toFixed(2)}
+                            className="w-full px-6 py-4 text-center text-2xl font-bold bg-gray-100 rounded-xl"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-6 pt-8">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowManualAddForm(false);
+                            setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+                            setManualVolume(0);
+                            setManualWeight(0);
+                          }}
+                          className="px-10 py-4 text-lg font-medium bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={addManualItem}
+                          disabled={!manualFormData.itemName.trim()}
+                          className="px-10 py-4 text-lg font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-xl hover:shadow-2xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Add Item to Survey
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="divide-y divide-gray-200">
-                {apiData.items
-                  .filter(i => i.room === selectedRoom.id)
-                  .map(item => (
-                    <ItemRow key={item.id} item={item} />
-                  ))}
-              </div>
 
-              {apiData.items.filter(i => i.room === selectedRoom.id).length === 0 && (
-                <div className="text-center py-16 text-gray-500">
-                  <p className="text-lg">No items found in this room.</p>
-                </div>
-              )}
+
             </div>
           )}
         </div>
