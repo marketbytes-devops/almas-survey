@@ -19,8 +19,9 @@ const SurveySummary = () => {
   const [printing, setPrinting] = useState(null);
   const [statusModal, setStatusModal] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [signatureModal, setSignatureModal] = useState(null);
   const [quotationStatus, setQuotationStatus] = useState({});
+  const [signatureModalUrl, setSignatureModalUrl] = useState(null);
+  const [surveySignatures, setSurveySignatures] = useState({});
 
   const statusOptions = [
     { value: "pending", label: "Pending" },
@@ -93,6 +94,34 @@ const SurveySummary = () => {
     };
     fetchSurveys();
   }, []);
+
+  // Fetch signature URLs whenever surveys change
+  useEffect(() => {
+    if (surveys.length === 0) return;
+
+    const fetchSignatureUrls = async () => {
+      const newSignatures = { ...surveySignatures };
+      let hasUpdate = false;
+
+      for (const survey of surveys) {
+        if (survey.signature_uploaded && !newSignatures[survey.survey_id]) {
+          try {
+            const res = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+            newSignatures[survey.survey_id] = res.data.signature_url;
+            hasUpdate = true;
+          } catch (err) {
+            console.warn(`Failed to load signature for survey ${survey.survey_id}:`, err);
+          }
+        }
+      }
+
+      if (hasUpdate) {
+        setSurveySignatures(newSignatures);
+      }
+    };
+
+    fetchSignatureUrls();
+  }, [surveys]);
 
   const getCountryName = (code) =>
     code ? Country.getCountryByCode(code)?.name || code : "Not filled";
@@ -306,18 +335,6 @@ const SurveySummary = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch {
       setError("Failed to delete quotation");
-      setTimeout(() => setError(null), 3000);
-    }
-  };
-
-  const viewSignature = async (survey) => {
-    try {
-      const signatureRes = await apiClient.get(
-        `/surveys/${survey.survey_id}/signature/`
-      );
-      setSignatureModal(signatureRes.data.signature_url);
-    } catch (err) {
-      setError("Failed to load signature");
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -614,14 +631,14 @@ const SurveySummary = () => {
                     <th className="border border-gray-400 px-3 py-2">Item</th>
                     <th className="border border-gray-400 px-3 py-2">Qty</th>
                     <th className="border border-gray-400 px-3 py-2">Volume</th>
-                    <th className="border border-gray-400 px-3 py-2">Moving Status</th>
+                    <th className="border border-gray-400 px-3 py-2">
+                      Moving Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {survey.articles.map((a, i) => (
-                    <tr
-                      key={i}
-                    >
+                    <tr key={i}>
                       <td className="border border-gray-400 px-3 py-2">
                         {a.room_name || "-"}
                       </td>
@@ -635,10 +652,16 @@ const SurveySummary = () => {
                         {formatVolume(a.volume, a.volume_unit_name)}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.move_status === 'not_moving'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-green-100 text-green-800'}`}>
-                          {a.move_status === 'not_moving' ? 'Not Moving' : 'Moving'}
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            a.move_status === "not_moving"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {a.move_status === "not_moving"
+                            ? "Not Moving"
+                            : "Moving"}
                         </span>
                       </td>
                     </tr>
@@ -760,12 +783,13 @@ const SurveySummary = () => {
                   <div className="text-right">
                     <p className="text-sm font-medium">{service}</p>
                     <p
-                      className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${survey.status === "completed"
-                        ? "bg-green-200 text-green-800"
-                        : survey.status === "cancelled"
+                      className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${
+                        survey.status === "completed"
+                          ? "bg-green-200 text-green-800"
+                          : survey.status === "cancelled"
                           ? "bg-red-200 text-red-800"
                           : "bg-yellow-200 text-yellow-800"
-                        }`}
+                      }`}
                     >
                       {formatStatus(survey.status)}
                     </p>
@@ -816,8 +840,9 @@ const SurveySummary = () => {
                 <Button
                   onClick={() => handlePrintSurvey(survey)}
                   disabled={printing === survey.survey_id}
-                  className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""
-                    }`}
+                  className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${
+                    printing === survey.survey_id ? "opacity-50" : ""
+                  }`}
                 >
                   {printing === survey.survey_id ? <>Printing...</> : "Print"}
                 </Button>
@@ -827,6 +852,21 @@ const SurveySummary = () => {
                 >
                   Delete
                 </Button>
+                {survey.signature_uploaded &&
+                surveySignatures[survey.survey_id] ? (
+                  <Button
+                    onClick={() =>
+                      setSignatureModalUrl(surveySignatures[survey.survey_id])
+                    }
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2"
+                  >
+                    <FaSignature /> View Signature
+                  </Button>
+                ) : (
+                  <span className="text-gray-500 text-xs italic">
+                    No Signature
+                  </span>
+                )}
               </div>
 
               <button
@@ -911,38 +951,38 @@ const SurveySummary = () => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {signatureModal && (
+        {signatureModalUrl && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSignatureModal(null)}
+            onClick={() => setSignatureModalUrl(null)}
           >
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="bg-white rounded-lg max-w-lg w-full p-6"
+              className="bg-white rounded-lg max-w-3xl w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium">Digital Signature</h3>
+                <h3 className="font-medium text-lg">Digital Signature</h3>
                 <button
-                  onClick={() => setSignatureModal(null)}
-                  className="text-3xl"
+                  onClick={() => setSignatureModalUrl(null)}
+                  className="text-3xl hover:text-gray-600"
                 >
                   ×
                 </button>
               </div>
               <img
-                src={signatureModal}
-                alt="Signature"
-                className="w-full rounded-lg border"
+                src={signatureModalUrl}
+                alt="Customer signature"
+                className="w-full max-h-[70vh] object-contain border border-gray-300 rounded-lg shadow-lg"
               />
               <Button
-                onClick={() => setSignatureModal(null)}
-                className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg"
+                onClick={() => setSignatureModalUrl(null)}
+                className="mt-6 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg"
               >
                 Close
               </Button>
