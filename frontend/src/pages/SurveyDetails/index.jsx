@@ -599,6 +599,7 @@ const SurveyDetails = () => {
     const [itemSearchQuery, setItemSearchQuery] = useState("");
     const [selectedItems, setSelectedItems] = useState({});
     const dropdownRef = useRef(null);
+    const [itemCratePreferences, setItemCratePreferences] = useState({}); 
     const [roomSearchQuery, setRoomSearchQuery] = useState("");
     const [showManualAddForm, setShowManualAddForm] = useState(false);
     const [manualFormData, setManualFormData] = useState({
@@ -687,78 +688,85 @@ const SurveyDetails = () => {
       return volume ? parseFloat(volume) * 110 : 0;
     };
 
-    const addArticle = (itemName, formData = {}, isMoving = true) => {
-      const length = formData[`length_${itemName}`] || "";
-      const width = formData[`width_${itemName}`] || "";
-      const height = formData[`height_${itemName}`] || "";
+  const addArticle = (itemName, formData = {}, isMoving = true) => {
+    const length = formData[`length_${itemName}`] || "";
+    const width = formData[`width_${itemName}`] || "";
+    const height = formData[`height_${itemName}`] || "";
 
-      const volume = calculateVolume(length, width, height);
-      const weight = calculateWeight(volume);
+    const volume = calculateVolume(length, width, height);
+    const weight = calculateWeight(volume);
 
-      const newArticle = {
+    // ✅ Get saved crate preference
+    const itemKey = `${selectedRoom?.value || 'general'}-${itemName}`;
+    const crateRequired = formData.crateRequired ?? itemCratePreferences[itemKey] ?? false;
+
+    const newArticle = {
+      id: uuidv4(),
+      itemName,
+      quantity: itemQuantities[itemName] || 1,
+      volume: volume.toFixed(4),
+      volumeUnit: formData[`volumeUnit_${itemName}`] || apiData.volumeUnits[0]?.value || "",
+      weight: weight.toFixed(2),
+      weightUnit: formData[`weightUnit_${itemName}`] || apiData.weightUnits[0]?.value || "",
+      handyman: formData[`handyman_${itemName}`] || "",
+      packingOption: formData[`packingOption_${itemName}`] || "",
+      moveStatus: isMoving ? "moving" : "not_moving",
+      room: selectedRoom?.value || "",
+      length,
+      width,
+      height,
+      crateRequired, // ✅ Use the saved preference
+    };
+
+    setValue("articles", [...watch("articles"), newArticle]);
+    setMessage("Article added!");
+    setTimeout(() => setMessage(null), 3000);
+    toggleExpandedItem(itemName);
+  };
+
+  const addMultipleArticles = () => {
+    const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
+    if (selectedItemNames.length === 0) return setError("Select at least one item");
+
+    const newArticles = selectedItemNames.map(itemName => {
+      const item = apiData.items.find(i => i.name === itemName && i.room === selectedRoom.id);
+
+      const length = item?.length || "";
+      const width = item?.width || "";
+      const height = item?.height || "";
+
+      const volumeValue = calculateVolume(length, width, height);
+      const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
+      const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
+
+      // ✅ Get saved crate preference
+      const itemKey = `${selectedRoom?.value || 'general'}-${itemName}`;
+      const crateRequired = itemCratePreferences[itemKey] ?? false;
+
+      return {
         id: uuidv4(),
         itemName,
-        quantity: itemQuantities[itemName] || 1,
-        volume: volume.toFixed(4),
-        volumeUnit: formData[`volumeUnit_${itemName}`] || apiData.volumeUnits[0]?.value || "",
-        weight: weight.toFixed(2),
-        weightUnit: formData[`weightUnit_${itemName}`] || apiData.weightUnits[0]?.value || "",
-        handyman: formData[`handyman_${itemName}`] || "",
-        packingOption: formData[`packingOption_${itemName}`] || "",
-        moveStatus: isMoving ? "moving" : "not_moving",
+        quantity: itemQuantities[itemName] > 0 ? itemQuantities[itemName] : 1,
+        volume,
+        volumeUnit: apiData.volumeUnits[0]?.value || "",
+        weight,
+        weightUnit: apiData.weightUnits[0]?.value || "",
+        handyman: "",
+        packingOption: "",
+        moveStatus: "moving",
         room: selectedRoom?.value || "",
-        
         length,
         width,
         height,
-        crateRequired: formData.crateRequired || false,
+        crateRequired, // ✅ Use saved preference
       };
+    });
 
-      setValue("articles", [...watch("articles"), newArticle]);
-      setMessage("Article added!");
-      setTimeout(() => setMessage(null), 3000);
-      toggleExpandedItem(itemName);
-    };
-
-    const addMultipleArticles = () => {
-      const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
-      if (selectedItemNames.length === 0) return setError("Select at least one item");
-
-      const newArticles = selectedItemNames.map(itemName => {
-        const item = apiData.items.find(i => i.name === itemName && i.room === selectedRoom.id);
-
-        const length = item?.length || "";
-        const width = item?.width || "";
-        const height = item?.height || "";
-
-        const volumeValue = calculateVolume(length, width, height);
-        const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
-        const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
-
-        return {
-          id: uuidv4(),
-          itemName,
-          quantity: itemQuantities[itemName] > 0 ? itemQuantities[itemName] : 1,
-          volume,
-          volumeUnit: apiData.volumeUnits[0]?.value || "",
-          weight,
-          weightUnit: apiData.weightUnits[0]?.value || "",
-          handyman: "",
-          packingOption: "",
-          moveStatus: "moving",
-          room: selectedRoom?.value || "",
-          length,
-          width,
-          height,
-          crateRequired: false,
-        };
-      });
-
-      setValue("articles", [...watch("articles"), ...newArticles]);
-      setMessage(`${newArticles.length} articles added!`);
-      setTimeout(() => setMessage(null), 3000);
-      setSelectedItems({});
-    };
+    setValue("articles", [...watch("articles"), ...newArticles]);
+    setMessage(`${newArticles.length} articles added!`);
+    setTimeout(() => setMessage(null), 3000);
+    setSelectedItems({});
+  };
 
     const removeArticle = (id) => {
       setValue("articles", watch("articles").filter(a => a.id !== id));
@@ -1005,15 +1013,15 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
         </div>
       </div>
 
-      {/* Crate Required Radio (already in your code) */}
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Crate Required?</label>
-        <div className="flex gap-6">
+      <div className="mt-4">
+        <label className="block text-xs font-medium text-gray-600 mb-2">Crate Required?</label>
+        <div className="flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="radio"
-              checked={formData.crateRequired === true}
-              onChange={() => setFormData(prev => ({ ...prev, crateRequired: true }))}
+              name={`sidebar-edit-crate-${article.id}`} // ✅ Use `article.id` - it exists here!
+              checked={editFormData.crateRequired === true}
+              onChange={() => handleEditInputChange('crateRequired', true)}
               className="w-4 h-4 text-[#4c7085]"
             />
             <span className="text-sm">Yes</span>
@@ -1021,8 +1029,9 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="radio"
-              checked={formData.crateRequired === false}
-              onChange={() => setFormData(prev => ({ ...prev, crateRequired: false }))}
+              name={`sidebar-edit-crate-${article.id}`} // ✅ Same name for grouping
+              checked={editFormData.crateRequired === false}
+              onChange={() => handleEditInputChange('crateRequired', false)}
               className="w-4 h-4 text-[#4c7085]"
             />
             <span className="text-sm">No</span>
@@ -1150,46 +1159,93 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
     </button>
   </div>
 
-{/* Crate Required Radio - FINAL FIXED VERSION */}
-<div className="flex items-center gap-3 text-xs">
-  <label className="font-medium text-gray-700 whitespace-nowrap">Crate Required?</label>
-  <div className="flex gap-4">
-    <label className="flex items-center gap-1 cursor-pointer">
-      <input
-        type="radio"
-        name={`crate-required-${item.id || item.name}-${Math.random().toString(36).slice(2, 10)}`} // ← 100% UNIQUE per item
-        checked={watch(`articles.${watch("articles").findIndex(a => a.itemName === item.name)}.crateRequired`) === true}
-        onChange={() => {
-          const idx = watch("articles").findIndex(a => a.itemName === item.name);
-          if (idx !== -1) {
-            const updated = [...watch("articles")];
-            updated[idx] = { ...updated[idx], crateRequired: true };
-            setValue("articles", updated, { shouldDirty: true });
-          }
-        }}
-        className="w-4 h-4 text-[#4c7085]"
-      />
-      <span>Yes</span>
-    </label>
-    <label className="flex items-center gap-1 cursor-pointer">
-      <input
-        type="radio"
-        name={`crate-required-${item.id || item.name}-${Math.random().toString(36).slice(2, 10)}`} // ← same unique name for this item's group
-        checked={watch(`articles.${watch("articles").findIndex(a => a.itemName === item.name)}.crateRequired`) === false}
-        onChange={() => {
-          const idx = watch("articles").findIndex(a => a.itemName === item.name);
-          if (idx !== -1) {
-            const updated = [...watch("articles")];
-            updated[idx] = { ...updated[idx], crateRequired: false };
-            setValue("articles", updated, { shouldDirty: true });
-          }
-        }}
-        className="w-4 h-4 text-[#4c7085]"
-      />
-      <span>No</span>
-    </label>
+  <div className="flex items-center gap-3 text-xs">
+    <label className="font-medium text-gray-700 whitespace-nowrap">Crate Required?</label>
+    <div className="flex gap-4">
+      <label className="flex items-center gap-1 cursor-pointer">
+        <input
+          type="radio"
+          name={`crate-row-${item.name.replace(/\s+/g, '-')}-${selectedRoom?.value || 'general'}`}
+          value="yes"
+          checked={(() => {
+            // Create unique key for this item
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            
+            // First check if item is already in articles (added to survey)
+            const articles = watch("articles");
+            const existingArticle = articles.find(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (existingArticle) {
+              // Item is in survey - use its saved value
+              return existingArticle.crateRequired === true;
+            } else {
+              // Item not yet added - use preference state (default false)
+              return itemCratePreferences[itemKey] === true;
+            }
+          })()}
+          onChange={() => {
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            const articles = watch("articles");
+            const idx = articles.findIndex(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (idx !== -1) {
+              // Item already in survey - update it
+              const updated = [...articles];
+              updated[idx] = { ...updated[idx], crateRequired: true };
+              setValue("articles", updated, { shouldDirty: true });
+            } else {
+              // Item not yet added - save preference for later
+              setItemCratePreferences(prev => ({ ...prev, [itemKey]: true }));
+            }
+          }}
+          className="w-4 h-4 text-[#4c7085]"
+        />
+        <span>Yes</span>
+      </label>
+      <label className="flex items-center gap-1 cursor-pointer">
+        <input
+          type="radio"
+          name={`crate-row-${item.name.replace(/\s+/g, '-')}-${selectedRoom?.value || 'general'}`}
+          value="no"
+          checked={(() => {
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            const articles = watch("articles");
+            const existingArticle = articles.find(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (existingArticle) {
+              return existingArticle.crateRequired === false;
+            } else {
+              // Default to false (No) if not set
+              return itemCratePreferences[itemKey] !== true;
+            }
+          })()}
+          onChange={() => {
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            const articles = watch("articles");
+            const idx = articles.findIndex(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (idx !== -1) {
+              const updated = [...articles];
+              updated[idx] = { ...updated[idx], crateRequired: false };
+              setValue("articles", updated, { shouldDirty: true });
+            } else {
+              setItemCratePreferences(prev => ({ ...prev, [itemKey]: false }));
+            }
+          }}
+          className="w-4 h-4 text-[#4c7085]"
+        />
+        <span>No</span>
+      </label>
+    </div>
   </div>
-</div>
 
   {/* Item Options */}
   <button
@@ -1518,47 +1574,7 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
                       </div>
                     </div>
 
-                    {/* NEW: Crate Required Radio */}
-{/* Crate Required Radio - FINAL FIXED VERSION */}
-<div className="flex items-center gap-3 text-xs">
-  <label className="font-medium text-gray-700 whitespace-nowrap">Crate Required?</label>
-  <div className="flex gap-4">
-    <label className="flex items-center gap-1 cursor-pointer">
-      <input
-        type="radio"
-        name={`crate-required-${item.id || item.name}-${Math.random().toString(36).slice(2, 10)}`} // ← 100% UNIQUE per item
-        checked={watch(`articles.${watch("articles").findIndex(a => a.itemName === item.name)}.crateRequired`) === true}
-        onChange={() => {
-          const idx = watch("articles").findIndex(a => a.itemName === item.name);
-          if (idx !== -1) {
-            const updated = [...watch("articles")];
-            updated[idx] = { ...updated[idx], crateRequired: true };
-            setValue("articles", updated, { shouldDirty: true });
-          }
-        }}
-        className="w-4 h-4 text-[#4c7085]"
-      />
-      <span>Yes</span>
-    </label>
-    <label className="flex items-center gap-1 cursor-pointer">
-      <input
-        type="radio"
-        name={`crate-required-${item.id || item.name}-${Math.random().toString(36).slice(2, 10)}`} // ← same unique name for this item's group
-        checked={watch(`articles.${watch("articles").findIndex(a => a.itemName === item.name)}.crateRequired`) === false}
-        onChange={() => {
-          const idx = watch("articles").findIndex(a => a.itemName === item.name);
-          if (idx !== -1) {
-            const updated = [...watch("articles")];
-            updated[idx] = { ...updated[idx], crateRequired: false };
-            setValue("articles", updated, { shouldDirty: true });
-          }
-        }}
-        className="w-4 h-4 text-[#4c7085]"
-      />
-      <span>No</span>
-    </label>
-  </div>
-</div>
+
                   </div>
                 ) : (
                   <div className="flex justify-between items-start">
@@ -1812,9 +1828,13 @@ const ItemForm = ({ item, onAdd, onCancel }) => {
                     </p>
                   </div>
                 ) : (
-                  filteredItems.map(item => (
-                    <ItemRow key={item.id} item={item} onRemove={removeArticle} />
-                  ))
+              filteredItems.map(item => (
+        <ItemRow 
+          key={`${item.id || item.name}-${Math.random()}`} // or just item.id if unique
+          item={item} 
+          onRemove={removeArticle} 
+        />
+      ))
                 )}
               </div>
               {/* MANUAL ADD MODAL */}
