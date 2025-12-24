@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Country, State, City } from "country-state-city";
+import { Country, State } from "country-state-city";
 
 const SurveyPrint = ({ survey }) => {
   const contentRef = useRef(null);
@@ -10,10 +10,10 @@ const SurveyPrint = ({ survey }) => {
 
   const formatStatus = (status) => {
     const statusMap = {
-      'pending': 'Pending',
-      'in_progress': 'In Progress',
-      'completed': 'Completed',
-      'cancelled': 'Cancelled'
+      pending: "Pending",
+      in_progress: "In Progress",
+      completed: "Completed",
+      cancelled: "Cancelled",
     };
     return statusMap[status] || status || "Not filled";
   };
@@ -38,14 +38,9 @@ const SurveyPrint = ({ survey }) => {
     }
   };
 
-  const getCityName = (countryCode, stateCode, cityName) => {
-    if (!countryCode || !stateCode || !cityName) return "Not filled";
-    return cityName;
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return "Not filled";
-    return new Date(dateString).toLocaleDateString('en-GB').split('/').reverse().join('/');
+    return new Date(dateString).toLocaleDateString("en-GB").split("/").reverse().join("/");
   };
 
   const formatTime = (timeString) => {
@@ -55,32 +50,50 @@ const SurveyPrint = ({ survey }) => {
 
   const formatBoolean = (value) => (value ? "Yes" : "No");
 
+  const formatVolume = (volume) => {
+    if (!volume && volume !== 0) return "-";
+    const num = parseFloat(volume);
+    return num % 1 === 0 ? num.toString() : num.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+  };
+
   const getCustomerData = (field) => {
     const fieldMap = {
-      full_name: 'full_name',
-      mobile_number: 'phone_number', 
-      email: 'email',
-      salutation: 'salutation'
+      full_name: "full_name",
+      mobile_number: "phone_number",
+      email: "email",
+      salutation: "salutation",
     };
-    
+
     const surveyField = fieldMap[field] || field;
-    
     const surveyValue = survey[surveyField];
-    if (surveyValue !== null && surveyValue !== undefined && surveyValue !== '') {
+    if (surveyValue !== null && surveyValue !== undefined && surveyValue !== "") {
       return surveyValue;
     }
-    
-    const enquiryField = field === 'full_name' ? 'fullName' : 
-                        field === 'mobile_number' ? 'phoneNumber' : 
-                        field === 'email' ? 'email' : field;
-    
+
+    const enquiryField =
+      field === "full_name"
+        ? "fullName"
+        : field === "mobile_number"
+        ? "phoneNumber"
+        : field === "email"
+        ? "email"
+        : field;
+
     const enquiryValue = survey.enquiry?.[enquiryField];
-    if (enquiryValue !== null && enquiryValue !== undefined && enquiryValue !== '') {
+    if (enquiryValue !== null && enquiryValue !== undefined && enquiryValue !== "") {
       return enquiryValue;
     }
-    
+
     return "Not filled";
   };
+
+  const totalVolume = survey.articles
+    ? survey.articles.reduce((total, a) => {
+        const vol = parseFloat(a.volume) || 0;
+        const qty = parseInt(a.quantity) || 1;
+        return total + vol * qty;
+      }, 0)
+    : 0;
 
   return (
     <div className="print-container" ref={contentRef}>
@@ -88,7 +101,7 @@ const SurveyPrint = ({ survey }) => {
         {`
           @page {
             size: A4 portrait;
-            margin: 0.5cm 0.5cm 0.5cm 0.5cm;
+            margin: 0.75cm;
           }
 
           * {
@@ -98,54 +111,41 @@ const SurveyPrint = ({ survey }) => {
           }
 
           body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 10pt;
             color: #000;
-            line-height: 1.3;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
             background: white;
           }
 
           .print-container {
-            max-width: 19.05cm !important;
+            max-width: 19.05cm;
             margin: 0 auto;
-            padding: 0;
           }
 
           .print-header {
             text-align: center;
             padding-bottom: 12px;
             margin-bottom: 20px;
-            page-break-after: avoid;
           }
 
           .print-header h1 {
-            font-size: 16pt;
+            font-size: 18pt;
             color: #4c7085;
             margin: 0 0 8px 0;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-
-          .print-header .subtitle {
-            font-size: 11pt;
-            margin: 0;
-            font-weight: 500;
-            color: #333;
           }
 
           .section {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             page-break-inside: avoid;
-            break-inside: avoid;
           }
 
           .section h3 {
-            font-size: 12pt;
+            font-size: 13pt;
             color: #4c7085;
-            padding-bottom: 6px;
             margin: 15px 0 10px 0;
             font-weight: bold;
             page-break-after: avoid;
@@ -156,7 +156,6 @@ const SurveyPrint = ({ survey }) => {
             color: #333;
             margin: 12px 0 8px 0;
             font-weight: 600;
-            page-break-after: avoid;
           }
 
           table {
@@ -164,7 +163,6 @@ const SurveyPrint = ({ survey }) => {
             border-collapse: collapse;
             margin-bottom: 15px;
             font-size: 9pt;
-            page-break-inside: auto;
           }
 
           th, td {
@@ -172,48 +170,62 @@ const SurveyPrint = ({ survey }) => {
             padding: 6px 4px;
             text-align: left;
             vertical-align: top;
-            word-wrap: break-word;
-            white-space: nowrap !important;
           }
 
           th {
             background-color: #e8f0f2 !important;
             font-weight: bold;
-            color: #000;
-            font-size: 9pt;
           }
 
           .field-col { width: 30%; }
           .value-col { width: 70%; }
-          .articles-col { font-size: 8pt; }
 
           .total-row {
-            background-color: #f0f8ff !important;
+            background-color: #4c7085 !important;
+            color: white;
             font-weight: bold;
-            font-size: 10pt !important;
+            font-size: 10pt;
           }
 
-          .no-break { page-break-inside: avoid; }
-          .page-break { page-break-before: always; }
+          .signature-section {
+            margin-top: 40px;
+            page-break-inside: avoid;
+          }
 
-          .no-print { display: none !important; }
+          .signature-box {
+            border: 1px solid #000;
+            height: 100px;
+            width: 300px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+          }
+
+          .signature-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+          }
 
           @media screen {
             .print-container {
-              padding: 20px;
-              max-width: 21cm;
-              margin: 0 auto;
+              padding: 30px;
               background: #fff;
               box-shadow: 0 0 20px rgba(0,0,0,0.1);
+              margin: 20px auto;
             }
           }
+
+          .no-print { display: none !important; }
         `}
       </style>
 
       <div className="print-header">
         <h1>SURVEY REPORT</h1>
         <p className="subtitle">
-          <strong>{survey.survey_id}</strong> | {survey.service_type_display || survey.service_type_name || 'N/A'}
+          <strong>{survey.survey_id}</strong> | {survey.service_type_display || survey.service_type_name || "N/A"}
           {survey.additional_services?.length > 0 && (
             <span> | Additional Services: {survey.additional_services.length}</span>
           )}
@@ -221,7 +233,7 @@ const SurveyPrint = ({ survey }) => {
       </div>
 
       <div className="space-y-4">
-        <div className="section no-break">
+        <div className="section">
           <h3>1. Customer Details</h3>
           <table>
             <thead>
@@ -232,17 +244,18 @@ const SurveyPrint = ({ survey }) => {
             </thead>
             <tbody>
               <tr><td className="font-medium">Customer Type</td><td>{survey.customer_type_name || "Not filled"}</td></tr>
-              <tr><td className="font-medium">Salutation</td><td>{getCustomerData('salutation')}</td></tr>
-              <tr><td className="font-medium">Full Name</td><td><strong>{getCustomerData('full_name')}</strong></td></tr>
-              <tr><td className="font-medium">Mobile Number</td><td><strong>{getCustomerData('mobile_number')}</strong></td></tr>
-              <tr><td className="font-medium">Email</td><td>{getCustomerData('email')}</td></tr>
+              <tr><td className="font-medium">Salutation</td><td>{getCustomerData("salutation")}</td></tr>
+              <tr><td className="font-medium">Full Name</td><td><strong>{getCustomerData("full_name")}</strong></td></tr>
+              <tr><td className="font-medium">Mobile Number</td><td><strong>{getCustomerData("mobile_number")}</strong></td></tr>
+              <tr><td className="font-medium">Email</td><td>{getCustomerData("email")}</td></tr>
               <tr><td className="font-medium">Address</td><td>{survey.address || "Not filled"}</td></tr>
               <tr><td className="font-medium">Company</td><td>{survey.company || "Not filled"}</td></tr>
               <tr><td className="font-medium">Is Military</td><td>{formatBoolean(survey.is_military)}</td></tr>
             </tbody>
           </table>
         </div>
-        <div className="section no-break">
+
+        <div className="section">
           <h3>2. Survey Details</h3>
           <table>
             <thead>
@@ -259,7 +272,8 @@ const SurveyPrint = ({ survey }) => {
             </tbody>
           </table>
         </div>
-        <div className="section no-break">
+
+        <div className="section">
           <h3>3. Origin Address</h3>
           <table>
             <thead>
@@ -268,7 +282,7 @@ const SurveyPrint = ({ survey }) => {
             <tbody>
               <tr><td className="font-medium">Same as Customer Address</td><td>{formatBoolean(survey.same_as_customer_address)}</td></tr>
               <tr><td className="font-medium">Address</td><td>{survey.origin_address || "Not filled"}</td></tr>
-              <tr><td className="font-medium">City</td><td>{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</td></tr>
+              <tr><td className="font-medium">City</td><td>{survey.origin_city || "Not filled"}</td></tr>
               <tr><td className="font-medium">Country</td><td>{getCountryName(survey.origin_country)}</td></tr>
               <tr><td className="font-medium">State</td><td>{getStateName(survey.origin_country, survey.origin_state)}</td></tr>
               <tr><td className="font-medium">ZIP</td><td>{survey.origin_zip || "Not filled"}</td></tr>
@@ -276,11 +290,12 @@ const SurveyPrint = ({ survey }) => {
             </tbody>
           </table>
         </div>
+
         <div className="section">
-          <h3>4. Destination Address{survey.destination_addresses?.length > 1 ? 'es' : ''}</h3>
+          <h3>4. Destination Address{survey.destination_addresses?.length > 1 ? "es" : ""}</h3>
           {survey.destination_addresses?.length > 0 ? (
             survey.destination_addresses.map((addr, index) => (
-              <div key={index} className="no-break">
+              <div key={index} className="mb-4">
                 <h4>Address {index + 1}</h4>
                 <table>
                   <thead>
@@ -288,7 +303,7 @@ const SurveyPrint = ({ survey }) => {
                   </thead>
                   <tbody>
                     <tr><td className="font-medium">Address</td><td>{addr.address || "Not filled"}</td></tr>
-                    <tr><td className="font-medium">City</td><td>{getCityName(addr.country, addr.state, addr.city)}</td></tr>
+                    <tr><td className="font-medium">City</td><td>{addr.city || "Not filled"}</td></tr>
                     <tr><td className="font-medium">Country</td><td>{getCountryName(addr.country)}</td></tr>
                     <tr><td className="font-medium">State</td><td>{getStateName(addr.country, addr.state)}</td></tr>
                     <tr><td className="font-medium">ZIP</td><td>{addr.zip || "Not filled"}</td></tr>
@@ -298,144 +313,119 @@ const SurveyPrint = ({ survey }) => {
               </div>
             ))
           ) : (
-            <table>
-              <tbody><tr><td className="font-medium">No destination addresses</td></tr></tbody>
-            </table>
+            <p>No destination addresses</p>
           )}
         </div>
-        <div className="section no-break">
-          <h3>5. Move Details</h3>
-          <table>
-            <thead>
-              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="font-medium">Packing Date From</td><td>{formatDate(survey.packing_date_from)}</td></tr>
-              <tr><td className="font-medium">Packing Date To</td><td>{formatDate(survey.packing_date_to)}</td></tr>
-              <tr><td className="font-medium">Loading Date</td><td>{formatDate(survey.loading_date)}</td></tr>
-              <tr><td className="font-medium">ETA</td><td>{formatDate(survey.eta)}</td></tr>
-              <tr><td className="font-medium">ETD</td><td>{formatDate(survey.etd)}</td></tr>
-              <tr><td className="font-medium">Est. Delivery Date</td><td>{formatDate(survey.est_delivery_date)}</td></tr>
-            </tbody>
-          </table>
+
+        <div className="section">
+          <h3>5. Articles ({survey.articles?.length || 0})</h3>
+          {survey.articles?.length > 0 ? (
+            <table>
+              <thead>
+                <tr>
+                  <th>Room</th>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Volume</th>
+                  <th>Crate Required</th>
+                  <th>Moving Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {survey.articles.map((a, i) => (
+                  <tr key={i}>
+                    <td>{a.room_name || a.room || "-"}</td>
+                    <td>{a.item_name || "-"}</td>
+                    <td>{a.quantity || "-"}</td>
+                    <td>{a.volume ? `${formatVolume(a.volume)} ${a.volume_unit_name || "m³"}` : "-"}</td>
+                    <td>{formatBoolean(a.crate_required)}</td>
+                    <td>{a.move_status === "not_moving" ? "Not Moving" : "Moving"}</td>
+                  </tr>
+                ))}
+                <tr className="total-row">
+                  <td colSpan="3" style={{textAlign: "right"}}>Total Volume:</td>
+                  <td style={{textAlign: "center"}}>{formatVolume(totalVolume)} m³</td>
+                  <td colSpan="2"></td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <p>No articles added</p>
+          )}
         </div>
-        <div className="section no-break">
-          <h3>6. Storage Details</h3>
-          <table>
-            <thead>
-              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="font-medium">Start Date</td><td>{formatDate(survey.storage_start_date)}</td></tr>
-              <tr><td className="font-medium">Frequency</td><td>{survey.storage_frequency || "Not filled"}</td></tr>
-              <tr><td className="font-medium">Duration</td><td>{survey.storage_duration || "Not filled"}</td></tr>
-              <tr><td className="font-medium">Storage Mode</td><td>{survey.storage_mode || "Not filled"}</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="section no-break">
-          <h3>7. Vehicle Details</h3>
+
+        <div className="section">
+          <h3>6. Vehicles ({survey.vehicles?.length || 0})</h3>
           {survey.vehicles?.length > 0 ? (
             <table>
               <thead>
                 <tr>
-                  <th style={{width: '20%'}}>Vehicle Type</th>
-                  <th style={{width: '15%'}}>Make</th>
-                  <th style={{width: '15%'}}>Model</th>
-                  <th style={{width: '10%'}}>Insurance</th>
-                  <th style={{width: '40%'}}>Remark</th>
+                  <th>Type</th>
+                  <th>Make</th>
+                  <th>Model</th>
+                  <th>Insurance</th>
                 </tr>
               </thead>
               <tbody>
                 {survey.vehicles.map((v, i) => (
                   <tr key={i}>
-                    <td>{v.vehicle_type_name || "-"}</td>
+                    <td>{v.vehicle_type_name || v.vehicle_type || "-"}</td>
                     <td>{v.make || "-"}</td>
                     <td>{v.model || "-"}</td>
                     <td>{formatBoolean(v.insurance)}</td>
-                    <td>{v.remark || "-"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <table>
-              <tbody><tr><td className="font-medium">No vehicles added</td></tr></tbody>
-            </table>
+            <p>No vehicles added</p>
           )}
         </div>
-        {survey.articles?.length > 0 && (
-          <div className="section">
-            <h3>8. Articles ({survey.articles.length})</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th style={{width: '15%'}}>Room</th>
-                  <th style={{width: '20%'}}>Item</th>
-                  <th style={{width: '8%'}}>Qty</th>
-                  <th style={{width: '12%'}}>Volume</th>
-                  <th style={{width: '12%'}}>Weight</th>
-                  <th style={{width: '15%'}}>Handyman</th>
-                  <th style={{width: '18%'}}>Packing</th>
-                </tr>
-              </thead>
-              <tbody>
-                {survey.articles.map((article, i) => (
-                  <tr key={i}>
-                    <td className="articles-col">{article.room_name || "-"}</td>
-                    <td className="articles-col">{article.item_name || "-"}</td>
-                    <td className="articles-col">{article.quantity || "-"}</td>
-                    <td className="articles-col">{article.volume || "-"} {article.volume_unit_name || ""}</td>
-                    <td className="articles-col">{article.weight || "-"} {article.weight_unit_name || ""}</td>
-                    <td className="articles-col">{article.handyman_name || "-"}</td>
-                    <td className="articles-col">{article.packing_option_name || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="section no-break">
-          <h3>9. Additional Services</h3>
+
+        <div className="section">
+          <h3>7. Additional Services</h3>
           {survey.additional_services?.length > 0 ? (
             <table>
               <thead>
-                <tr>
-                  <th style={{width: '100%'}}>Service Name</th>
-                </tr>
+                <tr><th>Service Name</th></tr>
               </thead>
               <tbody>
                 {survey.additional_services.map((service, i) => (
                   <tr key={i}>
-                    <td>{service.name}</td>
+                    <td>{service.name || "Unknown Service"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <table>
-              <tbody><tr><td className="font-medium">No additional services selected</td></tr></tbody>
-            </table>
+            <p>No additional services selected</p>
           )}
         </div>
-        <div className="section no-break">
-          <h3>10. Transport Mode</h3>
-          <table>
-            <thead>
-              <tr><th className="field-col">Field</th><th className="value-col">Value</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="font-medium">Transport Mode</td><td>{survey.transport_mode || "Not filled"}</td></tr>
-            </tbody>
-          </table>
+
+        <div className="signature-section">
+          <h3>Customer Signature</h3>
+          {survey.signature_uploaded && survey.signature_url ? (
+            <div className="signature-box">
+              <img src={survey.signature_url} alt="Customer Signature" />
+            </div>
+          ) : (
+            <div className="signature-box">
+              <p style={{color: "#999", fontStyle: "italic"}}>No signature uploaded</p>
+            </div>
+          )}
+          <p style={{marginTop: "10px"}}>
+            <strong>Name:</strong> {getCustomerData("full_name")} &nbsp;&nbsp;&nbsp;
+            <strong>Date:</strong> {formatDate(survey.survey_date)}
+          </p>
         </div>
       </div>
-      <div className="mt-6 flex justify-center no-print">
+
+      <div className="mt-8 flex justify-center no-print">
         <button
           onClick={() => window.print()}
           className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
         >
-          🖨️ Print Survey Report
+          Print Survey Report
         </button>
       </div>
     </div>

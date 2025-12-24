@@ -147,7 +147,8 @@ class Article(models.Model):
     calculated_volume = models.DecimalField(max_digits=20, decimal_places=10, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     is_flagged = models.BooleanField(default=False)
-
+    crate_required = models.BooleanField(default=False, blank=True, null=True)
+    
     def save(self, *args, **kwargs):
         if self.length and self.width and self.height:
             self.calculated_volume = (self.length * self.width * self.height) / 1000000

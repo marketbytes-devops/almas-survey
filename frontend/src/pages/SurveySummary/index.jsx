@@ -19,7 +19,6 @@ const SurveySummary = () => {
   const [printing, setPrinting] = useState(null);
   const [statusModal, setStatusModal] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [quotationStatus, setQuotationStatus] = useState({});
   const [signatureModalUrl, setSignatureModalUrl] = useState(null);
   const [surveySignatures, setSurveySignatures] = useState({});
 
@@ -29,14 +28,6 @@ const SurveySummary = () => {
     { value: "completed", label: "Completed" },
     { value: "cancelled", label: "Cancelled" },
   ];
-
-  const SERVICE_TYPE_DISPLAY = {
-    localMove: "Local Move",
-    internationalMove: "International Move",
-    carExport: "Car Import and Export",
-    storageServices: "Storage Services",
-    logistics: "Logistics",
-  };
 
   const formatStatus = (status) => {
     const map = {
@@ -95,7 +86,6 @@ const SurveySummary = () => {
     fetchSurveys();
   }, []);
 
-  // Fetch signature URLs whenever surveys change
   useEffect(() => {
     if (surveys.length === 0) return;
 
@@ -300,11 +290,10 @@ const SurveySummary = () => {
     return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${period}`;
   };
   const formatBoolean = (v) => (v ? "Yes" : "No");
-  const formatVolume = (volume, unit) => {
+  const formatVolume = (volume) => {
     if (!volume && volume !== 0) return "-";
-    const volumeStr = parseFloat(volume).toString();
-    const unitStr = unit ? ` ${unit}` : "";
-    return `${volumeStr}${unitStr}`;
+    const num = parseFloat(volume);
+    return num % 1 === 0 ? num.toString() : num.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
   };
   const formatDateTime = (dateString) => {
     if (!dateString) return "—";
@@ -349,6 +338,14 @@ const SurveySummary = () => {
       survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
     const getService = () =>
       survey.service_type_display || survey.service_type_name || "N/A";
+
+    const totalVolume = survey.articles
+      ? survey.articles.reduce((total, a) => {
+          const vol = parseFloat(a.volume) || 0;
+          const qty = parseInt(a.quantity) || 1;
+          return total + vol * qty;
+        }, 0)
+      : 0;
 
     return (
       <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
@@ -585,44 +582,6 @@ const SurveySummary = () => {
           </div>
         )}
 
-        {survey.vehicles?.length > 0 && (
-          <div className="section">
-            <h4 className="font-semibold text-gray-800 mb-2">Vehicles</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-gray-400">
-                <thead className="bg-gray-200">
-                  <tr>
-                    <th className="border border-gray-400 px-4 py-2">Type</th>
-                    <th className="border border-gray-400 px-4 py-2">Make</th>
-                    <th className="border border-gray-400 px-4 py-2">Model</th>
-                    <th className="border border-gray-400 px-4 py-2">
-                      Insurance
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {survey.vehicles.map((v, i) => (
-                    <tr key={i}>
-                      <td className="border border-gray-400 px-4 py-2">
-                        {v.vehicle_type_name || "N/A"}
-                      </td>
-                      <td className="border border-gray-400 px-4 py-2">
-                        {v.make || "N/A"}
-                      </td>
-                      <td className="border border-gray-400 px-4 py-2">
-                        {v.model || "N/A"}
-                      </td>
-                      <td className="border border-gray-400 px-4 py-2">
-                        {formatBoolean(v.insurance)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-        {/* === NEW: Articles Section (with Crate Required column) === */}
         {survey.articles?.length > 0 && (
           <div className="section">
             <h4 className="font-semibold text-gray-800 mb-2">
@@ -635,9 +594,6 @@ const SurveySummary = () => {
                     <th className="border border-gray-400 px-3 py-2">Room</th>
                     <th className="border border-gray-400 px-3 py-2">Item</th>
                     <th className="border border-gray-400 px-3 py-2">Qty</th>
-                    <th className="border border-gray-400 px-3 py-2">
-                      Dimensions
-                    </th>
                     <th className="border border-gray-400 px-3 py-2">Volume</th>
                     <th className="border border-gray-400 px-3 py-2">
                       Crate Required
@@ -660,13 +616,8 @@ const SurveySummary = () => {
                         {a.quantity || "-"}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
-                        {a.length && a.width && a.height
-                          ? `L:${a.length} × W:${a.width} × H:${a.height} cm`
-                          : "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
                         {a.volume
-                          ? `${a.volume} ${a.volume_unit_name || "m³"}`
+                          ? `${formatVolume(a.volume)} ${a.volume_unit_name || "m³"}`
                           : "-"}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
@@ -695,23 +646,15 @@ const SurveySummary = () => {
                       </td>
                     </tr>
                   ))}
-                  {/* Total Volume Row */}
                   <tr className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium">
                     <td
-                      colSpan="4"
+                      colSpan="3"
                       className="border border-gray-400 px-3 py-3 text-right"
                     >
                       Total Volume:
                     </td>
                     <td className="border border-gray-400 px-3 py-3 text-center">
-                      {survey.articles
-                        .reduce((total, a) => {
-                          const vol = parseFloat(a.volume) || 0;
-                          const qty = parseInt(a.quantity) || 1;
-                          return total + vol * qty;
-                        }, 0)
-                        .toFixed(4)}{" "}
-                      m³
+                      {formatVolume(totalVolume)} m³
                     </td>
                     <td colSpan="2"></td>
                   </tr>
@@ -721,7 +664,6 @@ const SurveySummary = () => {
           </div>
         )}
 
-        {/* === NEW: Vehicles Section === */}
         {survey.vehicles?.length > 0 && (
           <div className="section">
             <h4 className="font-semibold text-gray-800 mb-2">
@@ -770,17 +712,31 @@ const SurveySummary = () => {
           </div>
         )}
 
-        {/* === NEW: Additional Services Section === */}
         {survey.additional_services?.length > 0 && (
           <div className="section">
             <h4 className="font-semibold text-gray-800 mb-2">
               Additional Services ({survey.additional_services.length})
             </h4>
-            <ul className="list-disc pl-6 space-y-1 text-sm text-gray-700">
-              {survey.additional_services.map((service, i) => (
-                <li key={i}>{service.name || "Unknown Service"}</li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-gray-400">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="border border-gray-400 px-4 py-2 text-left">
+                      Service
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {survey.additional_services.map((service, i) => (
+                    <tr key={i}>
+                      <td className="border border-gray-400 px-4 py-2">
+                        {service.name || "Unknown Service"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

@@ -57,8 +57,9 @@ class ArticleSerializer(serializers.ModelSerializer):
     handyman_name = serializers.CharField(source='handyman.type_name', read_only=True, allow_null=True)
     packing_option = serializers.PrimaryKeyRelatedField(queryset=PackingType.objects.all(), allow_null=True)
     packing_option_name = serializers.CharField(source='packing_option.name', read_only=True, allow_null=True)
-    is_flagged_display = serializers.SerializerMethodField()  # This line exists
+    is_flagged_display = serializers.SerializerMethodField()
     move_status_display = serializers.SerializerMethodField()
+    crate_required_display = serializers.SerializerMethodField()  # Add this
     
     class Meta:
         model = Article
@@ -68,7 +69,8 @@ class ArticleSerializer(serializers.ModelSerializer):
             'weight', 'weight_unit', 'weight_unit_name',
             'handyman', 'handyman_name', 'packing_option', 'packing_option_name',
             'move_status', 'move_status_display', 'remarks', 'length', 'width', 'height', 
-            'calculated_volume', 'created_at', 'is_flagged', 'is_flagged_display'
+            'calculated_volume', 'created_at', 'is_flagged', 'is_flagged_display',
+            'crate_required', 'crate_required_display'  # Add crate_required here
         ]
         read_only_fields = ['id', 'created_at', 'calculated_volume']
     
@@ -81,6 +83,10 @@ class ArticleSerializer(serializers.ModelSerializer):
     def get_is_flagged_display(self, obj):
         """Get human-readable flagged status"""
         return 'Flagged' if obj.is_flagged else 'Not Flagged'
+    
+    def get_crate_required_display(self, obj):  # Add this method
+        """Get human-readable crate required status"""
+        return 'Yes' if obj.crate_required else 'No'
 
 class VehicleSerializer(serializers.ModelSerializer):
     vehicle_type = serializers.PrimaryKeyRelatedField(queryset=VehicleType.objects.all(), allow_null=True)
@@ -180,8 +186,14 @@ class SurveySerializer(serializers.ModelSerializer):
                 
             for addr in destination_addresses_data:
                 DestinationAddress.objects.create(survey=survey, **addr)
+            
             for article in articles_data:
-                Article.objects.create(survey=survey, **article)
+                # Ensure crate_required is included with default False if not provided
+                article_data = article.copy()
+                if 'crate_required' not in article_data:
+                    article_data['crate_required'] = False
+                Article.objects.create(survey=survey, **article_data)
+            
             for vehicle in vehicles_data:
                 Vehicle.objects.create(survey=survey, **vehicle)
 
@@ -209,7 +221,11 @@ class SurveySerializer(serializers.ModelSerializer):
             if articles_data is not None:
                 instance.articles.all().delete()
                 for article in articles_data:
-                    Article.objects.create(survey=instance, **article)
+                    # Ensure crate_required is included with default False if not provided
+                    article_data = article.copy()
+                    if 'crate_required' not in article_data:
+                        article_data['crate_required'] = False
+                    Article.objects.create(survey=instance, **article_data)
 
             if vehicles_data is not None:
                 instance.vehicles.all().delete()
