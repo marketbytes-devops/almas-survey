@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck, FaSearch } from "react-icons/fa";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -10,6 +11,7 @@ import Input from "../../components/Input";
 import apiClient from "../../api/apiClient";
 import { Country, State, City } from "country-state-city";
 import SignatureModal from "../../components/SignatureModal/SignatureModal";
+import Modal from "../../components/Modal";
 
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
   const methods = useFormContext();
@@ -1670,134 +1672,119 @@ const SurveyDetails = () => {
               </div>
               {/* MANUAL ADD MODAL */}
               {showManualAddForm && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white p-6 rounded-t-2xl flex justify-between items-center">
-                      <h3 className="text-2xl font-bold">Add Custom Item — {selectedRoom?.label}</h3>
-                      <button
-                        onClick={() => {
-                          setShowManualAddForm(false);
-                          setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
-                          setManualVolume(0);
-                          setManualWeight(0);
-                        }}
-                        className="text-white hover:bg-white/20 p-3 rounded-full transition"
-                      >
-                        <FaTimes className="w-6 h-6" />
-                      </button>
+              <Modal
+                isOpen={showManualAddForm}
+                onClose={() => {
+                  setShowManualAddForm(false);
+                  setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+                  setManualVolume(0);
+                  setManualWeight(0);
+                }}
+                title={`Add Custom Item — ${selectedRoom?.label || "General"}`}
+                footer={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowManualAddForm(false);
+                        setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+                        setManualVolume(0);
+                        setManualWeight(0);
+                      }}
+                      className="w-full px-8 py-2 text-sm font-medium bg-gray-300 text-gray-700 rounded-sm hover:bg-gray-400 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addManualItem}
+                      disabled={!manualFormData.itemName.trim()}
+                      className="whitespace-nowrap w-full px-8 py-2 text-sm font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-sm hover:shadow-2xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add Item to Survey
+                    </button>
+                  </>
+                }
+              >
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4"
+              >
+                <Input
+                  label="Item Name"
+                  name="itemName" 
+                  type="text"
+                  value={manualFormData.itemName}
+                  onChange={(e) => setManualFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                  rules={{ required: true }}
+                  placeholder="e.g., Antique Piano"
+                />
+                <Input
+                  label="Description (Optional)"
+                  name="description"
+                  type="textarea"
+                  value={manualFormData.description}
+                  onChange={(e) => setManualFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                  placeholder="Any special notes..."
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dimensions (cm)
+                  </label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Input
+                      label="Length (cm)"
+                      name="length"
+                      type="number"
+                      step="0.01"
+                      value={manualFormData.length}
+                      onChange={(e) => handleManualDimensionChange('length', e.target.value)}
+                      placeholder="0.00"
+                    />
+                    <Input
+                      label="Width (cm)"
+                      name="width"
+                      type="number"
+                      step="0.01"
+                      value={manualFormData.width}
+                      onChange={(e) => handleManualDimensionChange('width', e.target.value)}
+                      placeholder="0.00"
+                    />
+                    <Input
+                      label="Height (cm)"
+                      name="height"
+                      type="number"
+                      step="0.01"
+                      value={manualFormData.height}
+                      onChange={(e) => handleManualDimensionChange('height', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Volume (m³)
+                    </label>
+                    <div className="w-full px-6 py-4 text-center text-sm font-semibold bg-gray-100 border border-gray-300 rounded-xl">
+                      {manualVolume.toFixed(4)}
                     </div>
-
-                    <div className="p-8 space-y-8">
-                      <div>
-                        <label className="block text-lg font-medium text-gray-700 mb-3">
-                          Item Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={manualFormData.itemName}
-                          onChange={(e) => setManualFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                          className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none"
-                          placeholder="e.g., Antique Piano"
-                          autoFocus
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-lg font-medium text-gray-700 mb-3">Description (Optional)</label>
-                        <textarea
-                          value={manualFormData.description}
-                          onChange={(e) => setManualFormData(prev => ({ ...prev, description: e.target.value }))}
-                          rows={4}
-                          className="w-full px-6 py-4 text-base border-2 border-gray-300 rounded-xl focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none resize-none"
-                          placeholder="Any special notes..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-lg font-medium text-gray-700 mb-4">Dimensions (cm)</label>
-                        <div className="grid grid-cols-3 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-2">Length (cm)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={manualFormData.length}
-                              onChange={(e) => handleManualDimensionChange('length', e.target.value)}
-                              className="w-full px-6 py-4 text-center text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085]"
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-2">Width (cm)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={manualFormData.width}
-                              onChange={(e) => handleManualDimensionChange('width', e.target.value)}
-                              className="w-full px-6 py-4 text-center text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085]"
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-2">Height (cm)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={manualFormData.height}
-                              onChange={(e) => handleManualDimensionChange('height', e.target.value)}
-                              className="w-full px-6 py-4 text-center text-lg border-2 border-gray-300 rounded-xl focus:border-[#4c7085]"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-8">
-                        <div>
-                          <label className="block text-lg font-medium text-gray-700 mb-3">Volume (m³)</label>
-                          <input
-                            type="text"
-                            readOnly
-                            value={manualVolume.toFixed(4)}
-                            className="w-full px-6 py-4 text-center text-2xl font-bold bg-gray-100 rounded-xl"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-lg font-medium text-gray-700 mb-3">Weight (kg) <span className="text-sm font-normal text-gray-500">(estimated)</span></label>
-                          <input
-                            type="text"
-                            readOnly
-                            value={manualWeight.toFixed(2)}
-                            className="w-full px-6 py-4 text-center text-2xl font-bold bg-gray-100 rounded-xl"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end gap-6 pt-8">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowManualAddForm(false);
-                            setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
-                            setManualVolume(0);
-                            setManualWeight(0);
-                          }}
-                          className="px-10 py-4 text-lg font-medium bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={addManualItem}
-                          disabled={!manualFormData.itemName.trim()}
-                          className="px-10 py-4 text-lg font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-xl hover:shadow-2xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Add Item to Survey
-                        </button>
-                      </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Weight (kg) <span className="text-sm font-normal text-gray-500">(estimated)</span>
+                    </label>
+                    <div className="w-full px-6 py-4 text-center text-sm font-semibold bg-gray-100 border border-gray-300 rounded-xl">
+                      {manualWeight.toFixed(2)}
                     </div>
                   </div>
                 </div>
+              </motion.div>
+              </Modal>
               )}
             </div>
           )}
