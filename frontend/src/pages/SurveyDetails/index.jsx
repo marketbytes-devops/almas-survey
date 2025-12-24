@@ -207,6 +207,7 @@ const SurveyDetails = () => {
               length: a.length || "",
               width: a.width || "",
               height: a.height || "",
+              crateRequired: a.crate_required || false,
             })) || [],
             vehicles: survey.vehicles?.map((v) => ({
               id: uuidv4(),
@@ -589,13 +590,16 @@ const SurveyDetails = () => {
   };
 
   const Article = () => {
-    const [selectedRoom, setSelectedRoom] = useState(null);
+   
+    const selectedRoomFromForm = watch("selectedRoom");
+    const [selectedRoom, setSelectedRoom] = useState(selectedRoomFromForm || null);
     const [showRoomDropdown, setShowRoomDropdown] = useState(false);
     const [expandedItems, setExpandedItems] = useState({});
     const [itemQuantities, setItemQuantities] = useState({});
     const [itemSearchQuery, setItemSearchQuery] = useState("");
     const [selectedItems, setSelectedItems] = useState({});
     const dropdownRef = useRef(null);
+    const [itemCratePreferences, setItemCratePreferences] = useState({}); 
     const [roomSearchQuery, setRoomSearchQuery] = useState("");
     const [showManualAddForm, setShowManualAddForm] = useState(false);
     const [manualFormData, setManualFormData] = useState({
@@ -617,6 +621,15 @@ const SurveyDetails = () => {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+    if (selectedRoom && selectedRoom !== selectedRoomFromForm) {
+      setValue("selectedRoom", selectedRoom);
+    }
+  }, [selectedRoom, selectedRoomFromForm, setValue]);
+  const currentRoom = selectedRoom || selectedRoomFromForm; // ← THIS is what you asked for
+
+ 
 
     const filteredRooms = useMemo(() => {
       if (!roomSearchQuery.trim()) {
@@ -675,75 +688,85 @@ const SurveyDetails = () => {
       return volume ? parseFloat(volume) * 110 : 0;
     };
 
-    const addArticle = (itemName, formData = {}, isMoving = true) => {
-      const length = formData[`length_${itemName}`] || "";
-      const width = formData[`width_${itemName}`] || "";
-      const height = formData[`height_${itemName}`] || "";
+  const addArticle = (itemName, formData = {}, isMoving = true) => {
+    const length = formData[`length_${itemName}`] || "";
+    const width = formData[`width_${itemName}`] || "";
+    const height = formData[`height_${itemName}`] || "";
 
-      const volume = calculateVolume(length, width, height);
-      const weight = calculateWeight(volume);
+    const volume = calculateVolume(length, width, height);
+    const weight = calculateWeight(volume);
 
-      const newArticle = {
+    // ✅ Get saved crate preference
+    const itemKey = `${selectedRoom?.value || 'general'}-${itemName}`;
+    const crateRequired = formData.crateRequired ?? itemCratePreferences[itemKey] ?? false;
+
+    const newArticle = {
+      id: uuidv4(),
+      itemName,
+      quantity: itemQuantities[itemName] || 1,
+      volume: volume.toFixed(4),
+      volumeUnit: formData[`volumeUnit_${itemName}`] || apiData.volumeUnits[0]?.value || "",
+      weight: weight.toFixed(2),
+      weightUnit: formData[`weightUnit_${itemName}`] || apiData.weightUnits[0]?.value || "",
+      handyman: formData[`handyman_${itemName}`] || "",
+      packingOption: formData[`packingOption_${itemName}`] || "",
+      moveStatus: isMoving ? "moving" : "not_moving",
+      room: selectedRoom?.value || "",
+      length,
+      width,
+      height,
+      crateRequired, // ✅ Use the saved preference
+    };
+
+    setValue("articles", [...watch("articles"), newArticle]);
+    setMessage("Article added!");
+    setTimeout(() => setMessage(null), 3000);
+    toggleExpandedItem(itemName);
+  };
+
+  const addMultipleArticles = () => {
+    const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
+    if (selectedItemNames.length === 0) return setError("Select at least one item");
+
+    const newArticles = selectedItemNames.map(itemName => {
+      const item = apiData.items.find(i => i.name === itemName && i.room === selectedRoom.id);
+
+      const length = item?.length || "";
+      const width = item?.width || "";
+      const height = item?.height || "";
+
+      const volumeValue = calculateVolume(length, width, height);
+      const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
+      const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
+
+      // ✅ Get saved crate preference
+      const itemKey = `${selectedRoom?.value || 'general'}-${itemName}`;
+      const crateRequired = itemCratePreferences[itemKey] ?? false;
+
+      return {
         id: uuidv4(),
         itemName,
-        quantity: itemQuantities[itemName] || 1,
-        volume: volume.toFixed(4),
-        volumeUnit: formData[`volumeUnit_${itemName}`] || apiData.volumeUnits[0]?.value || "",
-        weight: weight.toFixed(2),
-        weightUnit: formData[`weightUnit_${itemName}`] || apiData.weightUnits[0]?.value || "",
-        handyman: formData[`handyman_${itemName}`] || "",
-        packingOption: formData[`packingOption_${itemName}`] || "",
-        moveStatus: isMoving ? "moving" : "not_moving",
+        quantity: itemQuantities[itemName] > 0 ? itemQuantities[itemName] : 1,
+        volume,
+        volumeUnit: apiData.volumeUnits[0]?.value || "",
+        weight,
+        weightUnit: apiData.weightUnits[0]?.value || "",
+        handyman: "",
+        packingOption: "",
+        moveStatus: "moving",
         room: selectedRoom?.value || "",
         length,
         width,
         height,
+        crateRequired, // ✅ Use saved preference
       };
+    });
 
-      setValue("articles", [...watch("articles"), newArticle]);
-      setMessage("Article added!");
-      setTimeout(() => setMessage(null), 3000);
-      toggleExpandedItem(itemName);
-    };
-
-    const addMultipleArticles = () => {
-      const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
-      if (selectedItemNames.length === 0) return setError("Select at least one item");
-
-      const newArticles = selectedItemNames.map(itemName => {
-        const item = apiData.items.find(i => i.name === itemName && i.room === selectedRoom.id);
-
-        const length = item?.length || "";
-        const width = item?.width || "";
-        const height = item?.height || "";
-
-        const volumeValue = calculateVolume(length, width, height);
-        const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
-        const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
-
-        return {
-          id: uuidv4(),
-          itemName,
-          quantity: itemQuantities[itemName] > 0 ? itemQuantities[itemName] : 1,
-          volume,
-          volumeUnit: apiData.volumeUnits[0]?.value || "",
-          weight,
-          weightUnit: apiData.weightUnits[0]?.value || "",
-          handyman: "",
-          packingOption: "",
-          moveStatus: "moving",
-          room: selectedRoom?.value || "",
-          length,
-          width,
-          height,
-        };
-      });
-
-      setValue("articles", [...watch("articles"), ...newArticles]);
-      setMessage(`${newArticles.length} articles added!`);
-      setTimeout(() => setMessage(null), 3000);
-      setSelectedItems({});
-    };
+    setValue("articles", [...watch("articles"), ...newArticles]);
+    setMessage(`${newArticles.length} articles added!`);
+    setTimeout(() => setMessage(null), 3000);
+    setSelectedItems({});
+  };
 
     const removeArticle = (id) => {
       setValue("articles", watch("articles").filter(a => a.id !== id));
@@ -788,6 +811,7 @@ const SurveyDetails = () => {
         handyman: "",
         packingOption: "",
         moveStatus: "moving",
+        crateRequired: false,
         room: selectedRoom?.value || "",
       };
 
@@ -800,214 +824,240 @@ const SurveyDetails = () => {
       setManualVolume(0);
       setManualWeight(0);
     };
+const ItemForm = ({ item, onAdd, onCancel }) => {
+  const [formData, setFormData] = useState({
+    [`length_${item.name}`]: item.length || "",
+    [`width_${item.name}`]: item.width || "",
+    [`height_${item.name}`]: item.height || "",
+    [`volume_${item.name}`]: item.volume || "",
+    [`weight_${item.name}`]: item.weight || "",
+    [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
+    [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
+    [`handyman_${item.name}`]: "",
+    [`packingOption_${item.name}`]: "",
+    crateRequired: false, // ← FIXED: Now initialized properly
+  });
 
-    const ItemForm = ({ item, onAdd, onCancel }) => {
-      const [formData, setFormData] = useState({
-        [`length_${item.name}`]: item.length || "",
-        [`width_${item.name}`]: item.width || "",
-        [`height_${item.name}`]: item.height || "",
-        [`volume_${item.name}`]: item.volume || "",
-        [`weight_${item.name}`]: item.weight || "",
-        [`volumeUnit_${item.name}`]: apiData.volumeUnits[0]?.value || "",
-        [`weightUnit_${item.name}`]: apiData.weightUnits[0]?.value || "",
-        [`handyman_${item.name}`]: "",
-        [`packingOption_${item.name}`]: "",
-      });
-      const [isMoving, setIsMoving] = useState(true);
-      const currentLength = formData[`length_${item.name}`];
-      const currentWidth = formData[`width_${item.name}`];
-      const currentHeight = formData[`height_${item.name}`];
+  const [isMoving, setIsMoving] = useState(true);
 
-      const volume = currentLength && currentWidth && currentHeight
-        ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(4)
-        : (item.volume || "0.0000");
+  const currentLength = formData[`length_${item.name}`];
+  const currentWidth = formData[`width_${item.name}`];
+  const currentHeight = formData[`height_${item.name}`];
 
-      const weight = volume
-        ? calculateWeight(parseFloat(volume)).toFixed(2)
-        : (item.weight || "0.00");
+  const volume = currentLength && currentWidth && currentHeight
+    ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(4)
+    : (item.volume || "0.0000");
 
-      const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+  const weight = volume
+    ? calculateWeight(parseFloat(volume)).toFixed(2)
+    : (item.weight || "0.00");
 
-        const l = field === `length_${item.name}` ? value : formData[`length_${item.name}`];
-        const w = field === `width_${item.name}` ? value : formData[`width_${item.name}`];
-        const h = field === `height_${item.name}` ? value : formData[`height_${item.name}`];
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    const l = field === `length_${item.name}` ? value : formData[`length_${item.name}`];
+    const w = field === `width_${item.name}` ? value : formData[`width_${item.name}`];
+    const h = field === `height_${item.name}` ? value : formData[`height_${item.name}`];
+    if (l && w && h) {
+      const vol = calculateVolume(l, w, h);
+      const wt = calculateWeight(vol);
+      setFormData(prev => ({
+        ...prev,
+        [`volume_${item.name}`]: vol.toFixed(4),
+        [`weight_${item.name}`]: wt.toFixed(2),
+      }));
+    }
+  };
 
-        if (l && w && h) {
-          const vol = calculateVolume(l, w, h);
-          const wt = calculateWeight(vol);
-
-          setFormData(prev => ({
-            ...prev,
-            [`volume_${item.name}`]: vol.toFixed(4),
-            [`weight_${item.name}`]: wt.toFixed(2),
-          }));
-        }
-      };
-
-      return (
-        <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
-          <div className="mb-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <div
-                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isMoving ? 'bg-green-500 border-green-500' : 'bg-red-500 border-red-500'}`}
-                onClick={() => setIsMoving(!isMoving)}
-              >
-                {isMoving ? (
-                  <span className="text-white text-xs">M</span>
-                ) : (
-                  <span className="text-white text-xs">N</span>
-                )}
-              </div>
-              <span className="text-sm font-medium text-gray-700">
-                {isMoving ? "Moving" : "Not Moving"}
-              </span>
-            </label>
+  return (
+    <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
+      <div className="mb-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isMoving ? 'bg-green-500 border-green-500' : 'bg-red-500 border-red-500'}`}
+            onClick={() => setIsMoving(!isMoving)}
+          >
+            {isMoving ? (
+              <span className="text-white text-xs">M</span>
+            ) : (
+              <span className="text-white text-xs">N</span>
+            )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            <div className="col-span-full">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions</h4>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Length (cm)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData[`length_${item.name}`]}
-                    onChange={(e) => handleInputChange(`length_${item.name}`, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                    placeholder={item.length ? `${item.length} (default)` : "0.00"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Width (cm)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData[`width_${item.name}`]}
-                    onChange={(e) => handleInputChange(`width_${item.name}`, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                    placeholder={item.width ? `${item.width} (default)` : "0.00"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Height (cm)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData[`height_${item.name}`]}
-                    onChange={(e) => handleInputChange(`height_${item.name}`, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                    placeholder={item.height ? `${item.height} (default)` : "0.00"}
-                  />
-                </div>
-              </div>
+          <span className="text-sm font-medium text-gray-700">
+            {isMoving ? "Moving" : "Not Moving"}
+          </span>
+        </label>
+      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Volume (m³) <span className="text-green-600 text-xs">(auto)</span>
-                  </label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={volume}
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
-                  <select
-                    value={formData[`volumeUnit_${item.name}`]}
-                    onChange={(e) => setFormData(prev => ({ ...prev, [`volumeUnit_${item.name}`]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                  >
-                    {apiData.volumeUnits.map(unit => (
-                      <option key={unit.value} value={unit.value}>{unit.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-span-full">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Weight</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Weight (kg) <span className="text-green-600 text-xs">(est.)</span>
-                  </label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={weight}
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
-                  <select
-                    value={formData[`weightUnit_${item.name}`]}
-                    onChange={(e) => setFormData(prev => ({ ...prev, [`weightUnit_${item.name}`]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-                  >
-                    {apiData.weightUnits.map(unit => (
-                      <option key={unit.value} value={unit.value}>{unit.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="col-span-full">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Dimensions</h4>
+          <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Length (cm)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData[`length_${item.name}`]}
+                onChange={(e) => handleInputChange(`length_${item.name}`, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                placeholder={item.length ? `${item.length} (default)` : "0.00"}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Width (cm)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData[`width_${item.name}`]}
+                onChange={(e) => handleInputChange(`width_${item.name}`, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                placeholder={item.width ? `${item.width} (default)` : "0.00"}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Height (cm)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData[`height_${item.name}`]}
+                onChange={(e) => handleInputChange(`height_${item.name}`, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+                placeholder={item.height ? `${item.height} (default)` : "0.00"}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Volume (m³) <span className="text-green-600 text-xs">(auto)</span>
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={volume}
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
               <select
-                value={formData[`handyman_${item.name}`]}
-                onChange={(e) => setFormData(prev => ({ ...prev, [`handyman_${item.name}`]: e.target.value }))}
+                value={formData[`volumeUnit_${item.name}`]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [`volumeUnit_${item.name}`]: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
               >
-                <option value="">Select</option>
-                {apiData.handymanTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
+                {apiData.volumeUnits.map(unit => (
+                  <option key={unit.value} value={unit.value}>{unit.label}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
-              <select
-                value={formData[`packingOption_${item.name}`]}
-                onChange={(e) => setFormData(prev => ({ ...prev, [`packingOption_${item.name}`]: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
-              >
-                <option value="">Select</option>
-                {apiData.packingTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex gap-3 justify-end mt-4">
-            <button
-              type="button"
-              onClick={() => onAdd(item.name, formData)}
-              className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition"
-            >
-              Add to Survey
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
-            >
-              Cancel
-            </button>
           </div>
         </div>
-      );
-    };
+
+        <div className="col-span-full">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Weight</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Weight (kg) <span className="text-green-600 text-xs">(est.)</span>
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={weight}
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
+              <select
+                value={formData[`weightUnit_${item.name}`]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [`weightUnit_${item.name}`]: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+              >
+                {apiData.weightUnits.map(unit => (
+                  <option key={unit.value} value={unit.value}>{unit.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+          <select
+            value={formData[`handyman_${item.name}`]}
+            onChange={(e) => setFormData(prev => ({ ...prev, [`handyman_${item.name}`]: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+          >
+            <option value="">Select</option>
+            {apiData.handymanTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
+          <select
+            value={formData[`packingOption_${item.name}`]}
+            onChange={(e) => setFormData(prev => ({ ...prev, [`packingOption_${item.name}`]: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+          >
+            <option value="">Select</option>
+            {apiData.packingTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label className="block text-xs font-medium text-gray-600 mb-2">Crate Required?</label>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name={`sidebar-edit-crate-${article.id}`} // ✅ Use `article.id` - it exists here!
+              checked={editFormData.crateRequired === true}
+              onChange={() => handleEditInputChange('crateRequired', true)}
+              className="w-4 h-4 text-[#4c7085]"
+            />
+            <span className="text-sm">Yes</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name={`sidebar-edit-crate-${article.id}`} // ✅ Same name for grouping
+              checked={editFormData.crateRequired === false}
+              onChange={() => handleEditInputChange('crateRequired', false)}
+              className="w-4 h-4 text-[#4c7085]"
+            />
+            <span className="text-sm">No</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="flex gap-3 justify-end mt-4">
+        <button
+          type="button"
+          onClick={() => onAdd(item.name, formData)}
+          className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition"
+        >
+          Add to Survey
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
 
     const ItemRow = ({ item }) => {
       const qty = itemQuantities[item.name] || 0;
@@ -1059,69 +1109,162 @@ const SurveyDetails = () => {
                 </div>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateQuantity(item.name, qty - 1)}
-                  disabled={qty <= 0}
-                  className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FaMinus className="w-4 h-4" />
-                </button>
-                <input
-                  type="text"
-                  value={qty}
-                  readOnly
-                  className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-3 border-x border-gray-300"
-                />
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateQuantity(item.name, qty + 1)}
-                  className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition"
-                >
-                  <FaPlus className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={toggleMovingStatus}
-                  className="flex items-center p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2"
-                  title={isMoving ? "Mark as Not Moving" : "Mark as Moving"}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isMoving ? "bg-green-500 border-green-500" : "bg-red-500 border-red-500"}`}>
-                    {isMoving ? (
-                      <span className="text-white text-xs">M</span>
-                    ) : (
-                      <span className="text-white text-xs">N</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-600 hidden sm:inline">
-                    {isMoving ? "Moving" : "Not Moving"}
-                  </span>
-                </button>
-              </div>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleExpandedItem(item.name);
-                }}
-                className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
-              >
-                Item Options{" "}
-                {expandedItems[item.name] ? (
-                  <FaChevronUp className="w-4 h-4" />
-                ) : (
-                  <FaChevronDown className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+<div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+  {/* Quantity */}
+  <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => updateQuantity(item.name, qty - 1)}
+      disabled={qty <= 0}
+      className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <FaMinus className="w-4 h-4" />
+    </button>
+    <input
+      type="text"
+      value={qty}
+      readOnly
+      className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-3 border-x border-gray-300"
+    />
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => updateQuantity(item.name, qty + 1)}
+      className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition"
+    >
+      <FaPlus className="w-4 h-4" />
+    </button>
+  </div>
+
+  {/* Moving Status */}
+  <div className="flex items-center gap-2">
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={toggleMovingStatus}
+      className="flex items-center p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2"
+      title={isMoving ? "Mark as Not Moving" : "Mark as Moving"}
+    >
+      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isMoving ? "bg-green-500 border-green-500" : "bg-red-500 border-red-500"}`}>
+        {isMoving ? (
+          <span className="text-white text-xs">M</span>
+        ) : (
+          <span className="text-white text-xs">N</span>
+        )}
+      </div>
+      <span className="text-xs text-gray-600 hidden sm:inline">
+        {isMoving ? "Moving" : "Not Moving"}
+      </span>
+    </button>
+  </div>
+
+  <div className="flex items-center gap-3 text-xs">
+    <label className="font-medium text-gray-700 whitespace-nowrap">Crate Required?</label>
+    <div className="flex gap-4">
+      <label className="flex items-center gap-1 cursor-pointer">
+        <input
+          type="radio"
+          name={`crate-row-${item.name.replace(/\s+/g, '-')}-${selectedRoom?.value || 'general'}`}
+          value="yes"
+          checked={(() => {
+            // Create unique key for this item
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            
+            // First check if item is already in articles (added to survey)
+            const articles = watch("articles");
+            const existingArticle = articles.find(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (existingArticle) {
+              // Item is in survey - use its saved value
+              return existingArticle.crateRequired === true;
+            } else {
+              // Item not yet added - use preference state (default false)
+              return itemCratePreferences[itemKey] === true;
+            }
+          })()}
+          onChange={() => {
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            const articles = watch("articles");
+            const idx = articles.findIndex(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (idx !== -1) {
+              // Item already in survey - update it
+              const updated = [...articles];
+              updated[idx] = { ...updated[idx], crateRequired: true };
+              setValue("articles", updated, { shouldDirty: true });
+            } else {
+              // Item not yet added - save preference for later
+              setItemCratePreferences(prev => ({ ...prev, [itemKey]: true }));
+            }
+          }}
+          className="w-4 h-4 text-[#4c7085]"
+        />
+        <span>Yes</span>
+      </label>
+      <label className="flex items-center gap-1 cursor-pointer">
+        <input
+          type="radio"
+          name={`crate-row-${item.name.replace(/\s+/g, '-')}-${selectedRoom?.value || 'general'}`}
+          value="no"
+          checked={(() => {
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            const articles = watch("articles");
+            const existingArticle = articles.find(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (existingArticle) {
+              return existingArticle.crateRequired === false;
+            } else {
+              // Default to false (No) if not set
+              return itemCratePreferences[itemKey] !== true;
+            }
+          })()}
+          onChange={() => {
+            const itemKey = `${selectedRoom?.value || 'general'}-${item.name}`;
+            const articles = watch("articles");
+            const idx = articles.findIndex(a => 
+              a.itemName === item.name && a.room === selectedRoom?.value
+            );
+            
+            if (idx !== -1) {
+              const updated = [...articles];
+              updated[idx] = { ...updated[idx], crateRequired: false };
+              setValue("articles", updated, { shouldDirty: true });
+            } else {
+              setItemCratePreferences(prev => ({ ...prev, [itemKey]: false }));
+            }
+          }}
+          className="w-4 h-4 text-[#4c7085]"
+        />
+        <span>No</span>
+      </label>
+    </div>
+  </div>
+
+  {/* Item Options */}
+  <button
+    type="button"
+    onMouseDown={(e) => e.preventDefault()}
+    onClick={(e) => {
+      e.stopPropagation();
+      toggleExpandedItem(item.name);
+    }}
+    className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
+  >
+    Item Options{" "}
+    {expandedItems[item.name] ? (
+      <FaChevronUp className="w-4 h-4" />
+    ) : (
+      <FaChevronDown className="w-4 h-4" />
+    )}
+  </button>
+</div>
           </div>
 
           {expandedItems[item.name] && (
@@ -1136,356 +1279,375 @@ const SurveyDetails = () => {
         </div>
       );
     };
-    const AddedArticlesSidebar = () => {
-      const articles = watch("articles");
-      const [editingArticle, setEditingArticle] = useState(null);
-      const [editFormData, setEditFormData] = useState({});
 
-      useEffect(() => {
-        if (editingArticle) {
-          const article = articles.find(a => a.id === editingArticle);
-          if (article) {
-            setEditFormData({
-              quantity: article.quantity || 1,
-              length: article.length || "",
-              width: article.width || "",
-              height: article.height || "",
-              volume: article.volume || "",
-              volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
-              weight: article.weight || "",
-              weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
-              handyman: article.handyman || "",
-              packingOption: article.packingOption || "",
-            });
+   const AddedArticlesSidebar = () => {
+    const articles = watch("articles");
+    const [editingArticle, setEditingArticle] = useState(null);
+    const [editFormData, setEditFormData] = useState({});
+
+    useEffect(() => {
+      if (editingArticle) {
+        const article = articles.find(a => a.id === editingArticle);
+        if (article) {
+          setEditFormData({
+            quantity: article.quantity || 1,
+            length: article.length || "",
+            width: article.width || "",
+            height: article.height || "",
+            volume: article.volume || "",
+            volumeUnit: article.volumeUnit || apiData.volumeUnits[0]?.value || "",
+            weight: article.weight || "",
+            weightUnit: article.weightUnit || apiData.weightUnits[0]?.value || "",
+            handyman: article.handyman || "",
+            packingOption: article.packingOption || "",
+            crateRequired: article.crateRequired || false, // Load existing value
+          });
+        }
+      }
+    }, [editingArticle, articles]);
+
+    const calculateVolume = (length, width, height) => {
+      if (!length || !width || !height) return 0;
+      return (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
+    };
+
+    const calculateWeight = (volume) => {
+      return volume ? parseFloat(volume) * 110 : 0;
+    };
+
+    const handleEditInputChange = (field, value) => {
+      setEditFormData(prev => {
+        const newData = { ...prev, [field]: value };
+        if (field === 'length' || field === 'width' || field === 'height') {
+          const l = field === 'length' ? value : prev.length;
+          const w = field === 'width' ? value : prev.width;
+          const h = field === 'height' ? value : prev.height;
+          if (l && w && h) {
+            const vol = calculateVolume(l, w, h);
+            const wt = calculateWeight(vol);
+            newData.volume = vol.toFixed(4);
+            newData.weight = wt.toFixed(2);
           }
         }
-      }, [editingArticle, articles]);
+        return newData;
+      });
+    };
 
-      const calculateVolume = (length, width, height) => {
-        if (!length || !width || !height) return 0;
-        return (parseFloat(length) * parseFloat(width) * parseFloat(height)) / 1000000;
-      };
+    const updateArticle = (articleId) => {
+      const updatedArticles = articles.map(article => {
+        if (article.id === articleId) {
+          return {
+            ...article,
+            quantity: editFormData.quantity || 1,
+            length: editFormData.length || "",
+            width: editFormData.width || "",
+            height: editFormData.height || "",
+            volume: editFormData.volume || "",
+            volumeUnit: editFormData.volumeUnit || "",
+            weight: editFormData.weight || "",
+            weightUnit: editFormData.weightUnit || "",
+            handyman: editFormData.handyman || "",
+            packingOption: editFormData.packingOption || "",
+            moveStatus: editFormData.moveStatus || "moving",
+            crateRequired: editFormData.crateRequired ?? article.crateRequired, // Preserve if not changed
+          };
+        }
+        return article;
+      });
+      setValue("articles", updatedArticles);
+      setEditingArticle(null);
+      setMessage("Article updated!");
+      setTimeout(() => setMessage(null), 3000);
+    };
 
-      const calculateWeight = (volume) => {
-        return volume ? parseFloat(volume) * 110 : 0;
-      };
+    const cancelEdit = () => {
+      setEditingArticle(null);
+      setEditFormData({});
+    };
 
-      const handleEditInputChange = (field, value) => {
-        setEditFormData(prev => {
-          const newData = { ...prev, [field]: value };
+    const removeArticle = (id) => {
+      setValue("articles", articles.filter(a => a.id !== id));
+      setMessage("Article removed!");
+      setTimeout(() => setMessage(null), 3000);
+    };
 
-          if (field === 'length' || field === 'width' || field === 'height') {
-            const l = field === 'length' ? value : prev.length;
-            const w = field === 'width' ? value : prev.width;
-            const h = field === 'height' ? value : prev.height;
-
-            if (l && w && h) {
-              const vol = calculateVolume(l, w, h);
-              const wt = calculateWeight(vol);
-              newData.volume = vol.toFixed(4);
-              newData.weight = wt.toFixed(2);
-            }
-          }
-
-          return newData;
-        });
-      };
-
-      const updateArticle = (articleId) => {
-        const updatedArticles = articles.map(article => {
-          if (article.id === articleId) {
-            return {
-              ...article,
-              quantity: editFormData.quantity || 1,
-              length: editFormData.length || "",
-              width: editFormData.width || "",
-              height: editFormData.height || "",
-              volume: editFormData.volume || "",
-              volumeUnit: editFormData.volumeUnit || "",
-              weight: editFormData.weight || "",
-              weightUnit: editFormData.weightUnit || "",
-              handyman: editFormData.handyman || "",
-              packingOption: editFormData.packingOption || "",
-              moveStatus: editFormData.moveStatus || "moving",
-            };
-          }
-          return article;
-        });
-
-        setValue("articles", updatedArticles);
-        setEditingArticle(null);
-        setMessage("Article updated!");
-        setTimeout(() => setMessage(null), 3000);
-      };
-
-      const cancelEdit = () => {
-        setEditingArticle(null);
-        setEditFormData({});
-      };
-
-      const removeArticle = (id) => {
-        setValue("articles", articles.filter(a => a.id !== id));
-        setMessage("Article removed!");
-        setTimeout(() => setMessage(null), 3000);
-      };
-
-      return (
-        <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform z-50 ${showArticlesSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
-          <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
-            <h3 className="font-medium">Added Articles ({articles.length})</h3>
-            <button
-              onClick={() => setShowArticlesSidebar(false)}
-              className="p-1 hover:bg-white/20 rounded"
-            >
-              <FaTimes />
-            </button>
-          </div>
-
-          <div className="overflow-y-auto p-4 space-y-3 h-[calc(100%-64px)]">
-            {articles.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No articles added</p>
-            ) : (
-              articles.map(article => (
-                <div key={article.id} className="p-3 border border-gray-300 rounded-lg bg-white shadow-sm">
-                  {editingArticle === article.id ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-medium text-sm text-gray-800">{article.itemName}</h4>
-                        <div className="flex gap-1">
-                          <button
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => updateArticle(article.id)}
-                            className="text-green-600 hover:text-green-800 p-1"
-                            title="Save"
-                          >
-                            <FaCheck className="w-3 h-3" />
-                          </button>
-                          <button
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={cancelEdit}
-                            className="text-gray-600 hover:text-gray-800 p-1"
-                            title="Cancel"
-                          >
-                            <FaTimes className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleEditInputChange('quantity', Math.max(1, (editFormData.quantity || 1) - 1))}
-                            className="p-1 bg-gray-200 rounded hover:bg-gray-300"
-                          >
-                            <FaMinus className="w-2 h-2" />
-                          </button>
-                          <input
-                            type="number"
-                            value={editFormData.quantity || 1}
-                            onChange={(e) => handleEditInputChange('quantity', parseInt(e.target.value) || 1)}
-                            className="w-12 text-center px-1 py-1 border rounded text-sm"
-                            min="1"
-                          />
-                          <button
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleEditInputChange('quantity', (editFormData.quantity || 1) + 1)}
-                            className="p-1 bg-gray-200 rounded hover:bg-gray-300"
-                          >
-                            <FaPlus className="w-2 h-2" />
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-3">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Moving Status</label>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setEditFormData(prev => ({ ...prev, moveStatus: 'moving' }))}
-                              className={`px-3 py-1 text-xs rounded ${(editFormData.moveStatus || article.moveStatus) === 'moving' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
-                            >
-                              Moving
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditFormData(prev => ({ ...prev, moveStatus: 'not_moving' }))}
-                              className={`px-3 py-1 text-xs rounded ${(editFormData.moveStatus || article.moveStatus) === 'not_moving' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
-                            >
-                              Not Moving
-                            </button>
-                          </div>
-                        </div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Dimensions (cm)</label>
-                        <div className="grid grid-cols-3 gap-1">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="L"
-                            value={editFormData.length || ""}
-                            onChange={(e) => handleEditInputChange('length', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="W"
-                            value={editFormData.width || ""}
-                            onChange={(e) => handleEditInputChange('width', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="H"
-                            value={editFormData.height || ""}
-                            onChange={(e) => handleEditInputChange('height', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Volume (m³)</label>
-                          <input
-                            type="text"
-                            readOnly
-                            value={editFormData.volume || "0.0000"}
-                            className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
-                          <select
-                            value={editFormData.volumeUnit || ""}
-                            onChange={(e) => handleEditInputChange('volumeUnit', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            {apiData.volumeUnits.map(unit => (
-                              <option key={unit.value} value={unit.value}>{unit.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Weight (kg)</label>
-                          <input
-                            type="text"
-                            readOnly
-                            value={editFormData.weight || "0.00"}
-                            className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
-                          <select
-                            value={editFormData.weightUnit || ""}
-                            onChange={(e) => handleEditInputChange('weightUnit', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            {apiData.weightUnits.map(unit => (
-                              <option key={unit.value} value={unit.value}>{unit.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
-                          <select
-                            value={editFormData.handyman || ""}
-                            onChange={(e) => handleEditInputChange('handyman', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            <option value="">Select</option>
-                            {apiData.handymanTypes.map(type => (
-                              <option key={type.value} value={type.value}>{type.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
-                          <select
-                            value={editFormData.packingOption || ""}
-                            onChange={(e) => handleEditInputChange('packingOption', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            <option value="">Select</option>
-                            {apiData.packingTypes.map(type => (
-                              <option key={type.value} value={type.value}>{type.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
+    return (
+      <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform z-50 ${showArticlesSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
+          <h3 className="font-medium">Added Articles ({articles.length})</h3>
+          <button
+            onClick={() => setShowArticlesSidebar(false)}
+            className="p-1 hover:bg-white/20 rounded"
+          >
+            <FaTimes />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-4 space-y-3 h-[calc(100%-64px)]">
+          {articles.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No articles added</p>
+          ) : (
+            articles.map(article => (
+              <div key={article.id} className="p-3 border border-gray-300 rounded-lg bg-white shadow-sm">
+                {editingArticle === article.id ? (
+                  <div className="space-y-3">
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm text-gray-800">{article.itemName}</div>
-                        <div className="text-xs text-gray-600 mt-1">Qty: {article.quantity}</div>
-                        {article.volume && (
-                          <div className="text-xs text-gray-600">
-                            Vol: {article.volume} {apiData.volumeUnits.find(u => u.value === article.volumeUnit)?.label || 'm³'}
-                          </div>
-                        )}
-                        {article.weight && (
-                          <div className="text-xs text-gray-600">
-                            Wt: {article.weight} {apiData.weightUnits.find(u => u.value === article.weightUnit)?.label || 'kg'}
-                          </div>
-                        )}
-                        {(article.length || article.width || article.height) && (
-                          <div className="text-xs text-gray-600">
-                            Dim: {article.length && `L:${article.length}cm`}
-                            {article.width && ` × W:${article.width}cm`}
-                            {article.height && ` × H:${article.height}cm`}
-                          </div>
-                        )}
-                        {article.handyman && (
-                          <div className="text-xs text-gray-600">
-                            Handyman: {apiData.handymanTypes.find(h => h.value === article.handyman)?.label}
-                          </div>
-                        )}
-                        {article.packingOption && (
-                          <div className="text-xs text-gray-600">
-                            Packing: {apiData.packingTypes.find(p => p.value === article.packingOption)?.label}
-                          </div>
-                        )}
-                        {article.room && (
-                          <div className="text-xs text-gray-600">
-                            Room: {apiData.rooms.find(r => r.value === article.room)?.label || article.room}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-1 ml-2">
+                      <h4 className="font-medium text-sm text-gray-800">{article.itemName}</h4>
+                      <div className="flex gap-1">
                         <button
                           onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => setEditingArticle(article.id)}
-                          className="text-[#4c7085] hover:text-blue-800 p-1"
-                          title="Edit"
+                          onClick={() => updateArticle(article.id)}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Save"
                         >
-                          <FaEdit className="w-3 h-3" />
+                          <FaCheck className="w-3 h-3" />
                         </button>
                         <button
                           onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => removeArticle(article.id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Remove"
+                          onClick={cancelEdit}
+                          className="text-gray-600 hover:text-gray-800 p-1"
+                          title="Cancel"
                         >
                           <FaTimes className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+
+                    {/* Quantity */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleEditInputChange('quantity', Math.max(1, (editFormData.quantity || 1) - 1))}
+                          className="p-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                          <FaMinus className="w-2 h-2" />
+                        </button>
+                        <input
+                          type="number"
+                          value={editFormData.quantity || 1}
+                          onChange={(e) => handleEditInputChange('quantity', parseInt(e.target.value) || 1)}
+                          className="w-12 text-center px-1 py-1 border rounded text-sm"
+                          min="1"
+                        />
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleEditInputChange('quantity', (editFormData.quantity || 1) + 1)}
+                          className="p-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                          <FaPlus className="w-2 h-2" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Moving Status */}
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Moving Status</label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setEditFormData(prev => ({ ...prev, moveStatus: 'moving' }))}
+                          className={`px-3 py-1 text-xs rounded ${(editFormData.moveStatus || article.moveStatus) === 'moving' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                        >
+                          Moving
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditFormData(prev => ({ ...prev, moveStatus: 'not_moving' }))}
+                          className={`px-3 py-1 text-xs rounded ${(editFormData.moveStatus || article.moveStatus) === 'not_moving' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
+                        >
+                          Not Moving
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Dimensions */}
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Dimensions (cm)</label>
+                    <div className="grid grid-cols-3 gap-1">
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="L"
+                        value={editFormData.length || ""}
+                        onChange={(e) => handleEditInputChange('length', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="W"
+                        value={editFormData.width || ""}
+                        onChange={(e) => handleEditInputChange('width', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="H"
+                        value={editFormData.height || ""}
+                        onChange={(e) => handleEditInputChange('height', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+
+                    {/* Volume */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Volume (m³)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={editFormData.volume || "0.0000"}
+                          className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Volume Unit</label>
+                        <select
+                          value={editFormData.volumeUnit || ""}
+                          onChange={(e) => handleEditInputChange('volumeUnit', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          {apiData.volumeUnits.map(unit => (
+                            <option key={unit.value} value={unit.value}>{unit.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Weight */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Weight (kg)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={editFormData.weight || "0.00"}
+                          className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Weight Unit</label>
+                        <select
+                          value={editFormData.weightUnit || ""}
+                          onChange={(e) => handleEditInputChange('weightUnit', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          {apiData.weightUnits.map(unit => (
+                            <option key={unit.value} value={unit.value}>{unit.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Handyman */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
+                        <select
+                          value={editFormData.handyman || ""}
+                          onChange={(e) => handleEditInputChange('handyman', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value="">Select</option>
+                          {apiData.handymanTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Packing Option */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Packing Option</label>
+                        <select
+                          value={editFormData.packingOption || ""}
+                          onChange={(e) => handleEditInputChange('packingOption', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value="">Select</option>
+                          {apiData.packingTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-800">{article.itemName}</div>
+                      <div className="text-xs text-gray-600 mt-1">Qty: {article.quantity}</div>
+                      {article.volume && (
+                        <div className="text-xs text-gray-600">
+                          Vol: {article.volume} {apiData.volumeUnits.find(u => u.value === article.volumeUnit)?.label || 'm³'}
+                        </div>
+                      )}
+                      {article.weight && (
+                        <div className="text-xs text-gray-600">
+                          Wt: {article.weight} {apiData.weightUnits.find(u => u.value === article.weightUnit)?.label || 'kg'}
+                        </div>
+                      )}
+                      {(article.length || article.width || article.height) && (
+                        <div className="text-xs text-gray-600">
+                          Dim: {article.length && `L:${article.length}cm`}
+                          {article.width && ` × W:${article.width}cm`}
+                          {article.height && ` × H:${article.height}cm`}
+                        </div>
+                      )}
+                      {article.handyman && (
+                        <div className="text-xs text-gray-600">
+                          Handyman: {apiData.handymanTypes.find(h => h.value === article.handyman)?.label}
+                        </div>
+                      )}
+                      {article.packingOption && (
+                        <div className="text-xs text-gray-600">
+                          Packing: {apiData.packingTypes.find(p => p.value === article.packingOption)?.label}
+                        </div>
+                      )}
+                      {article.room && (
+                        <div className="text-xs text-gray-600">
+                          Room: {apiData.rooms.find(r => r.value === article.room)?.label || article.room}
+                        </div>
+                      )}
+                      {/* Show crate required in view mode */}
+                      <div className="text-xs mt-1">
+                        <span className="font-medium">Crate Required:</span>{" "}
+                        <span className={article.crateRequired ? "text-green-600" : "text-gray-600"}>
+                          {article.crateRequired ? "Yes" : "No"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setEditingArticle(article.id)}
+                        className="text-[#4c7085] hover:text-blue-800 p-1"
+                        title="Edit"
+                      >
+                        <FaEdit className="w-3 h-3" />
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => removeArticle(article.id)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Remove"
+                      >
+                        <FaTimes className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
-      );
-    };
+      </div>
+    );
+  };
 
     return (
       <div className="relative">
@@ -1576,11 +1738,12 @@ const SurveyDetails = () => {
                         <button
                           key={room.id}
                           type="button"
-                          onClick={() => {
-                            setSelectedRoom(room);
-                            setShowRoomDropdown(false);
-                            setRoomSearchQuery("");
-                          }}
+                         onClick={() => {
+                          setSelectedRoom(room);
+                          setValue("selectedRoom", room); // ← save to form
+                          setShowRoomDropdown(false);
+                          setRoomSearchQuery("");
+                        }}
                           className={`w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all text-sm font-medium border-b border-gray-100 last:border-0 ${selectedRoom?.id === room.id ? 'bg-blue-50 text-[#4c7085]' : 'text-gray-800'}`}
                         >
                           <div className="flex items-center justify-between">
@@ -1665,9 +1828,13 @@ const SurveyDetails = () => {
                     </p>
                   </div>
                 ) : (
-                  filteredItems.map(item => (
-                    <ItemRow key={item.id} item={item} onRemove={removeArticle} />
-                  ))
+              filteredItems.map(item => (
+        <ItemRow 
+          key={`${item.id || item.name}-${Math.random()}`} // or just item.id if unique
+          item={item} 
+          onRemove={removeArticle} 
+        />
+      ))
                 )}
               </div>
               {/* MANUAL ADD MODAL */}
@@ -2121,6 +2288,7 @@ const SurveyDetails = () => {
         length: a.length || null,
         width: a.width || null,
         height: a.height || null,
+        crate_required: a.crateRequired || false,
       })),
       vehicles: data.vehicles.map(v => ({
         vehicle_type: v.vehicleType || null,

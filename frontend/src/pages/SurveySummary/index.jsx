@@ -106,11 +106,16 @@ const SurveySummary = () => {
       for (const survey of surveys) {
         if (survey.signature_uploaded && !newSignatures[survey.survey_id]) {
           try {
-            const res = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
+            const res = await apiClient.get(
+              `/surveys/${survey.survey_id}/signature/`
+            );
             newSignatures[survey.survey_id] = res.data.signature_url;
             hasUpdate = true;
           } catch (err) {
-            console.warn(`Failed to load signature for survey ${survey.survey_id}:`, err);
+            console.warn(
+              `Failed to load signature for survey ${survey.survey_id}:`,
+              err
+            );
           }
         }
       }
@@ -617,7 +622,7 @@ const SurveySummary = () => {
             </div>
           </div>
         )}
-
+        {/* === NEW: Articles Section (with Crate Required column) === */}
         {survey.articles?.length > 0 && (
           <div className="section">
             <h4 className="font-semibold text-gray-800 mb-2">
@@ -630,7 +635,13 @@ const SurveySummary = () => {
                     <th className="border border-gray-400 px-3 py-2">Room</th>
                     <th className="border border-gray-400 px-3 py-2">Item</th>
                     <th className="border border-gray-400 px-3 py-2">Qty</th>
+                    <th className="border border-gray-400 px-3 py-2">
+                      Dimensions
+                    </th>
                     <th className="border border-gray-400 px-3 py-2">Volume</th>
+                    <th className="border border-gray-400 px-3 py-2">
+                      Crate Required
+                    </th>
                     <th className="border border-gray-400 px-3 py-2">
                       Moving Status
                     </th>
@@ -640,7 +651,7 @@ const SurveySummary = () => {
                   {survey.articles.map((a, i) => (
                     <tr key={i}>
                       <td className="border border-gray-400 px-3 py-2">
-                        {a.room_name || "-"}
+                        {a.room_name || a.room || "-"}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         {a.item_name || "-"}
@@ -649,7 +660,25 @@ const SurveySummary = () => {
                         {a.quantity || "-"}
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
-                        {formatVolume(a.volume, a.volume_unit_name)}
+                        {a.length && a.width && a.height
+                          ? `L:${a.length} × W:${a.width} × H:${a.height} cm`
+                          : "-"}
+                      </td>
+                      <td className="border border-gray-400 px-3 py-2">
+                        {a.volume
+                          ? `${a.volume} ${a.volume_unit_name || "m³"}`
+                          : "-"}
+                      </td>
+                      <td className="border border-gray-400 px-3 py-2">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            a.crate_required
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {a.crate_required ? "Yes" : "No"}
+                        </span>
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         <span
@@ -666,6 +695,7 @@ const SurveySummary = () => {
                       </td>
                     </tr>
                   ))}
+                  {/* Total Volume Row */}
                   <tr className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium">
                     <td
                       colSpan="4"
@@ -683,10 +713,74 @@ const SurveySummary = () => {
                         .toFixed(4)}{" "}
                       m³
                     </td>
+                    <td colSpan="2"></td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* === NEW: Vehicles Section === */}
+        {survey.vehicles?.length > 0 && (
+          <div className="section">
+            <h4 className="font-semibold text-gray-800 mb-2">
+              Vehicles ({survey.vehicles.length})
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-gray-400">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="border border-gray-400 px-3 py-2">Type</th>
+                    <th className="border border-gray-400 px-3 py-2">Make</th>
+                    <th className="border border-gray-400 px-3 py-2">Model</th>
+                    <th className="border border-gray-400 px-3 py-2">
+                      Insurance
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {survey.vehicles.map((v, i) => (
+                    <tr key={i}>
+                      <td className="border border-gray-400 px-3 py-2">
+                        {v.vehicle_type_name || v.vehicle_type || "-"}
+                      </td>
+                      <td className="border border-gray-400 px-3 py-2">
+                        {v.make || "-"}
+                      </td>
+                      <td className="border border-gray-400 px-3 py-2">
+                        {v.model || "-"}
+                      </td>
+                      <td className="border border-gray-400 px-3 py-2">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            v.insurance
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {v.insurance ? "Yes" : "No"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* === NEW: Additional Services Section === */}
+        {survey.additional_services?.length > 0 && (
+          <div className="section">
+            <h4 className="font-semibold text-gray-800 mb-2">
+              Additional Services ({survey.additional_services.length})
+            </h4>
+            <ul className="list-disc pl-6 space-y-1 text-sm text-gray-700">
+              {survey.additional_services.map((service, i) => (
+                <li key={i}>{service.name || "Unknown Service"}</li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
