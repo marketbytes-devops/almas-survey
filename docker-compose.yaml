@@ -6,7 +6,7 @@ services:
     container_name: almassurvey_frontend
     restart: always
     ports:
-      - "6371:80"
+      - "6391:80"
     networks:
       - almas_network
 
