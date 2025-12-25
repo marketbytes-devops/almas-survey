@@ -2,10 +2,7 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-
-# Clean npm cache and use ci for more reliable builds
-RUN npm cache clean --force && \
-    npm ci --prefer-offline --no-audit
+RUN npm install
 
 COPY . .
 RUN npm run build 
