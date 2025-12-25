@@ -12,7 +12,7 @@ coverage/
 *.lcov
 
 # Production build
-# dist/
+dist/
 build/
 
 # Logs
