@@ -8,8 +8,8 @@ class Enquiry(models.Model):
     serviceType = models.CharField(max_length=50)
     message = models.TextField()
     recaptchaToken = models.TextField(null=True, blank=True)
-    refererUrl = models.URLField(null=True, blank=True)
-    submittedUrl = models.URLField(null=True, blank=True)
+    refererUrl = models.TextField(null=True, blank=True)
+    submittedUrl = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     assigned_user = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True
