@@ -35,7 +35,6 @@ export default function QuotationCreate() {
 
   const [additionalCharges, setAdditionalCharges] = useState([]);
 
-  // New: Fetch all services from /api/services/
   const [allServices, setAllServices] = useState([]);
   const [serviceSelections, setServiceSelections] = useState({});
 
@@ -52,8 +51,11 @@ export default function QuotationCreate() {
     jobType: "Local",
     baseAmount: "",
     additionalChargesTotal: 0,
-    amount: "",
+    amount: "", // Total before discount
+    discount: "", // New: Discount amount (QAR)
+    finalAmount: "", // New: amount - discount
     advance: "",
+    balance: "", // New: finalAmount - advance
     includedServices: {},
     excludedServices: {},
   });
@@ -205,7 +207,6 @@ export default function QuotationCreate() {
     }));
   }, [dynamicIncludes, dynamicExcludes]);
 
-  // NEW: Fetch services from /api/services/
   useEffect(() => {
     const fetchAllServices = async () => {
       try {
@@ -275,16 +276,30 @@ export default function QuotationCreate() {
     }));
   }, [additionalCharges]);
 
+  // Main calculation: Total → Discount → Final Amount → Balance
   useEffect(() => {
     const base = parseFloat(form.baseAmount) || 0;
     const additional = form.additionalChargesTotal || 0;
-    const total = base + additional;
+    const totalBeforeDiscount = base + additional;
+
+    const discount = parseFloat(form.discount) || 0;
+    const final = Math.max(0, totalBeforeDiscount - discount); // No negative values
+
+    const advance = parseFloat(form.advance) || 0;
+    const balance = Math.max(0, final - advance);
 
     setForm((prev) => ({
       ...prev,
-      amount: total > 0 ? total.toFixed(2) : "",
+      amount: totalBeforeDiscount > 0 ? totalBeforeDiscount.toFixed(2) : "",
+      finalAmount: final > 0 ? final.toFixed(2) : "",
+      balance: balance > 0 ? balance.toFixed(2) : "",
     }));
-  }, [form.baseAmount, form.additionalChargesTotal]);
+  }, [
+    form.baseAmount,
+    form.additionalChargesTotal,
+    form.discount,
+    form.advance,
+  ]);
 
   const handleManualBack = () => {
     navigate("/quotation-list");
@@ -316,34 +331,36 @@ export default function QuotationCreate() {
   };
 
   const handleCreate = async () => {
-    if (!form.amount) return alert("Amount is not calculated.");
+    if (!form.finalAmount) return alert("Final amount is not calculated.");
     if (priceError) return alert(priceError);
 
-  const payload = {
-    survey: parseInt(survey.id),
-    serial_no: form.serialNo,
-    date: form.date,
-    amount: parseFloat(form.amount),
-    advance: form.advance ? parseFloat(form.advance) : 0,
-    included_services: Object.keys(form.includedServices).filter(
-      (k) => form.includedServices[k]
-    ),
-    excluded_services: Object.keys(form.excludedServices).filter(
-      (k) => form.excludedServices[k]
-    ),
-    additional_charges: additionalCharges.map((charge) => ({
-      service_id: charge.service.id,
-      service_name: charge.service.name,
-      quantity: charge.per_unit_quantity || 1,
-      price_per_unit: charge.price_per_unit,
-      currency: charge.currency,
-      total: charge.price_per_unit * (charge.per_unit_quantity || 1),
-    })),
-    // 🔥 ADD THIS:
-    selected_services: Object.keys(serviceSelections)
-      .filter(key => serviceSelections[key])
-      .map(key => parseInt(key)),
-  };
+    const payload = {
+      survey: parseInt(survey.id),
+      serial_no: form.serialNo,
+      date: form.date,
+      amount: parseFloat(form.amount), // Original total before discount
+      discount: form.discount ? parseFloat(form.discount) : 0,
+      final_amount: parseFloat(form.finalAmount),
+      advance: form.advance ? parseFloat(form.advance) : 0,
+      balance: form.balance ? parseFloat(form.balance) : 0,
+      included_services: Object.keys(form.includedServices).filter(
+        (k) => form.includedServices[k]
+      ),
+      excluded_services: Object.keys(form.excludedServices).filter(
+        (k) => form.excludedServices[k]
+      ),
+      additional_charges: additionalCharges.map((charge) => ({
+        service_id: charge.service.id,
+        service_name: charge.service.name,
+        quantity: charge.per_unit_quantity || 1,
+        price_per_unit: charge.price_per_unit,
+        currency: charge.currency,
+        total: charge.price_per_unit * (charge.per_unit_quantity || 1),
+      })),
+      selected_services: Object.keys(serviceSelections)
+        .filter((key) => serviceSelections[key])
+        .map((key) => parseInt(key)),
+    };
 
     try {
       setIsSubmitted(true);
@@ -435,6 +452,7 @@ export default function QuotationCreate() {
             </div>
           </div>
 
+          {/* Quotation No. and Date are now read-only */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -443,8 +461,8 @@ export default function QuotationCreate() {
               <input
                 type="text"
                 value={form.serialNo}
-                onChange={(e) => setForm({ ...form, serialNo: e.target.value })}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3"
+                readOnly
+                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-100 cursor-not-allowed"
               />
             </div>
             <div>
@@ -452,8 +470,8 @@ export default function QuotationCreate() {
               <input
                 type="date"
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3"
+                readOnly
+                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-100 cursor-not-allowed"
               />
             </div>
           </div>
@@ -554,7 +572,6 @@ export default function QuotationCreate() {
             </h3>
 
             <div className="space-y-4">
-              {/* NEW: Services from /api/services/ with radio buttons */}
               <div className="space-y-5">
                 {allServices.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
@@ -578,7 +595,7 @@ export default function QuotationCreate() {
                             onClick={() =>
                               setServiceSelections((prev) => ({
                                 ...prev,
-                                [service.id]: !prev[service.id], // Toggle true/false
+                                [service.id]: !prev[service.id],
                               }))
                             }
                             className="focus:outline-none"
@@ -619,9 +636,8 @@ export default function QuotationCreate() {
               )}
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-2 gap-2">
-
                 <span className="text-2xl sm:text-4xl font-medium text-green-600">
-                  {form.amount || "0.00"} QAR
+                  {form.finalAmount || "0.00"} QAR
                 </span>
               </div>
             </div>
@@ -632,7 +648,6 @@ export default function QuotationCreate() {
               </div>
             )}
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 items-center justify-center border-2 border-gray-300 rounded-lg overflow-hidden">
             <div className="bg-gray-700 text-white p-4 text-center font-medium">
               Service Includes
@@ -641,7 +656,7 @@ export default function QuotationCreate() {
               Service Excludes
             </div>
 
-            <div className=" p-4 sm:p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
               {dynamicIncludes.map((service) => (
                 <label
                   key={service.id}
@@ -696,42 +711,73 @@ export default function QuotationCreate() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          {/* Updated Totals section with Discount */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8 bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-blue-200">
             <div>
-              <label className="block font-medium text-sm mb-1">
-                Total Amount
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Total Amount (before discount)
               </label>
               <input
                 type="text"
                 readOnly
-                value={form.amount ? `${form.amount} QAR` : ""}
+                value={form.amount ? `${form.amount} QAR` : "0.00 QAR"}
                 className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-blue-50 font-medium text-[#4c7085]"
               />
             </div>
+
             <div>
-              <label className="block font-medium text-sm mb-1">Advance</label>
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Discount (QAR)
+              </label>
               <input
                 type="number"
                 step="0.01"
-                value={form.advance}
-                onChange={(e) => setForm({ ...form, advance: e.target.value })}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3"
+                min="0"
+                value={form.discount}
+                onChange={(e) => setForm({ ...form, discount: e.target.value })}
                 placeholder="0.00"
+                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
+
             <div>
-              <label className="block font-medium text-sm mb-1">Balance</label>
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Final Amount
+              </label>
               <input
                 type="text"
                 readOnly
                 value={
-                  form.amount && form.advance
-                    ? `${(
-                        parseFloat(form.amount) - parseFloat(form.advance)
-                      ).toFixed(2)} QAR`
-                    : ""
+                  form.finalAmount ? `${form.finalAmount} QAR` : "0.00 QAR"
                 }
                 className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Advance
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.advance}
+                onChange={(e) => setForm({ ...form, advance: e.target.value })}
+                placeholder="0.00"
+                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="col-span-1 sm:col-span-4 lg:col-span-1">
+              <label className="block font-medium text-sm mb-1 text-gray-700">
+                Balance to Pay
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={form.balance ? `${form.balance} QAR` : "0.00 QAR"}
+                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-indigo-50 font-bold text-indigo-700 text-lg"
               />
             </div>
           </div>
@@ -765,9 +811,9 @@ export default function QuotationCreate() {
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={handleCreate}
-              disabled={!form.amount || priceError}
+              disabled={!form.finalAmount || priceError}
               className={`w-full py-2 px-8 text-sm font-medium rounded-lg shadow-lg transition ${
-                !form.amount || priceError
+                !form.finalAmount || priceError
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                   : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
               }`}

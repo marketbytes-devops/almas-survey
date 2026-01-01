@@ -122,7 +122,7 @@ class QuotationAdditionalCharge(models.Model):
 
     service = models.ForeignKey(
         "additional_settings.SurveyAdditionalService",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="quotation_charges",
         blank=True,
         null=True,

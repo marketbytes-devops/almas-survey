@@ -27,8 +27,10 @@ const AdditionalChargesTab = ({ dropdownData }) => {
         ]);
         setMasterServices(servicesRes.data);
 
+        // Safe normalization: ensure service object always exists
         const normalizedCharges = (chargesRes.data || []).map(row => ({
           ...row,
+          service: row.service || { id: null, name: "— (Missing)" }, // ← Prevents null crash
           price_per_unit: Number(row.price_per_unit),
           per_unit_quantity: Number(row.per_unit_quantity),
         }));
@@ -106,7 +108,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
 
   const startEdit = (row) => {
     setEditingId(row.id);
-    setSelectedServiceId(row.service.id);
+    setSelectedServiceId(row.service?.id || ""); // Safe access
     setCurrency(row.currency || "");
     setPrice(row.price_per_unit);
     setPerUnitQty(row.per_unit_quantity);
@@ -157,6 +159,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       const refreshRes = await apiClient.get("/quotation-additional-charges/");
       const normalized = (refreshRes.data || []).map(row => ({
         ...row,
+        service: row.service || { id: null, name: "— (Missing)" }, // ← Safe here too
         price_per_unit: Number(row.price_per_unit),
         per_unit_quantity: Number(row.per_unit_quantity),
       }));
@@ -195,6 +198,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   const rateTypeOptions = [
     { value: "FIX", label: "FIX" },
     { value: "VARIABLE", label: "VARIABLE" },
+    { value: "Hourly", label: "Hourly" },
   ];
 
   return (
@@ -316,7 +320,10 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                         {isSaved ? "SAVED" : "UNSAVED"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-800 text-sm">{row.service.name}</td>
+                    {/* SAFE ACCESS: No more crash if service is null */}
+                    <td className="px-4 py-3 font-medium text-gray-800 text-sm">
+                      {row.service?.name || "— (Missing)"}
+                    </td>
                     <td className="px-4 py-3 text-gray-700 text-sm">{currencyName}</td>
                     <td className="px-4 py-3 text-gray-700 text-sm">{formatPrice(row.price_per_unit)}</td>
                     <td className="px-4 py-3 text-gray-700 text-sm">{row.per_unit_quantity}</td>
@@ -345,6 +352,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
             </tbody>
           </table>
 
+          {/* Mobile View - Also Safe */}
           <div className="md:hidden space-y-4 p-4">
             {rows.map((row) => {
               const currencyName = dropdownData.currencies?.find((c) => c.id === row.currency)?.name || "QAR";
@@ -371,7 +379,10 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                   </div>
 
                   <div className="space-y-2 text-sm">
-                    <div className="font-medium text-gray-800">{row.service.name}</div>
+                    {/* SAFE ACCESS */}
+                    <div className="font-medium text-gray-800">
+                      {row.service?.name || "— (Missing)"}
+                    </div>
                     <div className="grid grid-cols-2 gap-4 text-gray-700">
                       <div>
                         <span className="font-medium">Currency:</span> {currencyName}
