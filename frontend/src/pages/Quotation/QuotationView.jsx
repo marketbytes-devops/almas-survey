@@ -35,11 +35,15 @@ export default function QuotationView() {
   const [excludedServices, setExcludedServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
 
+  // Safe number parser – prevents "toFixed is not a function" error
+  const safeParse = (value) => {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  };
+
   const checkSignatureExists = async (surveyId) => {
     try {
-      const signatureRes = await apiClient.get(
-        `/surveys/${surveyId}/signature/`
-      );
+      const signatureRes = await apiClient.get(`/surveys/${surveyId}/signature/`);
       setHasSignature(!!signatureRes.data.signature_url);
       setCurrentSignature(signatureRes.data.signature_url);
     } catch (err) {
@@ -52,16 +56,10 @@ export default function QuotationView() {
 
     try {
       const includePromises = (quotation.included_services || []).map((id) =>
-        apiClient
-          .get(`/inclusion-exclusion/${id}/`)
-          .then((r) => r.data)
-          .catch(() => null)
+        apiClient.get(`/inclusion-exclusion/${id}/`).then((r) => r.data).catch(() => null)
       );
       const excludePromises = (quotation.excluded_services || []).map((id) =>
-        apiClient
-          .get(`/inclusion-exclusion/${id}/`)
-          .then((r) => r.data)
-          .catch(() => null)
+        apiClient.get(`/inclusion-exclusion/${id}/`).then((r) => r.data).catch(() => null)
       );
 
       const [includeResults, excludeResults] = await Promise.all([
@@ -69,12 +67,8 @@ export default function QuotationView() {
         Promise.all(excludePromises),
       ]);
 
-      setIncludedServices(
-        includeResults.filter((r) => r?.text).map((r) => r.text)
-      );
-      setExcludedServices(
-        excludeResults.filter((r) => r?.text).map((r) => r.text)
-      );
+      setIncludedServices(includeResults.filter((r) => r?.text).map((r) => r.text));
+      setExcludedServices(excludeResults.filter((r) => r?.text).map((r) => r.text));
     } catch (err) {
       setIncludedServices([]);
       setExcludedServices([]);
@@ -115,17 +109,13 @@ export default function QuotationView() {
       return;
     }
     const volume = parseFloat(totalVolume);
-    const applicableRange = pricingRanges.find(
-      (r) => volume >= r.min && volume <= r.max
-    );
+    const applicableRange = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
     if (!applicableRange) {
       setBaseAmount(0);
       return;
     }
     const calculatedBaseAmount =
-      applicableRange.rateType === "flat"
-        ? applicableRange.rate
-        : applicableRange.rate * volume;
+      applicableRange.rateType === "flat" ? applicableRange.rate : applicableRange.rate * volume;
     setBaseAmount(calculatedBaseAmount);
   }, [survey, pricingRanges]);
 
@@ -133,9 +123,7 @@ export default function QuotationView() {
     const fetchAdditionalCharges = async () => {
       if (!survey) return;
       try {
-        const chargesRes = await apiClient.get(
-          "/quotation-additional-charges/"
-        );
+        const chargesRes = await apiClient.get("/quotation-additional-charges/");
         const selectedServiceIds =
           survey.additional_services?.map((service) => service.id) || [];
         const filteredCharges = chargesRes.data.filter((charge) =>
@@ -184,19 +172,13 @@ export default function QuotationView() {
 
   useEffect(() => {
     const fetchSelectedServices = async () => {
-      if (
-        !quotation?.selected_services ||
-        quotation.selected_services.length === 0
-      ) {
+      if (!quotation?.selected_services || quotation.selected_services.length === 0) {
         setSelectedServices([]);
         return;
       }
       try {
         const promises = quotation.selected_services.map((id) =>
-          apiClient
-            .get(`/services/${id}/`)
-            .then((r) => r.data)
-            .catch(() => null)
+          apiClient.get(`/services/${id}/`).then((r) => r.data).catch(() => null)
         );
         const results = await Promise.all(promises);
         setSelectedServices(results.filter((s) => s?.name).map((s) => s.name));
@@ -210,9 +192,7 @@ export default function QuotationView() {
   const viewSignature = async () => {
     if (!survey) return;
     try {
-      const signatureRes = await apiClient.get(
-        `/surveys/${survey.survey_id}/signature/`
-      );
+      const signatureRes = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
       setCurrentSignature(signatureRes.data.signature_url);
       setIsSignatureModalOpen(true);
     } catch (err) {
@@ -225,8 +205,7 @@ export default function QuotationView() {
   const handlePrint = async () => {
     if (
       quotation &&
-      (quotation.included_services?.length > 0 ||
-        quotation.excluded_services?.length > 0) &&
+      (quotation.included_services?.length > 0 || quotation.excluded_services?.length > 0) &&
       includedServices.length === 0 &&
       excludedServices.length === 0
     ) {
@@ -234,19 +213,13 @@ export default function QuotationView() {
     }
 
     setShowPrintPreview(true);
-
     setTimeout(() => {
       window.print();
       setTimeout(() => setShowPrintPreview(false), 1000);
     }, 1200);
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
   if (!quotation || !survey) return null;
 
@@ -257,16 +230,12 @@ export default function QuotationView() {
   const movingTo = survey.destination_addresses?.[0]?.address || "Not filled";
   const moveDate = survey.packing_date_from || "Not filled";
 
-  const totalVolume =
-    survey.articles
-      ?.reduce(
-        (sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0),
-        0
-      )
-      ?.toFixed(2) || "0.00";
-  const totalAmount = baseAmount + additionalChargesTotal;
-  const advance = quotation.advance ? parseFloat(quotation.advance) : 0;
-  const balance = (totalAmount - advance).toFixed(2);
+  // Use saved values from backend (quotation-create) + safe parsing
+  const totalAmount = safeParse(quotation?.amount);
+  const discount = safeParse(quotation?.discount);
+  const finalAmount = safeParse(quotation?.final_amount);
+  const advance = safeParse(quotation?.advance);
+  const balance = safeParse(quotation?.balance);
 
   return (
     <>
@@ -282,6 +251,8 @@ export default function QuotationView() {
             movingTo={movingTo}
             moveDate={moveDate}
             totalAmount={totalAmount}
+            discount={discount}           // NEW - pass saved discount
+            finalAmount={finalAmount}     // NEW - pass saved final amount
             advance={advance}
             balance={balance}
             baseAmount={baseAmount}
@@ -298,26 +269,11 @@ export default function QuotationView() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-lg">Digital Signature</h3>
-              <button
-                onClick={() => {
-                  setIsSignatureModalOpen(false);
-                  setCurrentSignature(null);
-                }}
-                className="text-3xl"
-              >
-                ×
-              </button>
+              <button onClick={() => setIsSignatureModalOpen(false)} className="text-3xl">×</button>
             </div>
-            <img
-              src={currentSignature}
-              alt="Signature"
-              className="w-full rounded-lg border"
-            />
+            <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
             <button
-              onClick={() => {
-                setIsSignatureModalOpen(false);
-                setCurrentSignature(null);
-              }}
+              onClick={() => setIsSignatureModalOpen(false)}
               className="mt-4 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg font-medium"
             >
               Close
@@ -338,29 +294,19 @@ export default function QuotationView() {
                 <FaArrowLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Back</span>
               </button>
-              <h2 className="text-lg sm:text-xl font-medium">
-                Quotation Details
-              </h2>
+              <h2 className="text-lg sm:text-xl font-medium">Quotation Details</h2>
             </div>
-            <button
-              onClick={() => navigate(-1)}
-              className="text-3xl sm:text-4xl hover:opacity-80"
-              title="Close"
-            >
+            <button onClick={() => navigate(-1)} className="text-3xl sm:text-4xl hover:opacity-80" title="Close">
               ×
             </button>
           </div>
 
           <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">
-                Quotation Information
-              </h3>
+              <h3 className="text-sm font-medium text-blue-800 mb-2">Quotation Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#4c7085] mb-1">
-                    Quotation ID
-                  </label>
+                  <label className="block text-xs font-medium text-[#4c7085] mb-1">Quotation ID</label>
                   <input
                     type="text"
                     value={quotation.quotation_id || "Not specified"}
@@ -369,9 +315,7 @@ export default function QuotationView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#4c7085] mb-1">
-                    Date
-                  </label>
+                  <label className="block text-xs font-medium text-[#4c7085] mb-1">Date</label>
                   <input
                     type="text"
                     value={quotation.date || "Not specified"}
@@ -385,9 +329,7 @@ export default function QuotationView() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               {["Client Name", "Mobile", "Email"].map((label, i) => (
                 <div key={i}>
-                  <label className="block text-sm font-medium mb-1">
-                    {label}
-                  </label>
+                  <label className="block text-sm font-medium mb-1">{label}</label>
                   <input
                     type="text"
                     value={[name, phone, email][i]}
@@ -406,9 +348,7 @@ export default function QuotationView() {
                 { label: "Date of Move", value: moveDate },
               ].map((item) => (
                 <div key={item.label}>
-                  <label className="block text-sm font-medium mb-1">
-                    {item.label}
-                  </label>
+                  <label className="block text-sm font-medium mb-1">{item.label}</label>
                   <input
                     type="text"
                     value={item.value}
@@ -430,18 +370,12 @@ export default function QuotationView() {
                     const quantity = charge.per_unit_quantity || 1;
                     const subtotal = charge.price_per_unit * quantity;
                     return (
-                      <div
-                        key={charge.id}
-                        className="bg-white border-2 border-purple-200 rounded-lg p-4"
-                      >
+                      <div key={charge.id} className="bg-white border-2 border-purple-200 rounded-lg p-4">
                         <div className="flex flex-col sm:flex-row justify-between gap-3">
                           <div>
-                            <div className="font-medium text-gray-800">
-                              {charge.service.name}
-                            </div>
+                            <div className="font-medium text-gray-800">{charge.service.name}</div>
                             <div className="text-sm text-gray-600">
-                              {charge.price_per_unit} {currencyName} ×{" "}
-                              {quantity} unit(s)
+                              {charge.price_per_unit} {currencyName} × {quantity} unit(s)
                             </div>
                             <div className="text-xs text-gray-500 capitalize mt-1">
                               Rate: {charge.rate_type?.toLowerCase() || "fix"}
@@ -460,45 +394,33 @@ export default function QuotationView() {
               </div>
             )}
 
-            {/* Your Rate Section - Now with Selected Services from /services/ */}
+            {/* Updated Your Rate Section - Showing saved values from quotation-create */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl border-2 border-blue-200">
-              <h3 className="text-lg sm:text-xl font-medium text-center mb-6">
-                Your Rate
-              </h3>
+              <h3 className="text-lg sm:text-xl font-medium text-center mb-6">Your Rate</h3>
 
               <div className="space-y-5">
-                {/* Selected Services from /services/ API */}
                 {selectedServices.length > 0 ? (
                   selectedServices.map((serviceName, index) => (
                     <div
                       key={index}
                       className="bg-white rounded-lg p-5 shadow-md border border-gray-200 flex items-center justify-between"
                     >
-                      <div className="text-lg font-medium text-gray-800">
-                        {serviceName}
-                      </div>
+                      <div className="text-lg font-medium text-gray-800">{serviceName}</div>
                       <div className="w-7 h-7 rounded-full bg-blue-600 border-2 border-blue-600 flex items-center justify-center">
                         <div className="w-3 h-3 bg-white rounded-full" />
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500 py-4">
-                    No additional services selected
-                  </p>
+                  <p className="text-center text-gray-500 py-4">No additional services selected</p>
                 )}
               </div>
 
-              {/* Additional Charges from Survey (with pricing) */}
               {additionalChargesTotal > 0 && (
                 <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-gray-300 gap-2">
                   <div>
-                    <span className="text-sm text-gray-600">
-                      Additional Services (Survey)
-                    </span>
-                    <div className="text-xs text-gray-500">
-                      {additionalCharges.length} service(s)
-                    </div>
+                    <span className="text-sm text-gray-600">Additional Services (Survey)</span>
+                    <div className="text-xs text-gray-500">{additionalCharges.length} service(s)</div>
                   </div>
                   <span className="text-xl sm:text-2xl font-medium text-purple-700">
                     + {additionalChargesTotal.toFixed(2)} QAR
@@ -506,36 +428,55 @@ export default function QuotationView() {
                 </div>
               )}
 
-              {/* Final Total Amount */}
-              <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center pt-4 gap-2">
-                <span className="text-xl font-medium text-gray-900">
-                  Total Amount
-                </span>
-                <span className="text-2xl sm:text-4xl font-medium text-green-600">
-                  {totalAmount.toFixed(2)} QAR
-                </span>
+              {/* Display saved pricing fields from quotation-create */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-600">Total Amount (before discount)</div>
+                  <div className="text-2xl font-bold text-indigo-700">
+                    {totalAmount.toFixed(2)} QAR
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-600">Discount</div>
+                  <div className="text-2xl font-bold text-amber-700">
+                    {discount.toFixed(2)} QAR
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-600">Final Amount</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {finalAmount.toFixed(2)} QAR
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-600">Advance</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {advance.toFixed(2)} QAR
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border border-gray-200 col-span-1 sm:col-span-2 lg:col-span-1">
+                  <div className="text-sm text-gray-600">Balance to Pay</div>
+                  <div className="text-2xl font-bold text-indigo-800">
+                    {balance.toFixed(2)} QAR
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-gray-300 rounded-lg overflow-hidden">
-              <div className="bg-gray-700 text-white p-4 text-center font-medium">
-                Service Includes
-              </div>
-              <div className="bg-red-700 text-white p-4 text-center font-medium">
-                Service Excludes
-              </div>
+              <div className="bg-gray-700 text-white p-4 text-center font-medium">Service Includes</div>
+              <div className="bg-red-700 text-white p-4 text-center font-medium">Service Excludes</div>
 
               <div className="p-4 sm:p-6 space-y-4 bg-gray-50 max-h-80 overflow-y-auto">
                 {includedServices.length > 0 ? (
                   includedServices.map((service, i) => (
-                    <div
-                      key={`inc-${i}`}
-                      className="flex items-start space-x-3"
-                    >
+                    <div key={`inc-${i}`} className="flex items-start space-x-3">
                       <span className="text-blue-600 mt-0.5">✓</span>
-                      <span className="text-sm font-medium relative top-1">
-                        {service}
-                      </span>
+                      <span className="text-sm font-medium relative top-1">{service}</span>
                     </div>
                   ))
                 ) : (
@@ -546,55 +487,14 @@ export default function QuotationView() {
               <div className="p-4 sm:p-6 space-y-4 bg-red-50 border-l-2 border-red-200 max-h-80 overflow-y-auto">
                 {excludedServices.length > 0 ? (
                   excludedServices.map((service, i) => (
-                    <div
-                      key={`exc-${i}`}
-                      className="flex items-start space-x-3"
-                    >
+                    <div key={`exc-${i}`} className="flex items-start space-x-3">
                       <span className="text-red-600 mt-0.5">✕</span>
-                      <span className="text-sm font-medium relative top-1">
-                        {service}
-                      </span>
+                      <span className="text-sm font-medium relative top-1">{service}</span>
                     </div>
                   ))
                 ) : (
                   <p className="text-gray-500 text-sm">No services excluded</p>
                 )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-              <div>
-                <label className="block font-medium text-sm mb-1">
-                  Total Amount
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={`${totalAmount.toFixed(2)} QAR`}
-                  className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-blue-50 font-medium text-[#4c7085]"
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-sm mb-1">
-                  Advance
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={`${advance.toFixed(2)} QAR`}
-                  className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-gray-50"
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-sm mb-1">
-                  Balance
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={`${balance} QAR`}
-                  className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 bg-green-50 font-medium text-green-700"
-                />
               </div>
             </div>
 
@@ -604,12 +504,8 @@ export default function QuotationView() {
                 {hasSignature ? (
                   <>
                     <div>
-                      <p className="text-sm font-medium text-green-700">
-                        ✓ Digitally Signed
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Customer signature is attached
-                      </p>
+                      <p className="text-sm font-medium text-green-700">✓ Digitally Signed</p>
+                      <p className="text-sm text-gray-600">Customer signature is attached</p>
                     </div>
                     <button
                       onClick={viewSignature}
@@ -620,9 +516,7 @@ export default function QuotationView() {
                   </>
                 ) : (
                   <div className="text-center w-full">
-                    <p className="text-gray-600 mb-4">
-                      No signature uploaded yet
-                    </p>
+                    <p className="text-gray-600 mb-4">No signature uploaded yet</p>
                     <div className="w-16 h-16 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
                       <FaSignature className="text-gray-500 text-2xl" />
                     </div>
