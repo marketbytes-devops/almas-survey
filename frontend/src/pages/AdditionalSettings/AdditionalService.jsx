@@ -1,4 +1,3 @@
-/* src/pages/AdditionalSettings/AdditionalServices.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
@@ -12,6 +11,7 @@ const AdditionalServices = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // New state for modal
 
   const methods = useForm({
     defaultValues: {
@@ -66,7 +66,7 @@ const AdditionalServices = () => {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete "${name}"? This action cannot be undone.`)) return;
+    if (!window.confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
 
     setDeletingId(id);
     setError(null);
@@ -75,11 +75,15 @@ const AdditionalServices = () => {
     try {
       await apiClient.delete(`/survey-additional-services/${id}/`);
       setServices((prev) => prev.filter((s) => s.id !== id));
-      setSuccess("Service deleted successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      setSuccess(`"${name}" has been deleted successfully!`);
+      setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
-      setError("Failed to delete service. It might be in use.");
-      setTimeout(() => setError(null), 4000);
+      console.error("Delete error:", err);
+      const errorMsg = err.response?.status === 404 
+        ? "Service not found." 
+        : "Failed to delete service. It might be in use or server error.";
+      setError(errorMsg);
+      setTimeout(() => setError(null), 5000);
     } finally {
       setDeletingId(null);
     }
@@ -102,16 +106,18 @@ const AdditionalServices = () => {
 
         <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
           {/* Success/Error Messages */}
-          {success && (
-            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
-              {success}
-            </div>
-          )}
-          {error && (
-            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
-              {error}
-            </div>
-          )}
+          <div className="fixed top-4 right-4 z-50 w-80 max-w-full">
+            {success && (
+              <div className="p-4 mb-2 bg-green-100 border-l-4 border-green-500 text-green-700 rounded shadow-lg">
+                <p className="font-medium">{success}</p>
+              </div>
+            )}
+            {error && (
+              <div className="p-4 mb-2 bg-red-100 border-l-4 border-red-500 text-red-700 rounded shadow-lg">
+                <p className="font-medium">{error}</p>
+              </div>
+            )}
+          </div>
 
           {/* Add New Service Card */}
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
@@ -227,6 +233,48 @@ const AdditionalServices = () => {
             )}
           </div>
         </div>
+
+        {/* Optional Custom Confirmation Modal */}
+        {confirmDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+              <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
+              <p className="mb-6">
+                Are you sure you want to delete <strong>"{confirmDelete.name}"</strong>?<br />
+                This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const { id, name } = confirmDelete;
+                    setConfirmDelete(null);
+                    setDeletingId(id);
+                    try {
+                      await apiClient.delete(`/survey-additional-services/${id}/`);
+                      setServices((prev) => prev.filter((s) => s.id !== id));
+                      setSuccess(`"${name}" deleted successfully!`);
+                      setTimeout(() => setSuccess(null), 5000);
+                    } catch (err) {
+                      setError("Failed to delete service.");
+                      setTimeout(() => setError(null), 5000);
+                    } finally {
+                      setDeletingId(null);
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
