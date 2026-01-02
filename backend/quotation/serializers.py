@@ -35,7 +35,7 @@ class QuotationSerializer(serializers.ModelSerializer):
         model = Quotation
         fields = [
             'id', 'survey', 'survey_id', 'quotation_id',
-            'date', 'amount', 'advance', 'discount', 'final_amount', 'balance',
+            'date', 'amount', 'advance',
             'currency', 'currency_code', 'notes',
             'included_services', 'excluded_services',
             'created_at', 'updated_at','selected_services',

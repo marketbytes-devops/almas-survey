@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Survey, DestinationAddress, Article, Vehicle, Pet
+from .models import Survey, DestinationAddress, Article, Vehicle, Pet, SurveyAdditionalServiceSelection
 from additional_settings.models import (
     CustomerType, Room, VolumeUnit, WeightUnit, 
     PackingType, Handyman, Currency, VehicleType, PetType, Item, SurveyAdditionalService
@@ -70,7 +70,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'handyman', 'handyman_name', 'packing_option', 'packing_option_name',
             'move_status', 'move_status_display', 'remarks', 'length', 'width', 'height', 
             'calculated_volume', 'created_at', 'is_flagged', 'is_flagged_display',
-            'crate_required', 'crate_required_display'  # Add crate_required here
+            'crate_required', 'crate_required_display'
         ]
         read_only_fields = ['id', 'created_at', 'calculated_volume']
     
@@ -84,7 +84,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         """Get human-readable flagged status"""
         return 'Flagged' if obj.is_flagged else 'Not Flagged'
     
-    def get_crate_required_display(self, obj):  # Add this method
+    def get_crate_required_display(self, obj): 
         """Get human-readable crate required status"""
         return 'Yes' if obj.crate_required else 'No'
 
@@ -110,10 +110,16 @@ class PetSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at']
         
-class SurveyAdditionalServiceSerializer(serializers.ModelSerializer):
+class SurveyAdditionalServiceSelectionSerializer(serializers.ModelSerializer):
+    service_id = serializers.PrimaryKeyRelatedField(
+        queryset=SurveyAdditionalService.objects.all(),
+        source='service'
+    )
+    name = serializers.CharField(source='service.name', read_only=True)
+
     class Meta:
-        model = SurveyAdditionalService
-        fields = ['id', 'name']
+        model = SurveyAdditionalServiceSelection
+        fields = ['service_id', 'name', 'quantity', 'remarks']
         
 class SurveySerializer(serializers.ModelSerializer):
     destination_addresses = DestinationAddressSerializer(many=True, required=False)
@@ -127,12 +133,7 @@ class SurveySerializer(serializers.ModelSerializer):
     signature_url = serializers.SerializerMethodField()
     signature_uploaded = serializers.SerializerMethodField()
     
-    additional_services = SurveyAdditionalServiceSerializer(many=True, read_only=True)
-    additional_service_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False
-    )
+    additional_services = SurveyAdditionalServiceSelectionSerializer(many=True, source='additional_service_selections', required=False)
     
     class Meta:
         model = Survey
@@ -152,9 +153,9 @@ class SurveySerializer(serializers.ModelSerializer):
             'destination_floor', 'destination_floor_notes', 'destination_lift', 'destination_lift_notes',
             'destination_parking', 'destination_parking_notes',
             'articles', 'vehicles', 'created_at', 'updated_at', 'signature', 'signature_url', 'signature_uploaded',
-            'additional_services', 'additional_service_ids'  
+            'additional_services'
         ]
-        read_only_fields = ['id', 'survey_id', 'created_at', 'updated_at', 'service_type_display', 'signature_url', 'signature_uploaded', 'additional_services']
+        read_only_fields = ['id', 'survey_id', 'created_at', 'updated_at', 'service_type_display', 'signature_url', 'signature_uploaded']
 
     def get_service_type_display(self, obj):
         if obj.service_type:
@@ -173,7 +174,7 @@ class SurveySerializer(serializers.ModelSerializer):
         return bool(obj.signature)
 
     def create(self, validated_data):
-        additional_service_ids = validated_data.pop('additional_service_ids', [])
+        additional_services_data = validated_data.pop('additional_service_selections', [])
         destination_addresses_data = validated_data.pop("destination_addresses", [])
         articles_data = validated_data.pop("articles", [])
         vehicles_data = validated_data.pop("vehicles", [])
@@ -181,14 +182,18 @@ class SurveySerializer(serializers.ModelSerializer):
         with transaction.atomic():
             survey = Survey.objects.create(**validated_data)
             
-            if additional_service_ids:
-                survey.additional_services.set(additional_service_ids)
+            for service_data in additional_services_data:
+                SurveyAdditionalServiceSelection.objects.create(
+                    survey=survey,
+                    service=service_data.get('service'),
+                    quantity=service_data.get('quantity', 1),
+                    remarks=service_data.get('remarks', "")
+                )
                 
             for addr in destination_addresses_data:
                 DestinationAddress.objects.create(survey=survey, **addr)
             
             for article in articles_data:
-                # Ensure crate_required is included with default False if not provided
                 article_data = article.copy()
                 if 'crate_required' not in article_data:
                     article_data['crate_required'] = False
@@ -200,7 +205,7 @@ class SurveySerializer(serializers.ModelSerializer):
         return survey
 
     def update(self, instance, validated_data):
-        additional_service_ids = validated_data.pop('additional_service_ids', [])
+        additional_services_data = validated_data.pop('additional_service_selections', None)
         destination_addresses_data = validated_data.pop("destination_addresses", None)
         articles_data = validated_data.pop("articles", None)
         vehicles_data = validated_data.pop("vehicles", None)
@@ -210,8 +215,15 @@ class SurveySerializer(serializers.ModelSerializer):
                 setattr(instance, attr, value)
             instance.save()
             
-            if additional_service_ids is not None:
-                instance.additional_services.set(additional_service_ids)
+            if additional_services_data is not None:
+                instance.additional_service_selections.all().delete()
+                for service_data in additional_services_data:
+                    SurveyAdditionalServiceSelection.objects.create(
+                        survey=instance,
+                        service=service_data.get('service'),
+                        quantity=service_data.get('quantity', 1),
+                        remarks=service_data.get('remarks', "")
+                    )
 
             if destination_addresses_data is not None:
                 instance.destination_addresses.all().delete()
@@ -221,7 +233,6 @@ class SurveySerializer(serializers.ModelSerializer):
             if articles_data is not None:
                 instance.articles.all().delete()
                 for article in articles_data:
-                    # Ensure crate_required is included with default False if not provided
                     article_data = article.copy()
                     if 'crate_required' not in article_data:
                         article_data['crate_required'] = False

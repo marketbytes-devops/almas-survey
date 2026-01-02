@@ -89,12 +89,6 @@ class Survey(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
     
-    additional_services = models.ManyToManyField(
-        'additional_settings.SurveyAdditionalService',
-        blank=True,
-        related_name='surveys'
-    )
-    
     class Meta:
         indexes = [
             models.Index(fields=["enquiry"]),
@@ -108,6 +102,15 @@ class Survey(models.Model):
         if not self.survey_id:
             self.survey_id = f"SURVEY-{self.enquiry.id if self.enquiry else 'TEMP'}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
         super().save(*args, **kwargs)
+
+class SurveyAdditionalServiceSelection(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='additional_service_selections', null=True, blank=True)
+    service = models.ForeignKey('additional_settings.SurveyAdditionalService', on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1, null=True, blank=True)
+    remarks = models.TextField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('survey', 'service')
 
 class DestinationAddress(models.Model):
     survey = models.ForeignKey(
@@ -185,4 +188,3 @@ class Pet(models.Model):
 
     def __str__(self):
         return f"{self.pet_name} ({self.pet_type})"
-    

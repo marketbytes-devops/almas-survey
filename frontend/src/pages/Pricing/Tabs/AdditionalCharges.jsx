@@ -13,7 +13,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [currency, setCurrency] = useState("");
   const [price, setPrice] = useState("");
-  const [perUnitQty, setPerUnitQty] = useState("1");
   const [rateType, setRateType] = useState("FIX");
   const [editingId, setEditingId] = useState(null);
 
@@ -72,7 +71,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       service_id: serviceObj.id,
       currency: currency ? parseInt(currency) : null,
       price_per_unit: parseFloat(price),
-      per_unit_quantity: parseInt(perUnitQty) || 1,
+      per_unit_quantity: 1,
       rate_type: rateType,
     };
 
@@ -82,7 +81,7 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           service_id: serviceObj.id,
           currency: currency ? parseInt(currency) : null,
           price_per_unit: parseFloat(price),
-          per_unit_quantity: parseInt(perUnitQty) || 1,
+          per_unit_quantity: 1,
           rate_type: rateType,
         };
         await apiClient.patch(`/quotation-additional-charges/${editingId}/`, updatePayload);
@@ -99,7 +98,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
       setSelectedServiceId("");
       setCurrency("");
       setPrice("");
-      setPerUnitQty("1");
       setRateType("FIX");
     } catch (err) {
       alert("Failed to update service:\n" + JSON.stringify(err.response?.data || err.message, null, 2));
@@ -111,7 +109,6 @@ const AdditionalChargesTab = ({ dropdownData }) => {
     setSelectedServiceId(row.service?.id || ""); // Safe access
     setCurrency(row.currency || "");
     setPrice(row.price_per_unit);
-    setPerUnitQty(row.per_unit_quantity);
     setRateType(row.rate_type);
   };
 
@@ -240,10 +237,12 @@ const AdditionalChargesTab = ({ dropdownData }) => {
 
           <Input
             label="Per Unit Quantity"
+            name="perUnitQuantityDisplay"
             type="number"
             placeholder="1"
-            value={perUnitQty}
-            onChange={(e) => setPerUnitQty(e.target.value)}
+            value="1"
+            readOnly
+            className="bg-gray-100 cursor-not-allowed"
           />
 
           <Input
@@ -276,18 +275,17 @@ const AdditionalChargesTab = ({ dropdownData }) => {
           <button
             onClick={handleSaveAll}
             disabled={saving || unsavedCount === 0}
-            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium shadow-lg transition flex items-center justify-center gap-3 text-sm ${
-              saving || unsavedCount === 0
-                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
-            }`}
+            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium shadow-lg transition flex items-center justify-center gap-3 text-sm ${saving || unsavedCount === 0
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+              }`}
           >
             <FaSave />
             {saving
               ? "Saving..."
               : unsavedCount > 0
-              ? `SAVE ${unsavedCount} NEW SERVICE${unsavedCount > 1 ? "S" : ""}`
-              : "ALL SAVED"}
+                ? `SAVE ${unsavedCount} NEW SERVICE${unsavedCount > 1 ? "S" : ""}`
+                : "ALL SAVED"}
           </button>
         </div>
 
@@ -313,9 +311,8 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                   <tr key={row.id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          isSaved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                        }`}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${isSaved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                          }`}
                       >
                         {isSaved ? "SAVED" : "UNSAVED"}
                       </span>
@@ -329,9 +326,8 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                     <td className="px-4 py-3 text-gray-700 text-sm">{row.per_unit_quantity}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          row.rate_type === "FIX" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                        }`}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${row.rate_type === "FIX" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                          }`}
                       >
                         {row.rate_type}
                       </span>
@@ -362,9 +358,8 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                 <div key={row.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4 shadow-sm">
                   <div className="flex justify-between items-start mb-3">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        isSaved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${isSaved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                        }`}
                     >
                       {isSaved ? "SAVED" : "UNSAVED"}
                     </span>
@@ -396,9 +391,8 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                       <div>
                         <span className="font-medium">Type:</span>
                         <span
-                          className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
-                            row.rate_type === "FIX" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                          }`}
+                          className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${row.rate_type === "FIX" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                            }`}
                         >
                           {row.rate_type}
                         </span>

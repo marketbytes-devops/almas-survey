@@ -74,10 +74,10 @@ const SurveyPrint = ({ survey }) => {
       field === "full_name"
         ? "fullName"
         : field === "mobile_number"
-        ? "phoneNumber"
-        : field === "email"
-        ? "email"
-        : field;
+          ? "phoneNumber"
+          : field === "email"
+            ? "email"
+            : field;
 
     const enquiryValue = survey.enquiry?.[enquiryField];
     if (enquiryValue !== null && enquiryValue !== undefined && enquiryValue !== "") {
@@ -89,10 +89,10 @@ const SurveyPrint = ({ survey }) => {
 
   const totalVolume = survey.articles
     ? survey.articles.reduce((total, a) => {
-        const vol = parseFloat(a.volume) || 0;
-        const qty = parseInt(a.quantity) || 1;
-        return total + vol * qty;
-      }, 0)
+      const vol = parseFloat(a.volume) || 0;
+      const qty = parseInt(a.quantity) || 1;
+      return total + vol * qty;
+    }, 0)
     : 0;
 
   return (
@@ -343,8 +343,8 @@ const SurveyPrint = ({ survey }) => {
                   </tr>
                 ))}
                 <tr className="total-row">
-                  <td colSpan="3" style={{textAlign: "right"}}>Total Volume:</td>
-                  <td style={{textAlign: "center"}}>{formatVolume(totalVolume)} m³</td>
+                  <td colSpan="3" style={{ textAlign: "right" }}>Total Volume:</td>
+                  <td style={{ textAlign: "center" }}>{formatVolume(totalVolume)} m³</td>
                   <td colSpan="2"></td>
                 </tr>
               </tbody>
@@ -410,10 +410,10 @@ const SurveyPrint = ({ survey }) => {
             </div>
           ) : (
             <div className="signature-box">
-              <p style={{color: "#999", fontStyle: "italic"}}>No signature uploaded</p>
+              <p style={{ color: "#999", fontStyle: "italic" }}>No signature uploaded</p>
             </div>
           )}
-          <p style={{marginTop: "10px"}}>
+          <p style={{ marginTop: "10px" }}>
             <strong>Name:</strong> {getCustomerData("full_name")} &nbsp;&nbsp;&nbsp;
             <strong>Date:</strong> {formatDate(survey.survey_date)}
           </p>

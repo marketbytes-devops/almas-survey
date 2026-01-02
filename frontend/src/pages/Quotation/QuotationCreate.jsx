@@ -120,9 +120,18 @@ export default function QuotationCreate() {
         const selectedServiceIds =
           surveyData.additional_services?.map((service) => service.id) || [];
 
-        const filteredCharges = chargesRes.data.filter((charge) =>
-          selectedServiceIds.includes(charge.service.id)
-        );
+        const filteredCharges = chargesRes.data
+          .filter((charge) => selectedServiceIds.includes(charge.service.id))
+          .map((charge) => {
+            const surveyService = surveyData.additional_services?.find(
+              (s) => s.id === charge.service.id
+            );
+            return {
+              ...charge,
+              surveyQuantity: surveyService?.quantity || 1,
+              surveyRemarks: surveyService?.remarks || "",
+            };
+          });
 
         setAdditionalCharges(filteredCharges);
       } catch (err) {
@@ -252,7 +261,7 @@ export default function QuotationCreate() {
   useEffect(() => {
     let additionalTotal = 0;
     additionalCharges.forEach((charge) => {
-      const quantity = charge.per_unit_quantity || 1;
+      const quantity = charge.surveyQuantity || 1;
       const price = charge.price_per_unit || 0;
       additionalTotal += price * quantity;
     });
@@ -330,10 +339,10 @@ export default function QuotationCreate() {
       additional_charges: additionalCharges.map((charge) => ({
         service_id: charge.service.id,
         service_name: charge.service.name,
-        quantity: charge.per_unit_quantity || 1,
+        quantity: charge.surveyQuantity || 1,
         price_per_unit: charge.price_per_unit,
         currency: charge.currency,
-        total: charge.price_per_unit * (charge.per_unit_quantity || 1),
+        total: charge.price_per_unit * (charge.surveyQuantity || 1),
       })),
       selected_services: Object.keys(serviceSelections)
         .filter((key) => serviceSelections[key])
@@ -472,7 +481,7 @@ export default function QuotationCreate() {
               <div className="space-y-3">
                 {additionalCharges.map((charge) => {
                   const currencyName = charge.currency_name || "QAR";
-                  const quantity = charge.per_unit_quantity || 1;
+                  const quantity = charge.surveyQuantity || 1;
                   const subtotal = charge.price_per_unit * quantity;
 
                   return (
@@ -488,7 +497,12 @@ export default function QuotationCreate() {
                           <div className="text-sm text-gray-600">
                             {charge.price_per_unit} {currencyName} × {quantity} unit(s)
                           </div>
-                          <div className="text-xs text-gray-500 capitalize mt-1">
+                          {charge.surveyRemarks && (
+                            <div className="text-xs text-gray-500 italic mt-1">
+                              Note: {charge.surveyRemarks}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-400 capitalize mt-1">
                             Rate: {charge.rate_type?.toLowerCase() || "fix"}
                           </div>
                         </div>
@@ -558,9 +572,8 @@ export default function QuotationCreate() {
                             className="focus:outline-none"
                           >
                             <div
-                              className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
-                                isSelected ? "bg-blue-600 border-blue-600" : "bg-white border-gray-400"
-                              }`}
+                              className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-blue-600 border-blue-600" : "bg-white border-gray-400"
+                                }`}
                             >
                               {isSelected && <div className="w-3 h-3 bg-white rounded-full" />}
                             </div>
@@ -717,17 +730,16 @@ export default function QuotationCreate() {
               <button
                 onClick={openSignatureModal}
                 disabled={isSignatureUploading || survey?.signature_uploaded}
-                className={`px-6 py-3 rounded-lg font-medium ${
-                  survey?.signature_uploaded || isSignatureUploading
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700 text-white"
-                }`}
+                className={`px-6 py-3 rounded-lg font-medium ${survey?.signature_uploaded || isSignatureUploading
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
               >
                 {isSignatureUploading
                   ? "Uploading..."
                   : survey?.signature_uploaded
-                  ? "Signature Added"
-                  : "Add Signature"}
+                    ? "Signature Added"
+                    : "Add Signature"}
               </button>
             </div>
           </div>
@@ -736,11 +748,10 @@ export default function QuotationCreate() {
             <button
               onClick={handleCreate}
               disabled={!form.finalAmount || priceError}
-              className={`w-full py-2 px-8 text-sm font-medium rounded-lg shadow-lg transition ${
-                !form.finalAmount || priceError
-                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-              }`}
+              className={`w-full py-2 px-8 text-sm font-medium rounded-lg shadow-lg transition ${!form.finalAmount || priceError
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
+                }`}
             >
               Save Quotation
             </button>

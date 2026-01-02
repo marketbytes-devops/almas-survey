@@ -341,10 +341,10 @@ const SurveySummary = () => {
 
     const totalVolume = survey.articles
       ? survey.articles.reduce((total, a) => {
-          const vol = parseFloat(a.volume) || 0;
-          const qty = parseInt(a.quantity) || 1;
-          return total + vol * qty;
-        }, 0)
+        const vol = parseFloat(a.volume) || 0;
+        const qty = parseInt(a.quantity) || 1;
+        return total + vol * qty;
+      }, 0)
       : 0;
 
     return (
@@ -622,22 +622,20 @@ const SurveySummary = () => {
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            a.crate_required
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.crate_required
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
-                          }`}
+                            }`}
                         >
                           {a.crate_required ? "Yes" : "No"}
                         </span>
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            a.move_status === "not_moving"
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.move_status === "not_moving"
                               ? "bg-red-100 text-red-800"
                               : "bg-green-100 text-green-800"
-                          }`}
+                            }`}
                         >
                           {a.move_status === "not_moving"
                             ? "Not Moving"
@@ -695,11 +693,10 @@ const SurveySummary = () => {
                       </td>
                       <td className="border border-gray-400 px-3 py-2">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            v.insurance
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${v.insurance
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
-                          }`}
+                            }`}
                         >
                           {v.insurance ? "Yes" : "No"}
                         </span>
@@ -833,13 +830,12 @@ const SurveySummary = () => {
                   <div className="text-right">
                     <p className="text-sm font-medium">{service}</p>
                     <p
-                      className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${
-                        survey.status === "completed"
+                      className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${survey.status === "completed"
                           ? "bg-green-200 text-green-800"
                           : survey.status === "cancelled"
-                          ? "bg-red-200 text-red-800"
-                          : "bg-yellow-200 text-yellow-800"
-                      }`}
+                            ? "bg-red-200 text-red-800"
+                            : "bg-yellow-200 text-yellow-800"
+                        }`}
                     >
                       {formatStatus(survey.status)}
                     </p>
@@ -890,9 +886,8 @@ const SurveySummary = () => {
                 <Button
                   onClick={() => handlePrintSurvey(survey)}
                   disabled={printing === survey.survey_id}
-                  className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${
-                    printing === survey.survey_id ? "opacity-50" : ""
-                  }`}
+                  className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""
+                    }`}
                 >
                   {printing === survey.survey_id ? <>Printing...</> : "Print"}
                 </Button>
@@ -903,7 +898,7 @@ const SurveySummary = () => {
                   Delete
                 </Button>
                 {survey.signature_uploaded &&
-                surveySignatures[survey.survey_id] ? (
+                  surveySignatures[survey.survey_id] ? (
                   <Button
                     onClick={() =>
                       setSignatureModalUrl(surveySignatures[survey.survey_id])
