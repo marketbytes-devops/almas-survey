@@ -22,7 +22,7 @@ export default function QuotationLocalMove({
     (sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0),
     0
   )?.toFixed(2) || "0.00";
-  
+
   const currency = "QAR";
 
   return (
@@ -150,7 +150,7 @@ export default function QuotationLocalMove({
       <p style={{ fontSize: "9pt", marginBottom: "10px" }}>
         Services Required: Standard Destination Service
       </p>
-      
+
       <table
         style={{
           width: "50%",
@@ -167,11 +167,11 @@ export default function QuotationLocalMove({
               {baseAmount.toFixed(2)}
             </td>
           </tr>
-          
+
           {additionalCharges.map((charge) => {
             const quantity = charge.per_unit_quantity || 1;
             const subtotal = charge.price_per_unit * quantity;
-            
+
             return (
               <tr key={charge.id}>
                 <td style={{ padding: "5px" }}>
@@ -183,7 +183,7 @@ export default function QuotationLocalMove({
               </tr>
             );
           })}
-          
+
           <tr>
             <td style={{ padding: "5px" }}>
               <strong>Total Rate:</strong>

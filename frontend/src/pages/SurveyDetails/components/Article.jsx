@@ -46,46 +46,102 @@ const Article = ({ apiData, setMessage, setError }) => {
     }, []);
 
     useEffect(() => {
-        if (selectedRoom && selectedRoom !== selectedRoomFromForm) {
+        if (selectedRoom?.value && selectedRoom?.value !== selectedRoomFromForm?.value) {
             setValue("selectedRoom", selectedRoom);
         }
     }, [selectedRoom, selectedRoomFromForm, setValue]);
 
     const currentRoom = selectedRoom || selectedRoomFromForm;
 
-    // Reset local state when selectedRoom changes to prevent bleed-over and hydrate from form
+    const prevRoomRef = useRef();
+    const prevRoomArticlesRef = useRef([]);
+
+    // Sync local state when selectedRoom or articles change
     useEffect(() => {
-        setExpandedItems({});
-        setSelectedItems({});
-        setItemQuantities({});
-        setItemMoveStatuses({});
-        setItemCratePreferences({});
+        const roomChanged = prevRoomRef.current?.value !== selectedRoom?.value;
+        prevRoomRef.current = selectedRoom;
 
-        if (selectedRoom && articles.length > 0) {
-            const roomArticles = articles.filter(a => a.room === selectedRoom.value);
-            const newQuantities = {};
-            const newMoveStatuses = {};
-            const newCratePreferences = {};
-            const newSelectedItems = {};
+        const currentRoomArticles = selectedRoom ? articles.filter(a => a.room === selectedRoom.value) : [];
 
-            roomArticles.forEach(article => {
-                // Use simple itemName as key if that's what ItemRow uses, or the complex key?
-                // ItemRow uses `getItemKey` which includes room name.
-                // But `itemQuantities` is passed as simple map [itemName]: qty.
-                // Since we cleared the map on room change, simple itemName key is safe for this room context.
-                newQuantities[article.itemName] = article.quantity;
-                newSelectedItems[article.itemName] = true;
+        if (roomChanged) {
+            // Full reset on room change
+            setExpandedItems({});
+            setSelectedItems({});
+            setItemQuantities({});
+            setItemMoveStatuses({});
+            setItemCratePreferences({});
 
-                const itemKey = `${selectedRoom.value}-${article.itemName}`;
-                newMoveStatuses[itemKey] = article.moveStatus;
-                newCratePreferences[itemKey] = article.crateRequired;
-            });
+            if (currentRoomArticles.length > 0) {
+                const newQuantities = {};
+                const newMoveStatuses = {};
+                const newCratePreferences = {};
+                const newSelectedItems = {};
 
-            setItemQuantities(newQuantities);
-            setSelectedItems(newSelectedItems);
-            setItemMoveStatuses(newMoveStatuses);
-            setItemCratePreferences(newCratePreferences);
+                currentRoomArticles.forEach(article => {
+                    newQuantities[article.itemName] = article.quantity;
+                    newSelectedItems[article.itemName] = true;
+
+                    const itemKey = `${selectedRoom.value}-${article.itemName}`;
+                    newMoveStatuses[itemKey] = article.moveStatus;
+                    newCratePreferences[itemKey] = article.crateRequired;
+                });
+
+                setItemQuantities(newQuantities);
+                setSelectedItems(newSelectedItems);
+                setItemMoveStatuses(newMoveStatuses);
+                setItemCratePreferences(newCratePreferences);
+            }
+        } else {
+            // Room hasn't changed, but articles might have (e.g., added/removed via sidebar or manual add)
+            // We want to ensure saved articles are reflected in local state, 
+            // but we MUST NOT wipe out provisional selections (items checked but not yet added/saved).
+
+            // Find items that were REMOVED from the current room in the articles list
+            const removedItems = prevRoomArticlesRef.current.filter(pa =>
+                !currentRoomArticles.some(ca => ca.itemName === pa.itemName)
+            );
+
+            if (currentRoomArticles.length > 0 || removedItems.length > 0) {
+                setSelectedItems(prev => {
+                    const next = { ...prev };
+                    currentRoomArticles.forEach(article => {
+                        next[article.itemName] = true;
+                    });
+                    removedItems.forEach(article => {
+                        next[article.itemName] = false;
+                    });
+                    return next;
+                });
+
+                setItemQuantities(prev => {
+                    const next = { ...prev };
+                    currentRoomArticles.forEach(article => {
+                        next[article.itemName] = article.quantity;
+                    });
+                    return next;
+                });
+
+                setItemMoveStatuses(prev => {
+                    const next = { ...prev };
+                    currentRoomArticles.forEach(article => {
+                        const itemKey = `${selectedRoom.value}-${article.itemName}`;
+                        next[itemKey] = article.moveStatus;
+                    });
+                    return next;
+                });
+
+                setItemCratePreferences(prev => {
+                    const next = { ...prev };
+                    currentRoomArticles.forEach(article => {
+                        const itemKey = `${selectedRoom.value}-${article.itemName}`;
+                        next[itemKey] = article.crateRequired;
+                    });
+                    return next;
+                });
+            }
         }
+
+        prevRoomArticlesRef.current = currentRoomArticles;
     }, [selectedRoom, articles]);
 
 
@@ -478,7 +534,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     onClick={addMultipleArticles}
                                     className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
                                 >
-                                    Add/Update Selected
+                                    Add and Update Selected
                                 </button>
                             </div>
                         )}

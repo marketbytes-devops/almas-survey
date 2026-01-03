@@ -387,12 +387,18 @@ const SurveyPrint = ({ survey }) => {
           {survey.additional_services?.length > 0 ? (
             <table>
               <thead>
-                <tr><th>Service Name</th></tr>
+                <tr>
+                  <th>Service Name</th>
+                  <th style={{ width: "80px", textAlign: "center" }}>Qty</th>
+                  <th>Remarks</th>
+                </tr>
               </thead>
               <tbody>
                 {survey.additional_services.map((service, i) => (
                   <tr key={i}>
                     <td>{service.name || "Unknown Service"}</td>
+                    <td style={{ textAlign: "center" }}>{service.quantity || 1}</td>
+                    <td>{service.remarks || "-"}</td>
                   </tr>
                 ))}
               </tbody>

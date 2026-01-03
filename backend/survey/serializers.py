@@ -89,12 +89,9 @@ class ArticleSerializer(serializers.ModelSerializer):
         return 'Yes' if obj.crate_required else 'No'
 
 class VehicleSerializer(serializers.ModelSerializer):
-    vehicle_type = serializers.PrimaryKeyRelatedField(queryset=VehicleType.objects.all(), allow_null=True)
-    vehicle_type_name = serializers.CharField(source='vehicle_type.name', read_only=True, allow_null=True)
-
     class Meta:
         model = Vehicle
-        fields = ['id', 'vehicle_type', 'vehicle_type_name', 'make', 'model', 'insurance', 'remark', 'created_at']
+        fields = ['id', 'vehicle_type', 'make', 'model', 'insurance', 'remark', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class PetSerializer(serializers.ModelSerializer):
@@ -132,6 +129,10 @@ class SurveySerializer(serializers.ModelSerializer):
     service_type_display = serializers.SerializerMethodField()
     signature_url = serializers.SerializerMethodField()
     signature_uploaded = serializers.SerializerMethodField()
+    has_quotation = serializers.SerializerMethodField()
+    quotation_id = serializers.SerializerMethodField()
+    quotation_created_at = serializers.SerializerMethodField()
+    quotation_signature_uploaded = serializers.SerializerMethodField()
     
     additional_services = SurveyAdditionalServiceSelectionSerializer(many=True, source='additional_service_selections', required=False)
     
@@ -153,9 +154,9 @@ class SurveySerializer(serializers.ModelSerializer):
             'destination_floor', 'destination_floor_notes', 'destination_lift', 'destination_lift_notes',
             'destination_parking', 'destination_parking_notes',
             'articles', 'vehicles', 'created_at', 'updated_at', 'signature', 'signature_url', 'signature_uploaded',
-            'additional_services'
+            'additional_services', 'has_quotation', 'quotation_id', 'quotation_created_at', 'quotation_signature_uploaded'
         ]
-        read_only_fields = ['id', 'survey_id', 'created_at', 'updated_at', 'service_type_display', 'signature_url', 'signature_uploaded']
+        read_only_fields = ['id', 'survey_id', 'created_at', 'updated_at', 'service_type_display', 'signature_url', 'signature_uploaded', 'has_quotation', 'quotation_id', 'quotation_created_at', 'quotation_signature_uploaded']
 
     def get_service_type_display(self, obj):
         if obj.service_type:
@@ -172,6 +173,25 @@ class SurveySerializer(serializers.ModelSerializer):
 
     def get_signature_uploaded(self, obj):
         return bool(obj.signature)
+
+    def get_has_quotation(self, obj):
+        from quotation.models import Quotation
+        return Quotation.objects.filter(survey=obj).exists()
+
+    def get_quotation_id(self, obj):
+        from quotation.models import Quotation
+        quot = Quotation.objects.filter(survey=obj).first()
+        return quot.quotation_id if quot else None
+
+    def get_quotation_created_at(self, obj):
+        from quotation.models import Quotation
+        quot = Quotation.objects.filter(survey=obj).first()
+        return quot.created_at if quot else None
+
+    def get_quotation_signature_uploaded(self, obj):
+        from quotation.models import Quotation
+        quot = Quotation.objects.filter(survey=obj).first()
+        return quot.signature_uploaded if quot else False
 
     def create(self, validated_data):
         additional_services_data = validated_data.pop('additional_service_selections', [])

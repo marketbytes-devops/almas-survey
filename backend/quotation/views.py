@@ -1,4 +1,5 @@
 import logging
+import os
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -104,3 +105,66 @@ class QuotationViewSet(viewsets.ModelViewSet):
             )
         except Quotation.DoesNotExist:
             return Response({"detail": "Quotation not found"}, status=404)
+
+    @action(detail=True, methods=["post"], url_path="upload-signature")
+    def upload_signature(self, request, quotation_id=None):
+        """Upload customer signature for a quotation"""
+        try:
+            quotation = self.get_object()
+            
+            if 'signature' not in request.FILES:
+                return Response({'error': 'No signature file provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            signature_file = request.FILES['signature']
+            
+            # Save signature
+            quotation.signature = signature_file
+            quotation.signature_uploaded = True
+            quotation.save()
+            
+            logger.info(f"Signature uploaded for quotation {quotation.quotation_id}")
+            
+            return Response(
+                {
+                    'message': 'Signature uploaded successfully',
+                    'signature_url': request.build_absolute_uri(quotation.signature.url)
+                },
+                status=status.HTTP_200_OK
+            )
+        except Quotation.DoesNotExist:
+            return Response({'error': 'Quotation not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error uploading quotation signature: {str(e)}", exc_info=True)
+            return Response({'error': f'Failed to upload signature: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=["get", "delete"], url_path="signature")
+    def signature_action(self, request, quotation_id=None):
+        """Get or delete signature for a quotation"""
+        try:
+            quotation = self.get_object()
+            
+            if request.method == "DELETE":
+                if quotation.signature:
+                    if os.path.isfile(quotation.signature.path):
+                        os.remove(quotation.signature.path)
+                    quotation.signature = None
+                    quotation.signature_uploaded = False
+                    quotation.save()
+                    return Response({'message': 'Signature deleted successfully'}, status=status.HTTP_200_OK)
+                return Response({'error': 'No signature found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # GET method
+            if quotation.signature:
+                return Response(
+                    {
+                        'has_signature': True,
+                        'signature_url': request.build_absolute_uri(quotation.signature.url)
+                    },
+                    status=status.HTTP_200_OK
+                )
+            return Response({'has_signature': False, 'signature_url': None}, status=status.HTTP_200_OK)
+        except Quotation.DoesNotExist:
+            return Response({'error': 'Quotation not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error handling quotation signature: {str(e)}", exc_info=True)
+            return Response({'error': f'Failed to handle signature: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

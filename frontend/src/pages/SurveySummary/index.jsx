@@ -44,38 +44,12 @@ const SurveySummary = () => {
       setLoading(true);
       try {
         const response = await apiClient.get("/surveys/");
-        const surveysWithQuotationStatus = await Promise.all(
-          response.data.map(async (survey) => {
-            try {
-              const checkRes = await apiClient.get(
-                `/quotation-create/check/?survey_id=${survey.survey_id}`
-              );
-              let quotationCreatedAt = null;
-              if (checkRes.data.exists && checkRes.data.quotation_id) {
-                try {
-                  const quotRes = await apiClient.get(
-                    `/quotation-create/${checkRes.data.quotation_id}/`
-                  );
-                  quotationCreatedAt = quotRes.data.created_at;
-                } catch (err) {
-                  console.warn("Could not fetch quotation details for date");
-                }
-              }
-              return {
-                ...survey,
-                hasQuotation: checkRes.data.exists,
-                quotation_id: checkRes.data.quotation_id,
-                quotation_created_at: quotationCreatedAt,
-              };
-            } catch {
-              return {
-                ...survey,
-                hasQuotation: false,
-                quotation_created_at: null,
-              };
-            }
-          })
-        );
+        const surveysWithQuotationStatus = response.data.map((survey) => ({
+          ...survey,
+          hasQuotation: survey.has_quotation,
+          quotation_id: survey.quotation_id,
+          quotation_created_at: survey.quotation_created_at,
+        }));
         setSurveys(surveysWithQuotationStatus);
       } catch (err) {
         setError("Failed to fetch surveys. Please try again.");
@@ -623,8 +597,8 @@ const SurveySummary = () => {
                       <td className="border border-gray-400 px-3 py-2">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.crate_required
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
                             }`}
                         >
                           {a.crate_required ? "Yes" : "No"}
@@ -633,8 +607,8 @@ const SurveySummary = () => {
                       <td className="border border-gray-400 px-3 py-2">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.move_status === "not_moving"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-green-100 text-green-800"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-green-800"
                             }`}
                         >
                           {a.move_status === "not_moving"
@@ -694,8 +668,8 @@ const SurveySummary = () => {
                       <td className="border border-gray-400 px-3 py-2">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${v.insurance
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
                             }`}
                         >
                           {v.insurance ? "Yes" : "No"}
@@ -721,6 +695,12 @@ const SurveySummary = () => {
                     <th className="border border-gray-400 px-4 py-2 text-left">
                       Service
                     </th>
+                    <th className="border border-gray-400 px-4 py-2 text-center w-24">
+                      Qty
+                    </th>
+                    <th className="border border-gray-400 px-4 py-2 text-left">
+                      Remarks
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -728,6 +708,12 @@ const SurveySummary = () => {
                     <tr key={i}>
                       <td className="border border-gray-400 px-4 py-2">
                         {service.name || "Unknown Service"}
+                      </td>
+                      <td className="border border-gray-400 px-4 py-2 text-center font-medium">
+                        {service.quantity || 1}
+                      </td>
+                      <td className="border border-gray-400 px-4 py-2 text-gray-600">
+                        {service.remarks || "-"}
                       </td>
                     </tr>
                   ))}
@@ -831,10 +817,10 @@ const SurveySummary = () => {
                     <p className="text-sm font-medium">{service}</p>
                     <p
                       className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${survey.status === "completed"
-                          ? "bg-green-200 text-green-800"
-                          : survey.status === "cancelled"
-                            ? "bg-red-200 text-red-800"
-                            : "bg-yellow-200 text-yellow-800"
+                        ? "bg-green-200 text-green-800"
+                        : survey.status === "cancelled"
+                          ? "bg-red-200 text-red-800"
+                          : "bg-yellow-200 text-yellow-800"
                         }`}
                     >
                       {formatStatus(survey.status)}

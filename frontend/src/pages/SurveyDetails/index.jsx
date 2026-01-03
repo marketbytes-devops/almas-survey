@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck, FaSearch } from "react-icons/fa";
+import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck, FaSearch, FaSignature, FaEye } from "react-icons/fa";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
@@ -13,6 +13,303 @@ import { Country, State, City } from "country-state-city";
 import SignatureModal from "../../components/SignatureModal/SignatureModal";
 import Modal from "../../components/Modal";
 import Article from "./components/Article";
+import AdditionalServicesTab from "./components/AdditionalServicesTab";
+import VehicleDetails from "./components/VehicleDetails";
+
+const salutationOptions = [
+    { value: "Mr", label: "Mr" },
+    { value: "Mrs", label: "Mrs" },
+    { value: "Ms", label: "Ms" },
+];
+
+const frequencyOptions = [
+    { value: "short_term", label: "Short Term" },
+    { value: "long_term", label: "Long Term" },
+];
+
+const storageModeOptions = [
+    { value: "ac", label: "AC" },
+    { value: "non_ac", label: "Non-AC" },
+    { value: "self_storage", label: "Self Storage" },
+];
+
+const serviceTypeOptions = [
+    { value: "localMove", label: "Local Move" },
+    { value: "internationalMove", label: "International Move" },
+    { value: "carExport", label: "Car Import and Export" },
+    { value: "storageServices", label: "Storage Services" },
+    { value: "logistics", label: "Logistics" }
+];
+
+
+const statusOptions = [
+    { value: "pending", label: "Pending" },
+    { value: "in_progress", label: "In Progress" },
+    { value: "completed", label: "Completed" },
+    { value: "cancelled", label: "Cancelled" },
+];
+
+const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, originCountry, originState, register, watch, multipleAddresses, destinationAddresses, removeAddress, addAddress }) => {
+    return (
+        <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Customer Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Customer Type" name="customerType" type="select" options={apiData.customerTypes} />
+                    <Input label="Salutation" name="salutation" type="select" options={salutationOptions} />
+                    <Input label="Full Name" name="fullName" rules={{ required: "Required" }} />
+                    <Input label="Phone" name="phoneNumber" rules={{ required: "Required" }} />
+                    <Input label="Email" name="email" type="email" />
+                    <Input label="Service Type" name="serviceType" type="select" options={serviceTypeOptions} />
+                    <Input label="Address" name="address" />
+                    <Input label="Company" name="company" />
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" {...register("isMilitary")} />
+                        <label className="text-sm font-medium text-gray-700">Military Status</label>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Survey Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <DatePickerInput label="Survey Date" name="surveyDate" />
+                    <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
+                    <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Origin Address</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Origin Address" name="originAddress" />
+                    <Input label="Country" name="originCountry" type="select" options={countryOptions} />
+                    <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
+                    <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Destination Details</h3>
+                <div className="space-y-4">
+                    <label className="flex items-center gap-2">
+                        <input type="checkbox" {...register("multipleAddresses")} />
+                        <span className="text-sm font-medium text-gray-700">Multiple Addresses</span>
+                    </label>
+
+                    {multipleAddresses ? (
+                        <>
+                            {destinationAddresses.map((addr, i) => {
+                                const country = watch(`destinationAddresses[${i}].country`);
+                                const state = watch(`destinationAddresses[${i}].state`);
+
+                                return (
+                                    <div key={addr.id} className="bg-gray-100 p-4 rounded space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <h4 className="font-medium">Address {i + 1}</h4>
+                                            {destinationAddresses.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAddress(i)}
+                                                    className="text-red-600 hover:text-red-800"
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <Input
+                                                label="Address"
+                                                name={`destinationAddresses[${i}].address`}
+                                            />
+                                            <Input
+                                                label="Country"
+                                                name={`destinationAddresses[${i}].country`}
+                                                type="select"
+                                                options={countryOptions}
+                                            />
+                                            <Input
+                                                label="State"
+                                                name={`destinationAddresses[${i}].state`}
+                                                type="select"
+                                                options={getStateOptions(country)}
+                                            />
+                                            <Input
+                                                label="City"
+                                                name={`destinationAddresses[${i}].city`}
+                                                type="select"
+                                                options={getCityOptions(country, state)}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <Input
+                                                label="ZIP"
+                                                name={`destinationAddresses[${i}].zip`}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            <button
+                                type="button"
+                                onClick={addAddress}
+                                className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
+                            >
+                                Add Another Address
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input label="Address" name="destinationAddresses[0].address" />
+                                <Input
+                                    label="Country"
+                                    name="destinationAddresses[0].country"
+                                    type="select"
+                                    options={countryOptions}
+                                />
+                                <Input
+                                    label="State"
+                                    name="destinationAddresses[0].state"
+                                    type="select"
+                                    options={getStateOptions(watch("destinationAddresses[0].country"))}
+                                />
+                                <Input
+                                    label="City"
+                                    name="destinationAddresses[0].city"
+                                    type="select"
+                                    options={getCityOptions(
+                                        watch("destinationAddresses[0].country"),
+                                        watch("destinationAddresses[0].state")
+                                    )}
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                <Input label="ZIP" name="destinationAddresses[0].zip" />
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Move Details</h3>
+                <div className="grid grid-cols-1 gap-4">
+                    <DatePickerInput label="Packing From" name="packingDateFrom" />
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Storage Details</h3>
+                <div className="space-y-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            {...register("storageRequired")}
+                            className="w-3 h-3 text-[#4c7085] rounded focus:ring-[#4c7085]"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Storage Required?</span>
+                    </label>
+
+                    {watch("storageRequired") && (
+                        <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DatePickerInput label="Storage Start Date" name="storageStartDate" />
+                                <Input
+                                    label="Frequency"
+                                    name="storageFrequency"
+                                    type="select"
+                                    options={frequencyOptions}
+                                />
+                                <Input label="Duration" name="storageDuration" />
+                                <Input
+                                    label="Mode"
+                                    name="storageMode"
+                                    type="select"
+                                    options={storageModeOptions}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, isSignatureUploading, setIsSignatureModalOpen, isSignatureModalOpen, localSignatureFile }) => {
+    return (
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+            <h3 className="text-lg sm:text-xl font-medium mb-4">Survey Status</h3>
+            <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Status" name="status" type="select" options={statusOptions} />
+                    <Input label="Work Description" name="workDescription" type="textarea" placeholder="Enter any additional notes or description about the survey..." />
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-gray-100">
+                    <h4 className="text-lg font-medium text-gray-800 mb-6 flex items-center gap-2">
+                        <FaEdit className="text-[#4c7085]" />
+                        Customer Digital Signature
+                    </h4>
+
+                    <div className="flex flex-col md:flex-row items-center gap-8">
+                        <div className="w-full md:w-64 h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden relative group">
+                            {(signatureUploaded || signatureImageUrl || localSignatureFile) ? (
+                                <div className="relative w-full h-full p-2">
+                                    <img
+                                        src={signatureImageUrl || (localSignatureFile ? URL.createObjectURL(localSignatureFile) : "")}
+                                        alt="Signature"
+                                        className="w-full h-full object-contain"
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsSignatureModalOpen(true)}
+                                            className="px-4 py-2 bg-white text-gray-800 text-xs font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
+                                        >
+                                            Update Signature
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center gap-2 text-gray-400">
+                                    <FaSignature size={32} className="opacity-20" />
+                                    <span className="text-xs font-medium italic">No signature captured</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex-1 space-y-4">
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                {signatureUploaded || signatureImageUrl || localSignatureFile
+                                    ? "Customer signature has been captured successfully and will be included in the survey report."
+                                    : "Please capture the customer's digital signature to finalize the survey. This signature will be used for official documentation."}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => setIsSignatureModalOpen(true)}
+                                disabled={isSignatureUploading}
+                                className={`
+                                    flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all
+                                    ${(signatureUploaded || signatureImageUrl || localSignatureFile)
+                                        ? "bg-white border-2 border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5"
+                                        : "bg-[#4c7085] text-white shadow-md hover:shadow-lg hover:bg-[#3d5a6b]"}
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                `}
+                            >
+                                <FaPlus size={14} />
+                                {(signatureUploaded || signatureImageUrl || localSignatureFile) ? "Change Signature" : "Capture Signature"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
     const methods = useFormContext();
@@ -73,6 +370,7 @@ const SurveyDetails = () => {
     const [isSignatureUploading, setIsSignatureUploading] = useState(false);
     const [signatureUploaded, setSignatureUploaded] = useState(false);
     const [signatureImageUrl, setSignatureImageUrl] = useState(null);
+    const [localSignatureFile, setLocalSignatureFile] = useState(null);
 
     const [apiData, setApiData] = useState({
         customerTypes: [],
@@ -126,6 +424,28 @@ const SurveyDetails = () => {
 
     const { handleSubmit, watch, setValue, reset, register } = methods;
     const hasReset = useRef(false);
+
+    const countryOptions = useMemo(() => Country.getAllCountries().map(c => ({ value: c.isoCode, label: c.name })), []);
+    const getStateOptions = useCallback((code) => code ? State.getStatesOfCountry(code).map(s => ({ value: s.isoCode, label: s.name })) : [], []);
+    const getCityOptions = useCallback((country, state) => country && state ? City.getCitiesOfState(country, state).map(c => ({ value: c.name, label: c.name })) : [], []);
+
+    const originCountry = watch("originCountry");
+    const originState = watch("originState");
+    const destinationAddresses = watch("destinationAddresses") || [];
+    const multipleAddresses = watch("multipleAddresses");
+
+    const addAddress = () => {
+        const newAddr = { id: uuidv4(), address: "", city: "Doha", country: "QA", state: "", zip: "", poe: "" };
+        const updated = [...destinationAddresses, newAddr];
+        setValue("destinationAddresses", updated);
+    };
+
+    const removeAddress = (index) => {
+        if (destinationAddresses.length > 1) {
+            const updated = destinationAddresses.filter((_, i) => i !== index);
+            setValue("destinationAddresses", updated);
+        }
+    };
 
     useEffect(() => {
         if (surveyId) {
@@ -220,7 +540,7 @@ const SurveyDetails = () => {
                             transportMode: v.transport_mode || "",
                         })) || [],
                         additionalServices: survey.additional_services?.map(service => ({
-                            id: service.id,
+                            id: service.service_id,
                             name: service.name,
                             selected: true,
                             quantity: service.quantity || 1,
@@ -256,7 +576,6 @@ const SurveyDetails = () => {
                 weightUnits: data[2].map(u => ({ value: u.id, label: u.name })),
                 packingTypes: data[3].map(t => ({ value: t.id, label: t.name })),
                 handymanTypes: data[4].map(t => ({ value: t.id, label: t.type_name })),
-                vehicleTypes: data[5].map(t => ({ value: t.id, label: t.name })),
                 rooms: data[6].map(r => ({ id: r.id, value: r.id, label: r.name, name: r.name })),
                 items: data[7],
             });
@@ -299,7 +618,20 @@ const SurveyDetails = () => {
     const openSignatureModal = () => setIsSignatureModalOpen(true);
 
     const handleSignatureSave = async (file) => {
-        if (!existingSurvey || !file) return;
+        if (!file) return;
+
+        if (!existingSurvey) {
+            // New survey: Save locally and show preview
+            setLocalSignatureFile(file);
+            setSignatureUploaded(true);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSignatureImageUrl(reader.result);
+            };
+            reader.readAsDataURL(file);
+            setIsSignatureModalOpen(false);
+            return;
+        }
 
         const formData = new FormData();
         formData.append("signature", file);
@@ -332,588 +664,11 @@ const SurveyDetails = () => {
     };
 
 
-    const Customer = () => {
-        const [destinationAddresses, setDestinationAddresses] = useState(watch("destinationAddresses"));
-        const multipleAddresses = watch("multipleAddresses");
-
-        const countryOptions = Country.getAllCountries().map(c => ({ value: c.isoCode, label: c.name }));
-        const getStateOptions = (code) => code ? State.getStatesOfCountry(code).map(s => ({ value: s.isoCode, label: s.name })) : [];
-        const getCityOptions = (country, state) => country && state ? City.getCitiesOfState(country, state).map(c => ({ value: c.name, label: c.name })) : [];
-
-        const originCountry = watch("originCountry");
-        const originState = watch("originState");
-        const destinationCountry = watch("destinationAddresses[0].country");
-        const destinationState = watch("destinationAddresses[0].state");
-
-        const serviceTypeOptions = [
-            { value: "localMove", label: "Local Move" },
-            { value: "internationalMove", label: "International Move" },
-            { value: "carExport", label: "Car Import and Export" },
-            { value: "storageServices", label: "Storage Services" },
-            { value: "logistics", label: "Logistics" },
-        ];
-
-        const salutationOptions = [{ value: "Mr", label: "Mr" }, { value: "Ms", label: "Ms" }, { value: "Mrs", label: "Mrs" }];
-
-        const statusOptions = [
-            { value: "pending", label: "Pending" },
-            { value: "in_progress", label: "In Progress" },
-            { value: "completed", label: "Completed" },
-            { value: "cancelled", label: "Cancelled" },
-        ];
-
-        const frequencyOptions = [{ value: "short_term", label: "Short Term" }, { value: "long_term", label: "Long Term" },];
-        const storageModeOptions = [{ value: "ac", label: "AC" }, { value: "non_ac", label: "Non-AC" }, { value: "self_storage", label: "Self Storage" }];
-
-        const addAddress = () => {
-            const newAddr = { id: uuidv4(), address: "", city: "", country: "", state: "", zip: "", poe: "" };
-            const updated = [...destinationAddresses, newAddr];
-            setDestinationAddresses(updated);
-            setValue("destinationAddresses", updated);
-        };
-
-        const removeAddress = (index) => {
-            if (destinationAddresses.length > 1) {
-                const updated = destinationAddresses.filter((_, i) => i !== index);
-                setDestinationAddresses(updated);
-                setValue("destinationAddresses", updated);
-            }
-        };
 
 
-        const sections = [
-            {
-                id: "customer-details",
-                title: "Customer Details",
-                content: (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Customer Type" name="customerType" type="select" options={apiData.customerTypes} />
-                        <Input label="Salutation" name="salutation" type="select" options={salutationOptions} />
-                        <Input label="Full Name" name="fullName" rules={{ required: "Required" }} />
-                        <Input label="Phone" name="phoneNumber" rules={{ required: "Required" }} />
-                        <Input label="Email" name="email" type="email" />
-                        <Input label="Service Type" name="serviceType" type="select" options={serviceTypeOptions} />
-                        <Input label="Address" name="address" />
-                        <Input label="Company" name="company" />
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" {...register("isMilitary")} />
-                            <label className="text-sm font-medium text-gray-700">Military Status</label>
-                        </div>
-                    </div>
-                ),
-            },
-            {
-                id: "survey-details",
-                title: "Survey Details",
-                content: (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <DatePickerInput label="Survey Date" name="surveyDate" />
-                        <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
-                        <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
-                    </div>
-                ),
-            },
-            {
-                id: "origin-address",
-                title: "Origin Address",
-                content: (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Origin Address" name="originAddress" />
-                        <Input label="Country" name="originCountry" type="select" options={countryOptions} />
-                        <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
-                        <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
-                    </div>
-                ),
-            },
-            {
-                id: "destination-details",
-                title: "Destination Details",
-                content: (
-                    <div className="space-y-4">
-                        <label className="flex items-center gap-2">
-                            <input type="checkbox" {...register("multipleAddresses")} />
-                            <span className="text-sm font-medium text-gray-700">Multiple Addresses</span>
-                        </label>
-
-                        {multipleAddresses ? (
-                            <>
-                                {destinationAddresses.map((addr, i) => {
-                                    const country = watch(`destinationAddresses[${i}].country`);
-                                    const state = watch(`destinationAddresses[${i}].state`);
-
-                                    return (
-                                        <div key={addr.id} className="bg-gray-100 p-4 rounded space-y-4">
-                                            <div className="flex justify-between items-center">
-                                                <h4 className="font-medium">Address {i + 1}</h4>
-                                                {destinationAddresses.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeAddress(i)}
-                                                        className="text-red-600 hover:text-red-800"
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <Input
-                                                    label="Address"
-                                                    name={`destinationAddresses[${i}].address`}
-                                                />
-                                                <Input
-                                                    label="Country"
-                                                    name={`destinationAddresses[${i}].country`}
-                                                    type="select"
-                                                    options={countryOptions}
-                                                />
-                                                <Input
-                                                    label="State"
-                                                    name={`destinationAddresses[${i}].state`}
-                                                    type="select"
-                                                    options={getStateOptions(country)}
-                                                />
-                                                <Input
-                                                    label="City"
-                                                    name={`destinationAddresses[${i}].city`}
-                                                    type="select"
-                                                    options={getCityOptions(country, state)}
-                                                />
-                                            </div>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                <Input
-                                                    label="ZIP"
-                                                    name={`destinationAddresses[${i}].zip`}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                <button
-                                    type="button"
-                                    onClick={addAddress}
-                                    className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
-                                >
-                                    Add Another Address
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input label="Address" name="destinationAddresses[0].address" />
-                                    <Input
-                                        label="Country"
-                                        name="destinationAddresses[0].country"
-                                        type="select"
-                                        options={countryOptions}
-                                    />
-                                    <Input
-                                        label="State"
-                                        name="destinationAddresses[0].state"
-                                        type="select"
-                                        options={getStateOptions(watch("destinationAddresses[0].country"))}
-                                    />
-                                    <Input
-                                        label="City"
-                                        name="destinationAddresses[0].city"
-                                        type="select"
-                                        options={getCityOptions(
-                                            watch("destinationAddresses[0].country"),
-                                            watch("destinationAddresses[0].state")
-                                        )}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <Input label="ZIP" name="destinationAddresses[0].zip" />
-                                </div>
-                            </>
-                        )}
-                    </div>
-                ),
-            },
-            {
-                id: "move-details",
-                title: "Move Details",
-                content: (
-                    <div className="grid grid-cols-1 gap-4">
-                        <DatePickerInput label="Packing From" name="packingDateFrom" />
-                    </div>
-                ),
-            },
-            {
-                id: "storage-details",
-                title: "Storage Details",
-                content: (
-                    <div className="space-y-6">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                {...register("storageRequired")}
-                                className="w-3 h-3 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                            />
-                            <span className="text-sm font-medium text-gray-700">Storage Required?</span>
-                        </label>
-
-                        {watch("storageRequired") && (
-                            <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <DatePickerInput label="Storage Start Date" name="storageStartDate" />
-                                    <Input
-                                        label="Frequency"
-                                        name="storageFrequency"
-                                        type="select"
-                                        options={frequencyOptions}
-                                    />
-                                    <Input label="Duration" name="storageDuration" />
-                                    <Input
-                                        label="Mode"
-                                        name="storageMode"
-                                        type="select"
-                                        options={storageModeOptions}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                ),
-            },
-        ];
-
-        return (
-            <div className="space-y-6">
-                {sections.map((section) => (
-                    <div key={section.id} className="bg-white rounded-lg shadow p-4 md:p-6">
-                        <h3 className="text-lg sm:text-xl font-medium mb-4">{section.title}</h3>
-                        {section.content}
-                    </div>
-                ))}
-            </div>
-        );
-    };
 
 
-    const VehicleDetails = () => {
-        const vehicles = watch("vehicles") || [];
 
-        const addVehicle = () => {
-            setValue("vehicles", [...vehicles, { id: uuidv4(), vehicleType: "", make: "", model: "", insurance: false, remark: "" }]);
-        };
-
-        const removeVehicle = (id) => {
-            setValue("vehicles", vehicles.filter(v => v.id !== id));
-        };
-
-        return (
-            <div className="mt-4 sm:mt-10 bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-lg sm:text-xl font-medium">Vehicle Details</h2>
-                    <button type="button" onClick={addVehicle} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded">
-                        <FaPlus /> Add Vehicle
-                    </button>
-                </div>
-
-                {vehicles.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">No vehicles added yet.</p>
-                ) : (
-                    <div className="space-y-6">
-                        {vehicles.map((vehicle, index) => (
-                            <div key={vehicle.id} className="rounded-lg p-6 bg-gray-100 relative shadow-sm border border-gray-200">
-                                <button type="button" onClick={() => removeVehicle(vehicle.id)} className="absolute top-4 right-4 text-red-600 hover:bg-red-100 p-2 rounded">
-                                    <FaTimes />
-                                </button>
-                                <h4 className="text-lg sm:text-xl font-medium mb-4">Vehicle {index + 1}</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input label="Vehicle Type" name={`vehicles[${index}].vehicleType`} type="select" options={apiData.vehicleTypes} />
-                                    <Input label="Make" name={`vehicles[${index}].make`} placeholder="e.g. Toyota" />
-                                    <Input label="Model" name={`vehicles[${index}].model`} placeholder="e.g. Camry" />
-                                    <div className="flex items-center gap-3">
-                                        <input type="checkbox" {...register(`vehicles[${index}].insurance`)} className="w-4 h-4" />
-                                        <label className="font-medium">Insurance Required</label>
-                                    </div>
-                                </div>
-                                <div className="mt-4">
-                                    <Input label="Remark (Optional)" name={`vehicles[${index}].remark`} type="textarea" rows={2} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <button type="button" onClick={addVehicle} className="w-full flex sm:hidden mt-6 items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded">
-                    <FaPlus /> Add Vehicle
-                </button>
-            </div>
-        );
-    };
-
-    const AdditionalServicesTab = () => {
-        const [additionalServices, setAdditionalServices] = useState([]);
-        const [loading, setLoading] = useState(true);
-        const [error, setError] = useState(null);
-
-        const selectedServices = watch("additionalServices") || [];
-
-        useEffect(() => {
-            const fetchAdditionalServices = async () => {
-                try {
-                    const response = await apiClient.get("/survey-additional-services/");
-                    setAdditionalServices(response.data);
-                } catch (err) {
-                    setError("Failed to load additional services.");
-                    console.error("Error fetching additional services:", err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchAdditionalServices();
-        }, []);
-
-        const handleServiceToggle = (serviceId, serviceName) => {
-            const isCurrentlySelected = selectedServices.some(service => service.id === serviceId);
-
-            let updatedServices;
-            if (isCurrentlySelected) {
-                updatedServices = selectedServices.filter(service => service.id !== serviceId);
-            } else {
-                updatedServices = [...selectedServices, {
-                    id: serviceId,
-                    name: serviceName,
-                    selected: true,
-                    quantity: 1,
-                    remarks: ""
-                }];
-            }
-
-            setValue("additionalServices", updatedServices, { shouldValidate: true });
-        };
-
-        const updateServiceDetails = (serviceId, field, value) => {
-            const updatedServices = selectedServices.map(service => {
-                if (service.id === serviceId) {
-                    return { ...service, [field]: value };
-                }
-                return service;
-            });
-            setValue("additionalServices", updatedServices, { shouldValidate: true });
-        };
-
-        const isServiceSelected = (serviceId) => {
-            return selectedServices.some(service => service.id === serviceId);
-        };
-
-        if (loading) {
-            return (
-                <div className="flex justify-center items-center py-8">
-                    <Loading />
-                </div>
-            );
-        }
-
-        return (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-                <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-6">Additional Services</h3>
-
-                {error && (
-                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                        {error}
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    {additionalServices.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                            No additional services available. Please add services in the settings first.
-                        </div>
-                    ) : (
-                        additionalServices.map((service) => (
-                            <div
-                                key={service.id}
-                                className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-200 ${isServiceSelected(service.id)
-                                    ? "bg-blue-50 border-blue-200"
-                                    : "bg-white border-gray-200 hover:bg-gray-50"
-                                    }`}
-                            >
-                                <div className="flex items-center space-x-4">
-                                    <input
-                                        type="checkbox"
-                                        checked={isServiceSelected(service.id)}
-                                        onChange={() => handleServiceToggle(service.id, service.name)}
-                                        className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#6b8ca3]"
-                                    />
-                                    <span className={`font-medium ${isServiceSelected(service.id) ? "text-[#4c7085]" : "text-gray-700"
-                                        }`}>
-                                        {service.name}
-                                    </span>
-                                </div>
-
-                                {isServiceSelected(service.id) && (
-                                    <span className="text-sm text-green-600 font-medium">Selected</span>
-                                )}
-                            </div>
-                        ))
-                    )}
-                </div>
-                {selectedServices.length > 0 && (
-                    <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <h4 className="text-lg sm:text-xl font-medium text-green-800 mb-2">
-                            Selected Additional Services ({selectedServices.length})
-                        </h4>
-                        <div className="space-y-2">
-                            {selectedServices.map((service) => (
-                                <div key={service.id} className="bg-white p-4 rounded border border-green-100 shadow-sm">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <span className="text-green-800 font-medium text-lg">{service.name}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleServiceToggle(service.id, service.name)}
-                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newQty = Math.max(1, (service.quantity || 1) - 1);
-                                                        updateServiceDetails(service.id, "quantity", newQty);
-                                                    }}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold"
-                                                >
-                                                    -
-                                                </button>
-                                                <span className="text-lg font-medium w-8 text-center">{service.quantity || 1}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newQty = (service.quantity || 1) + 1;
-                                                        updateServiceDetails(service.id, "quantity", newQty);
-                                                    }}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold"
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-                                            <textarea
-                                                value={service.remarks || ""}
-                                                onChange={(e) => updateServiceDetails(service.id, "remarks", e.target.value)}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                                rows={2}
-                                                placeholder="Add remarks..."
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    const SurveyStatus = () => {
-        const statusOptions = [
-            { value: "pending", label: "Pending" },
-            { value: "in_progress", label: "In Progress" },
-            { value: "completed", label: "Completed" },
-            { value: "cancelled", label: "Cancelled" },
-        ];
-
-        const sections = [
-            {
-                id: "survey-status",
-                title: "Survey Status",
-                content: (
-                    <div className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input label="Status" name="status" type="select" options={statusOptions} />
-                            <Input
-                                label="Work Description"
-                                name="workDescription"
-                                type="textarea"
-                                placeholder="Enter any additional notes or description about the survey..."
-                            />
-                        </div>
-                        <div className="mt-8">
-                            <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Digital Signature</h3>
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border-2 border-gray-300">
-                                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                                    <div className="flex-1">
-                                        <p className="text-sm text-gray-700 mb-3">
-                                            Capture customer's digital signature to confirm survey completion.
-                                        </p>
-                                        <p className={`font-medium text-lg ${signatureUploaded ? "text-green-600" : "text-gray-600"}`}>
-                                            {signatureUploaded ? "✓ Signature has been added" : "No signature added yet"}
-                                        </p>
-                                        {signatureImageUrl && (
-                                            <div className="mt-4">
-                                                <p className="text-sm font-medium text-gray-700 mb-2">Current Signature:</p>
-                                                <img
-                                                    src={signatureImageUrl}
-                                                    alt="Customer signature"
-                                                    className="max-w-xs border-2 border-gray-300 rounded-lg shadow-md"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex flex-col gap-3">
-                                        {/* VIEW BUTTON - ONLY IF SIGNATURE EXISTS */}
-                                        {/* {signatureUploaded && signatureImageUrl && (
-                      <button
-                        onClick={() => setIsSignatureModalOpen(true)}
-                        className="px-6 py-2 text-sm bg-[#4c7085] hover:bg-[#4c7085] text-white font-semibold rounded-lg shadow transition transform "
-                      >
-                        View Signature
-                      </button>
-                    )} */}
-
-                                        {/* UPDATE / ADD BUTTON */}
-                                        <button
-                                            onClick={openSignatureModal}
-                                            disabled={isSignatureUploading}
-                                            className={`px-6 py-2 text-sm rounded-lg font-medium transition-all shadow-lg ${isSignatureUploading
-                                                ? "bg-gray-400 text-white cursor-not-allowed"
-                                                : signatureUploaded
-                                                    ? "px-6 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition transform"
-                                                    : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transform "
-                                                }`}
-                                        >
-                                            {isSignatureUploading
-                                                ? "Uploading..."
-                                                : signatureUploaded
-                                                    ? "Update Signature"
-                                                    : "Add Digital Signature"}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ),
-            },
-        ];
-
-        return (
-            <div className="space-y-6">
-                {sections.map((section) => (
-                    <div key={section.id} className="bg-white rounded-lg shadow p-4 md:p-6">
-                        <h3 className="text-lg sm:text-xl font-medium mb-4">{section.title}</h3>
-                        {section.content}
-                    </div>
-                ))}
-            </div>
-        );
-    };
 
     const saveSurveyData = async (data) => {
         setIsLoading(true);
@@ -960,7 +715,6 @@ const SurveyDetails = () => {
             storage_frequency: data.storageFrequency,
             storage_duration: data.storageDuration,
             storage_mode: data.storageMode,
-            transport_mode: data.transportMode,
             articles: data.articles.map(a => ({
                 room: a.room || null,
                 item_name: a.itemName,
@@ -984,7 +738,11 @@ const SurveyDetails = () => {
                 insurance: v.insurance || false,
                 remark: v.remark || "",
             })),
-            additional_service_ids: data.additionalServices?.map(service => service.id) || [],
+            additional_services: data.additionalServices?.map(service => ({
+                service_id: service.id,
+                quantity: service.quantity || 1,
+                remarks: service.remarks || "",
+            })) || [],
         };
 
         const request = existingSurvey
@@ -992,9 +750,26 @@ const SurveyDetails = () => {
             : apiClient.post("/surveys/", payload);
 
         request
-            .then(res => {
+            .then(async (res) => {
+                const newSurveyId = res.data.survey_id;
+
+                // If there's a local signature to upload
+                if (localSignatureFile && !existingSurvey) {
+                    const formData = new FormData();
+                    formData.append("signature", localSignatureFile);
+                    try {
+                        await apiClient.post(
+                            `/surveys/${newSurveyId}/upload-signature/`,
+                            formData,
+                            { headers: { "Content-Type": "multipart/form-data" } }
+                        );
+                    } catch (err) {
+                        console.error("Delayed signature upload failed:", err);
+                    }
+                }
+
                 setMessage(existingSurvey ? "Survey updated!" : "Survey created!");
-                setTimeout(() => navigate(`/survey/${res.data.survey_id}/survey-summary`, { state: { customerData: data } }), 2000);
+                setTimeout(() => navigate(`/survey/${newSurveyId}/survey-summary`, { state: { customerData: data } }), 2000);
             })
             .catch(err => {
                 console.error("Error saving survey:", err.response?.data);
@@ -1075,7 +850,22 @@ const SurveyDetails = () => {
                             ))}
                         </div>
 
-                        {activeTab === "customer" && <Customer />}
+                        {activeTab === "customer" && (
+                            <Customer
+                                apiData={apiData}
+                                countryOptions={countryOptions}
+                                getStateOptions={getStateOptions}
+                                getCityOptions={getCityOptions}
+                                originCountry={originCountry}
+                                originState={originState}
+                                register={register}
+                                watch={watch}
+                                multipleAddresses={methods.watch("multipleAddresses")}
+                                destinationAddresses={methods.watch("destinationAddresses")}
+                                removeAddress={removeAddress}
+                                addAddress={addAddress}
+                            />
+                        )}
                         {activeTab === "items" && (
                             <>
                                 <Article apiData={apiData} setMessage={setMessage} setError={setError} />
@@ -1084,8 +874,24 @@ const SurveyDetails = () => {
                                 </div>
                             </>
                         )}
-                        {activeTab === "additionalServices" && <AdditionalServicesTab />}
-                        {activeTab === "status" && <SurveyStatus />}
+                        {activeTab === "additionalServices" && (
+                            <AdditionalServicesTab
+                                services={watch("additionalServices")}
+                                setServices={(newServices) => setValue("additionalServices", newServices)}
+                            />
+                        )}
+                        {activeTab === "status" && (
+                            <SurveyStatus
+                                register={register}
+                                watch={watch}
+                                signatureUploaded={signatureUploaded}
+                                signatureImageUrl={signatureImageUrl}
+                                isSignatureUploading={isSignatureUploading}
+                                setIsSignatureModalOpen={setIsSignatureModalOpen}
+                                isSignatureModalOpen={isSignatureModalOpen}
+                                localSignatureFile={localSignatureFile}
+                            />
+                        )}
 
                         <div className="flex gap-4 mt-4 sm:mt-10">
                             <button

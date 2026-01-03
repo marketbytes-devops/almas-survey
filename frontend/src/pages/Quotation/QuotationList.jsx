@@ -48,36 +48,13 @@ export default function QuotationList() {
         const sorted = res.data.sort(
           (a, b) => new Date(b.created_at) - new Date(a.created_at)
         );
-        const surveysWithQuot = await Promise.all(
-          sorted.map(async (s) => {
-            try {
-              const checkRes = await apiClient.get(
-                `/quotation-create/check/?survey_id=${s.survey_id}`
-              );
-              let quotationCreatedAt = null;
-              let quotationId = null;
-              if (checkRes.data.exists && checkRes.data.quotation_id) {
-                try {
-                  const quotRes = await apiClient.get(`/quotation-create/${checkRes.data.quotation_id}/`);
-                  quotationCreatedAt = quotRes.data.created_at;
-                  quotationId = checkRes.data.quotation_id;
-                } catch (err) {
-                  console.warn("Could not fetch quotation details");
-                }
-              }
-              return {
-                ...s,
-                hasQuotation: checkRes.data.exists,
-                quotation_id: quotationId,
-                quotation_created_at: quotationCreatedAt,
-              };
-            } catch {
-              return { ...s, hasQuotation: false, quotation_id: null, quotation_created_at: null };
-            }
-          })
-        );
-        setSurveys(surveysWithQuot);
-        setFilteredSurveys(surveysWithQuot);
+        const processed = sorted.map(s => ({
+          ...s,
+          hasQuotation: s.has_quotation,
+          // quotation_id and quotation_created_at are already in s
+        }));
+        setSurveys(processed);
+        setFilteredSurveys(processed);
       } catch (e) {
         setError("Failed to load surveys.");
       } finally {
@@ -157,12 +134,12 @@ export default function QuotationList() {
 
       // Second: Delete the signature if it exists
       try {
-        await apiClient.delete(`/surveys/${surveyId}/signature/`);
-        console.log("Signature deleted successfully");
+        await apiClient.delete(`/quotation-create/${quotationId}/signature/`);
+        console.log("Quotation signature deleted successfully");
       } catch (sigErr) {
         // If signature doesn't exist or already deleted, ignore error
         if (sigErr.response?.status !== 404) {
-          console.warn("Could not delete signature:", sigErr);
+          console.warn("Could not delete quotation signature:", sigErr);
         }
       }
 
@@ -170,14 +147,14 @@ export default function QuotationList() {
       setSurveys((prev) =>
         prev.map((s) =>
           s.survey_id === surveyId
-            ? { ...s, hasQuotation: false, quotation_id: null, signature_uploaded: false }
+            ? { ...s, hasQuotation: false, quotation_id: null, quotation_signature_uploaded: false }
             : s
         )
       );
       setFilteredSurveys((prev) =>
         prev.map((s) =>
           s.survey_id === surveyId
-            ? { ...s, hasQuotation: false, quotation_id: null, signature_uploaded: false }
+            ? { ...s, hasQuotation: false, quotation_id: null, quotation_signature_uploaded: false }
             : s
         )
       );
@@ -189,9 +166,10 @@ export default function QuotationList() {
   };
 
   const viewSignature = async (survey) => {
+    if (!survey.quotation_id) return;
     try {
       const signatureRes = await apiClient.get(
-        `/surveys/${survey.survey_id}/signature/`
+        `/quotation-create/${survey.quotation_id}/signature/`
       );
       setCurrentSignature(signatureRes.data.signature_url);
       setIsSignatureModalOpen(true);
@@ -365,7 +343,7 @@ export default function QuotationList() {
                     Sl.No
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
-                    Quotation ID               
+                    Quotation ID
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium uppercase">
                     Survey ID
@@ -501,7 +479,7 @@ export default function QuotationList() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-center whitespace-nowrap">
-                        {s.signature_uploaded ? (
+                        {s.quotation_signature_uploaded ? (
                           <button
                             onClick={() => viewSignature(s)}
                             className="whitespace-nowrap inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
@@ -640,7 +618,7 @@ export default function QuotationList() {
                           </div>
                           <div className="pt-2">
                             <p className="font-medium mb-2">Signature:</p>
-                            {s.signature_uploaded ? (
+                            {s.quotation_signature_uploaded ? (
                               <button
                                 onClick={() => viewSignature(s)}
                                 className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"

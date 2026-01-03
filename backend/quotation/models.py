@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from django.utils import timezone
 from survey.models import Survey
@@ -82,9 +83,17 @@ class Quotation(models.Model):
         blank=True,
         help_text="List of selected general services (from /services/) IDs chosen by user with round buttons",
     )
+    additional_charges = models.JSONField(
+        default=list,
+        null=True,
+        blank=True,
+        help_text="Detailed additional charges with price and quantity"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    signature = models.FileField(upload_to='quotation_signatures/', null=True, blank=True)
+    signature_uploaded = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
@@ -106,5 +115,13 @@ class Quotation(models.Model):
             self.included_services = []
         if not isinstance(self.excluded_services, list):
             self.excluded_services = []
+        if not isinstance(self.additional_charges, list):
+            self.additional_charges = []
 
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.signature:
+            if os.path.isfile(self.signature.path):
+                os.remove(self.signature.path)
+        super().delete(*args, **kwargs)

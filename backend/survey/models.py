@@ -159,7 +159,7 @@ class Article(models.Model):
 
 class Vehicle(models.Model):
     survey = models.ForeignKey(Survey, related_name='vehicles', on_delete=models.CASCADE, null=True, blank=True)
-    vehicle_type = models.ForeignKey(VehicleType, on_delete=models.SET_NULL, null=True, blank=True)
+    vehicle_type = models.CharField(max_length=100, blank=True, null=True)
     make = models.CharField(max_length=100, blank=True, null=True)
     model = models.CharField(max_length=100, blank=True, null=True)
     insurance = models.BooleanField(default=False, blank=True, null=True)
