@@ -62,12 +62,18 @@ class QuotationSerializer(serializers.ModelSerializer):
         return None
 
     def validate(self, attrs):
-        amount = attrs.get("amount")
-        advance = attrs.get("advance", 0)
-        if amount is not None and advance > amount:
-            raise serializers.ValidationError(
-                {"advance": "Advance cannot exceed total amount."}
-            )
+        # For partial updates (PATCH), only validate if advance is being changed
+        # and we can get the current amount from instance
+        advance = attrs.get("advance")
+        if advance is not None:  # Only check if advance is being updated
+            # Get current amount: from attrs if sent, else from existing instance
+            amount = attrs.get("amount")
+            if amount is None and self.instance is not None:
+                amount = self.instance.amount or 0
+            if amount is not None and advance > amount:
+                raise serializers.ValidationError(
+                    {"advance": "Advance cannot exceed total amount."}
+                )
         return attrs
 
     def to_representation(self, instance):

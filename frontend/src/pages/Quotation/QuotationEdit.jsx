@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaEye, FaPlus } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
@@ -71,21 +71,29 @@ export default function QuotationEdit() {
 
   useEffect(() => {
     const fetchIncludesExcludes = async () => {
-      const [includeRes, excludeRes] = await Promise.all([
-        apiClient.get("/inclusion-exclusion/?type=include"),
-        apiClient.get("/inclusion-exclusion/?type=exclude"),
-      ]);
-      setDynamicIncludes(includeRes.data);
-      setDynamicExcludes(excludeRes.data);
+      try {
+        const [includeRes, excludeRes] = await Promise.all([
+          apiClient.get("/inclusion-exclusion/?type=include"),
+          apiClient.get("/inclusion-exclusion/?type=exclude"),
+        ]);
+        setDynamicIncludes(includeRes.data);
+        setDynamicExcludes(excludeRes.data);
+      } catch (err) {
+        console.error("Failed to fetch includes/excludes:", err);
+      }
     };
     fetchIncludesExcludes();
   }, []);
 
   useEffect(() => {
     const fetchAllServices = async () => {
-      const res = await apiClient.get("/services/");
-      const services = Array.isArray(res.data.results) ? res.data.results : res.data;
-      setAllServices(services);
+      try {
+        const res = await apiClient.get("/services/");
+        const services = Array.isArray(res.data.results) ? res.data.results : res.data;
+        setAllServices(services);
+      } catch (err) {
+        console.error("Failed to fetch services:", err);
+      }
     };
     fetchAllServices();
   }, []);
@@ -159,6 +167,13 @@ export default function QuotationEdit() {
         }
         setServiceSelections(serviceSelectionsInit);
 
+        // Use backend values first (reliable after serializer fix)
+        const totalAmount = safeParse(q.amount);
+        const discount = safeParse(q.discount);
+        const advance = safeParse(q.advance);
+        const finalAmount = safeParse(q.final_amount);
+        const balance = safeParse(q.balance);
+
         setForm({
           date: q.date || today,
           client: get(s.full_name, s.enquiry?.fullName),
@@ -171,11 +186,11 @@ export default function QuotationEdit() {
           jobType: s.service_type === "localMove" ? "Local" : "International",
           baseAmount: "",
           additionalChargesTotal: breakdown.reduce((sum, c) => sum + c.total, 0),
-          amount: q.amount ? safeParse(q.amount).toFixed(2) : "",
-          discount: q.discount ? safeParse(q.discount).toString() : "",
-          finalAmount: q.final_amount ? safeParse(q.final_amount).toFixed(2) : "",
-          advance: q.advance ? safeParse(q.advance).toString() : "",
-          balance: q.balance ? safeParse(q.balance).toFixed(2) : "0.00",
+          amount: totalAmount.toFixed(2),
+          discount: discount.toString(),
+          finalAmount: finalAmount.toFixed(2),
+          advance: advance.toString(),
+          balance: balance.toFixed(2),
           includedServices,
           excludedServices,
         });
@@ -254,7 +269,8 @@ export default function QuotationEdit() {
     setForm((prev) => ({ ...prev, additionalChargesTotal: totalAdditional }));
   }, [chargeQuantities]);
 
-  useEffect(() => {
+  // Use memoized computed values (safe, no loop)
+  const computedValues = useMemo(() => {
     const base = safeParse(form.baseAmount);
     const additional = safeParse(form.additionalChargesTotal);
     const totalBeforeDiscount = base + additional;
@@ -265,13 +281,17 @@ export default function QuotationEdit() {
     const advance = safeParse(form.advance);
     const balance = Math.max(0, final - advance);
 
-    setForm((prev) => ({
-      ...prev,
-      amount: totalBeforeDiscount > 0 ? totalBeforeDiscount.toFixed(2) : "0.00",
-      finalAmount: final > 0 ? final.toFixed(2) : "0.00",
+    return {
+      amount: totalBeforeDiscount.toFixed(2),
+      finalAmount: final.toFixed(2),
       balance: balance.toFixed(2),
-    }));
+    };
   }, [form.baseAmount, form.additionalChargesTotal, form.discount, form.advance]);
+
+  // Prefer backend values first (reliable), fallback to computed
+  const displayAmount = safeParse(quotation?.amount) > 0 ? safeParse(quotation?.amount).toFixed(2) : computedValues.amount;
+  const displayFinal = safeParse(quotation?.final_amount) > 0 ? safeParse(quotation?.final_amount).toFixed(2) : computedValues.finalAmount;
+  const displayBalance = safeParse(quotation?.balance) > 0 ? safeParse(quotation?.balance).toFixed(2) : computedValues.balance;
 
   const handleQuantityChange = (chargeId, value) => {
     const qty = Math.max(0, parseInt(value) || 0);
@@ -279,14 +299,14 @@ export default function QuotationEdit() {
   };
 
   const handleUpdate = async () => {
-    if (!form.amount || !form.finalAmount || !quotation?.quotation_id) {
+    if (!displayAmount || !displayFinal || !quotation?.quotation_id) {
       alert("Please ensure all pricing fields are valid.");
       return;
     }
 
     const payload = {
       date: form.date,
-      amount: safeParse(form.amount),
+      amount: safeParse(displayAmount), // Use the displayed (reliable) value
       discount: safeParse(form.discount),
       advance: safeParse(form.advance),
       included_services: Object.keys(form.includedServices).filter((k) => form.includedServices[k]),
@@ -300,6 +320,8 @@ export default function QuotationEdit() {
         .filter((key) => serviceSelections[key])
         .map((key) => parseInt(key)),
     };
+
+    console.log("PATCH Payload:", payload); // Debug
 
     try {
       await apiClient.patch(`/quotation-create/${quotation.quotation_id}/`, payload);
@@ -315,6 +337,7 @@ export default function QuotationEdit() {
 
   return (
     <div className="bg-gray-100 min-h-screen rounded-lg">
+      {/* Signature Modal */}
       <SignatureModal
         isOpen={isSignatureModalOpen}
         onClose={() => setIsSignatureModalOpen(false)}
@@ -328,8 +351,9 @@ export default function QuotationEdit() {
             .then(() => {
               setMessage("Signature updated successfully!");
               setHasSignature(true);
-              apiClient.get(`/quotation-create/${quotation.quotation_id}/signature/`)
-                .then(res => setCurrentSignature(res.data.signature_url));
+              apiClient
+                .get(`/quotation-create/${quotation.quotation_id}/signature/`)
+                .then((res) => setCurrentSignature(res.data.signature_url));
             })
             .catch(() => setError("Signature upload failed"))
             .finally(() => {
@@ -340,6 +364,7 @@ export default function QuotationEdit() {
         customerName={form.client}
       />
 
+      {/* Signature View Modal */}
       {isSignatureViewModalOpen && currentSignature && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
@@ -358,6 +383,7 @@ export default function QuotationEdit() {
         </div>
       )}
 
+      {/* Header */}
       <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center rounded-t-lg">
         <div className="flex items-center gap-4">
           <button
@@ -371,6 +397,7 @@ export default function QuotationEdit() {
         </div>
       </div>
 
+      {/* Messages */}
       {message && (
         <div className="mx-4 mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium">
           {message}
@@ -383,6 +410,7 @@ export default function QuotationEdit() {
       )}
 
       <div className="p-4 space-y-10">
+        {/* Pricing Location */}
         <div className="bg-[#4c7085]/5 border border-[#4c7085]/30 rounded-xl p-6">
           <h3 className="text-lg font-medium text-[#4c7085] mb-4">Pricing Location</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -407,6 +435,7 @@ export default function QuotationEdit() {
           </div>
         </div>
 
+        {/* Quotation Date */}
         <div className="grid grid-cols-1 gap-6">
           <div>
             <label className="block text-sm font-medium text-[#4c7085] mb-2">Quotation Date</label>
@@ -419,6 +448,7 @@ export default function QuotationEdit() {
           </div>
         </div>
 
+        {/* Client Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-medium text-[#4c7085] mb-2">Client Name</label>
@@ -449,16 +479,26 @@ export default function QuotationEdit() {
           </div>
         </div>
 
+        {/* Additional Services */}
         {additionalChargesBreakdown.length > 0 && (
           <div className="bg-[#6b8ca3]/5 border-2 border-[#6b8ca3]/30 rounded-xl p-6">
             <h3 className="text-xl font-medium text-[#4c7085] mb-4">Additional Services</h3>
             <div className="space-y-4">
               {additionalChargesBreakdown.map((charge) => {
-                const quantity = chargeQuantities[charge.id] !== undefined ? chargeQuantities[charge.id] : charge.quantity;
-                const subtotal = charge.rate_type === "FIX" ? charge.price_per_unit : charge.price_per_unit * quantity;
+                const quantity =
+                  chargeQuantities[charge.id] !== undefined
+                    ? chargeQuantities[charge.id]
+                    : charge.quantity;
+                const subtotal =
+                  charge.rate_type === "FIX"
+                    ? charge.price_per_unit
+                    : charge.price_per_unit * quantity;
 
                 return (
-                  <div key={charge.id} className="bg-white border border-[#4c7085]/20 rounded-lg p-5">
+                  <div
+                    key={charge.id}
+                    className="bg-white border border-[#4c7085]/20 rounded-lg p-5"
+                  >
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                       <div>
                         <div className="font-medium text-gray-800">{charge.service_name}</div>
@@ -491,6 +531,7 @@ export default function QuotationEdit() {
           </div>
         )}
 
+        {/* Service Includes/Excludes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-[#4c7085]/30 rounded-xl overflow-hidden">
           <div className="bg-[#4c7085] text-white p-5 text-center font-medium text-lg">Service Includes</div>
           <div className="bg-red-700 text-white p-5 text-center font-medium text-lg">Service Excludes</div>
@@ -540,6 +581,7 @@ export default function QuotationEdit() {
           </div>
         </div>
 
+        {/* Your Rate */}
         <div className="bg-gradient-to-r from-[#4c7085]/10 to-[#6b8ca3]/10 border-2 border-[#4c7085]/30 rounded-xl p-4">
           <h3 className="text-2xl font-medium text-center text-[#4c7085] mb-8">Your Rate</h3>
 
@@ -563,8 +605,9 @@ export default function QuotationEdit() {
                     className="focus:outline-none"
                   >
                     <div
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-400"
-                        }`}
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-400"
+                      }`}
                     >
                       {isSelected && <div className="w-4 h-4 bg-white rounded-full" />}
                     </div>
@@ -577,32 +620,24 @@ export default function QuotationEdit() {
           <div className="grid gap-6 bg-white p-4 rounded-2xl shadow-xl border border-[#4c7085]/30">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">
-                  Advance
-                </label>
+                <label className="block text-sm font-medium text-[#4c7085]">Advance</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={form.advance}
-                  onChange={(e) =>
-                    setForm({ ...form, advance: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, advance: e.target.value })}
                   className="w-full mt-2 px-4 py-2 border border-[#4c7085] text-sm text-[#4c7085] rounded-lg focus:outline-none"
                 />
               </div>
               <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">
-                  Discount
-                </label>
+                <label className="block text-sm font-medium text-[#4c7085]">Discount</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={form.discount}
-                  onChange={(e) =>
-                    setForm({ ...form, discount: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, discount: e.target.value })}
                   className="w-full mt-2 px-4 py-2 border border-[#4c7085] text-sm text-[#4c7085] rounded-lg focus:outline-none"
                 />
               </div>
@@ -610,19 +645,15 @@ export default function QuotationEdit() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">
-                  Total Amount
-                </label>
+                <label className="block text-sm font-medium text-[#4c7085]">Total Amount</label>
                 <p className="text-2xl font-medium text-[#4c7085] mt-2">
-                  {form.amount || "0.00"} QAR
+                  {displayAmount} QAR
                 </p>
               </div>
               <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">
-                  Balance
-                </label>
+                <label className="block text-sm font-medium text-[#4c7085]">Balance</label>
                 <p className="text-2xl font-medium text-indigo-700 mt-2">
-                  {form.balance || "0.00"} QAR
+                  {displayBalance} QAR
                 </p>
               </div>
             </div>
@@ -635,6 +666,7 @@ export default function QuotationEdit() {
           )}
         </div>
 
+        {/* Digital Signature */}
         <div className="bg-gray-100 p-4 rounded-xl border border-[#4c7085]/30">
           <h3 className="text-xl font-medium text-[#4c7085] mb-4">Digital Signature</h3>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -653,10 +685,9 @@ export default function QuotationEdit() {
               <button
                 onClick={() => setIsSignatureModalOpen(true)}
                 disabled={isSignatureUploading}
-                className={`px-8 py-2 rounded-lg text-sm font-medium text-white transition ${isSignatureUploading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#4c7085] hover:bg-[#6b8ca3]"
-                  }`}
+                className={`px-8 py-2 rounded-lg text-sm font-medium text-white transition ${
+                  isSignatureUploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#4c7085] hover:bg-[#6b8ca3]"
+                }`}
               >
                 <FaPlus className="inline mr-2" />
                 {isSignatureUploading ? "Uploading..." : "Change"}
@@ -665,14 +696,16 @@ export default function QuotationEdit() {
           </div>
         </div>
 
+        {/* Update Button */}
         <div className="flex justify-center">
           <button
             onClick={handleUpdate}
-            disabled={!form.amount || !form.finalAmount || priceError}
-            className={`w-full px-4 py-2 text-sm font-medium rounded-lg shadow-xl transition ${!form.amount || !form.finalAmount || priceError
-              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-              : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:shadow-2xl"
-              }`}
+            disabled={!displayAmount || !displayFinal || priceError}
+            className={`w-full px-4 py-2 text-sm font-medium rounded-lg shadow-xl transition ${
+              !displayAmount || !displayFinal || priceError
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:shadow-2xl"
+            }`}
           >
             Update Quotation
           </button>
