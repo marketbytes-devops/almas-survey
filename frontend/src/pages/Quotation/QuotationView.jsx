@@ -74,6 +74,7 @@ export default function QuotationView() {
     }
   };
 
+  // Fetch live pricing ranges
   useEffect(() => {
     const fetchLivePricing = async () => {
       if (!destinationCity) return;
@@ -96,6 +97,7 @@ export default function QuotationView() {
     fetchLivePricing();
   }, [destinationCity]);
 
+  // Calculate base amount from volume + pricing (fallback only)
   useEffect(() => {
     if (!survey || !pricingRanges.length) return;
     const totalVolume =
@@ -103,21 +105,27 @@ export default function QuotationView() {
         (sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0),
         0
       ) || 0;
+
     if (totalVolume <= 0) {
       setBaseAmount(0);
       return;
     }
+
     const volume = parseFloat(totalVolume);
     const applicableRange = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
+
     if (!applicableRange) {
       setBaseAmount(0);
       return;
     }
+
     const calculatedBaseAmount =
       applicableRange.rateType === "flat" ? applicableRange.rate : applicableRange.rate * volume;
+
     setBaseAmount(calculatedBaseAmount);
   }, [survey, pricingRanges]);
 
+  // Fetch and calculate additional charges total (fallback only)
   useEffect(() => {
     const fetchAdditionalCharges = async () => {
       if (!survey) return;
@@ -128,11 +136,14 @@ export default function QuotationView() {
         const filteredCharges = chargesRes.data.filter((charge) =>
           selectedServiceIds.includes(charge.service.id)
         );
+
         setAdditionalCharges(filteredCharges);
+
         const total = filteredCharges.reduce((sum, charge) => {
-          const quantity = charge.per_unit_quantity || 1;
+          const quantity = safeParse(charge.per_unit_quantity) || 1;
           return sum + charge.price_per_unit * quantity;
         }, 0);
+
         setAdditionalChargesTotal(total);
       } catch (err) {
         setAdditionalCharges([]);
@@ -229,11 +240,12 @@ export default function QuotationView() {
   const movingTo = survey.destination_addresses?.[0]?.address || "Not filled";
   const moveDate = survey.packing_date_from || "Not filled";
 
+  // ── Use backend-computed values first (now reliable from serializer) ──
   const totalAmount = safeParse(quotation?.amount);
   const discount = safeParse(quotation?.discount);
-  const finalAmount = safeParse(quotation?.final_amount);
   const advance = safeParse(quotation?.advance);
-  const balance = Math.max(0, finalAmount - advance);
+  const finalAmount = safeParse(quotation?.final_amount);
+  const balance = safeParse(quotation?.balance);
 
   return (
     <>
@@ -253,8 +265,8 @@ export default function QuotationView() {
             finalAmount={finalAmount}
             advance={advance}
             balance={balance}
-            baseAmount={baseAmount}
-            additionalChargesTotal={additionalChargesTotal}
+            baseAmount={safeParse(baseAmount)}
+            additionalChargesTotal={safeParse(additionalChargesTotal)}
             additionalCharges={additionalCharges}
             includedServices={includedServices}
             excludedServices={excludedServices}
@@ -373,7 +385,7 @@ export default function QuotationView() {
               <h3 className="text-xl font-medium text-[#4c7085] mb-4">Additional Services</h3>
               <div className="space-y-4">
                 {additionalCharges.map((charge) => {
-                  const quantity = charge.per_unit_quantity || 1;
+                  const quantity = safeParse(charge.per_unit_quantity) || 1;
                   const subtotal = charge.price_per_unit * quantity;
                   return (
                     <div key={charge.id} className="bg-white border border-[#4c7085]/20 rounded-lg p-5">
@@ -419,17 +431,13 @@ export default function QuotationView() {
             <div className="grid gap-6 bg-white p-4 rounded-2xl shadow-xl border border-[#4c7085]/30">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">
-                    Advance
-                  </label>
+                  <label className="block text-sm font-medium text-[#4c7085]">Advance</label>
                   <p className="text-2xl font-medium text-[#4c7085] mt-2">
                     {advance.toFixed(2)} QAR
                   </p>
                 </div>
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">
-                    Discount
-                  </label>
+                  <label className="block text-sm font-medium text-[#4c7085]">Discount</label>
                   <p className="text-2xl font-medium text-[#4c7085] mt-2">
                     {discount.toFixed(2)} QAR
                   </p>
@@ -438,17 +446,14 @@ export default function QuotationView() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">
-                    Total Amount
-                  </label>
+                  <label className="block text-sm font-medium text-[#4c7085]">Total Amount</label>
                   <p className="text-2xl font-medium text-[#4c7085] mt-2">
                     {totalAmount.toFixed(2)} QAR
                   </p>
                 </div>
+
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">
-                    Balance
-                  </label>
+                  <label className="block text-sm font-medium text-[#4c7085]">Balance</label>
                   <p className="text-2xl font-medium text-indigo-700 mt-2">
                     {balance.toFixed(2)} QAR
                   </p>

@@ -195,7 +195,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
             </div>
 
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Move Details</h3>
+                <h3 className="text-lg sm:text-xl font-medium mb-4">Move Date</h3>
                 <div className="grid grid-cols-1 gap-4">
                     <DatePickerInput label="Packing From" name="packingDateFrom" />
                 </div>
