@@ -41,6 +41,8 @@ export default function QuotationView() {
     return isNaN(num) ? 0 : num;
   };
 
+  const get = (primary, fallback) => primary ?? fallback ?? "Not filled";
+
   const checkSignatureExists = async (quotationId) => {
     try {
       const signatureRes = await apiClient.get(`/quotation-create/${quotationId}/signature/`);
@@ -135,6 +137,7 @@ export default function QuotationView() {
         const quot = quotRes.data;
         setQuotation(quot);
         setAdditionalCharges(quot.additional_charges || []);
+
         if (quot.survey_id) {
           const surveyRes = await apiClient.get(`/surveys/${quot.survey_id}/`);
           const surveyData = surveyRes.data;
@@ -144,7 +147,8 @@ export default function QuotationView() {
           await checkSignatureExists(quot.quotation_id);
         }
       } catch (err) {
-        setError("Failed to load quotation.");
+        console.error("API fetch error:", err.response?.data || err.message);
+        setError("Failed to load quotation: " + (err.response?.data?.detail || err.message));
       } finally {
         setLoading(false);
       }
@@ -183,7 +187,7 @@ export default function QuotationView() {
         setPaymentTerms(termsRes.data.filter(t => t.is_active));
         setInsurancePlans(insRes.data.filter(i => i.is_active));
       } catch (err) {
-        console.error("Failed to load print data");
+        console.error("Failed to load print data:", err);
       }
     };
     fetchPrintData();
@@ -201,43 +205,43 @@ export default function QuotationView() {
   };
 
   const handlePrint = () => {
-    const customerName = get(survey.full_name, survey.enquiry?.fullName);
-    const rate = finalAmount.toFixed(2) + " QAR";
-    const serviceType = service;
+    const customerName = get(survey?.full_name, survey?.enquiry?.fullName) || "Customer";
+    const rate = safeParse(quotation?.final_amount).toFixed(2) + " QAR";
+    const serviceType = SERVICE_TYPE_DISPLAY[survey?.service_type] || "Not filled";
     const commodity = "Used Household goods";
     const countryMap = { QA: "Qatar" };
-    const origin = survey.origin_city + " " + (countryMap[survey.origin_country] || survey.origin_country);
+    const origin = (survey?.origin_city || "") + " " + (countryMap[survey?.origin_country] || survey?.origin_country || "");
     const destination =
-      survey.destination_addresses?.[0]?.city +
+      (survey?.destination_addresses?.[0]?.city || "") +
       " " +
-      (countryMap[survey.destination_addresses?.[0]?.country] || survey.destination_addresses?.[0]?.country);
-    const lumpSum = baseAmount.toFixed(2);
-    let curtains = "00.00";
-    let wall = "00.00";
-    let otherAdditional = [];
-    additionalCharges.forEach((charge) => {
-      const sub = charge.total.toFixed(2);
-      const nameLower = charge.service_name.toLowerCase();
-      if (nameLower.includes("curtain")) {
-        curtains = sub;
-      } else if (nameLower.includes("wall")) {
-        wall = sub;
-      } else {
-        otherAdditional.push(`${charge.service_name}: ${sub}`);
-      }
-    });
-    const totalPrice = totalAmount.toFixed(2);
-    const advanceAmt = advance.toFixed(2);
-    const balanceAmt = balance.toFixed(2);
-    const discountLine = discount > 0 ? `Discount: ${discount.toFixed(2)}<br>` : "";
+      (countryMap[survey?.destination_addresses?.[0]?.country] || survey?.destination_addresses?.[0]?.country || "");
+
+    const lumpSum = safeParse(baseAmount).toFixed(2);
+
+    // Fully dynamic additional charges
+    let additionalLines = additionalCharges.map((charge) => {
+      const quantity = charge.quantity || 1;
+      const subtotal = safeParse(charge.total || (charge.price_per_unit * quantity));
+      return `<p>${charge.service_name || "Additional Service"}: ${subtotal.toFixed(2)}</p>`;
+    }).join("");
+
+    const totalPrice = safeParse(quotation?.amount).toFixed(2);
+    const advanceAmt = safeParse(quotation?.advance).toFixed(2);
+    const balanceAmt = safeParse(quotation?.balance).toFixed(2);
+    const discountLine = safeParse(quotation?.discount) > 0 ? `Discount: ${safeParse(quotation?.discount).toFixed(2)}<br>` : "";
+
     const includeBullets = includedServices.map((s) => `<li>${s}</li>`).join("");
     const excludeBullets = excludedServices.map((s) => `<li>${s}</li>`).join("");
-    const moveDate = survey.packing_date_from || "TBA";
-    const noteText = `Survey Remarks<br>${survey.work_description || "Add Remark"}<br>Move date : ${moveDate} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday ) We assuming normal good access at destination office building ,please note any special requirement at origin & destination building which shall arranged by you (i.e. gate pass , parking permit ) NO HIDDEN FEE'S - You may please read below our service inclusion and exclusion.`;
+
+    const moveDate = survey?.packing_date_from || "TBA";
+    const noteText = `Survey Remarks<br>${survey?.work_description || "Add Remark"}<br>Move date : ${moveDate} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday ) We assuming normal good access at destination office building ,please note any special requirement at origin & destination building which shall arranged by you (i.e. gate pass , parking permit ) NO HIDDEN FEE'S - You may please read below our service inclusion and exclusion.`;
+
     const insuranceText = insurancePlans.map(plan => `${plan.name}<br>${plan.description.replace(/\n/g, '<br>')}<br>Type: ${plan.calculation_type_display}<br>Rate: ${plan.rate}%<br>Min Premium: QAR ${plan.minimum_premium}`).join('<br><br>');
     const paymentText = paymentTerms.map(term => `${term.name}<br>${term.description.replace(/\n/g, '<br>')}`).join('<br><br>');
     const generalTerms = quoteNotes.map(note => `<h3>${note.title}</h3><p>${note.content.replace(/\n/g, '<br>')}</p>`).join('');
+
     const sign = hasSignature ? `<img src="${currentSignature}" alt="Signature" style="width:200px;height:auto;" />` : "";
+
     const contactPerson = "Muhammad Kp";
     const email = "Freight@almasint.com";
     const mobile = "0097450136999";
@@ -249,14 +253,14 @@ export default function QuotationView() {
         <div class="section">
           <h1>ALMAS MOVERS INTERNATIONAL</h1>
           <div class="header">
-            Quote No : ${quotation.quotation_id}<br>
-            Date : ${quotation.date}<br>
+            Quote No : ${quotation?.quotation_id || "Not available"}<br>
+            Date : ${quotation?.date || today}<br>
             Contact Person : ${contactPerson}<br>
             Email : ${email}<br>
             Mobile No : ${mobile}
           </div>
           <h2>Your Rate is ${rate}</h2>
-          <p>Dear ${customerName} (Customer name)</p>
+          <p>Dear ${customerName}</p>
           <p>Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.</p>
           <div class="service-box">
             Service Type : ${serviceType} &nbsp;&nbsp;&nbsp;&nbsp; Commodity : ${commodity}<br>
@@ -264,9 +268,7 @@ export default function QuotationView() {
           </div>
           <h3>Breakdown of Charges (All prices in QAR)</h3>
           <p>Lump sum moving charges: ${lumpSum}</p>
-          <p>Curtains installation: ${curtains}</p>
-          <p>Wall installation: ${wall}</p>
-          ${otherAdditional.map((line) => `<p>${line}</p>`).join("")}
+          ${additionalLines}
           ${discountLine}
           <p>Total Price : ${totalPrice}</p>
           <p>Advance : ${advanceAmt}</p>
@@ -326,13 +328,11 @@ export default function QuotationView() {
     }, 500);
   };
 
-  const get = (primary, fallback) => primary ?? fallback ?? "Not filled";
-
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
   if (!quotation || !survey) return null;
 
-  const name = get(survey.full_name, survey.enquiry?.fullName);
+  const customerName = get(survey.full_name, survey.enquiry?.fullName) || "Customer";
   const phone = get(survey.phone_number, survey.enquiry?.phoneNumber);
   const email = get(survey.email, survey.enquiry?.email);
   const service = SERVICE_TYPE_DISPLAY[survey.service_type] || "Not filled";
@@ -416,7 +416,7 @@ export default function QuotationView() {
               <label className="block text-sm font-medium text-[#4c7085] mb-2">Client Name</label>
               <input
                 type="text"
-                value={name}
+                value={customerName}
                 readOnly
                 className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
               />
@@ -466,12 +466,14 @@ export default function QuotationView() {
               <div className="space-y-4">
                 {additionalCharges.map((charge, index) => {
                   const quantity = charge.quantity || 1;
-                  const subtotal = charge.total;
+                  const subtotal = safeParse(charge.total || (charge.price_per_unit * quantity));
                   return (
                     <div key={index} className="bg-white border border-[#4c7085]/20 rounded-lg p-5">
                       <div className="flex flex-col md:flex-row justify-between gap-4">
                         <div>
-                          <div className="font-medium text-gray-800">{charge.service_name}</div>
+                          <div className="font-medium text-gray-800">
+                            {charge.service_name || "Additional Service"}
+                          </div>
                           <div className="text-sm text-gray-600 mt-1">
                             {charge.price_per_unit} QAR × {quantity} unit(s)
                           </div>
@@ -497,7 +499,9 @@ export default function QuotationView() {
                     key={index}
                     className="bg-white rounded-lg p-6 shadow-md border border-[#4c7085]/20 flex items-center justify-between"
                   >
-                    <div className="text-lg font-medium text-gray-800">{serviceName}</div>
+                    <div className="text-lg font-medium text-gray-800">
+                      {serviceName}
+                    </div>
                     <div className="w-8 h-8 rounded-full bg-[#4c7085] border-2 border-[#4c7085] flex items-center justify-center">
                       <div className="w-4 h-4 bg-white rounded-full" />
                     </div>
