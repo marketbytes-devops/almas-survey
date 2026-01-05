@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaEye, FaPrint } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
-import QuotationLocalMove from "../../components/Templates/QuotationLocalMove";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -24,7 +23,6 @@ export default function QuotationView() {
   const [hasSignature, setHasSignature] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   const [additionalCharges, setAdditionalCharges] = useState([]);
   const [baseAmount, setBaseAmount] = useState(0);
@@ -34,6 +32,9 @@ export default function QuotationView() {
   const [includedServices, setIncludedServices] = useState([]);
   const [excludedServices, setExcludedServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [quoteNotes, setQuoteNotes] = useState([]);
+  const [paymentTerms, setPaymentTerms] = useState([]);
+  const [insurancePlans, setInsurancePlans] = useState([]);
 
   const safeParse = (value) => {
     const num = Number(value);
@@ -74,7 +75,6 @@ export default function QuotationView() {
     }
   };
 
-  // Fetch live pricing ranges
   useEffect(() => {
     const fetchLivePricing = async () => {
       if (!destinationCity) return;
@@ -97,7 +97,6 @@ export default function QuotationView() {
     fetchLivePricing();
   }, [destinationCity]);
 
-  // Calculate base amount from volume + pricing (fallback only)
   useEffect(() => {
     if (!survey || !pricingRanges.length) return;
     const totalVolume =
@@ -125,34 +124,6 @@ export default function QuotationView() {
     setBaseAmount(calculatedBaseAmount);
   }, [survey, pricingRanges]);
 
-  // Fetch and calculate additional charges total (fallback only)
-  useEffect(() => {
-    const fetchAdditionalCharges = async () => {
-      if (!survey) return;
-      try {
-        const chargesRes = await apiClient.get("/quotation-additional-charges/");
-        const selectedServiceIds =
-          survey.additional_services?.map((service) => service.id) || [];
-        const filteredCharges = chargesRes.data.filter((charge) =>
-          selectedServiceIds.includes(charge.service.id)
-        );
-
-        setAdditionalCharges(filteredCharges);
-
-        const total = filteredCharges.reduce((sum, charge) => {
-          const quantity = safeParse(charge.per_unit_quantity) || 1;
-          return sum + charge.price_per_unit * quantity;
-        }, 0);
-
-        setAdditionalChargesTotal(total);
-      } catch (err) {
-        setAdditionalCharges([]);
-        setAdditionalChargesTotal(0);
-      }
-    };
-    fetchAdditionalCharges();
-  }, [survey]);
-
   useEffect(() => {
     fetchServiceNames();
   }, [quotation]);
@@ -163,6 +134,7 @@ export default function QuotationView() {
         const quotRes = await apiClient.get(`/quotation-create/${id}/`);
         const quot = quotRes.data;
         setQuotation(quot);
+        setAdditionalCharges(quot.additional_charges || []);
         if (quot.survey_id) {
           const surveyRes = await apiClient.get(`/surveys/${quot.survey_id}/`);
           const surveyData = surveyRes.data;
@@ -199,6 +171,24 @@ export default function QuotationView() {
     fetchSelectedServices();
   }, [quotation]);
 
+  useEffect(() => {
+    const fetchPrintData = async () => {
+      try {
+        const [notesRes, termsRes, insRes] = await Promise.all([
+          apiClient.get('/quote-notes/'),
+          apiClient.get('/payment-terms/'),
+          apiClient.get('/insurance-plans/')
+        ]);
+        setQuoteNotes(notesRes.data.filter(n => n.is_active));
+        setPaymentTerms(termsRes.data.filter(t => t.is_active));
+        setInsurancePlans(insRes.data.filter(i => i.is_active));
+      } catch (err) {
+        console.error("Failed to load print data");
+      }
+    };
+    fetchPrintData();
+  }, []);
+
   const viewSignature = async () => {
     if (!quotation) return;
     try {
@@ -210,24 +200,133 @@ export default function QuotationView() {
     }
   };
 
-  const get = (primary, fallback) => primary ?? fallback ?? "Not filled";
+  const handlePrint = () => {
+    const customerName = get(survey.full_name, survey.enquiry?.fullName);
+    const rate = finalAmount.toFixed(2) + " QAR";
+    const serviceType = service;
+    const commodity = "Used Household goods";
+    const countryMap = { QA: "Qatar" };
+    const origin = survey.origin_city + " " + (countryMap[survey.origin_country] || survey.origin_country);
+    const destination =
+      survey.destination_addresses?.[0]?.city +
+      " " +
+      (countryMap[survey.destination_addresses?.[0]?.country] || survey.destination_addresses?.[0]?.country);
+    const lumpSum = baseAmount.toFixed(2);
+    let curtains = "00.00";
+    let wall = "00.00";
+    let otherAdditional = [];
+    additionalCharges.forEach((charge) => {
+      const sub = charge.total.toFixed(2);
+      const nameLower = charge.service_name.toLowerCase();
+      if (nameLower.includes("curtain")) {
+        curtains = sub;
+      } else if (nameLower.includes("wall")) {
+        wall = sub;
+      } else {
+        otherAdditional.push(`${charge.service_name}: ${sub}`);
+      }
+    });
+    const totalPrice = totalAmount.toFixed(2);
+    const advanceAmt = advance.toFixed(2);
+    const balanceAmt = balance.toFixed(2);
+    const discountLine = discount > 0 ? `Discount: ${discount.toFixed(2)}<br>` : "";
+    const includeBullets = includedServices.map((s) => `<li>${s}</li>`).join("");
+    const excludeBullets = excludedServices.map((s) => `<li>${s}</li>`).join("");
+    const moveDate = survey.packing_date_from || "TBA";
+    const noteText = `Survey Remarks<br>${survey.work_description || "Add Remark"}<br>Move date : ${moveDate} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday ) We assuming normal good access at destination office building ,please note any special requirement at origin & destination building which shall arranged by you (i.e. gate pass , parking permit ) NO HIDDEN FEE'S - You may please read below our service inclusion and exclusion.`;
+    const insuranceText = insurancePlans.map(plan => `${plan.name}<br>${plan.description.replace(/\n/g, '<br>')}<br>Type: ${plan.calculation_type_display}<br>Rate: ${plan.rate}%<br>Min Premium: QAR ${plan.minimum_premium}`).join('<br><br>');
+    const paymentText = paymentTerms.map(term => `${term.name}<br>${term.description.replace(/\n/g, '<br>')}`).join('<br><br>');
+    const generalTerms = quoteNotes.map(note => `<h3>${note.title}</h3><p>${note.content.replace(/\n/g, '<br>')}</p>`).join('');
+    const sign = hasSignature ? `<img src="${currentSignature}" alt="Signature" style="width:200px;height:auto;" />` : "";
+    const contactPerson = "Muhammad Kp";
+    const email = "Freight@almasint.com";
+    const mobile = "0097450136999";
+    const address = "Almas Movers Services<br>Address xx xx x xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+    const logoFooterText = "IAM RPP SIAMX ISO Company Green Accredited";
 
-  const handlePrint = async () => {
-    if (
-      quotation &&
-      (quotation.included_services?.length > 0 || quotation.excluded_services?.length > 0) &&
-      includedServices.length === 0 &&
-      excludedServices.length === 0
-    ) {
-      await fetchServiceNames();
-    }
+    const printContent = `
+      <div class="content">
+        <div class="section">
+          <h1>ALMAS MOVERS INTERNATIONAL</h1>
+          <div class="header">
+            Quote No : ${quotation.quotation_id}<br>
+            Date : ${quotation.date}<br>
+            Contact Person : ${contactPerson}<br>
+            Email : ${email}<br>
+            Mobile No : ${mobile}
+          </div>
+          <h2>Your Rate is ${rate}</h2>
+          <p>Dear ${customerName} (Customer name)</p>
+          <p>Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.</p>
+          <div class="service-box">
+            Service Type : ${serviceType} &nbsp;&nbsp;&nbsp;&nbsp; Commodity : ${commodity}<br>
+            Origin : ${origin} &nbsp;&nbsp;&nbsp;&nbsp; Destination : ${destination}
+          </div>
+          <h3>Breakdown of Charges (All prices in QAR)</h3>
+          <p>Lump sum moving charges: ${lumpSum}</p>
+          <p>Curtains installation: ${curtains}</p>
+          <p>Wall installation: ${wall}</p>
+          ${otherAdditional.map((line) => `<p>${line}</p>`).join("")}
+          ${discountLine}
+          <p>Total Price : ${totalPrice}</p>
+          <p>Advance : ${advanceAmt}</p>
+          <p>Balance : ${balanceAmt}</p>
+        </div>
+        <div style="page-break-before: always;" class="section">
+          <h3>Service Includes :-</h3>
+          <ul>
+            ${includeBullets}
+          </ul>
+          <h3>Service Excludes :-</h3>
+          <ul>
+            ${excludeBullets}
+          </ul>
+          <h3>Note :-</h3>
+          <p>${noteText}</p>
+          <h3>Insurance :-</h3>
+          <p>${insuranceText}</p>
+        </div>
+        <div style="page-break-before: always;" class="section">
+          <h3>PAYMENT TERMS :-</h3>
+          <p>${paymentText}</p>
+          <h3>General Terms</h3>
+          ${generalTerms}
+        </div>
+        <div style="page-break-before: always;" class="section">
+          <h3>Sign</h3>
+          ${sign}
+        </div>
+      </div>
+      <div class="footer">
+        <p style="text-align:center;">${address}</p>
+        <p style="text-align:center;">${logoFooterText}</p>
+      </div>
+    `;
 
-    setShowPrintPreview(true);
+    const printWindow = window.open("", "", "height=800,width=1200");
+    printWindow.document.write("<html><head><title>Quotation Print</title>");
+    printWindow.document.write("<style>");
+    printWindow.document.write("@page { size: A4; margin: 1cm 1cm 3cm 1cm; }");
+    printWindow.document.write("body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; margin: 0; padding: 0; }");
+    printWindow.document.write(".content { padding: 1cm 1cm 0 1cm; margin-bottom: 3cm; }");
+    printWindow.document.write(".footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 3cm; padding: 0 1cm; box-sizing: border-box; text-align: center; }");
+    printWindow.document.write("h1 { color: #ff9900; font-size: 24pt; }");
+    printWindow.document.write("h2 { font-size: 18pt; text-align: center; font-weight: bold; }");
+    printWindow.document.write("h3 { font-size: 12pt; }");
+    printWindow.document.write(".header { text-align: right; }");
+    printWindow.document.write(".service-box { border: 2px solid #00aaff; border-radius: 10px; padding: 10px; }");
+    printWindow.document.write("ul { list-style-type: disc; padding-left: 20px; }");
+    printWindow.document.write("p { margin: 5px 0; }");
+    printWindow.document.write("</style></head><body>");
+    printWindow.document.write(printContent);
+    printWindow.document.write("</body></html>");
+    printWindow.document.close();
     setTimeout(() => {
-      window.print();
-      setTimeout(() => setShowPrintPreview(false), 1000);
-    }, 1200);
+      printWindow.print();
+    }, 500);
   };
+
+  const get = (primary, fallback) => primary ?? fallback ?? "Not filled";
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
@@ -240,7 +339,6 @@ export default function QuotationView() {
   const movingTo = survey.destination_addresses?.[0]?.address || "Not filled";
   const moveDate = survey.packing_date_from || "Not filled";
 
-  // ── Use backend-computed values first (now reliable from serializer) ──
   const totalAmount = safeParse(quotation?.amount);
   const discount = safeParse(quotation?.discount);
   const advance = safeParse(quotation?.advance);
@@ -249,31 +347,6 @@ export default function QuotationView() {
 
   return (
     <>
-      {showPrintPreview && (
-        <div className="fixed inset-0 z-[9999] bg-white">
-          <QuotationLocalMove
-            quotation={quotation}
-            survey={survey}
-            name={name}
-            phone={phone}
-            email={email}
-            service={service}
-            movingTo={movingTo}
-            moveDate={moveDate}
-            totalAmount={totalAmount}
-            discount={discount}
-            finalAmount={finalAmount}
-            advance={advance}
-            balance={balance}
-            baseAmount={safeParse(baseAmount)}
-            additionalChargesTotal={safeParse(additionalChargesTotal)}
-            additionalCharges={additionalCharges}
-            includedServices={includedServices}
-            excludedServices={excludedServices}
-          />
-        </div>
-      )}
-
       {isSignatureModalOpen && currentSignature && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
@@ -301,6 +374,13 @@ export default function QuotationView() {
             >
               <FaArrowLeft className="w-5 h-5" />
               <span className="font-medium text-sm">Back</span>
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-3 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition text-white"
+            >
+              <FaPrint className="w-5 h-5" />
+              <span className="font-medium text-sm">Print</span>
             </button>
             <h2 className="text-lg font-medium">Quotation Details</h2>
           </div>
@@ -384,14 +464,14 @@ export default function QuotationView() {
             <div className="bg-[#6b8ca3]/5 border-2 border-[#6b8ca3]/30 rounded-xl p-6">
               <h3 className="text-xl font-medium text-[#4c7085] mb-4">Additional Services</h3>
               <div className="space-y-4">
-                {additionalCharges.map((charge) => {
-                  const quantity = safeParse(charge.per_unit_quantity) || 1;
-                  const subtotal = charge.price_per_unit * quantity;
+                {additionalCharges.map((charge, index) => {
+                  const quantity = charge.quantity || 1;
+                  const subtotal = charge.total;
                   return (
-                    <div key={charge.id} className="bg-white border border-[#4c7085]/20 rounded-lg p-5">
+                    <div key={index} className="bg-white border border-[#4c7085]/20 rounded-lg p-5">
                       <div className="flex flex-col md:flex-row justify-between gap-4">
                         <div>
-                          <div className="font-medium text-gray-800">{charge.service.name}</div>
+                          <div className="font-medium text-gray-800">{charge.service_name}</div>
                           <div className="text-sm text-gray-600 mt-1">
                             {charge.price_per_unit} QAR × {quantity} unit(s)
                           </div>
@@ -462,7 +542,7 @@ export default function QuotationView() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-[#4c7085]/30 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border-2 border-[#4c7085]/30 rounded-xl overflow-hidden">
             <div className="bg-[#4c7085] text-white p-5 text-center font-medium text-lg">Service Includes</div>
             <div className="bg-red-700 text-white p-5 text-center font-medium text-lg">Service Excludes</div>
 
@@ -515,16 +595,6 @@ export default function QuotationView() {
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="flex justify-center">
-            <button
-              onClick={handlePrint}
-              className="w-full px-4 py-2 text-sm font-medium rounded-lg shadow-xl bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex items-center justify-center gap-3 hover:shadow-2xl transition"
-            >
-              <FaPrint className="text-lg" />
-              Print Quotation (PDF Ready)
-            </button>
           </div>
         </div>
       </div>
