@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaEye, FaPrint } from "react-icons/fa";
+import { FaArrowLeft, FaEye, FaPrint, FaDownload } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; // Import for print trigger
@@ -211,6 +211,15 @@ export default function QuotationView() {
   const triggerPrint = () => {
     if (printRef.current) {
       printRef.current.printNow(); // This will call the print function inside QuotationLocalMove
+    } else {
+      console.warn("Print ref not ready yet");
+    }
+  };
+
+  // Trigger PDF download from QuotationLocalMove
+  const triggerDownloadPdf = () => {
+    if (printRef.current) {
+      printRef.current.downloadPdf(); // This will call the downloadPdf function inside QuotationLocalMove
     } else {
       console.warn("Print ref not ready yet");
     }
@@ -498,6 +507,24 @@ export default function QuotationView() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pb-8">
+            <button
+              onClick={triggerPrint}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3d5a6a] hover:to-[#5a7b92] text-white rounded-lg transition text-sm font-medium shadow-lg"
+            >
+              <FaPrint className="w-4 h-4" />
+              <span>Print Quotation</span>
+            </button>
+            <button
+              onClick={triggerDownloadPdf}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3d5a6a] hover:to-[#5a7b92] text-white rounded-lg transition text-sm font-medium shadow-lg"
+            >
+              <FaDownload className="w-4 h-4" />
+              <span>Download PDF</span>
+            </button>
           </div>
         </div>
       </div>

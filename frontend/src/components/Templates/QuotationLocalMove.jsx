@@ -1,5 +1,6 @@
 import React, { forwardRef, useImperativeHandle } from "react";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
+import html2pdf from "html2pdf.js";
 
 const QuotationLocalMove = forwardRef((props, ref) => {
   const {
@@ -46,162 +47,149 @@ const QuotationLocalMove = forwardRef((props, ref) => {
 
   const companyAddress = "P.O. Box 24665, Doha, Qatar";
 
+  const generateHtmlContent = () => {
+    const customerName = name || "Valued Customer";
+    const rate = Number(finalAmount || totalAmount || 0).toFixed(2) + " " + currency;
+    const serviceType = service || "Local Move";
+    const commodity = "Used Household goods";
+    const origin = survey?.origin_city || survey?.origin_address || "Doha Qatar";
+    const destination = movingTo || "Doha Qatar";
+
+    const lumpSum = Number(baseAmount || totalAmount || 0).toFixed(2);
+
+    let additionalLines = "";
+    if (additionalCharges?.length > 0) {
+      additionalLines = additionalCharges
+        .map((charge) => {
+          const quantity = charge.quantity || 1;
+          const subtotal = Number(charge.price_per_unit * quantity).toFixed(2);
+          return `<tr><td style="padding:5px 0;">${charge.service_name || "Additional Service"}:</td><td style="text-align:right;padding:5px 0;">${subtotal}</td></tr>`;
+        })
+        .join("");
+    }
+
+    const totalPrice = Number(totalAmount || 0).toFixed(2);
+    const advanceAmt = Number(advance || 0).toFixed(2);
+    const balanceAmt = Number(balance || 0).toFixed(2);
+    const discountRow = discount > 0 ? `<tr><td style="padding:5px 0;">Discount:</td><td style="text-align:right;padding:5px 0;">-${Number(discount).toFixed(2)}</td></tr>` : "";
+
+    const includeBullets = (includedServices || []).map((s) => `<li>${s}</li>`).join("");
+    const excludeBullets = (excludedServices || []).map((s) => `<li>${s}</li>`).join("");
+
+    const insuranceText = (insurancePlans || []).length > 0
+      ? (insurancePlans || []).map(plan => `${plan?.name || "N/A"}<br>${(plan?.description || "").replace(/\n/g, "<br>")}`).join("<br><br>")
+      : "Comprehensive transit insurance is available upon request at an additional cost. Basic carrier liability is included in the quoted price. Please contact us for detailed insurance options and pricing.";
+
+    return `
+      <div class="header-container">
+          <div class="logo-section">
+               <img src="${CompanyLogo}" alt="ALMAS MOVERS" />
+          </div>
+          <div class="details-section">
+              <strong>Quote No :</strong> ${quoteNumber}<br>
+              <strong>Date :</strong> ${today}<br>
+              <strong>Contact Person :</strong> ${companyContact.person}<br>
+              <strong>Email :</strong> <a href="mailto:${companyContact.email}">${companyContact.email}</a><br>
+              <strong>Mobile No :</strong> ${companyContact.mobile}
+          </div>
+      </div>
+
+      <h1 class="rate-title">Your Rate is ${rate}</h1>
+
+      <p>Dear ${customerName},</p>
+      <p class="intro-text">
+          Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.
+      </p>
+
+      <div class="service-box">
+          <table style="width:100%">
+              <tr>
+                  <td><strong>Service Type :</strong> ${serviceType}</td>
+                  <td><strong>Commodity :</strong> ${commodity}</td>
+              </tr>
+              <tr>
+                  <td><strong>Origin :</strong> ${origin}</td>
+                  <td><strong>Destination :</strong> ${destination}</td>
+              </tr>
+          </table>
+      </div>
+
+      <div class="breakdown-section">
+          <h3 class="breakdown-title">Breakdown of Charges (All prices in ${currency})</h3>
+          <table class="charges-table">
+              ${additionalLines}
+              ${discountRow}
+              <tr style="font-weight:bold;">
+                  <td style="padding:10px 0;">Total Price:</td>
+                  <td style="text-align:right;padding:10px 0;">:${totalPrice}</td>
+              </tr>
+              <tr>
+                  <td style="padding:5px 0;">Advance:</td>
+                  <td style="text-align:right;padding:5px 0;">:${advanceAmt}</td>
+              </tr>
+              <tr>
+                  <td style="padding:5px 0;">Balance:</td>
+                  <td style="text-align:right;padding:5px 0;">:${balanceAmt}</td>
+              </tr>
+          </table>
+      </div>
+
+      <div style="page-break-before: always;"></div>
+
+      <div class="section">
+          <h3 class="section-title">Service Includes :-</h3>
+          <ul class="bullet-list">${includeBullets || "<li>Professional packing of household items</li><li>Loading and unloading services</li>"}</ul>
+          
+          <h3 class="section-title">Service Excludes :-</h3>
+          <ul class="bullet-list">${excludeBullets || "<li>Storage charges beyond agreed period</li><li>Customs duties and taxes</li>"}</ul>
+
+          <h3 class="section-title">Note :-</h3>
+          <div style="border:1px solid #ddd; padding:10px; border-radius:8px; margin-bottom:20px;">
+               <strong>Survey Remarks</strong>
+               <p>${survey?.work_description || ""}</p>
+               <div style="background:#f9f9f9; padding:10px; font-size:10px; margin-top:10px; border-radius:4px;">
+                  Move date : ${moveDate || "TBA"} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday )
+               </div>
+          </div>
+
+          <h3 class="section-title">Insurance :-</h3>
+          <p>${insuranceText}</p>
+      </div>
+
+      <div class="footer-center" style="position:fixed; bottom:0; width:100%;">
+           <strong>Almas Movers Services</strong><br>
+           Address xx xx x xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<br>
+           <div style="margin-top:10px; font-size: 10px;">IAM RPP SIAMX ISO Company Green Accredited</div>
+      </div>
+    `;
+  };
+
+  const getStyles = () => `
+    @page { size: A4; margin: 1cm; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #333; }
+    .header-container { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .logo-section img { max-width: 250px; height: auto; }
+    .details-section { text-align: right; font-size: 10pt; line-height: 1.6; color: #003087; font-weight: bold;}
+    .details-section strong { color: #333; } 
+    .rate-title { text-align: center; color: #666; font-size: 20pt; margin: 20px 0; font-weight:normal; }
+    .intro-text { font-size: 9pt; text-align: justify; margin-bottom: 20px; }
+    .service-box { border: 2px solid #5aa5d6; border-radius: 15px; padding: 15px 30px; margin: 20px 0; }
+    .service-box td { padding: 8px 0; font-size: 11pt; color: #333; }
+    .breakdown-title { text-align: center; color: #003087; font-size: 12pt; margin-bottom: 15px; }
+    .charges-table { width: 60%; margin: 0 auto; font-size: 10pt; }
+    .footer-center { text-align: center; font-size: 10pt; color: #003087; margin-top: 50px; }
+    .section-title { font-size: 12pt; color: #333; margin-top: 20px; margin-bottom: 10px; font-weight: bold; }
+    .bullet-list { padding-left: 20px; margin-bottom: 20px; }
+    .bullet-list li { margin-bottom: 5px; }
+  `;
+
   useImperativeHandle(ref, () => ({
     printNow: () => {
-      const customerName = name || "Valued Customer";
-      const rate = Number(finalAmount || totalAmount || 0).toFixed(2) + " " + currency;
-      const serviceType = service || "Local Move";
-      const commodity = "Used Household goods";
-      const origin = survey?.origin_city || survey?.origin_address || "Doha Qatar";
-      const destination = movingTo || "Doha Qatar";
-
-      const lumpSum = Number(baseAmount || totalAmount || 0).toFixed(2);
-
-      let additionalLines = "";
-      if (additionalCharges?.length > 0) {
-        additionalLines = additionalCharges
-          .map((charge) => {
-            const quantity = charge.quantity || 1;
-            const subtotal = Number(charge.price_per_unit * quantity).toFixed(2);
-            return `<tr><td style="padding:5px 0;">${charge.service_name || "Additional Service"}:</td><td style="text-align:right;padding:5px 0;">${subtotal}</td></tr>`;
-          })
-          .join("");
-      }
-
-      const totalPrice = Number(totalAmount || 0).toFixed(2);
-      const advanceAmt = Number(advance || 0).toFixed(2);
-      const balanceAmt = Number(balance || 0).toFixed(2);
-      const discountRow = discount > 0 ? `<tr><td style="padding:5px 0;">Discount:</td><td style="text-align:right;padding:5px 0;">-${Number(discount).toFixed(2)}</td></tr>` : "";
-
-      const includeBullets = (includedServices || []).map((s) => `<li>${s}</li>`).join("");
-      const excludeBullets = (excludedServices || []).map((s) => `<li>${s}</li>`).join("");
-
-      const noteText = `Survey Remarks<br>${survey?.work_description || "Add Remark"}<br>Move date : ${moveDate || "TBA"} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday ) We assuming normal good access at destination office building ,please note any special requirement at origin & destination building which shall arranged by you (i.e. gate pass , parking permit ) NO HIDDEN FEE'S - You may please read below our service inclusion and exclusion.`;
-
-      const insuranceText = (insurancePlans || []).length > 0
-        ? (insurancePlans || []).map(plan => `${plan?.name || "N/A"}<br>${(plan?.description || "").replace(/\n/g, "<br>")}`).join("<br><br>")
-        : "Comprehensive transit insurance is available upon request at an additional cost. Basic carrier liability is included in the quoted price. Please contact us for detailed insurance options and pricing.";
-
-      const paymentText = (paymentTerms || []).length > 0
-        ? (paymentTerms || []).map(term => `${term?.name || "N/A"}<br>${(term?.description || "").replace(/\n/g, "<br>")}`).join("<br><br>")
-        : "20% advance payment upon work confirmation, the full payment required at the day of work completion.";
-
-      const generalTermsHtml = (generalTerms || []).length > 0
-        ? (generalTerms || []).map(note => `<li>${note?.content || note}</li>`).join("")
-        : `<li>This quotation is valid for 60 days from the date mentioned above</li>
-             <li>Prices are subject to change based on actual volume and additional services required</li>
-             <li>Customer must provide accurate inventory and access information</li>`;
-
-      const signatureSection = currentSignature
-        ? `<img src="${currentSignature}" alt="Signature" style="max-height:80px;width:auto;" />`
-        : "";
-
-      const printContent = `
-        <div class="header-container">
-            <div class="logo-section">
-                 <img src="${CompanyLogo}" alt="ALMAS MOVERS" />
-            </div>
-            <div class="details-section">
-                <strong>Quote No :</strong> ${quoteNumber}<br>
-                <strong>Date :</strong> ${today}<br>
-                <strong>Contact Person :</strong> ${companyContact.person}<br>
-                <strong>Email :</strong> <a href="mailto:${companyContact.email}">${companyContact.email}</a><br>
-                <strong>Mobile No :</strong> ${companyContact.mobile}
-            </div>
-        </div>
-
-        <h1 class="rate-title">Your Rate is ${rate}</h1>
-
-        <p>Dear ${customerName},</p>
-        <p class="intro-text">
-            Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.
-        </p>
-
-        <div class="service-box">
-            <table style="width:100%">
-                <tr>
-                    <td><strong>Service Type :</strong> ${serviceType}</td>
-                    <td><strong>Commodity :</strong> ${commodity}</td>
-                </tr>
-                <tr>
-                    <td><strong>Origin :</strong> ${origin}</td>
-                    <td><strong>Destination :</strong> ${destination}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="breakdown-section">
-            <h3 class="breakdown-title">Breakdown of Charges (All prices in ${currency})</h3>
-            <table class="charges-table">
-                ${additionalLines}
-                ${discountRow}
-                <tr style="font-weight:bold;">
-                    <td style="padding:10px 0;">Total Price:</td>
-                    <td style="text-align:right;padding:10px 0;">:${totalPrice}</td>
-                </tr>
-                <tr>
-                    <td style="padding:5px 0;">Advance:</td>
-                    <td style="text-align:right;padding:5px 0;">:${advanceAmt}</td>
-                </tr>
-                <tr>
-                    <td style="padding:5px 0;">Balance:</td>
-                    <td style="text-align:right;padding:5px 0;">:${balanceAmt}</td>
-                </tr>
-            </table>
-        </div>
-
-
-
-        <div style="page-break-before: always;"></div>
-
-        <div class="section">
-            <h3 class="section-title">Service Includes :-</h3>
-            <ul class="bullet-list">${includeBullets || "<li>Professional packing of household items</li><li>Loading and unloading services</li>"}</ul>
-            
-            <h3 class="section-title">Service Excludes :-</h3>
-            <ul class="bullet-list">${excludeBullets || "<li>Storage charges beyond agreed period</li><li>Customs duties and taxes</li>"}</ul>
-
-            <h3 class="section-title">Note :-</h3>
-            <div style="border:1px solid #ddd; padding:10px; border-radius:8px; margin-bottom:20px;">
-                 <strong>Survey Remarks</strong>
-                 <p>${survey?.work_description || ""}</p>
-                 <div style="background:#f9f9f9; padding:10px; font-size:10px; margin-top:10px; border-radius:4px;">
-                    Move date : ${moveDate || "TBA"} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday )
-                 </div>
-            </div>
-
-            <h3 class="section-title">Insurance :-</h3>
-            <p>${insuranceText}</p>
-        </div>
-
-        <div class="footer-center" style="position:fixed; bottom:0; width:100%;">
-             <strong>Almas Movers Services</strong><br>
-             Address xx xx x xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<br>
-             <div style="margin-top:10px; font-size: 10px;">IAM RPP SIAMX ISO Company Green Accredited</div>
-        </div>
-      `;
-
+      const printContent = generateHtmlContent();
       const printWindow = window.open("", "", "height=800,width=1200");
       printWindow.document.write("<html><head><title>Quotation Print</title>");
       printWindow.document.write("<style>");
-      printWindow.document.write(`
-        @page { size: A4; margin: 1cm; }
-        body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #333; }
-        .header-container { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .logo-section img { max-width: 250px; height: auto; }
-        .details-section { text-align: right; font-size: 10pt; line-height: 1.6; color: #003087; font-weight: bold;}
-        .details-section strong { color: #333; } 
-        .rate-title { text-align: center; color: #666; font-size: 20pt; margin: 20px 0; font-weight:normal; }
-        .intro-text { font-size: 9pt; text-align: justify; margin-bottom: 20px; }
-        .service-box { border: 2px solid #5aa5d6; border-radius: 15px; padding: 15px 30px; margin: 20px 0; }
-        .service-box td { padding: 8px 0; font-size: 11pt; color: #333; }
-        .breakdown-title { text-align: center; color: #003087; font-size: 12pt; margin-bottom: 15px; }
-        .charges-table { width: 60%; margin: 0 auto; font-size: 10pt; }
-        .footer-center { text-align: center; font-size: 10pt; color: #003087; margin-top: 50px; }
-        .section-title { font-size: 12pt; color: #333; margin-top: 20px; margin-bottom: 10px; font-weight: bold; }
-        .bullet-list { padding-left: 20px; margin-bottom: 20px; }
-        .bullet-list li { margin-bottom: 5px; }
-      `);
+      printWindow.document.write(getStyles());
       printWindow.document.write("</style></head><body>");
       printWindow.document.write(printContent);
       printWindow.document.write("</body></html>");
@@ -210,6 +198,50 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         printWindow.print();
       }, 500);
     },
+    downloadPdf: () => {
+      const printContent = generateHtmlContent();
+      const element = document.createElement('div');
+      element.style.width = '210mm';
+      element.style.padding = '20px';
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.innerHTML = `<style>${getStyles()}</style>${printContent}`;
+
+      // Temporarily append to body for rendering
+      document.body.appendChild(element);
+
+      const opt = {
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `Quotation_${quoteNumber}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          letterRendering: true,
+          allowTaint: true
+        },
+        jsPDF: {
+          unit: 'in',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        // Remove element after PDF generation
+        if (element.parentNode) {
+          document.body.removeChild(element);
+        }
+      }).catch((error) => {
+        console.error('PDF generation error:', error);
+        if (element.parentNode) {
+          document.body.removeChild(element);
+        }
+      });
+    }
   }));
 
   return (
