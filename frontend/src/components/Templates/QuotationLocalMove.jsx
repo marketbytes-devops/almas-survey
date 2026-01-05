@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle } from "react";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
-import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const QuotationLocalMove = forwardRef((props, ref) => {
   const {
@@ -198,49 +199,66 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         printWindow.print();
       }, 500);
     },
-    downloadPdf: () => {
-      const printContent = generateHtmlContent();
-      const element = document.createElement('div');
-      element.style.width = '210mm';
-      element.style.padding = '20px';
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
-      element.innerHTML = `<style>${getStyles()}</style>${printContent}`;
+    downloadPdf: async () => {
+      try {
+        // Create a temporary container for rendering
+        const printContent = generateHtmlContent();
+        const element = document.createElement('div');
+        element.innerHTML = `<style>${getStyles()}</style>${printContent}`;
 
-      // Temporarily append to body for rendering
-      document.body.appendChild(element);
+        // Append to body temporarily for rendering
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        element.style.top = '0';
+        element.style.width = '794px'; // A4 width in pixels at 96 DPI
+        document.body.appendChild(element);
 
-      const opt = {
-        margin: [0.5, 0.5, 0.5, 0.5],
-        filename: `Quotation_${quoteNumber}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: {
-          scale: 2,
+        // Wait for DOM to render completely
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Capture the element as a high-quality image
+        const canvas = await html2canvas(element, {
+          scale: 2, // Higher quality
           useCORS: true,
           logging: false,
-          letterRendering: true,
-          allowTaint: true
-        },
-        jsPDF: {
-          unit: 'in',
-          format: 'a4',
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+          width: 794,
+          height: 1123, // A4 height in pixels at 96 DPI
+          windowWidth: 794,
+          windowHeight: 1123
+        });
 
-      html2pdf().set(opt).from(element).save().then(() => {
-        // Remove element after PDF generation
-        if (element.parentNode) {
-          document.body.removeChild(element);
+        // Remove the temporary element
+        document.body.removeChild(element);
+
+        // Calculate dimensions for PDF
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+
+        // Create PDF
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let position = 0;
+
+        // Add image to PDF (handles multi-page automatically)
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        // Add additional pages if content exceeds one page
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
         }
-      }).catch((error) => {
-        console.error('PDF generation error:', error);
-        if (element.parentNode) {
-          document.body.removeChild(element);
-        }
-      });
+
+        // Save the PDF
+        pdf.save(`Quotation_${quoteNumber}.pdf`);
+      } catch (error) {
+        console.error('PDF generation failed:', error);
+        alert('Failed to generate PDF. Please try again or contact support.');
+      }
     }
   }));
 
