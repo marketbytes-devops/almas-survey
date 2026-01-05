@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaEye, FaPrint } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; // Import for print trigger
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -35,6 +36,8 @@ export default function QuotationView() {
   const [quoteNotes, setQuoteNotes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [insurancePlans, setInsurancePlans] = useState([]);
+
+  const printRef = useRef(); // Ref to trigger print from QuotationLocalMove
 
   const safeParse = (value) => {
     const num = Number(value);
@@ -187,7 +190,7 @@ export default function QuotationView() {
         setPaymentTerms(termsRes.data.filter(t => t.is_active));
         setInsurancePlans(insRes.data.filter(i => i.is_active));
       } catch (err) {
-        console.error("Failed to load print data:", err);
+        console.error("Failed to load print data");
       }
     };
     fetchPrintData();
@@ -204,140 +207,25 @@ export default function QuotationView() {
     }
   };
 
-  const handlePrint = () => {
-    const customerName = get(survey?.full_name, survey?.enquiry?.fullName) || "Customer";
-    const rate = safeParse(quotation?.final_amount).toFixed(2) + " QAR";
-    const serviceType = SERVICE_TYPE_DISPLAY[survey?.service_type] || "Not filled";
-    const commodity = "Used Household goods";
-    const countryMap = { QA: "Qatar" };
-    const origin = (survey?.origin_city || "") + " " + (countryMap[survey?.origin_country] || survey?.origin_country || "");
-    const destination =
-      (survey?.destination_addresses?.[0]?.city || "") +
-      " " +
-      (countryMap[survey?.destination_addresses?.[0]?.country] || survey?.destination_addresses?.[0]?.country || "");
-
-    const lumpSum = safeParse(baseAmount).toFixed(2);
-
-    // Fully dynamic additional charges
-    let additionalLines = additionalCharges.map((charge) => {
-      const quantity = charge.quantity || 1;
-      const subtotal = safeParse(charge.total || (charge.price_per_unit * quantity));
-      return `<p>${charge.service_name || "Additional Service"}: ${subtotal.toFixed(2)}</p>`;
-    }).join("");
-
-    const totalPrice = safeParse(quotation?.amount).toFixed(2);
-    const advanceAmt = safeParse(quotation?.advance).toFixed(2);
-    const balanceAmt = safeParse(quotation?.balance).toFixed(2);
-    const discountLine = safeParse(quotation?.discount) > 0 ? `Discount: ${safeParse(quotation?.discount).toFixed(2)}<br>` : "";
-
-    const includeBullets = includedServices.map((s) => `<li>${s}</li>`).join("");
-    const excludeBullets = excludedServices.map((s) => `<li>${s}</li>`).join("");
-
-    const moveDate = survey?.packing_date_from || "TBA";
-    const noteText = `Survey Remarks<br>${survey?.work_description || "Add Remark"}<br>Move date : ${moveDate} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday ) We assuming normal good access at destination office building ,please note any special requirement at origin & destination building which shall arranged by you (i.e. gate pass , parking permit ) NO HIDDEN FEE'S - You may please read below our service inclusion and exclusion.`;
-
-    const insuranceText = insurancePlans.map(plan => `${plan.name}<br>${plan.description.replace(/\n/g, '<br>')}<br>Type: ${plan.calculation_type_display}<br>Rate: ${plan.rate}%<br>Min Premium: QAR ${plan.minimum_premium}`).join('<br><br>');
-    const paymentText = paymentTerms.map(term => `${term.name}<br>${term.description.replace(/\n/g, '<br>')}`).join('<br><br>');
-    const generalTerms = quoteNotes.map(note => `<h3>${note.title}</h3><p>${note.content.replace(/\n/g, '<br>')}</p>`).join('');
-
-    const sign = hasSignature ? `<img src="${currentSignature}" alt="Signature" style="width:200px;height:auto;" />` : "";
-
-    const contactPerson = "Muhammad Kp";
-    const email = "Freight@almasint.com";
-    const mobile = "0097450136999";
-    const address = "Almas Movers Services<br>Address xx xx x xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-    const logoFooterText = "IAM RPP SIAMX ISO Company Green Accredited";
-
-    const printContent = `
-      <div class="content">
-        <div class="section">
-          <h1>ALMAS MOVERS INTERNATIONAL</h1>
-          <div class="header">
-            Quote No : ${quotation?.quotation_id || "Not available"}<br>
-            Date : ${quotation?.date || today}<br>
-            Contact Person : ${contactPerson}<br>
-            Email : ${email}<br>
-            Mobile No : ${mobile}
-          </div>
-          <h2>Your Rate is ${rate}</h2>
-          <p>Dear ${customerName}</p>
-          <p>Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.</p>
-          <div class="service-box">
-            Service Type : ${serviceType} &nbsp;&nbsp;&nbsp;&nbsp; Commodity : ${commodity}<br>
-            Origin : ${origin} &nbsp;&nbsp;&nbsp;&nbsp; Destination : ${destination}
-          </div>
-          <h3>Breakdown of Charges (All prices in QAR)</h3>
-          <p>Lump sum moving charges: ${lumpSum}</p>
-          ${additionalLines}
-          ${discountLine}
-          <p>Total Price : ${totalPrice}</p>
-          <p>Advance : ${advanceAmt}</p>
-          <p>Balance : ${balanceAmt}</p>
-        </div>
-        <div style="page-break-before: always;" class="section">
-          <h3>Service Includes :-</h3>
-          <ul>
-            ${includeBullets}
-          </ul>
-          <h3>Service Excludes :-</h3>
-          <ul>
-            ${excludeBullets}
-          </ul>
-          <h3>Note :-</h3>
-          <p>${noteText}</p>
-          <h3>Insurance :-</h3>
-          <p>${insuranceText}</p>
-        </div>
-        <div style="page-break-before: always;" class="section">
-          <h3>PAYMENT TERMS :-</h3>
-          <p>${paymentText}</p>
-          <h3>General Terms</h3>
-          ${generalTerms}
-        </div>
-        <div style="page-break-before: always;" class="section">
-          <h3>Sign</h3>
-          ${sign}
-        </div>
-      </div>
-      <div class="footer">
-        <p style="text-align:center;">${address}</p>
-        <p style="text-align:center;">${logoFooterText}</p>
-      </div>
-    `;
-
-    const printWindow = window.open("", "", "height=800,width=1200");
-    printWindow.document.write("<html><head><title>Quotation Print</title>");
-    printWindow.document.write("<style>");
-    printWindow.document.write("@page { size: A4; margin: 1cm 1cm 3cm 1cm; }");
-    printWindow.document.write("body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; margin: 0; padding: 0; }");
-    printWindow.document.write(".content { padding: 1cm 1cm 0 1cm; margin-bottom: 3cm; }");
-    printWindow.document.write(".footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 3cm; padding: 0 1cm; box-sizing: border-box; text-align: center; }");
-    printWindow.document.write("h1 { color: #ff9900; font-size: 24pt; }");
-    printWindow.document.write("h2 { font-size: 18pt; text-align: center; font-weight: bold; }");
-    printWindow.document.write("h3 { font-size: 12pt; }");
-    printWindow.document.write(".header { text-align: right; }");
-    printWindow.document.write(".service-box { border: 2px solid #00aaff; border-radius: 10px; padding: 10px; }");
-    printWindow.document.write("ul { list-style-type: disc; padding-left: 20px; }");
-    printWindow.document.write("p { margin: 5px 0; }");
-    printWindow.document.write("</style></head><body>");
-    printWindow.document.write(printContent);
-    printWindow.document.write("</body></html>");
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
+  // Trigger print from QuotationLocalMove
+  const triggerPrint = () => {
+    if (printRef.current) {
+      printRef.current.printNow(); // This will call the print function inside QuotationLocalMove
+    } else {
+      console.warn("Print ref not ready yet");
+    }
   };
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
   if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
   if (!quotation || !survey) return null;
 
-  const customerName = get(survey.full_name, survey.enquiry?.fullName) || "Customer";
-  const phone = get(survey.phone_number, survey.enquiry?.phoneNumber);
-  const email = get(survey.email, survey.enquiry?.email);
-  const service = SERVICE_TYPE_DISPLAY[survey.service_type] || "Not filled";
-  const movingTo = survey.destination_addresses?.[0]?.address || "Not filled";
-  const moveDate = survey.packing_date_from || "Not filled";
+  const customerName = get(survey?.full_name, survey?.enquiry?.fullName) || "Customer";
+  const phone = get(survey?.phone_number, survey?.enquiry?.phoneNumber);
+  const email = get(survey?.email, survey?.enquiry?.email);
+  const service = SERVICE_TYPE_DISPLAY[survey?.service_type] || "Not filled";
+  const movingTo = survey?.destination_addresses?.[0]?.address || "Not filled";
+  const moveDate = survey?.packing_date_from || "Not filled";
 
   const totalAmount = safeParse(quotation?.amount);
   const discount = safeParse(quotation?.discount);
@@ -376,7 +264,7 @@ export default function QuotationView() {
               <span className="font-medium text-sm">Back</span>
             </button>
             <button
-              onClick={handlePrint}
+              onClick={triggerPrint}
               className="flex items-center gap-3 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition text-white"
             >
               <FaPrint className="w-5 h-5" />
@@ -387,6 +275,7 @@ export default function QuotationView() {
         </div>
 
         <div className="p-4 space-y-10">
+          {/* Quotation Information */}
           <div className="bg-[#4c7085]/5 border border-[#4c7085]/30 rounded-xl p-6">
             <h3 className="text-lg font-medium text-[#4c7085] mb-4">Quotation Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -394,7 +283,7 @@ export default function QuotationView() {
                 <label className="block text-sm font-medium text-[#4c7085] mb-2">Quotation ID</label>
                 <input
                   type="text"
-                  value={quotation.quotation_id || "Not specified"}
+                  value={quotation?.quotation_id || "Not specified"}
                   readOnly
                   className="w-full rounded-lg border border-[#6b8ca3]/50 bg-white px-4 py-3 text-sm text-[#4c7085] font-medium cursor-not-allowed"
                 />
@@ -403,7 +292,7 @@ export default function QuotationView() {
                 <label className="block text-sm font-medium text-[#4c7085] mb-2">Date</label>
                 <input
                   type="text"
-                  value={quotation.date || "Not specified"}
+                  value={quotation?.date || "Not specified"}
                   readOnly
                   className="w-full rounded-lg border border-[#6b8ca3]/50 bg-white px-4 py-3 text-sm text-[#4c7085] font-medium cursor-not-allowed"
                 />
@@ -411,6 +300,7 @@ export default function QuotationView() {
             </div>
           </div>
 
+          {/* Client Details */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-[#4c7085] mb-2">Client Name</label>
@@ -441,10 +331,11 @@ export default function QuotationView() {
             </div>
           </div>
 
+          {/* Additional Info */}
           <div className="space-y-6">
             {[
               { label: "Service Required", value: service },
-              { label: "Moving From", value: get(survey.origin_address) },
+              { label: "Moving From", value: get(survey?.origin_address) },
               { label: "Moving To", value: movingTo },
               { label: "Date of Move", value: moveDate },
             ].map((item) => (
@@ -460,6 +351,7 @@ export default function QuotationView() {
             ))}
           </div>
 
+          {/* Additional Services */}
           {additionalCharges.length > 0 && (
             <div className="bg-[#6b8ca3]/5 border-2 border-[#6b8ca3]/30 rounded-xl p-6">
               <h3 className="text-xl font-medium text-[#4c7085] mb-4">Additional Services</h3>
@@ -489,6 +381,7 @@ export default function QuotationView() {
             </div>
           )}
 
+          {/* Your Rate Section */}
           <div className="bg-gradient-to-r from-[#4c7085]/10 to-[#6b8ca3]/10 border-2 border-[#4c7085]/30 rounded-xl p-4">
             <h3 className="text-2xl font-medium text-center text-[#4c7085] mb-8">Your Rate</h3>
 
@@ -546,9 +439,14 @@ export default function QuotationView() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border-2 border-[#4c7085]/30 rounded-xl overflow-hidden">
-            <div className="bg-[#4c7085] text-white p-5 text-center font-medium text-lg">Service Includes</div>
-            <div className="bg-red-700 text-white p-5 text-center font-medium text-lg">Service Excludes</div>
+          {/* Service Includes / Excludes */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-[#4c7085]/30 rounded-xl overflow-hidden">
+            <div className="bg-[#4c7085] text-white p-5 text-center font-medium text-lg">
+              Service Includes
+            </div>
+            <div className="bg-red-700 text-white p-5 text-center font-medium text-lg">
+              Service Excludes
+            </div>
 
             <div className="p-4 bg-gray-100 max-h-96 overflow-y-auto space-y-4">
               {includedServices.length > 0 ? (
@@ -577,6 +475,7 @@ export default function QuotationView() {
             </div>
           </div>
 
+          {/* Digital Signature */}
           <div className="bg-gray-100 p-4 rounded-xl border border-[#4c7085]/30">
             <h3 className="text-xl font-medium text-[#4c7085] mb-4">Digital Signature</h3>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -601,6 +500,37 @@ export default function QuotationView() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Hidden instance of QuotationLocalMove - used only for printing */}
+      <div style={{ display: "none" }}>
+        <QuotationLocalMove
+          ref={printRef}
+          quotation={quotation}
+          survey={survey}
+          name={customerName}
+          phone={phone}
+          email={email}
+          service={service}
+          movingTo={movingTo}
+          moveDate={moveDate}
+          totalAmount={totalAmount}
+          advance={advance}
+          balance={balance}
+          discount={discount}
+          finalAmount={finalAmount}
+          baseAmount={baseAmount}
+          additionalChargesTotal={additionalChargesTotal}
+          additionalCharges={additionalCharges}
+          includedServices={includedServices}
+          excludedServices={excludedServices}
+          notes={quoteNotes}
+          insurancePlans={insurancePlans}
+          generalTerms={quoteNotes} // or your separate general terms
+          paymentTerms={paymentTerms}    // ← ADD THIS
+          quoteNotes={quoteNotes}        // ← ADD THIS if separate from generalTerms
+          currentSignature={currentSignature}// Adjust if you have separate general terms
+        />
       </div>
     </>
   );

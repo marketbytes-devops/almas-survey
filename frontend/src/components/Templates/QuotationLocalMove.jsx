@@ -22,8 +22,11 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     includedServices,
     excludedServices,
     notes,
-    insurancePlans,
-    generalTerms,
+    insurancePlans = [],           // Fallback to empty array
+    paymentTerms = [],             // Fallback to empty array
+    quoteNotes = [],               // Fallback to empty array
+    generalTerms = quoteNotes,     // Use quoteNotes as fallback if generalTerms not passed
+    currentSignature,              // Signature image URL
   } = props;
 
   const today = new Date().toLocaleDateString("en-GB", {
@@ -43,21 +46,21 @@ const QuotationLocalMove = forwardRef((props, ref) => {
 
   const companyAddress = "P.O. Box 24665, Doha, Qatar";
 
-  // Expose print function to parent via ref
+  // Expose print function to parent (QuotationView)
   useImperativeHandle(ref, () => ({
     printNow: () => {
       const customerName = name || "Valued Customer";
-      const rate = Number(finalAmount || totalAmount).toFixed(2) + " " + currency;
+      const rate = Number(finalAmount || totalAmount || 0).toFixed(2) + " " + currency;
       const serviceType = service || "Local Move";
       const commodity = "Used Household goods";
-      const origin = survey?.origin_address || "Not specified";
+      const origin = survey?.origin_address || survey?.origin_city || "Not specified";
       const destination = movingTo || "Not specified";
 
       const lumpSum = Number(baseAmount || totalAmount || 0).toFixed(2);
 
       // Dynamic additional charges
       let additionalLines = "";
-      if (additionalCharges && additionalCharges.length > 0) {
+      if (additionalCharges?.length > 0) {
         additionalLines = additionalCharges
           .map((charge) => {
             const quantity = charge.quantity || 1;
@@ -67,9 +70,9 @@ const QuotationLocalMove = forwardRef((props, ref) => {
           .join("");
       }
 
-      const totalPrice = Number(totalAmount).toFixed(2);
-      const advanceAmt = Number(advance).toFixed(2);
-      const balanceAmt = Number(balance).toFixed(2);
+      const totalPrice = Number(totalAmount || 0).toFixed(2);
+      const advanceAmt = Number(advance || 0).toFixed(2);
+      const balanceAmt = Number(balance || 0).toFixed(2);
       const discountLine = discount > 0 ? `Discount: ${Number(discount).toFixed(2)}<br>` : "";
 
       const includeBullets = (includedServices || []).map((s) => `<li>${s}</li>`).join("");
@@ -78,21 +81,24 @@ const QuotationLocalMove = forwardRef((props, ref) => {
       const noteText = `Survey Remarks<br>${survey?.work_description || "Add Remark"}<br>Move date : ${moveDate || "TBA"} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday ) We assuming normal good access at destination office building ,please note any special requirement at origin & destination building which shall arranged by you (i.e. gate pass , parking permit ) NO HIDDEN FEE'S - You may please read below our service inclusion and exclusion.`;
 
       const insuranceText = (insurancePlans || []).map(plan => 
-        `${plan.name}<br>${(plan.description || "").replace(/\n/g, "<br>")}<br>Type: ${plan.calculation_type_display || "N/A"}<br>Rate: ${plan.rate || 0}%<br>Min Premium: QAR ${plan.minimum_premium || "N/A"}`
+        `${plan?.name || "N/A"}<br>${(plan?.description || "").replace(/\n/g, "<br>")}<br>Type: ${plan?.calculation_type_display || "N/A"}<br>Rate: ${plan?.rate || 0}%<br>Min Premium: QAR ${plan?.minimum_premium || "N/A"}`
       ).join("<br><br>");
 
       const paymentText = (paymentTerms || []).map(term => 
-        `${term.name}<br>${(term.description || "").replace(/\n/g, "<br>")}`
+        `${term?.name || "N/A"}<br>${(term?.description || "").replace(/\n/g, "<br>")}`
       ).join("<br><br>");
 
       const generalTermsHtml = (generalTerms || []).map(note => 
-        `<h3>${note.title || "Note"}</h3><p>${(note.content || "").replace(/\n/g, "<br>")}</p>`
+        `<h3>${note?.title || "Note"}</h3><p>${(note?.content || "").replace(/\n/g, "<br>")}</p>`
       ).join("");
 
-      const sign = currentSignature ? `<img src="${currentSignature}" alt="Signature" style="width:200px;height:auto;" />` : "";
+      const sign = currentSignature 
+        ? `<img src="${currentSignature}" alt="Signature" style="width:200px;height:auto;" />`
+        : "<p>Customer Signature: _______________________ Date: _______________</p>";
 
       const printContent = `
         <div class="content">
+          <!-- Page 1 -->
           <div class="section">
             <h1>ALMAS MOVERS INTERNATIONAL</h1>
             <div class="header">
@@ -104,13 +110,13 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             </div>
             <h2>Your Rate is ${rate}</h2>
             <p>Dear ${customerName},</p>
-            <p>Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document via email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.</p>
+            <p>Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.</p>
             <div class="service-box">
               Service Type : ${serviceType} &nbsp;&nbsp;&nbsp;&nbsp; Commodity : ${commodity}<br>
               Origin : ${origin} &nbsp;&nbsp;&nbsp;&nbsp; Destination : ${destination}
             </div>
             <h3>Breakdown of Charges (All prices in ${currency})</h3>
-            <p>Lump sum moving charges: ${lumpSum}</p>
+
             ${additionalLines}
             ${discountLine}
             <p>Total Price : ${totalPrice}</p>
@@ -118,21 +124,19 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             <p>Balance : ${balanceAmt}</p>
           </div>
 
+          <!-- Page 2 -->
           <div style="page-break-before: always;" class="section">
             <h3>Service Includes :-</h3>
-            <ul>
-              ${includeBullets || "<li>Professional packing of household items</li><li>Loading and unloading services</li><li>Transportation to destination</li>"}
-            </ul>
+            <ul>${includeBullets || "<li>Professional packing of household items</li><li>Loading and unloading services</li><li>Transportation to destination</li>"}</ul>
             <h3>Service Excludes :-</h3>
-            <ul>
-              ${excludeBullets || "<li>Storage charges beyond agreed period</li><li>Customs duties and taxes</li><li>Items not disclosed during survey</li>"}
-            </ul>
+            <ul>${excludeBullets || "<li>Storage charges beyond agreed period</li><li>Customs duties and taxes</li><li>Items not disclosed during survey</li>"}</ul>
             <h3>Note :-</h3>
             <p>${noteText}</p>
             <h3>Insurance :-</h3>
             <p>${insuranceText || "Comprehensive transit insurance is available upon request at an additional cost."}</p>
           </div>
 
+          <!-- Page 3 -->
           <div style="page-break-before: always;" class="section">
             <h3>PAYMENT TERMS :-</h3>
             <p>${paymentText || "20% advance payment upon work confirmation, the full payment required at the day of work completion."}</p>
@@ -140,16 +144,17 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             ${generalTermsHtml || "<p>This quotation is valid for 60 days from the date mentioned above.</p>"}
           </div>
 
+          <!-- Signature -->
           <div style="page-break-before: always;" class="section">
             <h3>Sign</h3>
-            ${sign || "<p>Customer Signature: _______________________ Date: _______________</p>"}
+            ${sign}
             <p>For ALMAS MOVERS SERVICES</p>
             <p>Authorized Signatory: _______________________</p>
           </div>
         </div>
         <div class="footer">
           <p style="text-align:center;">${companyAddress}</p>
-          <p style="text-align:center;">${"IAM RPP SIAMX ISO Company Green Accredited"}</p>
+          <p style="text-align:center;">IAM RPP SIAMX ISO Company Green Accredited</p>
         </div>
       `;
 
@@ -178,7 +183,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     },
   }));
 
-  // Render the actual printable content (your original multi-page design)
+  // Your original multi-page render (the design you want)
   return (
     <div style={{
       fontFamily: "'Helvetica', 'Arial', sans-serif",
@@ -270,12 +275,11 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "25px" }}>
           <tbody>
             <tr>
-              <td style={{ padding: "8px 0", fontSize: "10.5pt" }}>Lump sum moving charges:</td>
               <td style={{ padding: "8px 0", textAlign: "right", fontSize: "10.5pt" }}>
                 {Number(baseAmount || totalAmount || 0).toFixed(2)}
               </td>
             </tr>
-            {additionalCharges?.map((charge, index) => {
+            {(additionalCharges || []).map((charge, index) => {
               const quantity = charge.quantity || 1;
               const subtotal = Number(charge.price_per_unit * quantity).toFixed(2);
               return (
@@ -406,11 +410,19 @@ const QuotationLocalMove = forwardRef((props, ref) => {
           General Terms
         </h3>
         <ul style={{ paddingLeft: "20px", margin: "0 0 30px", fontSize: "10.5pt", listStyleType: "disc" }}>
-          <li style={{ marginBottom: "6px" }}>This quotation is valid for 60 days from the date mentioned above</li>
-          <li style={{ marginBottom: "6px" }}>Prices are subject to change based on actual volume and additional services required</li>
-          <li style={{ marginBottom: "6px" }}>Customer must provide accurate inventory and access information</li>
-          <li style={{ marginBottom: "6px" }}>Any changes to the scope of work may result in additional charges</li>
-          <li style={{ marginBottom: "6px" }}>The company is not liable for delays caused by factors beyond our control</li>
+          {(generalTerms || []).length > 0 ? (
+            generalTerms.map((term, i) => (
+              <li key={i} style={{ marginBottom: "6px" }}>{term.content || term}</li>
+            ))
+          ) : (
+            <>
+              <li>This quotation is valid for 60 days from the date mentioned above</li>
+              <li>Prices are subject to change based on actual volume and additional services required</li>
+              <li>Customer must provide accurate inventory and access information</li>
+              <li>Any changes to the scope of work may result in additional charges</li>
+              <li>The company is not liable for delays caused by factors beyond our control</li>
+            </>
+          )}
         </ul>
 
         <div style={{ marginTop: "40px", borderTop: "2px solid #000", paddingTop: "30px" }}>
