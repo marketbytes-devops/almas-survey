@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck, FaSearch, FaSignature, FaEye } from "react-icons/fa";
+import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck, FaSearch, FaSignature, FaEye, FaMapMarkerAlt, FaSpinner } from "react-icons/fa";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
@@ -22,16 +22,7 @@ const salutationOptions = [
     { value: "Ms", label: "Ms" },
 ];
 
-const frequencyOptions = [
-    { value: "short_term", label: "Short Term" },
-    { value: "long_term", label: "Long Term" },
-];
 
-const storageModeOptions = [
-    { value: "ac", label: "AC" },
-    { value: "non_ac", label: "Non-AC" },
-    { value: "self_storage", label: "Self Storage" },
-];
 
 const serviceTypeOptions = [
     { value: "localMove", label: "Local Move" },
@@ -49,7 +40,145 @@ const statusOptions = [
     { value: "cancelled", label: "Cancelled" },
 ];
 
-const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, originCountry, originState, register, watch, multipleAddresses, destinationAddresses, removeAddress, addAddress }) => {
+const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, originCountry, originState, register, watch, multipleAddresses, destinationAddresses, removeAddress, addAddress, setValue }) => {
+    const [isLocating, setIsLocating] = useState(false);
+
+    const handleGetLocation = () => {
+        setIsLocating(true);
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`);
+                        const data = await response.json();
+
+                        if (data && data.address) {
+                            const address = data.address;
+                            const fullAddress = data.display_name;
+
+                            // Map address fields
+                            const fetchedCountry = address.country;
+                            const fetchedState = address.state || address.region || "";
+                            const fetchedZip = address.postcode || "";
+                            const fetchedIsoState = address["ISO3166-2-lvl4"] || address["ISO3166-2"] || "";
+
+                            // Collect candidates for City matching
+                            // Prioritize typically larger administrative areas if the specific town isn't in the list
+                            const cityCandidates = [
+                                address.city,
+                                address.town,
+                                address.village,
+                                address.municipality,
+                                address.city_district,
+                                address.county,
+                                address.state_district,
+                                address.suburb
+                            ].filter(Boolean);
+
+                            // Try to match Country
+                            const allCountries = Country.getAllCountries();
+                            const matchedCountry = allCountries.find(c => c.name.toLowerCase() === fetchedCountry.toLowerCase() || c.isoCode === address.country_code.toUpperCase());
+
+                            if (matchedCountry) {
+                                setValue("originCountry", matchedCountry.isoCode, { shouldValidate: true });
+
+                                const allStates = State.getStatesOfCountry(matchedCountry.isoCode);
+                                let matchedState = null;
+
+                                if (fetchedIsoState) {
+                                    const isoSuffix = fetchedIsoState.split('-')[1];
+                                    if (isoSuffix) {
+                                        matchedState = allStates.find(s => s.isoCode === isoSuffix);
+                                    }
+                                }
+
+                                if (!matchedState) {
+                                    matchedState = allStates.find(s =>
+                                        s.name.toLowerCase() === fetchedState.toLowerCase() ||
+                                        fetchedState.toLowerCase().includes(s.name.toLowerCase()) ||
+                                        cityCandidates.some(c => s.name.toLowerCase() === c.toLowerCase())
+                                    );
+                                }
+
+                                if (matchedState) {
+                                    const allCities = City.getCitiesOfState(matchedCountry.isoCode, matchedState.isoCode);
+
+                                    const matchedCity = allCities.find(c =>
+                                        cityCandidates.some(candidate =>
+                                            c.name.toLowerCase() === candidate.toLowerCase() ||
+                                            candidate.toLowerCase().includes(c.name.toLowerCase())
+                                        )
+                                    );
+
+                                    let usedCityName = "";
+                                    if (matchedCity) {
+                                        usedCityName = matchedCity.name;
+                                    } else {
+                                        usedCityName = cityCandidates[0] || "";
+                                    }
+
+                                    // Chain updates to ensure options are available
+                                    setTimeout(() => {
+                                        setValue("originState", matchedState.isoCode, { shouldValidate: true });
+
+                                        setTimeout(() => {
+                                            setValue("originCity", usedCityName, { shouldValidate: true });
+                                        }, 100);
+                                    }, 100);
+
+                                    let addressParts = fullAddress.split(", ").map(p => p.trim());
+                                    const itemsToRemove = [
+                                        matchedCountry.name,
+                                        matchedState.name,
+                                        fetchedZip,
+                                        usedCityName,
+                                        fetchedCountry,
+                                        fetchedState,
+                                    ].filter(Boolean).map(s => s.toLowerCase());
+
+                                    const formattedAddress = addressParts.filter(part => {
+                                        const pLower = part.toLowerCase();
+                                        return !itemsToRemove.some(item =>
+                                            item === pLower ||
+                                            (item.length > 4 && pLower.includes(item)) // Relaxed length check slightly
+                                        );
+                                    }).join(", ");
+
+                                    setValue("originAddress", formattedAddress, { shouldValidate: true });
+
+                                } else {
+                                    setValue("originAddress", fullAddress, { shouldValidate: true });
+                                }
+                            } else {
+                                setValue("originAddress", fullAddress, { shouldValidate: true });
+                            }
+                        } else {
+                            const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                            setValue("originAddress", mapsLink, { shouldValidate: true });
+                        }
+
+                    } catch (error) {
+                        console.error("Error fetching address:", error);
+                        const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                        setValue("originAddress", mapsLink, { shouldValidate: true });
+                    } finally {
+                        setIsLocating(false);
+                    }
+                },
+                (error) => {
+                    console.error("Error fetching location:", error);
+                    alert("Unable to fetch location. Please ensure location services are enabled.");
+                    setIsLocating(false);
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by this browser.");
+            setIsLocating(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
@@ -82,7 +211,20 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
                 <h3 className="text-lg sm:text-xl font-medium mb-4">Origin Address</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input label="Origin Address" name="originAddress" />
+                    <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                            <Input label="Origin Address" name="originAddress" />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleGetLocation}
+                            disabled={isLocating}
+                            className={`p-2 rounded-md transition-colors mb-[2px] ${isLocating ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#4c7085] hover:opacity-90 text-white'}`}
+                            title="Get Current Location"
+                        >
+                            {isLocating ? <FaSpinner className="animate-spin" size={20} /> : <FaMapMarkerAlt size={20} />}
+                        </button>
+                    </div>
                     <Input label="Country" name="originCountry" type="select" options={countryOptions} />
                     <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
                     <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
@@ -197,44 +339,11 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
                 <h3 className="text-lg sm:text-xl font-medium mb-4">Move Date</h3>
                 <div className="grid grid-cols-1 gap-4">
-                    <DatePickerInput label="Packing From" name="packingDateFrom" />
+                    <DatePickerInput label="Move Date" name="packingDateFrom" />
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Storage Details</h3>
-                <div className="space-y-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            {...register("storageRequired")}
-                            className="w-3 h-3 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Storage Required?</span>
-                    </label>
 
-                    {watch("storageRequired") && (
-                        <div className="pl-9 space-y-4 border-l-4 border-[#4c7085] bg-gradient-to-r from-[#4c7085]/5 to-transparent p-6 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <DatePickerInput label="Storage Start Date" name="storageStartDate" />
-                                <Input
-                                    label="Frequency"
-                                    name="storageFrequency"
-                                    type="select"
-                                    options={frequencyOptions}
-                                />
-                                <Input label="Duration" name="storageDuration" />
-                                <Input
-                                    label="Mode"
-                                    name="storageMode"
-                                    type="select"
-                                    options={storageModeOptions}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
         </div>
     );
 };
@@ -415,8 +524,6 @@ const SurveyDetails = () => {
                 zip: "",
                 poe: ""
             }],
-            storageRequired: false,
-            articles: [],
             vehicles: [],
             additionalServices: [],
         },
@@ -864,6 +971,7 @@ const SurveyDetails = () => {
                                 destinationAddresses={methods.watch("destinationAddresses")}
                                 removeAddress={removeAddress}
                                 addAddress={addAddress}
+                                setValue={setValue}
                             />
                         )}
                         {activeTab === "items" && (
