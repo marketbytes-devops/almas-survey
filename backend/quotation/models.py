@@ -1,4 +1,3 @@
-import os
 from django.db import models
 from django.utils import timezone
 from survey.models import Survey
@@ -119,9 +118,3 @@ class Quotation(models.Model):
             self.additional_charges = []
 
         super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        if self.signature:
-            if os.path.isfile(self.signature.path):
-                os.remove(self.signature.path)
-        super().delete(*args, **kwargs)

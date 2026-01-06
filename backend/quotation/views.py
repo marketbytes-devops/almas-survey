@@ -117,7 +117,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             
             signature_file = request.FILES['signature']
             
-            # Save signature
             quotation.signature = signature_file
             quotation.signature_uploaded = True
             quotation.save()
@@ -153,7 +152,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     return Response({'message': 'Signature deleted successfully'}, status=status.HTTP_200_OK)
                 return Response({'error': 'No signature found'}, status=status.HTTP_404_NOT_FOUND)
 
-            # GET method
             if quotation.signature:
                 return Response(
                     {
