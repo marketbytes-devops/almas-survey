@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'additional_settings',
     'pricing',
     'quotation',
+    'bookings',
 ]
 
 MIDDLEWARE = [

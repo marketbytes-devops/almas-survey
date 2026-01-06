@@ -8,7 +8,7 @@ const AddedArticlesSidebar = ({
     apiData
 }) => {
     const { watch, setValue } = useFormContext();
-    const articles = watch("articles");
+    const articles = watch("articles") || [];
     const [editingArticle, setEditingArticle] = useState(null);
     const [editFormData, setEditFormData] = useState({});
 
@@ -253,7 +253,11 @@ const AddedArticlesSidebar = ({
                                                 value={editFormData.volumeUnit || ""}
                                                 onChange={(e) => handleEditInputChange('volumeUnit', e.target.value)}
                                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                            />
+                                            >
+                                                {apiData.volumeUnits.map(unit => (
+                                                    <option key={unit.value} value={unit.value}>{unit.label}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
@@ -272,7 +276,11 @@ const AddedArticlesSidebar = ({
                                                 value={editFormData.weightUnit || ""}
                                                 onChange={(e) => handleEditInputChange('weightUnit', e.target.value)}
                                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                            />
+                                            >
+                                                {apiData.weightUnits.map(unit => (
+                                                    <option key={unit.value} value={unit.value}>{unit.label}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">

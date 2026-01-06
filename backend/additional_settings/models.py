@@ -104,6 +104,7 @@ class Tax(models.Model):
 
 class Hub(models.Model):
     name = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    code = models.CharField(max_length=50, unique=True, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -111,6 +112,27 @@ class Hub(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+class Labour(models.Model):
+    name = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class Truck(models.Model):
+    name = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class Material(models.Model):
+    name = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
     
 class MoveType(models.Model):
     name = models.CharField(max_length=100, unique=True, blank=True, null=True)
@@ -127,7 +149,7 @@ class TariffType(models.Model):
         return self.name
     
 class SurveyAdditionalService(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 

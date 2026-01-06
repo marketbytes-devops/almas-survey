@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaEye, FaPrint, FaDownload } from "react-icons/fa";
+import { FaArrowLeft, FaEye, FaPrint, FaDownload, FaPaperPlane, FaCheckCircle } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; // Import for print trigger
@@ -23,6 +23,7 @@ export default function QuotationView() {
   const [error, setError] = useState("");
   const [hasSignature, setHasSignature] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
+  const [booking, setBooking] = useState(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
 
   const [additionalCharges, setAdditionalCharges] = useState([]);
@@ -148,6 +149,16 @@ export default function QuotationView() {
           const destCity = surveyData.destination_addresses?.[0]?.city || "";
           setDestinationCity(destCity);
           await checkSignatureExists(quot.quotation_id);
+
+          // Fetch booking info if exists
+          try {
+            const bookingRes = await apiClient.get(`/bookings/by-quotation/${quot.quotation_id}/`);
+            if (bookingRes.data) {
+              setBooking(bookingRes.data);
+            }
+          } catch (err) {
+            console.warn("No booking found for this quotation");
+          }
         }
       } catch (err) {
         console.error("API fetch error:", err.response?.data || err.message);
@@ -223,6 +234,15 @@ export default function QuotationView() {
     } else {
       console.warn("Print ref not ready yet");
     }
+  };
+
+  const handleBookMove = () => {
+    navigate(`/booking-detail/quotation/${quotation.quotation_id}`);
+  };
+
+  const handleSendQuotation = () => {
+    // Placeholder for send quotation logic
+    alert("Send Quotation functionality would go here.");
   };
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
@@ -510,7 +530,7 @@ export default function QuotationView() {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pb-8">
             <button
               onClick={triggerPrint}
               className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3d5a6a] hover:to-[#5a7b92] text-white rounded-lg transition text-sm font-medium shadow-lg"
@@ -524,6 +544,20 @@ export default function QuotationView() {
             >
               <FaDownload className="w-4 h-4" />
               <span>Download PDF</span>
+            </button>
+            <button
+              onClick={handleSendQuotation}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3d5a6a] hover:to-[#5a7b92] text-white rounded-lg transition text-sm font-medium shadow-lg"
+            >
+              <FaPaperPlane className="w-4 h-4" />
+              <span>Send Quotation</span>
+            </button>
+            <button
+              onClick={handleBookMove}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition text-sm font-medium shadow-lg"
+            >
+              <FaCheckCircle className="w-4 h-4" />
+              <span>Book Move</span>
             </button>
           </div>
         </div>
@@ -554,9 +588,10 @@ export default function QuotationView() {
           notes={quoteNotes}
           insurancePlans={insurancePlans}
           generalTerms={quoteNotes} // or your separate general terms
-          paymentTerms={paymentTerms}    // ← ADD THIS
-          quoteNotes={quoteNotes}        // ← ADD THIS if separate from generalTerms
-          currentSignature={currentSignature}// Adjust if you have separate general terms
+          paymentTerms={paymentTerms}
+          quoteNotes={quoteNotes}
+          currentSignature={currentSignature}
+          booking={booking}
         />
       </div>
     </>

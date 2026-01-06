@@ -18,6 +18,9 @@ from .models import (
     MoveType,
     TariffType,
     SurveyAdditionalService,
+    Labour,
+    Truck,
+    Material,
 )
 from .serializers import (
     CustomerTypeSerializer,
@@ -37,6 +40,9 @@ from .serializers import (
     MoveTypeSerializer,
     TariffTypeSerializer,
     SurveyAdditionalServiceSerializer,
+    LabourSerializer,
+    TruckSerializer,
+    MaterialSerializer,
 )
 
 
@@ -146,4 +152,22 @@ class TariffTypeViewSet(viewsets.ModelViewSet):
 class SurveyAdditionalServiceViewSet(viewsets.ModelViewSet):
     queryset = SurveyAdditionalService.objects.all()
     serializer_class = SurveyAdditionalServiceSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class LabourViewSet(viewsets.ModelViewSet):
+    queryset = Labour.objects.all()
+    serializer_class = LabourSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class TruckViewSet(viewsets.ModelViewSet):
+    queryset = Truck.objects.all()
+    serializer_class = TruckSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class MaterialViewSet(viewsets.ModelViewSet):
+    queryset = Material.objects.all()
+    serializer_class = MaterialSerializer
     permission_classes = [permissions.AllowAny]

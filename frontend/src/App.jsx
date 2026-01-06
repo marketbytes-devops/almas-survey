@@ -32,6 +32,11 @@ import QuotationEdit from "./pages/Quotation/QuotationEdit";
 import QuotationView from "./pages/Quotation/QuotationView";
 import QuotationLocalMove from "./components/Templates/QuotationLocalMove";
 import AdditionalServices from "./pages/AdditionalSettings/AdditionalService";
+import Labours from "./pages/AdditionalSettings/Labours";
+import Trucks from "./pages/AdditionalSettings/Trucks";
+import Materials from "./pages/AdditionalSettings/Materials";
+import BookingList from "./pages/Bookings/BookingList";
+import BookingDetail from "./pages/Bookings/BookingDetail";
 
 const ProtectedRoute = ({
   children,
@@ -213,6 +218,39 @@ function App() {
           ),
         },
         {
+          path: "/booking-list",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="booking"
+            >
+              <BookingList />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/booking-detail/:id",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="booking"
+            >
+              <BookingDetail />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/booking-detail/quotation/:quotId",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="booking"
+            >
+              <BookingDetail />
+            </ProtectedRoute>
+          ),
+        },
+        {
           path: "/pricing/local-move",
           element: (
             <ProtectedRoute
@@ -389,6 +427,39 @@ function App() {
               requiredPage="additional-services"
             >
               <AdditionalServices />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/additional-settings/labours",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="labours"
+            >
+              <Labours />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/additional-settings/trucks",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="trucks"
+            >
+              <Trucks />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/additional-settings/materials",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="materials"
+            >
+              <Materials />
             </ProtectedRoute>
           ),
         },

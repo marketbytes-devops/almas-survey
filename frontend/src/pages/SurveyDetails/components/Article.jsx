@@ -349,7 +349,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const removeArticle = (id) => {
-        setValue("articles", watch("articles").filter(a => a.id !== id));
+        setValue("articles", articles.filter(a => a.id !== id));
         setMessage("Article removed!");
         setTimeout(() => setMessage(null), 3000);
     };
@@ -395,7 +395,7 @@ const Article = ({ apiData, setMessage, setError }) => {
             room: selectedRoom?.value || "",
         };
 
-        setValue("articles", [...watch("articles"), newArticle]);
+        setValue("articles", [...articles, newArticle]);
         setMessage("Custom item added successfully!");
         setTimeout(() => setMessage(null), 3000);
 
@@ -428,10 +428,10 @@ const Article = ({ apiData, setMessage, setError }) => {
                             onClick={() => setShowArticlesSidebar(true)}
                             className="hidden sm:flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform "
                         >
-                            <FaBars /> View Added ({watch("articles").length})
+                            <FaBars /> View Added ({articles.length})
                         </button>
                     </div>
-                    {watch("articles").length > 0 && (
+                    {articles.length > 0 && (
                         <button
                             type="button"
                             onClick={() => setShowArticlesSidebar(true)}
@@ -441,7 +441,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                             <div className="relative">
                                 <FaBars className="w-5 h-5" />
                                 <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-4 h-4 bg-red-500 text-white text-xs font-light rounded-full px-2">
-                                    {watch("articles").length}
+                                    {articles.length}
                                 </span>
                             </div>
                         </button>

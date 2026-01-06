@@ -17,6 +17,9 @@ from .models import (
     MoveType,
     TariffType,
     SurveyAdditionalService,
+    Labour,
+    Truck,
+    Material,
 )
 
 
@@ -130,3 +133,18 @@ class SurveyAdditionalServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = SurveyAdditionalService
         fields = ["id", "name"]
+
+class LabourSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Labour
+        fields = ["id", "name", "description"]
+
+class TruckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Truck
+        fields = ["id", "name", "description"]
+
+class MaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Material
+        fields = ["id", "name", "description"]

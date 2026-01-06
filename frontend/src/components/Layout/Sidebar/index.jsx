@@ -98,6 +98,7 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <AiOutlineCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <AiOutlineBarChart className="w-5 h-5" />, page: "survey_summary", action: "view" },
     { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <AiOutlineFileText className="w-5 h-5" />, page: "quotation", action: "view" },
+    { id: "booking", to: "/booking-list", label: "Book Move", icon: <AiTwotoneProfile className="w-5 h-5" />, page: "booking", action: "view" },
     {
       id: "pricing",
       label: "Pricing",
@@ -128,6 +129,9 @@ const Sidebar = ({ toggleSidebar }) => {
         { to: "/additional-settings/manpower", label: "Manpower", icon: <AiOutlineTeam className="w-4 h-4" />, page: "manpower", action: "view" },
         { to: "/additional-settings/room", label: "Room", icon: <AiOutlineHome className="w-4 h-4" />, page: "room", action: "view" },
         { to: "/additional-settings/additional-services", label: "Additional Services", icon: <AiTwotoneProfile className="w-4 h-4" />, page: "additional-services", action: "view" },
+        { to: "/additional-settings/labours", label: "Labours", icon: <AiOutlineTeam className="w-4 h-4" />, page: "labours", action: "view" },
+        { to: "/additional-settings/trucks", label: "Trucks", icon: <AiOutlineSliders className="w-4 h-4" />, page: "trucks", action: "view" },
+        { to: "/additional-settings/materials", label: "Materials", icon: <AiOutlineTag className="w-4 h-4" />, page: "materials", action: "view" },
       ],
     },
     {
@@ -167,11 +171,10 @@ const Sidebar = ({ toggleSidebar }) => {
         <div key={item.id}>
           <button
             onClick={item.toggle}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
-              item.isOpen || isActive
-                ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${item.isOpen || isActive
+              ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+              : "text-gray-700 hover:bg-gray-100"
+              }`}
           >
             <span className="flex items-center gap-3">
               {item.icon}
@@ -193,10 +196,9 @@ const Sidebar = ({ toggleSidebar }) => {
                     <NavLink
                       to={sub.to}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm transition-all ${
-                          isActive
-                            ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium"
-                            : "text-gray-600 hover:bg-gray-100"
+                        `flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm transition-all ${isActive
+                          ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium"
+                          : "text-gray-600 hover:bg-gray-100"
                         }`
                       }
                       onClick={() => isMobile() && toggleSidebar()}
@@ -220,10 +222,9 @@ const Sidebar = ({ toggleSidebar }) => {
         key={item.id}
         to={item.to}
         className={({ isActive }) =>
-          `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${
-            isActive
-              ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-              : "text-gray-700 hover:bg-gray-100"
+          `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
+            ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
+            : "text-gray-700 hover:bg-gray-100"
           }`
         }
         onClick={() => isMobile() && toggleSidebar()}
