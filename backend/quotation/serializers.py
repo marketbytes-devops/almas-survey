@@ -15,6 +15,9 @@ class QuotationSerializer(serializers.ModelSerializer):
     currency_code = serializers.CharField(
         source="currency.name", read_only=True, allow_null=True, default=None
     )
+    full_name = serializers.CharField(source="survey.full_name", read_only=True)
+    service_type = serializers.CharField(source="survey.service_type", read_only=True)
+    survey_id_int = serializers.IntegerField(source="survey.id", read_only=True)
 
     included_services = serializers.ListField(
         child=serializers.IntegerField(), required=False, allow_empty=True
@@ -43,7 +46,8 @@ class QuotationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quotation
         fields = [
-            "id", "survey", "survey_id", "quotation_id",
+            "id", "survey", "survey_id", "survey_id_int", "quotation_id",
+            "full_name", "service_type",
             "date", "amount", "discount", "final_amount", "advance", "balance",
             "currency", "currency_code", "notes",
             "included_services", "excluded_services", "additional_charges",
@@ -51,7 +55,8 @@ class QuotationSerializer(serializers.ModelSerializer):
             "signature", "signature_uploaded", "signature_url",
         ]
         read_only_fields = [
-            "id", "quotation_id", "created_at", "updated_at", "survey_id",
+            "id", "quotation_id", "created_at", "updated_at", "survey_id", "survey_id_int",
+            "full_name", "service_type",
             "signature_url", "final_amount", "balance"
         ]
 
