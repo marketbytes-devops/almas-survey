@@ -6,8 +6,6 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
  
 
- 
-// Force Vite bundler to include libraries
 if (false) {
   console.log(html2canvas);
   console.log(jsPDF);
