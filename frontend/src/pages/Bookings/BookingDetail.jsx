@@ -11,7 +11,31 @@ const BookingDetail = () => {
     const [isEditing, setIsEditing] = useState(searchParams.get("edit") === "true");
     const navigate = useNavigate();
 
+    const [booking, setBooking] = useState(null);
+    const [quotation, setQuotation] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+
+    // Options from settings
+    const [labourOptions, setLabourOptions] = useState([]);
+    const [truckOptions, setTruckOptions] = useState([]);
+    const [materialOptions, setMaterialOptions] = useState([]);
     const [staffOptions, setStaffOptions] = useState([]);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        move_date: "",
+        start_date: "",
+        estimated_end_time: "",
+        supervisor: "",
+        notes: "",
+        status: "confirmed"
+    });
+
+    const [assignedLabours, setAssignedLabours] = useState([]);
+    const [assignedTrucks, setAssignedTrucks] = useState([]);
+    const [assignedMaterials, setAssignedMaterials] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -46,7 +70,6 @@ const BookingDetail = () => {
                     setAssignedTrucks(b.trucks?.map(t => ({ ...t, isNew: false })) || []);
                     setAssignedMaterials(b.materials?.map(m => ({ ...m, isNew: false })) || []);
                 } else if (quotId) {
-                    // ... (rest of quotId logic)
                     // Create new booking from quotation
                     try {
                         const existingRes = await apiClient.get(`/bookings/by-quotation/${quotId}/`);
