@@ -526,6 +526,7 @@ const SurveyDetails = () => {
             }],
             vehicles: [],
             additionalServices: [],
+            articles: [],               // ← add this
         },
     });
 
