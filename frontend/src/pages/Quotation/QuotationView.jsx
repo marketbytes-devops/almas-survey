@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaEye, FaPrint, FaDownload, FaPaperPlane, FaCheckCircle } from "react-icons/fa";
+import { FaArrowLeft, FaEye, FaPrint, FaDownload, FaShareAlt, FaCalendarCheck, FaWhatsapp, FaEnvelope, FaPaperPlane, FaCheckCircle } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; // Import for print trigger
@@ -240,9 +240,25 @@ export default function QuotationView() {
     navigate(`/booking-detail/quotation/${quotation.quotation_id}`);
   };
 
-  const handleSendQuotation = () => {
-    // Placeholder for send quotation logic
-    alert("Send Quotation functionality would go here.");
+  const handleSendQuotation = async (method = 'whatsapp') => {
+    const customerName = quotation?.survey?.full_name || "Customer";
+    const quoteId = quotation?.quotation_id || "";
+    const amount = quotation?.total_amount || 0;
+    const phone = quotation?.survey?.phone_number || "";
+
+    const message = `Hello ${customerName}, here is your quotation ${quoteId} from Almas Movers. Total Amount: QAR ${amount}. Please let us know if you have any questions.`;
+
+    if (method === 'whatsapp') {
+      const whatsappUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+    } else {
+      const emailUrl = `mailto:${quotation?.survey?.email}?subject=Quotation ${quoteId} - Almas Movers&body=${encodeURIComponent(message)}`;
+      window.open(emailUrl, "_blank");
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    handleSendQuotation('whatsapp');
   };
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
@@ -291,6 +307,18 @@ export default function QuotationView() {
             >
               <FaArrowLeft className="w-5 h-5" />
               <span className="font-medium text-sm">Back</span>
+            </button>
+            <button
+              onClick={() => handleSendQuotation('whatsapp')}
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition"
+            >
+              <FaWhatsapp /> Send Quotation
+            </button>
+            <button
+              onClick={handleShareWhatsApp}
+              className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition"
+            >
+              <FaShareAlt /> Share via WhatsApp
             </button>
             <button
               onClick={triggerPrint}

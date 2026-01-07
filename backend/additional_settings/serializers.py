@@ -20,6 +20,8 @@ from .models import (
     Labour,
     Truck,
     Material,
+    MaterialPurchase,
+    InventoryLog,
 )
 
 
@@ -56,7 +58,7 @@ class PackingTypeSerializer(serializers.ModelSerializer):
 class ManpowerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Manpower
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "category", "employer", "phone_number", "is_active"]
 
 
 class HandymanSerializer(serializers.ModelSerializer):
@@ -147,4 +149,18 @@ class TruckSerializer(serializers.ModelSerializer):
 class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "description", "stock_in_hand", "unit", "purchase_price"]
+
+class MaterialPurchaseSerializer(serializers.ModelSerializer):
+    material_name = serializers.CharField(source="material.name", read_only=True)
+    class Meta:
+        model = MaterialPurchase
+        fields = ["id", "material", "material_name", "quantity", "unit_price", "total_price", "purchase_date", "supplier", "notes"]
+        read_only_fields = ["total_price", "purchase_date"]
+
+class InventoryLogSerializer(serializers.ModelSerializer):
+    material_name = serializers.CharField(source="material.name", read_only=True)
+    class Meta:
+        model = InventoryLog
+        fields = ["id", "material", "material_name", "transaction_type", "quantity", "date", "reference_id", "notes"]
+

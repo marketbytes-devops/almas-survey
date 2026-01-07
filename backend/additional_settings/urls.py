@@ -23,6 +23,8 @@ router.register(r"survey-additional-services", views.SurveyAdditionalServiceView
 router.register(r"labours", views.LabourViewSet)
 router.register(r"trucks", views.TruckViewSet)
 router.register(r"materials", views.MaterialViewSet)
+router.register(r"material-purchases", views.MaterialPurchaseViewSet)
+router.register(r"inventory-logs", views.InventoryLogViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

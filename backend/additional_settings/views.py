@@ -21,6 +21,8 @@ from .models import (
     Labour,
     Truck,
     Material,
+    MaterialPurchase,
+    InventoryLog,
 )
 from .serializers import (
     CustomerTypeSerializer,
@@ -43,6 +45,8 @@ from .serializers import (
     LabourSerializer,
     TruckSerializer,
     MaterialSerializer,
+    MaterialPurchaseSerializer,
+    InventoryLogSerializer,
 )
 
 
@@ -171,3 +175,17 @@ class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class MaterialPurchaseViewSet(viewsets.ModelViewSet):
+    queryset = MaterialPurchase.objects.all().order_by('-purchase_date')
+    serializer_class = MaterialPurchaseSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class InventoryLogViewSet(viewsets.ModelViewSet):
+    queryset = InventoryLog.objects.all().order_by('-date')
+    serializer_class = InventoryLogSerializer
+    permission_classes = [permissions.AllowAny]
+
+

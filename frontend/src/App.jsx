@@ -37,6 +37,8 @@ import Trucks from "./pages/AdditionalSettings/Trucks";
 import Materials from "./pages/AdditionalSettings/Materials";
 import BookingList from "./pages/Bookings/BookingList";
 import BookingDetail from "./pages/Bookings/BookingDetail";
+import Inventory from "./pages/Inventory";
+import ManpowerManagement from "./pages/Admin/ManpowerManagement";
 
 const ProtectedRoute = ({
   children,
@@ -404,7 +406,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               requiredPage="manpower"
             >
-              <Manpower />
+              <ManpowerManagement />
             </ProtectedRoute>
           ),
         },
@@ -449,6 +451,17 @@ function App() {
               requiredPage="trucks"
             >
               <Trucks />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/inventory",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="inventory"
+            >
+              <Inventory />
             </ProtectedRoute>
           ),
         },

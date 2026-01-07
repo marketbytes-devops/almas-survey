@@ -23,7 +23,8 @@ import {
   AiOutlineLogout,
   AiTwotoneProfile,
   AiOutlineGlobal,
-  AiOutlineFileText
+  AiOutlineFileText,
+  AiOutlineDatabase
 } from "react-icons/ai";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import logo from "../../../assets/images/logo.webp";
@@ -99,6 +100,7 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <AiOutlineBarChart className="w-5 h-5" />, page: "survey_summary", action: "view" },
     { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <AiOutlineFileText className="w-5 h-5" />, page: "quotation", action: "view" },
     { id: "booking", to: "/booking-list", label: "Book Move", icon: <AiTwotoneProfile className="w-5 h-5" />, page: "booking", action: "view" },
+    { id: "inventory", to: "/inventory", label: "Inventory", icon: <AiOutlineDatabase className="w-5 h-5" />, page: "inventory", action: "view" },
     {
       id: "pricing",
       label: "Pricing",
@@ -126,7 +128,7 @@ const Sidebar = ({ toggleSidebar }) => {
         { to: "/additional-settings/currency", label: "Currency", icon: <AiOutlineDollar className="w-4 h-4" />, page: "currency", action: "view" },
         { to: "/additional-settings/tax", label: "Tax", icon: <AiOutlinePercentage className="w-4 h-4" />, page: "tax", action: "view" },
         { to: "/additional-settings/handyman", label: "Handyman", icon: <AiOutlineTool className="w-4 h-4" />, page: "handyman", action: "view" },
-        { to: "/additional-settings/manpower", label: "Manpower", icon: <AiOutlineTeam className="w-4 h-4" />, page: "manpower", action: "view" },
+        { to: "/additional-settings/manpower", label: "Manpower", icon: <AiOutlineUsergroupAdd className="w-4 h-4" />, page: "manpower", action: "view" },
         { to: "/additional-settings/room", label: "Room", icon: <AiOutlineHome className="w-4 h-4" />, page: "room", action: "view" },
         { to: "/additional-settings/additional-services", label: "Additional Services", icon: <AiTwotoneProfile className="w-4 h-4" />, page: "additional-services", action: "view" },
         { to: "/additional-settings/labours", label: "Labours", icon: <AiOutlineTeam className="w-4 h-4" />, page: "labours", action: "view" },

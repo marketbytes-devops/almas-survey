@@ -1,7 +1,7 @@
 /* src/pages/Bookings/BookingList.jsx */
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaSearch, FaEye, FaEdit, FaTrash, FaFilePdf, FaUserPlus, FaCalendarAlt, FaTimesCircle } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
@@ -28,7 +28,7 @@ const BookingList = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this booking?")) return;
+        if (!window.confirm("Are you sure you want to delete this booking? This will restore material stock.")) return;
         try {
             await apiClient.delete(`/bookings/${id}/`);
             setBookings((prev) => prev.filter((b) => b.id !== id));
@@ -36,6 +36,18 @@ const BookingList = () => {
         } catch (err) {
             console.error("Failed to delete booking:", err);
             alert("Failed to delete booking.");
+        }
+    };
+
+    const handleStatusUpdate = async (id, newStatus) => {
+        if (!window.confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
+        try {
+            await apiClient.patch(`/bookings/${id}/`, { status: newStatus });
+            setBookings((prev) => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
+            alert(`Booking status updated to ${newStatus}.`);
+        } catch (err) {
+            console.error("Failed to update status:", err);
+            alert("Failed to update status.");
         }
     };
 
@@ -81,6 +93,7 @@ const BookingList = () => {
                                 <th className="px-4 py-3">Move Type</th>
                                 <th className="px-4 py-3">Contact</th>
                                 <th className="px-4 py-3">Location</th>
+                                <th className="px-4 py-3">Survey Report</th>
                                 <th className="px-4 py-3">Supervisor</th>
                                 <th className="px-4 py-3 text-center">Actions</th>
                             </tr>
@@ -97,7 +110,26 @@ const BookingList = () => {
                                         <td className="px-4 py-4">
                                             {b.origin_location} {b.destination_location ? `→ ${b.destination_location}` : ""}
                                         </td>
-                                        <td className="px-4 py-4">{b.supervisor_name || "Unassigned"}</td>
+                                        <td className="px-4 py-4">
+                                            <button
+                                                onClick={() => navigate(`/survey/${b.survey_id}/survey-summary`)}
+                                                className="flex items-center gap-1 text-red-600 hover:underline font-medium"
+                                            >
+                                                <FaFilePdf /> Report
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span>{b.supervisor_name || "Unassigned"}</span>
+                                                <button
+                                                    onClick={() => navigate(`/booking-detail/${b.id}?edit=true`)}
+                                                    className="p-1 text-[#4c7085] hover:bg-gray-100 rounded"
+                                                    title="Assign Manpower"
+                                                >
+                                                    <FaUserPlus />
+                                                </button>
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-4 text-center">
                                             <div className="flex justify-center gap-2">
                                                 <button
@@ -109,11 +141,20 @@ const BookingList = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => navigate(`/booking-detail/${b.id}?edit=true`)}
-                                                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                                                    title="Edit"
+                                                    className="p-2 text-[#4c7085] hover:bg-indigo-50 rounded"
+                                                    title="Reschedule / Edit"
                                                 >
-                                                    <FaEdit />
+                                                    <FaCalendarAlt />
                                                 </button>
+                                                {b.status !== 'cancelled' && (
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(b.id, 'cancelled')}
+                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded"
+                                                        title="Cancel Booking"
+                                                    >
+                                                        <FaTimesCircle />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleDelete(b.id)}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded"

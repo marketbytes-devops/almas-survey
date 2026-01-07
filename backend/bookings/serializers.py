@@ -5,10 +5,11 @@ from additional_settings.serializers import LabourSerializer, TruckSerializer, M
 
 class BookingLabourSerializer(serializers.ModelSerializer):
     labour_type_name = serializers.CharField(source='labour_type.name', read_only=True)
+    staff_member_name = serializers.CharField(source='staff_member.name', read_only=True)
     
     class Meta:
         model = BookingLabour
-        fields = ['id', 'booking', 'labour_type', 'labour_type_name', 'quantity']
+        fields = ['id', 'booking', 'labour_type', 'labour_type_name', 'staff_member', 'staff_member_name', 'quantity']
 
 class BookingTruckSerializer(serializers.ModelSerializer):
     truck_type_name = serializers.CharField(source='truck_type.name', read_only=True)
@@ -37,10 +38,12 @@ class BookingSerializer(serializers.ModelSerializer):
     destination_location = serializers.SerializerMethodField()
     supervisor_name = serializers.CharField(source='supervisor.name', read_only=True)
 
+    survey_id = serializers.IntegerField(source='quotation.survey.id', read_only=True)
+
     class Meta:
         model = Booking
         fields = [
-            'id', 'quotation', 'booking_id', 'move_date', 'start_date', 
+            'id', 'quotation', 'booking_id', 'survey_id', 'move_date', 'start_date', 
             'estimated_end_time', 'supervisor', 'supervisor_name', 'notes', 'status',
             'labours', 'trucks', 'materials',
             'client_name', 'move_type', 'contact_number', 'origin_location', 'destination_location',
