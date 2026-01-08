@@ -36,15 +36,19 @@ class BookingSerializer(serializers.ModelSerializer):
     contact_number = serializers.CharField(source='quotation.survey.phone_number', read_only=True)
     origin_location = serializers.CharField(source='quotation.survey.origin_city', read_only=True)
     destination_location = serializers.SerializerMethodField()
+    
+    # Supervisor details
     supervisor_name = serializers.CharField(source='supervisor.name', read_only=True)
+    supervisor_phone = serializers.CharField(source='supervisor.phone_number', read_only=True)  # ⭐ ADD THIS
 
     survey_id = serializers.IntegerField(source='quotation.survey.id', read_only=True)
 
     class Meta:
         model = Booking
         fields = [
-            'id', 'quotation', 'booking_id', 'survey_id', 'move_date', 'start_date', 
-            'estimated_end_time', 'supervisor', 'supervisor_name', 'notes', 'status',
+            'id', 'quotation', 'booking_id', 'survey_id', 'move_date', 'start_time', 
+            'estimated_end_time', 'supervisor', 'supervisor_name', 'supervisor_phone',  # ⭐ ADD supervisor_phone
+            'notes', 'status',
             'labours', 'trucks', 'materials',
             'client_name', 'move_type', 'contact_number', 'origin_location', 'destination_location',
             'created_at', 'updated_at'

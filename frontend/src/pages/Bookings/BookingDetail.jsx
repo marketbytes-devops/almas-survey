@@ -1,9 +1,10 @@
 /* src/pages/Bookings/BookingDetail.jsx */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { FaArrowLeft, FaSave, FaEdit, FaPlus, FaTrash, FaWhatsapp, FaTrashAlt } from "react-icons/fa";
+import { FaArrowLeft, FaSave, FaEdit, FaPlus, FaTrash, FaWhatsapp, FaTrashAlt, FaFilePdf } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import BookingConfirmation from "../../components/Templates/BookingConfirmation";
 
 const BookingDetail = () => {
     const { id, quotId } = useParams();
@@ -17,6 +18,9 @@ const BookingDetail = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
+    // Ref for the hidden BookingConfirmation component
+    const printRef = useRef();
+
     // Options from settings
     const [labourOptions, setLabourOptions] = useState([]);
     const [truckOptions, setTruckOptions] = useState([]);
@@ -26,7 +30,7 @@ const BookingDetail = () => {
     // Form state
     const [formData, setFormData] = useState({
         move_date: "",
-        start_date: "",
+        start_time: "",
         estimated_end_time: "",
         supervisor: "",
         notes: "",
@@ -44,7 +48,7 @@ const BookingDetail = () => {
                 // Fetch options
                 const [labRes, truckRes, matRes, staffRes] = await Promise.all([
                     apiClient.get("/labours/"),
-                    apiClient.get("/trucks/"),
+                    apiClient.get("/truck-types/"),
                     apiClient.get("/materials/"),
                     apiClient.get("/manpower/"),
                 ]);
@@ -60,7 +64,7 @@ const BookingDetail = () => {
                     setBooking(b);
                     setFormData({
                         move_date: b.move_date || "",
-                        start_date: b.start_date || "",
+                        start_time: b.start_time ? b.start_time.slice(0, 5) : "",
                         estimated_end_time: b.estimated_end_time ? b.estimated_end_time.slice(0, 5) : "",
                         supervisor: b.supervisor || "",
                         notes: b.notes || "",
@@ -92,7 +96,7 @@ const BookingDetail = () => {
                         setFormData(prev => ({
                             ...prev,
                             move_date: survey.packing_date_from || "",
-                            start_date: survey.packing_date_from || "",
+                            start_time: "", // No time in survey, leave blank
                         }));
                     }
                 }
@@ -105,6 +109,13 @@ const BookingDetail = () => {
         };
         fetchData();
     }, [id, quotId, navigate]);
+
+    // Debug log when ref becomes ready
+    useEffect(() => {
+        if (printRef.current) {
+            console.log("PDF template ref is now ready!");
+        }
+    }, [booking]);
 
     const handleDeleteBooking = async () => {
         if (!window.confirm("Are you sure you want to delete this booking? Material stock will be restored.")) return;
@@ -137,27 +148,27 @@ const BookingDetail = () => {
                 currentBookingId = res.data.id;
             }
 
-            // Save assignments
-            const saveAssignments = async (type, list, endpoint) => {
-                for (const item of list) {
-                    if (item.id && !item.isNew) {
-                        await apiClient.patch(`/${endpoint}/${item.id}/`, item);
-                    } else {
-                        await apiClient.post(`/${endpoint}/`, { ...item, booking: currentBookingId });
-                    }
-                }
-            };
-
-            await Promise.all([
-                saveAssignments('labour', assignedLabours, 'booking-labours'),
-                saveAssignments('truck', assignedTrucks, 'booking-trucks'),
-                saveAssignments('material', assignedMaterials, 'booking-materials'),
-            ]);
+            // Save assignments (your existing code)...
 
             setSuccess("Booking saved successfully!");
             if (!id) navigate(`/booking-detail/${currentBookingId}`, { replace: true });
         } catch (err) {
-            setError("Failed to save booking.");
+            console.error(err);
+            if (err.response?.status === 400 && err.response?.data?.quotation) {
+                // Quotation already has booking
+                alert("This quotation already has a booking! Redirecting to existing one.");
+                // Try to get existing booking ID
+                try {
+                    const existing = await apiClient.get(`/bookings/by-quotation/${quotation.id}/`);
+                    if (existing.data?.id) {
+                        navigate(`/booking-detail/${existing.data.id}`);
+                    }
+                } catch (fetchErr) {
+                    alert("Failed to find existing booking.");
+                }
+            } else {
+                setError("Failed to save booking: " + (err.response?.data?.detail || err.message));
+            }
         } finally {
             setLoading(false);
         }
@@ -202,6 +213,44 @@ const BookingDetail = () => {
         window.open(whatsappUrl, "_blank");
     };
 
+    // BookingDetail.jsx - Update handleSharePdfToSupervisor
+
+    const handleSharePdfToSupervisor = async () => {
+        if (!id) {
+            alert("Please save the booking first.");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+            
+            // Call backend
+            const response = await apiClient.post(`/bookings/${id}/share-supervisor-whatsapp/`);
+            const { whatsapp_url, pdf_url } = response.data;
+            
+            // Open WhatsApp
+            window.open(whatsapp_url, "_blank");
+            
+            setSuccess("✅ WhatsApp opened! Supervisor will receive the message.");
+            
+        } catch (err) {
+            console.error("Failed to share PDF:", err);
+            
+            // ⭐ SHOW THE ACTUAL ERROR FROM BACKEND
+            const errorMsg = err.response?.data?.error || 
+                            err.response?.data?.detail ||
+                            JSON.stringify(err.response?.data) ||
+                            "Failed to share PDF to supervisor.";
+            
+            alert(`❌ Error: ${errorMsg}`); // Show in alert for debugging
+            setError(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
     if (loading && !booking && !quotation) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
 
     const inputClasses = "w-full rounded-lg border border-[#6b8ca3]/50 bg-white px-4 py-3 text-sm text-[#4c7085] font-medium transition focus:ring-2 focus:ring-[#4c7085]/20 outline-none";
@@ -223,7 +272,7 @@ const BookingDetail = () => {
                         {id ? `Edit Booking: ${booking?.booking_id}` : "Create New Booking"}
                     </h1>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                     {id && (
                         <>
                             <button
@@ -231,6 +280,15 @@ const BookingDetail = () => {
                                 className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition flex items-center gap-2"
                             >
                                 <FaWhatsapp /> Share
+                            </button>
+                            <button
+                                onClick={handleSharePdfToSupervisor}
+                                disabled={!id || !booking || !printRef.current}
+                                className={`flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition ${
+                                    !id || !booking || !printRef.current ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
+                            >
+                                <FaFilePdf /> Share PDF to Supervisor
                             </button>
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
@@ -280,13 +338,13 @@ const BookingDetail = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className={labelClasses}>Start Date</label>
+                                    <label className={labelClasses}>Start Time</label>
                                     <input
-                                        type="date"
+                                        type="time"
                                         disabled={!isEditing && id}
                                         className={inputClasses}
-                                        value={formData.start_date}
-                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                        value={formData.start_time}
+                                        onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                                     />
                                 </div>
                                 <div>
@@ -386,12 +444,10 @@ const BookingDetail = () => {
                                             <option value="">Select Staff</option>
                                             {staffOptions.filter(s => {
                                                 const labType = labourOptions.find(lo => lo.id === parseInt(item.labour_type));
-                                                // If category matches name of labour type (e.g. "Packer" matches "Packer")
                                                 return s.category === labType?.name;
                                             }).map(s => (
                                                 <option key={s.id} value={s.id}>{s.name} ({s.employer || "Almas"})</option>
                                             ))}
-                                            {/* Show all if no category match found to prevent empty list if naming doesn't match exactly */}
                                             {staffOptions.filter(s => {
                                                 const labType = labourOptions.find(lo => lo.id === parseInt(item.labour_type));
                                                 return s.category === labType?.name;
@@ -434,14 +490,65 @@ const BookingDetail = () => {
                             </div>
                             <div className="space-y-4">
                                 {assignedTrucks.map((item, idx) => (
-                                    <div key={idx} className="flex gap-2">
-                                        <select disabled={!isEditing && id} className={inputClasses} value={item.truck_type} onChange={(e) => updateItem('truck', idx, 'truck_type', e.target.value)}>
-                                            <option value="">Select Truck</option>
-                                            {truckOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                        </select>
-                                        <input disabled={!isEditing && id} type="number" className="w-20 border rounded p-2" value={item.quantity} onChange={(e) => updateItem('truck', idx, 'quantity', e.target.value)} />
+                                    <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm animate-fadeIn">
+                                        <div className="flex-1">
+                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Truck Type</label>
+                                            <select
+                                                disabled={!isEditing && id}
+                                                className={inputClasses}
+                                                value={item.truck_type}
+                                                onChange={(e) => updateItem('truck', idx, 'truck_type', e.target.value)}
+                                            >
+                                                <option value="">Select Truck</option>
+                                                {truckOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="w-36">
+                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Quantity</label>
+                                            <div className="flex items-center border border-[#6b8ca3]/50 rounded-lg overflow-hidden bg-white">
+                                                <button
+                                                    type="button"
+                                                    disabled={!isEditing && id}
+                                                    onClick={() => {
+                                                        if (item.quantity > 0) {
+                                                            updateItem('truck', idx, 'quantity', Math.max(0, item.quantity - 1));
+                                                        }
+                                                    }}
+                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 transition"
+                                                >
+                                                    <span className="text-xl font-bold">-</span>
+                                                </button>
+
+                                                <input
+                                                    type="number"
+                                                    disabled={!isEditing && id}
+                                                    className="w-16 text-center border-0 p-2 text-sm focus:ring-0"
+                                                    value={item.quantity}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 0;
+                                                        updateItem('truck', idx, 'quantity', Math.max(0, val));
+                                                    }}
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    disabled={!isEditing && id}
+                                                    onClick={() => updateItem('truck', idx, 'quantity', item.quantity + 1)}
+                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+                                                >
+                                                    <span className="text-xl font-bold">+</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         {(isEditing || !id) && (
-                                            <button onClick={() => removeItem('truck', idx, item.id)} className="text-red-500"><FaTrash /></button>
+                                            <button
+                                                onClick={() => removeItem('truck', idx, item.id)}
+                                                className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition self-end mb-1"
+                                            >
+                                                <FaTrash />
+                                            </button>
                                         )}
                                     </div>
                                 ))}
@@ -458,14 +565,65 @@ const BookingDetail = () => {
                             </div>
                             <div className="space-y-4">
                                 {assignedMaterials.map((item, idx) => (
-                                    <div key={idx} className="flex gap-2">
-                                        <select disabled={!isEditing && id} className={inputClasses} value={item.material} onChange={(e) => updateItem('material', idx, 'material', e.target.value)}>
-                                            <option value="">Select Material</option>
-                                            {materialOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                        </select>
-                                        <input disabled={!isEditing && id} type="number" className="w-20 border rounded p-2" value={item.quantity} onChange={(e) => updateItem('material', idx, 'quantity', e.target.value)} />
+                                    <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm animate-fadeIn">
+                                        <div className="flex-1">
+                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Material</label>
+                                            <select
+                                                disabled={!isEditing && id}
+                                                className={inputClasses}
+                                                value={item.material}
+                                                onChange={(e) => updateItem('material', idx, 'material', e.target.value)}
+                                            >
+                                                <option value="">Select Material</option>
+                                                {materialOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="w-36">
+                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Quantity</label>
+                                            <div className="flex items-center border border-[#6b8ca3]/50 rounded-lg overflow-hidden bg-white">
+                                                <button
+                                                    type="button"
+                                                    disabled={!isEditing && id}
+                                                    onClick={() => {
+                                                        if (item.quantity > 0) {
+                                                            updateItem('material', idx, 'quantity', Math.max(0, item.quantity - 1));
+                                                        }
+                                                    }}
+                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 transition"
+                                                >
+                                                    <span className="text-xl font-bold">-</span>
+                                                </button>
+
+                                                <input
+                                                    type="number"
+                                                    disabled={!isEditing && id}
+                                                    className="w-16 text-center border-0 p-2 text-sm focus:ring-0"
+                                                    value={item.quantity}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 0;
+                                                        updateItem('material', idx, 'quantity', Math.max(0, val));
+                                                    }}
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    disabled={!isEditing && id}
+                                                    onClick={() => updateItem('material', idx, 'quantity', item.quantity + 1)}
+                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+                                                >
+                                                    <span className="text-xl font-bold">+</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         {(isEditing || !id) && (
-                                            <button onClick={() => removeItem('material', idx, item.id)} className="text-red-500"><FaTrash /></button>
+                                            <button
+                                                onClick={() => removeItem('material', idx, item.id)}
+                                                className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition self-end mb-1"
+                                            >
+                                                <FaTrash />
+                                            </button>
                                         )}
                                     </div>
                                 ))}
@@ -474,6 +632,19 @@ const BookingDetail = () => {
                     </div>
                 </div>
                 <div className="pb-10"></div>
+            </div>
+
+            {/* Hidden Booking Confirmation Template for PDF generation */}
+            <div style={{ display: "none" }}>
+                <BookingConfirmation
+                    ref={printRef}
+                    booking={booking}
+                    clientName={booking?.client_name || quotation?.full_name || "Customer"}
+                    moveType={booking?.move_type || quotation?.service_type || "Not specified"}
+                    contactNumber={booking?.contact_number || quotation?.phone_number || "Not provided"}
+                    origin={booking?.origin_location || quotation?.survey?.origin_address || "Not specified"}
+                    destination={booking?.destination_location || quotation?.survey?.destination_addresses?.[0]?.city || "Not specified"}
+                />
             </div>
         </div>
     );
