@@ -282,13 +282,13 @@ const BookingDetail = () => {
                                 <FaWhatsapp /> Share
                             </button>
                             <button
-                                onClick={handleSharePdfToSupervisor}
-                                disabled={!id || !booking || !printRef.current}
-                                className={`flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition ${
-                                    !id || !booking || !printRef.current ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
+                            onClick={handleSharePdfToSupervisor}
+                            disabled={loading || !booking?.id || !printRef.current}
+                            className={`flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition ${
+                                loading || !booking?.id || !printRef.current ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                             >
-                                <FaFilePdf /> Share PDF to Supervisor
+                            <FaFilePdf /> Share PDF to Supervisor
                             </button>
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
