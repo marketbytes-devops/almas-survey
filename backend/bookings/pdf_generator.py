@@ -1,5 +1,3 @@
-# backend/bookings/pdf_generator.py
-
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import inch
@@ -178,7 +176,7 @@ def generate_booking_pdf(booking):
         story.append(supervisor_table)
         story.append(Spacer(1, 20))
     
-    # ⭐ CORRECTED: Use 'labours' instead of 'booking_labours'
+    #  CORRECTED: Use 'labours' instead of 'booking_labours'
     labours = booking.labours.all()
     if labours.exists():
         story.append(Paragraph("Labour Assignment", heading_style))
@@ -207,7 +205,7 @@ def generate_booking_pdf(booking):
         story.append(labour_table)
         story.append(Spacer(1, 20))
     
-    # ⭐ CORRECTED: Use 'trucks' instead of 'booking_trucks'
+    #  CORRECTED: Use 'trucks' instead of 'booking_trucks'
     trucks = booking.trucks.all()
     if trucks.exists():
         story.append(Paragraph("Trucks Required", heading_style))
@@ -235,7 +233,6 @@ def generate_booking_pdf(booking):
         story.append(truck_table)
         story.append(Spacer(1, 20))
     
-    # ⭐ CORRECTED: Use 'materials' instead of 'booking_materials'
     materials = booking.materials.all()
     if materials.exists():
         story.append(Paragraph("Packing Materials", heading_style))

@@ -8,7 +8,7 @@ class Booking(models.Model):
     booking_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     
     move_date = models.DateField(null=True, blank=True)
-    start_time = models.TimeField(null=True, blank=True)  # <-- Renamed to start_time
+    start_time = models.TimeField(null=True, blank=True)  
     estimated_end_time = models.TimeField(null=True, blank=True)
     
     supervisor = models.ForeignKey(Manpower, on_delete=models.SET_NULL, null=True, blank=True, related_name='supervised_bookings')
