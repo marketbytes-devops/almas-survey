@@ -6,5 +6,5 @@ router = DefaultRouter()
 router.register(r'', views.QuotationViewSet, basename='quotation')
 
 urlpatterns = [
-    path('quotation-create/', include(router.urls)),  
+    path('quotation-create', include(router.urls)), 
 ]

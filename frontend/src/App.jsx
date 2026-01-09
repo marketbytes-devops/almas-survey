@@ -36,7 +36,8 @@ import Labours from "./pages/AdditionalSettings/Labours";
 import Trucks from "./pages/AdditionalSettings/Trucks";
 import Materials from "./pages/AdditionalSettings/Materials";
 import BookingList from "./pages/Bookings/BookingList";
-import BookingDetail from "./pages/Bookings/BookingDetail";
+import BookingDetailView from "./pages/Bookings/BookingDetailView.jsx"; // NEW - read-only view
+import BookingForm from "./pages/Bookings/BookingForm"; // NEW - create + edit form
 import Inventory from "./pages/Inventory";
 import ManpowerManagement from "./pages/Admin/ManpowerManagement";
 
@@ -237,18 +238,29 @@ function App() {
               isAuthenticated={isAuthenticated}
               requiredPage="booking"
             >
-              <BookingDetail />
+              <BookingDetailView /> {/* ← Now uses read-only view */}
             </ProtectedRoute>
           ),
         },
         {
-          path: "/booking-detail/quotation/:quotId",
+          path: "/booking-form/:id?", // :id? means optional – for edit (:id present) or create (no :id)
           element: (
             <ProtectedRoute
               isAuthenticated={isAuthenticated}
               requiredPage="booking"
             >
-              <BookingDetail />
+              <BookingForm /> {/* ← Handles both create and edit */}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/booking-form/quotation/:quotId",
+          element: (
+            <ProtectedRoute
+              isAuthenticated={isAuthenticated}
+              requiredPage="booking"
+            >
+              <BookingForm /> {/* ← Create from quotation */}
             </ProtectedRoute>
           ),
         },

@@ -1,9 +1,20 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaEye, FaPrint, FaDownload, FaShareAlt, FaCalendarCheck, FaWhatsapp, FaEnvelope, FaPaperPlane, FaCheckCircle } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaEye,
+  FaPrint,
+  FaDownload,
+  FaShareAlt,
+  FaCalendarCheck,
+  FaWhatsapp,
+  FaEnvelope,
+  FaPaperPlane,
+  FaCheckCircle,
+} from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
-import QuotationLocalMove from "../../components/Templates/QuotationLocalMove"; // Import for print trigger
+import QuotationLocalMove from "../../components/Templates/QuotationLocalMove";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -38,7 +49,7 @@ export default function QuotationView() {
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [insurancePlans, setInsurancePlans] = useState([]);
 
-  const printRef = useRef(); // Ref to trigger print from QuotationLocalMove
+  const printRef = useRef();
 
   const safeParse = (value) => {
     const num = Number(value);
@@ -49,7 +60,9 @@ export default function QuotationView() {
 
   const checkSignatureExists = async (quotationId) => {
     try {
-      const signatureRes = await apiClient.get(`/quotation-create/${quotationId}/signature/`);
+      const signatureRes = await apiClient.get(
+        `/quotation-create/${quotationId}/signature/`
+      );
       setHasSignature(!!signatureRes.data.signature_url);
       setCurrentSignature(signatureRes.data.signature_url);
     } catch (err) {
@@ -62,10 +75,16 @@ export default function QuotationView() {
 
     try {
       const includePromises = (quotation.included_services || []).map((id) =>
-        apiClient.get(`/inclusion-exclusion/${id}/`).then((r) => r.data).catch(() => null)
+        apiClient
+          .get(`/inclusion-exclusion/${id}/`)
+          .then((r) => r.data)
+          .catch(() => null)
       );
       const excludePromises = (quotation.excluded_services || []).map((id) =>
-        apiClient.get(`/inclusion-exclusion/${id}/`).then((r) => r.data).catch(() => null)
+        apiClient
+          .get(`/inclusion-exclusion/${id}/`)
+          .then((r) => r.data)
+          .catch(() => null)
       );
 
       const [includeResults, excludeResults] = await Promise.all([
@@ -73,8 +92,12 @@ export default function QuotationView() {
         Promise.all(excludePromises),
       ]);
 
-      setIncludedServices(includeResults.filter((r) => r?.text).map((r) => r.text));
-      setExcludedServices(excludeResults.filter((r) => r?.text).map((r) => r.text));
+      setIncludedServices(
+        includeResults.filter((r) => r?.text).map((r) => r.text)
+      );
+      setExcludedServices(
+        excludeResults.filter((r) => r?.text).map((r) => r.text)
+      );
     } catch (err) {
       setIncludedServices([]);
       setExcludedServices([]);
@@ -117,7 +140,9 @@ export default function QuotationView() {
     }
 
     const volume = parseFloat(totalVolume);
-    const applicableRange = pricingRanges.find((r) => volume >= r.min && volume <= r.max);
+    const applicableRange = pricingRanges.find(
+      (r) => volume >= r.min && volume <= r.max
+    );
 
     if (!applicableRange) {
       setBaseAmount(0);
@@ -125,7 +150,9 @@ export default function QuotationView() {
     }
 
     const calculatedBaseAmount =
-      applicableRange.rateType === "flat" ? applicableRange.rate : applicableRange.rate * volume;
+      applicableRange.rateType === "flat"
+        ? applicableRange.rate
+        : applicableRange.rate * volume;
 
     setBaseAmount(calculatedBaseAmount);
   }, [survey, pricingRanges]);
@@ -150,9 +177,10 @@ export default function QuotationView() {
           setDestinationCity(destCity);
           await checkSignatureExists(quot.quotation_id);
 
-          // Fetch booking info if exists
           try {
-            const bookingRes = await apiClient.get(`/bookings/by-quotation/${quot.quotation_id}/`);
+            const bookingRes = await apiClient.get(
+              `/bookings/by-quotation/${quot.quotation_id}/`
+            );
             if (bookingRes.data) {
               setBooking(bookingRes.data);
             }
@@ -162,7 +190,10 @@ export default function QuotationView() {
         }
       } catch (err) {
         console.error("API fetch error:", err.response?.data || err.message);
-        setError("Failed to load quotation: " + (err.response?.data?.detail || err.message));
+        setError(
+          "Failed to load quotation: " +
+            (err.response?.data?.detail || err.message)
+        );
       } finally {
         setLoading(false);
       }
@@ -172,13 +203,19 @@ export default function QuotationView() {
 
   useEffect(() => {
     const fetchSelectedServices = async () => {
-      if (!quotation?.selected_services || quotation.selected_services.length === 0) {
+      if (
+        !quotation?.selected_services ||
+        quotation.selected_services.length === 0
+      ) {
         setSelectedServices([]);
         return;
       }
       try {
         const promises = quotation.selected_services.map((id) =>
-          apiClient.get(`/services/${id}/`).then((r) => r.data).catch(() => null)
+          apiClient
+            .get(`/services/${id}/`)
+            .then((r) => r.data)
+            .catch(() => null)
         );
         const results = await Promise.all(promises);
         setSelectedServices(results.filter((s) => s?.name).map((s) => s.name));
@@ -193,13 +230,13 @@ export default function QuotationView() {
     const fetchPrintData = async () => {
       try {
         const [notesRes, termsRes, insRes] = await Promise.all([
-          apiClient.get('/quote-notes/'),
-          apiClient.get('/payment-terms/'),
-          apiClient.get('/insurance-plans/')
+          apiClient.get("/quote-notes/"),
+          apiClient.get("/payment-terms/"),
+          apiClient.get("/insurance-plans/"),
         ]);
-        setQuoteNotes(notesRes.data.filter(n => n.is_active));
-        setPaymentTerms(termsRes.data.filter(t => t.is_active));
-        setInsurancePlans(insRes.data.filter(i => i.is_active));
+        setQuoteNotes(notesRes.data.filter((n) => n.is_active));
+        setPaymentTerms(termsRes.data.filter((t) => t.is_active));
+        setInsurancePlans(insRes.data.filter((i) => i.is_active));
       } catch (err) {
         console.error("Failed to load print data");
       }
@@ -210,7 +247,9 @@ export default function QuotationView() {
   const viewSignature = async () => {
     if (!quotation) return;
     try {
-      const signatureRes = await apiClient.get(`/quotation-create/${quotation.quotation_id}/signature/`);
+      const signatureRes = await apiClient.get(
+        `/quotation-create/${quotation.quotation_id}/signature/`
+      );
       setCurrentSignature(signatureRes.data.signature_url);
       setIsSignatureModalOpen(true);
     } catch (err) {
@@ -218,54 +257,82 @@ export default function QuotationView() {
     }
   };
 
-  // Trigger print from QuotationLocalMove
   const triggerPrint = () => {
     if (printRef.current) {
-      printRef.current.printNow(); // This will call the print function inside QuotationLocalMove
-    } else {
-      console.warn("Print ref not ready yet");
+      printRef.current.printNow();
     }
   };
 
-  // Trigger PDF download from QuotationLocalMove
   const triggerDownloadPdf = () => {
     if (printRef.current) {
-      printRef.current.downloadPdf(); // This will call the downloadPdf function inside QuotationLocalMove
-    } else {
-      console.warn("Print ref not ready yet");
+      printRef.current.downloadPdf();
     }
   };
 
+  // FIXED: Changed to the new route for create form
   const handleBookMove = () => {
-    navigate(`/booking-detail/quotation/${quotation.quotation_id}`);
+    navigate(`/booking-form/quotation/${quotation.quotation_id}`);
   };
 
-  const handleSendQuotation = async (method = 'whatsapp') => {
-    const customerName = quotation?.survey?.full_name || "Customer";
-    const quoteId = quotation?.quotation_id || "";
-    const amount = quotation?.total_amount || 0;
-    const phone = quotation?.survey?.phone_number || "";
+  const handleSendQuotation = async () => {
+    if (!quotation) {
+      alert("❌ Quotation data not loaded yet.");
+      return;
+    }
 
-    const message = `Hello ${customerName}, here is your quotation ${quoteId} from Almas Movers. Total Amount: QAR ${amount}. Please let us know if you have any questions.`;
+    if (!quotation.quotation_id) {
+      alert(
+        "❌ Quotation ID not found. Please refresh the page and try again."
+      );
+      return;
+    }
 
-    if (method === 'whatsapp') {
-      const whatsappUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
-    } else {
-      const emailUrl = `mailto:${quotation?.survey?.email}?subject=Quotation ${quoteId} - Almas Movers&body=${encodeURIComponent(message)}`;
-      window.open(emailUrl, "_blank");
+    try {
+      setLoading(true);
+
+      const response = await apiClient.post(
+        `/quotation-create/${quotation.quotation_id}/send-whatsapp/`
+      );
+
+      const { whatsapp_url, pdf_url, customer_name } = response.data;
+
+      window.open(whatsapp_url, "_blank");
+
+      alert(
+        `✅ Success!\n\nWhatsApp opened for ${customer_name}.\nPDF link is included in the message.`
+      );
+    } catch (err) {
+      console.error("Send quotation error:", err);
+
+      let errorMsg = "Failed to send quotation via WhatsApp.";
+
+      if (err.response?.data?.error) {
+        errorMsg = err.response.data.error;
+      } else if (err.response?.status === 404) {
+        errorMsg = "Quotation not found. Please refresh and try again.";
+      } else if (err.response?.status === 400) {
+        errorMsg =
+          err.response.data.error ||
+          "Customer phone number is missing in survey.";
+      }
+
+      alert(`❌ Error: ${errorMsg}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleShareWhatsApp = () => {
-    handleSendQuotation('whatsapp');
-  };
-
-  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
+    );
   if (error) return <div className="text-center text-red-600 p-5">{error}</div>;
   if (!quotation || !survey) return null;
 
-  const customerName = get(survey?.full_name, survey?.enquiry?.fullName) || "Customer";
+  const customerName =
+    get(survey?.full_name, survey?.enquiry?.fullName) || "Customer";
   const phone = get(survey?.phone_number, survey?.enquiry?.phoneNumber);
   const email = get(survey?.email, survey?.enquiry?.email);
   const service = SERVICE_TYPE_DISPLAY[survey?.service_type] || "Not filled";
@@ -285,9 +352,18 @@ export default function QuotationView() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-medium">Digital Signature</h3>
-              <button onClick={() => setIsSignatureModalOpen(false)} className="text-3xl">×</button>
+              <button
+                onClick={() => setIsSignatureModalOpen(false)}
+                className="text-3xl"
+              >
+                ×
+              </button>
             </div>
-            <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
+            <img
+              src={currentSignature}
+              alt="Signature"
+              className="w-full rounded-lg border"
+            />
             <button
               onClick={() => setIsSignatureModalOpen(false)}
               className="mt-6 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 rounded-lg font-medium"
@@ -308,14 +384,9 @@ export default function QuotationView() {
               <FaArrowLeft className="w-5 h-5" />
               <span className="font-medium text-sm">Back</span>
             </button>
+
             <button
-              onClick={() => handleSendQuotation('whatsapp')}
-              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition"
-            >
-              <FaWhatsapp /> Send Quotation
-            </button>
-            <button
-              onClick={handleShareWhatsApp}
+              onClick={handleSendQuotation}
               className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition"
             >
               <FaShareAlt /> Share via WhatsApp
@@ -334,10 +405,14 @@ export default function QuotationView() {
         <div className="p-4 space-y-10">
           {/* Quotation Information */}
           <div className="bg-[#4c7085]/5 border border-[#4c7085]/30 rounded-xl p-6">
-            <h3 className="text-lg font-medium text-[#4c7085] mb-4">Quotation Information</h3>
+            <h3 className="text-lg font-medium text-[#4c7085] mb-4">
+              Quotation Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[#4c7085] mb-2">Quotation ID</label>
+                <label className="block text-sm font-medium text-[#4c7085] mb-2">
+                  Quotation ID
+                </label>
                 <input
                   type="text"
                   value={quotation?.quotation_id || "Not specified"}
@@ -346,7 +421,9 @@ export default function QuotationView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#4c7085] mb-2">Date</label>
+                <label className="block text-sm font-medium text-[#4c7085] mb-2">
+                  Date
+                </label>
                 <input
                   type="text"
                   value={quotation?.date || "Not specified"}
@@ -360,7 +437,9 @@ export default function QuotationView() {
           {/* Client Details */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-[#4c7085] mb-2">Client Name</label>
+              <label className="block text-sm font-medium text-[#4c7085] mb-2">
+                Client Name
+              </label>
               <input
                 type="text"
                 value={customerName}
@@ -369,7 +448,9 @@ export default function QuotationView() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#4c7085] mb-2">Mobile</label>
+              <label className="block text-sm font-medium text-[#4c7085] mb-2">
+                Mobile
+              </label>
               <input
                 type="text"
                 value={phone}
@@ -378,7 +459,9 @@ export default function QuotationView() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#4c7085] mb-2">Email</label>
+              <label className="block text-sm font-medium text-[#4c7085] mb-2">
+                Email
+              </label>
               <input
                 type="text"
                 value={email}
@@ -397,7 +480,9 @@ export default function QuotationView() {
               { label: "Date of Move", value: moveDate },
             ].map((item) => (
               <div key={item.label}>
-                <label className="block text-sm font-medium text-[#4c7085] mb-2">{item.label}</label>
+                <label className="block text-sm font-medium text-[#4c7085] mb-2">
+                  {item.label}
+                </label>
                 <input
                   type="text"
                   value={item.value}
@@ -411,13 +496,20 @@ export default function QuotationView() {
           {/* Additional Services */}
           {additionalCharges.length > 0 && (
             <div className="bg-[#6b8ca3]/5 border-2 border-[#6b8ca3]/30 rounded-xl p-6">
-              <h3 className="text-xl font-medium text-[#4c7085] mb-4">Additional Services</h3>
+              <h3 className="text-xl font-medium text-[#4c7085] mb-4">
+                Additional Services
+              </h3>
               <div className="space-y-4">
                 {additionalCharges.map((charge, index) => {
                   const quantity = charge.quantity || 1;
-                  const subtotal = safeParse(charge.total || (charge.price_per_unit * quantity));
+                  const subtotal = safeParse(
+                    charge.total || charge.price_per_unit * quantity
+                  );
                   return (
-                    <div key={index} className="bg-white border border-[#4c7085]/20 rounded-lg p-5">
+                    <div
+                      key={index}
+                      className="bg-white border border-[#4c7085]/20 rounded-lg p-5"
+                    >
                       <div className="flex flex-col md:flex-row justify-between gap-4">
                         <div>
                           <div className="font-medium text-gray-800">
@@ -440,7 +532,9 @@ export default function QuotationView() {
 
           {/* Your Rate Section */}
           <div className="bg-gradient-to-r from-[#4c7085]/10 to-[#6b8ca3]/10 border-2 border-[#4c7085]/30 rounded-xl p-4">
-            <h3 className="text-2xl font-medium text-center text-[#4c7085] mb-8">Your Rate</h3>
+            <h3 className="text-2xl font-medium text-center text-[#4c7085] mb-8">
+              Your Rate
+            </h3>
 
             <div className="space-y-6 mb-8">
               {selectedServices.length > 0 ? (
@@ -458,20 +552,26 @@ export default function QuotationView() {
                   </div>
                 ))
               ) : (
-                <p className="text-center text-gray-600 py-6">No additional services selected</p>
+                <p className="text-center text-gray-600 py-6">
+                  No additional services selected
+                </p>
               )}
             </div>
 
             <div className="grid gap-6 bg-white p-4 rounded-2xl shadow-xl border border-[#4c7085]/30">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">Advance</label>
+                  <label className="block text-sm font-medium text-[#4c7085]">
+                    Advance
+                  </label>
                   <p className="text-2xl font-medium text-[#4c7085] mt-2">
                     {advance.toFixed(2)} QAR
                   </p>
                 </div>
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">Discount</label>
+                  <label className="block text-sm font-medium text-[#4c7085]">
+                    Discount
+                  </label>
                   <p className="text-2xl font-medium text-[#4c7085] mt-2">
                     {discount.toFixed(2)} QAR
                   </p>
@@ -480,14 +580,18 @@ export default function QuotationView() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">Total Amount</label>
+                  <label className="block text-sm font-medium text-[#4c7085]">
+                    Total Amount
+                  </label>
                   <p className="text-2xl font-medium text-[#4c7085] mt-2">
                     {totalAmount.toFixed(2)} QAR
                   </p>
                 </div>
 
                 <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                  <label className="block text-sm font-medium text-[#4c7085]">Balance</label>
+                  <label className="block text-sm font-medium text-[#4c7085]">
+                    Balance
+                  </label>
                   <p className="text-2xl font-medium text-indigo-700 mt-2">
                     {balance.toFixed(2)} QAR
                   </p>
@@ -534,13 +638,19 @@ export default function QuotationView() {
 
           {/* Digital Signature */}
           <div className="bg-gray-100 p-4 rounded-xl border border-[#4c7085]/30">
-            <h3 className="text-xl font-medium text-[#4c7085] mb-4">Digital Signature</h3>
+            <h3 className="text-xl font-medium text-[#4c7085] mb-4">
+              Digital Signature
+            </h3>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               {hasSignature ? (
                 <>
                   <div>
-                    <p className="text-lg font-medium text-green-700">✓ Digitally Signed</p>
-                    <p className="text-gray-700">Customer signature is attached</p>
+                    <p className="text-lg font-medium text-green-700">
+                      ✓ Digitally Signed
+                    </p>
+                    <p className="text-gray-700">
+                      Customer signature is attached
+                    </p>
                   </div>
                   <button
                     onClick={viewSignature}
@@ -551,7 +661,9 @@ export default function QuotationView() {
                 </>
               ) : (
                 <div className="text-center w-full">
-                  <p className="text-gray-700 mb-4">No signature uploaded yet</p>
+                  <p className="text-gray-700 mb-4">
+                    No signature uploaded yet
+                  </p>
                 </div>
               )}
             </div>
@@ -566,6 +678,7 @@ export default function QuotationView() {
               <FaPrint className="w-4 h-4" />
               <span>Print Quotation</span>
             </button>
+
             <button
               onClick={triggerDownloadPdf}
               className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3d5a6a] hover:to-[#5a7b92] text-white rounded-lg transition text-sm font-medium shadow-lg"
@@ -573,13 +686,15 @@ export default function QuotationView() {
               <FaDownload className="w-4 h-4" />
               <span>Download PDF</span>
             </button>
+
             <button
               onClick={handleSendQuotation}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3d5a6a] hover:to-[#5a7b92] text-white rounded-lg transition text-sm font-medium shadow-lg"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium shadow-lg"
             >
-              <FaPaperPlane className="w-4 h-4" />
+              <FaWhatsapp className="w-4 h-4" />
               <span>Send Quotation</span>
             </button>
+
             <button
               onClick={handleBookMove}
               className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition text-sm font-medium shadow-lg"
@@ -591,7 +706,7 @@ export default function QuotationView() {
         </div>
       </div>
 
-      {/* Hidden instance of QuotationLocalMove - used only for printing */}
+      {/* Hidden instance for printing/PDF */}
       <div style={{ display: "none" }}>
         <QuotationLocalMove
           ref={printRef}
@@ -615,7 +730,7 @@ export default function QuotationView() {
           excludedServices={excludedServices}
           notes={quoteNotes}
           insurancePlans={insurancePlans}
-          generalTerms={quoteNotes} // or your separate general terms
+          generalTerms={quoteNotes}
           paymentTerms={paymentTerms}
           quoteNotes={quoteNotes}
           currentSignature={currentSignature}
