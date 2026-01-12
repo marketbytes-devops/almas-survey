@@ -4,15 +4,14 @@ import Logo1 from "../../assets/images/bg-auth.webp";
 import ProfileIcon from "../../assets/images/profile-icon.png";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
- 
 
 if (false) {
   console.log(html2canvas);
   console.log(jsPDF);
 }
- 
+
 const CERTIFICATION_LOGOS = [Logo1, ProfileIcon];
- 
+
 const QuotationLocalMove = forwardRef((props, ref) => {
   const {
     quotation,
@@ -36,25 +35,26 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     paymentTerms = [],
     quoteNotes = [],
     currentSignature,
+    selectedServices = [], // Selected additional services
   } = props;
- 
+
   const today = new Date().toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).replace(/\//g, "-");
- 
+
   const quoteNumber = quotation?.quotation_id || "AMS/2600001";
   const currency = "QAR";
- 
+
   const companyContact = {
     person: "Muhammad Kp",
     email: "Freight@almasint.com",
     mobile: "0097450136999",
   };
- 
+
   const companyAddress = "P.O. Box 24665, Doha, Qatar";
- 
+
   const generateHtmlContent = () => {
     const customerName = name || "Valued Customer";
     const rate = Number(finalAmount || totalAmount || 0).toFixed(2) + " " + currency;
@@ -62,7 +62,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     const commodity = "Used Household goods";
     const origin = survey?.origin_city || survey?.origin_address || "Doha Qatar";
     const destination = movingTo || "Doha Qatar";
- 
+
     let additionalLines = "";
     if (additionalCharges?.length > 0) {
       additionalLines = additionalCharges
@@ -73,15 +73,33 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         })
         .join("");
     }
- 
+
     const totalPrice = Number(totalAmount || 0).toFixed(2);
     const advanceAmt = Number(advance || 0).toFixed(2);
     const balanceAmt = Number(balance || 0).toFixed(2);
     const discountRow = discount > 0 ? `<tr><td style="padding:5px 0;">Discount:</td><td style="text-align:right;padding:5px 0;">-${Number(discount).toFixed(2)}</td></tr>` : "";
- 
+
+    // Selected Additional Services after Balance
+    let selectedServicesHtml = "";
+    if (selectedServices.length > 0) {
+      selectedServicesHtml = `
+        <tr>
+          <td colspan="2" style="padding:12px 0 5px 0; font-weight:bold; border-top:1px solid #ddd;">
+            Selected Additional Services:
+          </td>
+        </tr>
+        ${selectedServices.map(s => `
+          <tr>
+            <td style="padding:5px 0 5px 20px;">• ${s}</td>
+            <td style="text-align:right;padding:5px 0;"></td>
+          </tr>
+        `).join("")}
+      `;
+    }
+
     const includeBullets = (includedServices || []).map((s) => `<li>${s}</li>`).join("");
     const excludeBullets = (excludedServices || []).map((s) => `<li>${s}</li>`).join("");
- 
+
     const paymentTermsHtml = `
       <p style="font-size:11pt; margin:12px 0 18px 0; line-height:1.4;">
         <strong>Payment Terms:</strong> 20% advance payment upon work confirmation, the full payment required at the day of work completion. Payment may be made in any of the following ways.
@@ -94,7 +112,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         <strong>D.</strong> Card payment (*2.50% Surcharge apply)
       </div>
     `;
- 
+
     const generalTermsHtml = quoteNotes.length > 0
       ? quoteNotes
           .filter(note => note.is_active)
@@ -107,7 +125,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
           `)
           .join('')
       : '<p style="font-style: italic; color:#555;">General terms and conditions apply as per company policy.</p>';
- 
+
     return `
       <div class="header-container">
           <div class="logo-section">
@@ -121,14 +139,14 @@ const QuotationLocalMove = forwardRef((props, ref) => {
               <strong>Mobile No :</strong> ${companyContact.mobile}
           </div>
       </div>
- 
+
       <h1 class="rate-title">Your Rate is ${rate}</h1>
- 
+
       <p>Dear ${customerName},</p>
       <p class="intro-text">
           Thank you for the opportunity to quote for your planned relocation, please note, our rates are valid for 60 days from date of quotation. You may confirm acceptance of our offer by signing and returning a copy of this document email. If the signed acceptance has not been received at the time of booking, it will be understood that you have read and accepted our quotation and related terms and conditions. Please do not hesitate to contact us should you have any questions or require additional information.
       </p>
- 
+
       <div class="service-box">
           <table style="width:100%">
               <tr>
@@ -141,7 +159,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
               </tr>
           </table>
       </div>
- 
+
       <div class="breakdown-section">
           <h3 class="breakdown-title">Breakdown of Charges (All prices in ${currency})</h3>
           <table class="charges-table">
@@ -159,18 +177,19 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                   <td style="padding:5px 0;">Balance:</td>
                   <td style="text-align:right;padding:5px 0;">${balanceAmt}</td>
               </tr>
+              ${selectedServicesHtml}
           </table>
       </div>
- 
+
       <div style="page-break-before: always;"></div>
- 
+
       <div class="section">
           <h3 class="section-title">Service Includes :-</h3>
           <ul class="bullet-list">${includeBullets || "<li>Professional packing of household items</li><li>Loading and unloading services</li>"}</ul>
          
           <h3 class="section-title">Service Excludes :-</h3>
           <ul class="bullet-list">${excludeBullets || "<li>Storage charges beyond agreed period</li><li>Customs duties and taxes</li>"}</ul>
- 
+
           <h3 class="section-title">Note :-</h3>
           <div style="border:1px solid #ddd; padding:10px; border-radius:8px; margin-bottom:20px;">
                <strong>Survey Remarks</strong>
@@ -179,37 +198,34 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                   Move date : ${moveDate || "TBA"} Required time for moving : 1 day. Working time : 8 AM to 7 PM (Max till 9 PM From Sunday to Saturday )
                </div>
           </div>
- 
-          <!-- Insurance heading with NO border -->
+
           <h3 class="section-title no-border-title">Insurance :-</h3>
           <p>Comprehensive transit insurance is available upon request at an additional cost. Basic carrier liability is included in the quoted price. Please contact us for detailed insurance options and pricing.</p>
       </div>
- 
+
       <div style="page-break-before: always;"></div>
- 
+
       <h3 class="section-title">PAYMENT TERMS</h3>
       ${paymentTermsHtml}
- 
+
       <h3 class="section-title">GENERAL TERMS</h3>
       <div style="margin-bottom: 40px; font-size:10.5pt; line-height:1.5;">
         ${generalTermsHtml}
       </div>
- 
+
       <div style="margin-top: 60px; text-align: center; page-break-inside: avoid;">
-        <p style="font-weight: bold; font-size: 12pt; margin-bottom: 60px;">Acceptance of Quotation</p>
-       
         <p style="margin: 40px 0 10px 0; font-weight: bold;">${customerName}</p>
        
         ${currentSignature
           ? `<img src="${currentSignature}" alt="Customer Signature" style="max-width: 340px; max-height: 140px; margin: 15px 0;" />`
           : '<p style="color:#777; font-style:italic; margin:20px 0;">(Signature pending)</p>'
         }
- 
+
         <p style="margin-top: 30px; font-size:10pt;">Date: ${today}</p>
       </div>
     `;
   };
- 
+
   const getStyles = () => `
     @page { size: A4; margin: 1cm; }
     body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #333; }
@@ -232,12 +248,12 @@ const QuotationLocalMove = forwardRef((props, ref) => {
       font-weight: bold;
     }
     .no-border-title {
-      border-bottom: none !important;  /* Remove line under Insurance heading */
+      border-bottom: none !important;
     }
     .bullet-list { padding-left: 20px; margin-bottom: 20px; }
     .bullet-list li { margin-bottom: 5px; }
   `;
- 
+
   useImperativeHandle(ref, () => ({
     printNow: () => {
       const printContent = generateHtmlContent();
@@ -253,7 +269,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         printWindow.print();
       }, 800);
     },
- 
+
     downloadPdf: async () => {
       try {
         const printContent = generateHtmlContent();
@@ -265,9 +281,9 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         element.style.width = '794px';
         element.style.height = 'auto';
         document.body.appendChild(element);
- 
+
         await new Promise(resolve => setTimeout(resolve, 800));
- 
+
         const canvas = await html2canvas(element, {
           scale: 2,
           useCORS: true,
@@ -277,28 +293,28 @@ const QuotationLocalMove = forwardRef((props, ref) => {
           width: 794,
           height: element.scrollHeight + 200,
         });
- 
+
         document.body.removeChild(element);
- 
+
         const imgWidth = 210;
         const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         let heightLeft = imgHeight;
- 
+
         const pdf = new jsPDF('p', 'mm', 'a4');
         let position = 0;
- 
+
         const imgData = canvas.toDataURL('image/jpeg', 0.92);
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
- 
+
         while (heightLeft >= 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
           pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
- 
+
         pdf.save(`Quotation_${quoteNumber}.pdf`);
       } catch (error) {
         console.error('PDF generation failed:', error);
@@ -306,7 +322,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
       }
     }
   }));
- 
+
   return (
     <div style={{
       fontFamily: "Arial, sans-serif",
@@ -324,5 +340,5 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     </div>
   );
 });
- 
+
 export default QuotationLocalMove;
