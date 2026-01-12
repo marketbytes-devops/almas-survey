@@ -8,7 +8,7 @@ from .serializers import (
     BookingTruckSerializer,
     BookingMaterialSerializer,
 )
-from .pdf_generator import generate_booking_pdf  # ⭐ Import PDF generator
+from .pdf_generator import generate_booking_pdf  
 from urllib.parse import quote
 from django.conf import settings
 import traceback
@@ -57,7 +57,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             if len(clean_phone) == 10:
                 clean_phone = '91' + clean_phone
             
-            # ⭐ GENERATE PDF
+            # GENERATE PDF
             try:
                 filepath, filename = generate_booking_pdf(booking)
                 print(f"DEBUG: PDF generated at: {filepath}")
@@ -75,8 +75,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                     {"error": f"Failed to generate PDF: {str(pdf_error)}"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
-            
-            # Get client details
+
             client_name = "Customer"
             contact_number = "N/A"
             move_type = "N/A"
@@ -95,23 +94,23 @@ class BookingViewSet(viewsets.ModelViewSet):
                     if dest_qs and hasattr(dest_qs, 'city'):
                         destination = dest_qs.city or 'N/A'
             
-            # ⭐ Build WhatsApp message with PDF link
-            message = f"""🚚 *Booking Confirmation - Almas Movers*
+            # Build WhatsApp message with PDF link
+            message = f"""Booking Confirmation - Almas Movers
 
-📋 *Booking ID:* {booking.booking_id}
-👤 *Client:* {client_name}
-📞 *Contact:* {contact_number}
+Booking ID: {booking.booking_id}
+Client: {client_name}
+Contact: {contact_number}
 
-📅 *Move Date:* {booking.move_date if booking.move_date else 'TBA'}
-⏰ *Start Time:* {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
-🏁 *Est. End:* {booking.estimated_end_time.strftime('%I:%M %p') if booking.estimated_end_time else 'TBA'}
+Move Date: {booking.move_date if booking.move_date else 'TBA'}
+Start Time: {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
+Est. End: {booking.estimated_end_time.strftime('%I:%M %p') if booking.estimated_end_time else 'TBA'}
 
-🔧 *Move Type:* {move_type}
-📍 *From:* {origin}
-📍 *To:* {destination}
+Move Type: {move_type}
+From: {origin}
+To: {destination}
 
 ━━━━━━━━━━━━━━━━━━
-📄 *Download Complete PDF:*
+📄Download Complete PDF:
 {pdf_url}
 
 Please review all details before the move.
