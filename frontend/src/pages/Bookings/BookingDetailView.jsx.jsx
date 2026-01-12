@@ -19,24 +19,35 @@ const BookingDetailView = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
+            setError(""); // Clear previous errors
+
+            let bookingData = null;
+
             try {
-                setLoading(true);
-
-                const res = await apiClient.get(`/bookings/${id}/`);
-                const b = res.data;
-                setBooking(b);
-
-                if (b.quotation) {
-                    const quotRes = await apiClient.get(`/quotation-create/${b.quotation}/`);
-                    setQuotation(quotRes.data);
-                }
-            } catch (err) {
+                // Fetch booking
+                const bookingRes = await apiClient.get(`/bookings/${id}/`);
+                bookingData = bookingRes.data;
+                setBooking(bookingData);
+            } catch (bookingErr) {
+                console.error("Failed to fetch booking:", bookingErr);
                 setError("Failed to load booking details.");
-                console.error(err);
-            } finally {
-                setLoading(false);
             }
+
+            // Fetch quotation if linked
+            if (bookingData && bookingData.quotation) {
+                try {
+                    const quotRes = await apiClient.get(`/quotation-create/${bookingData.quotation}/`);
+                    setQuotation(quotRes.data);
+                } catch (quotErr) {
+                    console.warn("Quotation fetch failed (non-critical):", quotErr.response?.data || quotErr.message);
+                    setQuotation(null);
+                }
+            }
+
+            setLoading(false);
         };
+
         fetchData();
     }, [id]);
 
@@ -157,7 +168,7 @@ const BookingDetailView = () => {
                             </div>
                             <div>
                                 <label className={labelClasses}>Supervisor</label>
-                                <p className="text-[#4c7085] font-medium">{booking.supervisor_name || booking.supervisor || "Not assigned"}</p>
+                                <p className="text-[#4c7085] font-medium">{booking.supervisor_name || "Not assigned"}</p>
                             </div>
                         </div>
                     </section>
@@ -185,29 +196,66 @@ const BookingDetailView = () => {
                     </section>
                 </div>
 
-                {/* Assignments - Read-only display */}
+                {/* Assigned Resources - Read-only display */}
                 <section className={sectionClasses}>
                     <h2 className="text-lg font-medium text-[#4c7085] mb-6 border-b border-[#4c7085]/20 pb-2">Assigned Resources</h2>
-                    <div className="space-y-6">
-                        {/* Labours */}
+                    <div className="space-y-8">
+                        {/* Assigned Staff (Manpower) */}
                         <div>
-                            <h3 className="font-medium mb-2">Labours / Manpower</h3>
-                            {booking.labours?.length > 0 ? (
+                            <h3 className="font-medium mb-3 text-[#4c7085]">Assigned Staff (Manpower)</h3>
+                            {booking.assigned_staff?.length > 0 || booking.labours?.length > 0 ? (
                                 <div className="space-y-3">
-                                    {booking.labours.map((item, idx) => (
-                                        <div key={idx} className="bg-white p-4 rounded-lg border">
-                                            <p><strong>Type:</strong> {item.labour_type_name || item.labour_type || "Unknown"}</p>
-                                            <p><strong>Quantity:</strong> {item.quantity}</p>
-                                            {item.staff_member_name && <p><strong>Staff:</strong> {item.staff_member_name}</p>}
+                                    {(booking.assigned_staff || booking.labours || []).map((staff, idx) => (
+                                        <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                            <p className="font-medium">{staff.name || staff.staff_member_name || "Unnamed Staff"}</p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {staff.employer || "Almas"} • {staff.category || "General"}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-gray-600">No labours assigned</p>
+                                <p className="text-gray-600">No staff assigned yet</p>
                             )}
                         </div>
 
-                        {/* Trucks & Materials - add similar blocks if needed */}
+                        {/* Trucks */}
+                        <div>
+                            <h3 className="font-medium mb-3 text-[#4c7085]">Assigned Trucks</h3>
+                            {booking.trucks?.length > 0 ? (
+                                <div className="space-y-3">
+                                    {booking.trucks.map((truck, idx) => (
+                                        <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                            <p className="font-medium">{truck.truck_type_name || truck.truck_type || "Unknown Truck"}</p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                Quantity: {truck.quantity || 1}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-600">No trucks assigned</p>
+                            )}
+                        </div>
+
+                        {/* Materials */}
+                        <div>
+                            <h3 className="font-medium mb-3 text-[#4c7085]">Assigned Materials</h3>
+                            {booking.materials?.length > 0 ? (
+                                <div className="space-y-3">
+                                    {booking.materials.map((material, idx) => (
+                                        <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                            <p className="font-medium">{material.material_name || material.material || "Unknown Material"}</p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                Quantity: {material.quantity || 1}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-600">No materials assigned</p>
+                            )}
+                        </div>
                     </div>
                 </section>
             </div>

@@ -62,12 +62,12 @@ const BookingForm = () => {
                         move_date: b.move_date || "",
                         start_time: b.start_time ? b.start_time.slice(0, 5) : "",
                         estimated_end_time: b.estimated_end_time ? b.estimated_end_time.slice(0, 5) : "",
-                        supervisor: b.supervisor || "",
+                        supervisor: String(b.supervisor || ""),
                         notes: b.notes || "",
                         status: b.status || "confirmed"
                     });
 
-                    // Load assignments - IMPORTANT: Adjust field names if your API uses different keys (e.g. assigned_labours)
+                    // Load assignments
                     setAssignedLabours(Array.isArray(b.labours) ? b.labours.map(l => ({ ...l, isNew: false })) : []);
                     setAssignedTrucks(Array.isArray(b.trucks) ? b.trucks.map(t => ({ ...t, isNew: false })) : []);
                     setAssignedMaterials(Array.isArray(b.materials) ? b.materials.map(m => ({ ...m, isNew: false })) : []);
@@ -110,6 +110,8 @@ const BookingForm = () => {
     const handleSave = async () => {
         try {
             setLoading(true);
+
+            // Step 1: Save main booking
             const payload = {
                 ...formData,
                 quotation: id ? booking?.quotation : quotation?.id
@@ -118,34 +120,68 @@ const BookingForm = () => {
             let currentBookingId = id;
             if (id) {
                 await apiClient.patch(`/bookings/${id}/`, payload);
+                currentBookingId = id;
             } else {
                 const res = await apiClient.post("/bookings/", payload);
                 currentBookingId = res.data.id;
             }
 
-            // TODO: Save assignments (labours, trucks, materials) here if needed
-            // Example: loop through assignedLabours and call appropriate PATCH/POST endpoints
+            // Step 2: Save assignments (labours/manpower)
+            for (const labour of assignedLabours) {
+                const labourPayload = {
+                    booking: currentBookingId,
+                    staff_member: labour.staff_member, // or whatever field your backend expects
+                    // Remove labour_type & quantity if not needed
+                };
+                if (labour.id) {
+                    // Update existing
+                    await apiClient.patch(`/booking-labours/${labour.id}/`, labourPayload);
+                } else {
+                    // Create new
+                    await apiClient.post("/booking-labours/", labourPayload);
+                }
+            }
+
+            // Step 3: Save trucks (if you still want them)
+            for (const truck of assignedTrucks) {
+                const truckPayload = {
+                    booking: currentBookingId,
+                    truck_type: truck.truck_type,
+                    quantity: truck.quantity
+                };
+                if (truck.id) {
+                    await apiClient.patch(`/booking-trucks/${truck.id}/`, truckPayload);
+                } else {
+                    await apiClient.post("/booking-trucks/", truckPayload);
+                }
+            }
+
+            // Step 4: Save materials (if you still want them)
+            for (const material of assignedMaterials) {
+                const materialPayload = {
+                    booking: currentBookingId,
+                    material: material.material,
+                    quantity: material.quantity
+                };
+                if (material.id) {
+                    await apiClient.patch(`/booking-materials/${material.id}/`, materialPayload);
+                } else {
+                    await apiClient.post("/booking-materials/", materialPayload);
+                }
+            }
 
             setSuccess("Booking saved successfully!");
-            navigate("/booking-list"); // Always redirect to list after save
+            navigate("/booking-list");
         } catch (err) {
-            console.error(err);
-            if (err.response?.status === 400 && err.response?.data?.quotation) {
-                alert("This quotation already has a booking! Redirecting...");
-                try {
-                    const existing = await apiClient.get(`/bookings/by-quotation/${quotation.id}/`);
-                    if (existing.data?.id) navigate(`/booking-detail/${existing.data.id}`);
-                } catch {}
-            } else {
-                setError("Failed to save: " + (err.response?.data?.detail || err.message));
-            }
+            console.error("Save error:", err);
+            setError("Failed to save booking: " + (err.response?.data?.detail || err.message));
         } finally {
             setLoading(false);
         }
     };
 
     const addItem = (type) => {
-        if (type === 'labour') setAssignedLabours([...assignedLabours, { labour_type: "", quantity: 1, isNew: true }]);
+        if (type === 'labour') setAssignedLabours([...assignedLabours, { staff_member: "" }]); // Only staff now
         if (type === 'truck') setAssignedTrucks([...assignedTrucks, { truck_type: "", quantity: 1, isNew: true }]);
         if (type === 'material') setAssignedMaterials([...assignedMaterials, { material: "", quantity: 1, isNew: true }]);
     };
@@ -242,12 +278,12 @@ const BookingForm = () => {
                                 <label className={labelClasses}>Supervisor</label>
                                 <select
                                     className={inputClasses}
-                                    value={formData.supervisor}
+                                    value={String(formData.supervisor || "")}
                                     onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
                                 >
                                     <option value="">Select Supervisor</option>
                                     {staffOptions.filter(s => s.category === "Supervisor").map(s => (
-                                        <option key={s.id} value={s.id}>{s.name} ({s.employer || "Internal"})</option>
+                                        <option key={s.id} value={String(s.id)}>{s.name} ({s.employer || "Internal"})</option>
                                     ))}
                                 </select>
                             </div>
@@ -287,7 +323,7 @@ const BookingForm = () => {
 
                 {/* Assignments Sections */}
                 <div className="space-y-8">
-                    {/* Labours */}
+                    {/* Labours - Only Assigned Staff now */}
                     <section className={sectionClasses}>
                         <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                             <h2 className="text-lg font-medium text-[#4c7085]">Labours / Manpower</h2>
@@ -295,47 +331,26 @@ const BookingForm = () => {
                                 onClick={() => addItem('labour')}
                                 className="flex items-center gap-2 px-4 py-2 bg-[#4c7085] text-white text-xs font-medium rounded-lg hover:bg-[#3d5a6a] transition shadow-md"
                             >
-                                <FaPlus /> Add Labour
+                                <FaPlus /> Add Labour Assignment
                             </button>
                         </div>
                         <div className="space-y-4">
                             {assignedLabours.map((item, idx) => (
-                                <div key={idx} className="flex items-end gap-6 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
+                                <div key={idx} className="flex items-center gap-6 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
                                     <div className="flex-1">
-                                        <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Labour Type</label>
+                                        <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Assigned Staff (Manpower)</label>
                                         <select
                                             className={inputClasses}
-                                            value={item.labour_type}
-                                            onChange={(e) => updateItem('labour', idx, 'labour_type', e.target.value)}
-                                        >
-                                            <option value="">Select Type</option>
-                                            {labourOptions.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex-1">
-                                        <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Assigned Staff (Optional)</label>
-                                        <select
-                                            className={inputClasses}
-                                            value={item.staff_member || ""}
+                                            value={String(item.staff_member || "")}
                                             onChange={(e) => updateItem('labour', idx, 'staff_member', e.target.value)}
                                         >
                                             <option value="">Select Staff</option>
-                                            {staffOptions.filter(s => {
-                                                const labType = labourOptions.find(lo => lo.id === parseInt(item.labour_type));
-                                                return s.category === labType?.name;
-                                            }).map(s => (
-                                                <option key={s.id} value={s.id}>{s.name} ({s.employer || "Almas"})</option>
+                                            {staffOptions.map(s => (
+                                                <option key={s.id} value={String(s.id)}>
+                                                    {s.name} ({s.employer || "Almas"})
+                                                </option>
                                             ))}
                                         </select>
-                                    </div>
-                                    <div className="w-32">
-                                        <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Quantity</label>
-                                        <input
-                                            type="number"
-                                            className={inputClasses}
-                                            value={item.quantity}
-                                            onChange={(e) => updateItem('labour', idx, 'quantity', e.target.value)}
-                                        />
                                     </div>
                                     <button
                                         onClick={() => removeItem('labour', idx, item.id)}

@@ -4,6 +4,7 @@ from quotation.models import Quotation
 from additional_settings.models import Labour, Truck, Material, Manpower, InventoryLog
 
 class Booking(models.Model):
+
     quotation = models.OneToOneField(Quotation, on_delete=models.CASCADE, related_name='booking')
     booking_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     
