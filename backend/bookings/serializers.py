@@ -9,7 +9,7 @@ class BookingLabourSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = BookingLabour
-        fields = ['id', 'booking', 'labour_type', 'labour_type_name', 'staff_member', 'staff_member_name', 'quantity']
+        fields = ['id', 'booking', 'labour_type', 'labour_type_name', 'staff_member', 'staff_member_name', 'quantity',]
 
 class BookingTruckSerializer(serializers.ModelSerializer):
     truck_type_name = serializers.CharField(source='truck_type.name', read_only=True)
@@ -51,7 +51,7 @@ class BookingSerializer(serializers.ModelSerializer):
             'notes', 'status',
             'labours', 'trucks', 'materials',
             'client_name', 'move_type', 'contact_number', 'origin_location', 'destination_location',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at',
         ]
 
     def get_destination_location(self, obj):
