@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 import Input from "../../../components/Input";
+import RichTextEditor from "../../../components/RichTextEditor";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
@@ -243,13 +244,17 @@ const PaymentTermsTab = () => {
                   required
                 />
 
-                <Input
-                  label="Description"
-                  type="textarea"
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description (supports HTML formatting)
+                  </label>
+                  <RichTextEditor
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter payment terms description. Use formatting buttons for line breaks, bold, etc."
+                    rows={8}
+                  />
+                </div>
 
                 {/* <Input
                   label="Advance Percentage *"
