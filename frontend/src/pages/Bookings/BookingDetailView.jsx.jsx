@@ -1,7 +1,7 @@
 /* src/pages/Bookings/BookingDetailView.jsx */
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaWhatsapp, FaFilePdf, FaTrashAlt, FaEdit } from "react-icons/fa";
+import { FaArrowLeft, FaFilePdf, FaTrashAlt, FaEdit } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import BookingConfirmation from "../../components/Templates/BookingConfirmation";
@@ -50,18 +50,6 @@ const BookingDetailView = () => {
 
         fetchData();
     }, [id]);
-
-    const handleShareWhatsApp = () => {
-        const customerName = booking?.client_name || quotation?.full_name || "Customer";
-        const bookingId = booking?.booking_id || "TBA";
-        const moveDate = booking?.move_date || "TBA";
-        const phone = booking?.contact_number || quotation?.phone_number || "";
-
-        const message = `Hello ${customerName}, your move with Almas Movers is confirmed for ${moveDate}. Booking ID: ${bookingId}. We look forward to serving you!`;
-
-        const whatsappUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, "_blank");
-    };
 
     const handleSharePdfToSupervisor = async () => {
         if (!id) return;
@@ -117,12 +105,6 @@ const BookingDetailView = () => {
                     </h1>
                 </div>
                 <div className="flex gap-3 flex-wrap">
-                    <button
-                        onClick={handleShareWhatsApp}
-                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition flex items-center gap-2"
-                    >
-                        <FaWhatsapp /> Share
-                    </button>
                     <button
                         onClick={handleSharePdfToSupervisor}
                         disabled={loading || !booking?.id}
