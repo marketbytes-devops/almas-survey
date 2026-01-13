@@ -148,14 +148,16 @@ const ManpowerManagement = () => {
                                 </div>
                                 <div>
                                     <label className={labelClasses}>Employer / Agency</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         name="employer"
                                         value={formData.employer}
                                         onChange={handleInputChange}
                                         className={inputClasses}
-                                        placeholder="e.g. Almas, External Agency"
-                                    />
+                                    >
+                                        <option value="">Select Employer</option>
+                                        <option value="Almas Movers">Almas Movers</option>
+                                        <option value="Outside Workers">Outside Workers</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label className={labelClasses}>Phone Number</label>

@@ -205,7 +205,7 @@ const BookingForm = () => {
                         ...mat,
                         quantity: Math.max(0, mat.quantity + delta),
                         selected: mat.quantity + delta > 0 ? true : mat.selected // auto-select when >0
-                      }
+                    }
                     : mat
             )
         );
@@ -314,7 +314,7 @@ const BookingForm = () => {
                                 >
                                     <option value="">Select Supervisor</option>
                                     {staffOptions.filter(s => s.category === "Supervisor").map(s => (
-                                        <option key={s.id} value={String(s.id)}>{s.name} ({s.employer || "Internal"})</option>
+                                        <option key={s.id} value={String(s.id)}>{s.name} ({s.employer || "Almas Movers"})</option>
                                     ))}
                                 </select>
                             </div>
@@ -378,7 +378,7 @@ const BookingForm = () => {
                                             <option value="">Select Staff</option>
                                             {staffOptions.map(s => (
                                                 <option key={s.id} value={String(s.id)}>
-                                                    {s.name} ({s.employer || "Almas"})
+                                                    {s.name} ({s.employer || "Almas Movers"})
                                                 </option>
                                             ))}
                                         </select>

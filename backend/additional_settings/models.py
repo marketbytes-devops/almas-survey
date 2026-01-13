@@ -38,7 +38,11 @@ class PackingType(models.Model):
 class Manpower(models.Model):
     name = models.CharField(max_length=100, unique=True, blank=True, null=True)
     category = models.CharField(max_length=100, blank=True, null=True)
-    employer = models.CharField(max_length=200, blank=True, null=True)
+    EMPLOYER_CHOICES = [
+        ('Almas Movers', 'Almas Movers'),
+        ('Outside Workers', 'Outside Workers'),
+    ]
+    employer = models.CharField(max_length=200, choices=EMPLOYER_CHOICES, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 

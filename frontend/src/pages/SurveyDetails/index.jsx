@@ -894,7 +894,6 @@ const SurveyDetails = () => {
             storage_frequency: data.storageFrequency,
             storage_duration: data.storageDuration,
             storage_mode: data.storageMode,
-            storage_mode: data.storageMode,
             articles: processedArticles,
             vehicles: data.vehicles.map(v => ({
                 vehicle_type: v.vehicleType || null,
