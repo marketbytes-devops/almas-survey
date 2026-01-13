@@ -6,7 +6,7 @@ import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
 const BookingForm = () => {
-    const { id, quotId } = useParams(); // id for edit, quotId for create from quotation
+    const { id, quotId } = useParams();
     const navigate = useNavigate();
 
     const [booking, setBooking] = useState(null);
@@ -33,6 +33,7 @@ const BookingForm = () => {
 
     const [assignedLabours, setAssignedLabours] = useState([]);
     const [assignedTrucks, setAssignedTrucks] = useState([]);
+    // For materials: array of { materialId, name, quantity, selected }
     const [assignedMaterials, setAssignedMaterials] = useState([]);
 
     useEffect(() => {
@@ -40,7 +41,6 @@ const BookingForm = () => {
             try {
                 setLoading(true);
 
-                // Fetch master data options
                 const [labRes, truckRes, matRes, staffRes] = await Promise.all([
                     apiClient.get("/labours/"),
                     apiClient.get("/truck-types/"),
@@ -52,8 +52,16 @@ const BookingForm = () => {
                 setMaterialOptions(matRes.data);
                 setStaffOptions(staffRes.data);
 
+                // Initialize materials list with all available materials
+                const initialMaterials = matRes.data.map(mat => ({
+                    material: mat.id,
+                    name: mat.name,
+                    quantity: 0,
+                    selected: false // initially not selected
+                }));
+                setAssignedMaterials(initialMaterials);
+
                 if (id) {
-                    // Edit existing booking
                     const res = await apiClient.get(`/bookings/${id}/`);
                     const b = res.data;
                     setBooking(b);
@@ -67,12 +75,17 @@ const BookingForm = () => {
                         status: b.status || "confirmed"
                     });
 
-                    // Load assignments
                     setAssignedLabours(Array.isArray(b.labours) ? b.labours.map(l => ({ ...l, isNew: false })) : []);
+
+                    // Load existing materials (merge with full list)
+                    const loadedMaterials = initialMaterials.map(mat => {
+                        const existing = b.materials?.find(m => m.material === mat.material);
+                        return existing ? { ...mat, quantity: existing.quantity, selected: true } : mat;
+                    });
+                    setAssignedMaterials(loadedMaterials);
+
                     setAssignedTrucks(Array.isArray(b.trucks) ? b.trucks.map(t => ({ ...t, isNew: false })) : []);
-                    setAssignedMaterials(Array.isArray(b.materials) ? b.materials.map(m => ({ ...m, isNew: false })) : []);
                 } else if (quotId) {
-                    // Create new booking from quotation
                     try {
                         const existingRes = await apiClient.get(`/bookings/by-quotation/${quotId}/`);
                         if (existingRes.data) {
@@ -80,7 +93,7 @@ const BookingForm = () => {
                             return;
                         }
                     } catch (err) {
-                        // No existing booking, proceed to create
+                        // proceed
                     }
 
                     const quotRes = await apiClient.get(`/quotation-create/${quotId}/`);
@@ -93,7 +106,7 @@ const BookingForm = () => {
                         setFormData(prev => ({
                             ...prev,
                             move_date: survey.packing_date_from || "",
-                            start_time: "", // No time in survey
+                            start_time: "",
                         }));
                     }
                 }
@@ -111,7 +124,6 @@ const BookingForm = () => {
         try {
             setLoading(true);
 
-            // Step 1: Save main booking
             const payload = {
                 ...formData,
                 quotation: id ? booking?.quotation : quotation?.id
@@ -126,23 +138,20 @@ const BookingForm = () => {
                 currentBookingId = res.data.id;
             }
 
-            // Step 2: Save assignments (labours/manpower)
+            // Save labours (unchanged)
             for (const labour of assignedLabours) {
                 const labourPayload = {
                     booking: currentBookingId,
-                    staff_member: labour.staff_member, // or whatever field your backend expects
-                    // Remove labour_type & quantity if not needed
+                    staff_member: labour.staff_member,
                 };
                 if (labour.id) {
-                    // Update existing
                     await apiClient.patch(`/booking-labours/${labour.id}/`, labourPayload);
                 } else {
-                    // Create new
                     await apiClient.post("/booking-labours/", labourPayload);
                 }
             }
 
-            // Step 3: Save trucks (if you still want them)
+            // Save trucks (unchanged)
             for (const truck of assignedTrucks) {
                 const truckPayload = {
                     booking: currentBookingId,
@@ -156,18 +165,16 @@ const BookingForm = () => {
                 }
             }
 
-            // Step 4: Save materials (if you still want them)
-            for (const material of assignedMaterials) {
+            // Save materials - only selected ones with quantity > 0
+            const selectedMaterials = assignedMaterials.filter(m => m.selected && m.quantity > 0);
+            for (const material of selectedMaterials) {
                 const materialPayload = {
                     booking: currentBookingId,
                     material: material.material,
                     quantity: material.quantity
                 };
-                if (material.id) {
-                    await apiClient.patch(`/booking-materials/${material.id}/`, materialPayload);
-                } else {
-                    await apiClient.post("/booking-materials/", materialPayload);
-                }
+                // Use POST for new, PATCH for existing (if you track IDs)
+                await apiClient.post("/booking-materials/", materialPayload);
             }
 
             setSuccess("Booking saved successfully!");
@@ -180,10 +187,34 @@ const BookingForm = () => {
         }
     };
 
+    const toggleMaterialSelection = (materialId) => {
+        setAssignedMaterials(prev =>
+            prev.map(mat =>
+                mat.material === materialId
+                    ? { ...mat, selected: !mat.selected }
+                    : mat
+            )
+        );
+    };
+
+    const updateMaterialQuantity = (materialId, delta) => {
+        setAssignedMaterials(prev =>
+            prev.map(mat =>
+                mat.material === materialId
+                    ? {
+                        ...mat,
+                        quantity: Math.max(0, mat.quantity + delta),
+                        selected: mat.quantity + delta > 0 ? true : mat.selected // auto-select when >0
+                      }
+                    : mat
+            )
+        );
+    };
+
     const addItem = (type) => {
-        if (type === 'labour') setAssignedLabours([...assignedLabours, { staff_member: "" }]); // Only staff now
+        if (type === 'labour') setAssignedLabours([...assignedLabours, { staff_member: "" }]);
         if (type === 'truck') setAssignedTrucks([...assignedTrucks, { truck_type: "", quantity: 1, isNew: true }]);
-        if (type === 'material') setAssignedMaterials([...assignedMaterials, { material: "", quantity: 1, isNew: true }]);
+        // No add for materials - full list always shown
     };
 
     const removeItem = (type, index, itemId) => {
@@ -196,7 +227,7 @@ const BookingForm = () => {
 
         if (type === 'labour') setAssignedLabours(assignedLabours.filter((_, i) => i !== index));
         if (type === 'truck') setAssignedTrucks(assignedTrucks.filter((_, i) => i !== index));
-        if (type === 'material') setAssignedMaterials(assignedMaterials.filter((_, i) => i !== index));
+        // No remove for materials - just set quantity to 0
     };
 
     const updateItem = (type, index, field, value) => {
@@ -323,7 +354,7 @@ const BookingForm = () => {
 
                 {/* Assignments Sections */}
                 <div className="space-y-8">
-                    {/* Labours - Only Assigned Staff now */}
+                    {/* Labours - Unchanged */}
                     <section className={sectionClasses}>
                         <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                             <h2 className="text-lg font-medium text-[#4c7085]">Labours / Manpower</h2>
@@ -364,7 +395,7 @@ const BookingForm = () => {
                     </section>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Trucks */}
+                        {/* Trucks - Unchanged */}
                         <section className={sectionClasses}>
                             <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                                 <h2 className="text-lg font-medium text-[#4c7085]">Trucks</h2>
@@ -434,73 +465,74 @@ const BookingForm = () => {
                             </div>
                         </section>
 
-                        {/* Materials */}
+                        {/* Materials - New full list with select + quantity */}
                         <section className={sectionClasses}>
                             <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                                 <h2 className="text-lg font-medium text-[#4c7085]">Materials</h2>
-                                <button
-                                    onClick={() => addItem('material')}
-                                    className="p-2 bg-[#4c7085] text-white rounded"
-                                >
-                                    <FaPlus />
-                                </button>
+                                {/* No + button */}
                             </div>
                             <div className="space-y-4">
-                                {assignedMaterials.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
-                                        <div className="flex-1">
-                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Material</label>
-                                            <select
-                                                className={inputClasses}
-                                                value={item.material}
-                                                onChange={(e) => updateItem('material', idx, 'material', e.target.value)}
-                                            >
-                                                <option value="">Select Material</option>
-                                                {materialOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                            </select>
-                                        </div>
+                                {assignedMaterials.length > 0 ? (
+                                    assignedMaterials.map((item) => (
+                                        <div key={item.material} className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
+                                            <div className="flex items-center gap-4 flex-1">
+                                                {/* Checkbox / Select toggle */}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={item.selected}
+                                                    onChange={() => toggleMaterialSelection(item.material)}
+                                                    className="h-5 w-5 text-[#4c7085] focus:ring-[#4c7085] border-gray-300 rounded"
+                                                />
+                                                <label className="text-sm font-medium text-[#4c7085]">
+                                                    {item.name}
+                                                </label>
+                                            </div>
 
-                                        <div className="w-36">
-                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Quantity</label>
-                                            <div className="flex items-center border border-[#6b8ca3]/50 rounded-lg overflow-hidden bg-white">
+                                            <div className="w-40 flex items-center justify-end gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        if (item.quantity > 0) updateItem('material', idx, 'quantity', Math.max(0, item.quantity - 1));
-                                                    }}
-                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50"
+                                                    onClick={() => updateMaterialQuantity(item.material, -1)}
+                                                    disabled={item.quantity <= 0}
+                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded disabled:opacity-50"
                                                 >
                                                     <span className="text-xl font-bold">-</span>
                                                 </button>
 
                                                 <input
                                                     type="number"
-                                                    className="w-16 text-center border-0 p-2 text-sm focus:ring-0"
+                                                    className="w-16 text-center border border-[#6b8ca3]/50 rounded p-2 text-sm focus:ring-0"
                                                     value={item.quantity}
+                                                    min="0"
                                                     onChange={(e) => {
                                                         const val = parseInt(e.target.value) || 0;
-                                                        updateItem('material', idx, 'quantity', Math.max(0, val));
+                                                        updateMaterialQuantity(item.material, val - item.quantity); // delta
                                                     }}
                                                 />
 
                                                 <button
                                                     type="button"
-                                                    onClick={() => updateItem('material', idx, 'quantity', item.quantity + 1)}
-                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                                    onClick={() => updateMaterialQuantity(item.material, 1)}
+                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
                                                 >
                                                     <span className="text-xl font-bold">+</span>
                                                 </button>
                                             </div>
-                                        </div>
 
-                                        <button
-                                            onClick={() => removeItem('material', idx, item.id)}
-                                            className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition self-end mb-1"
-                                        >
-                                            <FaTrash />
-                                        </button>
-                                    </div>
-                                ))}
+                                            <button
+                                                onClick={() => {
+                                                    updateMaterialQuantity(item.material, -item.quantity); // reset to 0
+                                                    toggleMaterialSelection(item.material, false); // unselect
+                                                }}
+                                                className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                                title="Remove"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-600 text-center py-4">No materials available</p>
+                                )}
                             </div>
                         </section>
                     </div>
