@@ -1,15 +1,14 @@
 from rest_framework import serializers
 from .models import Booking, BookingLabour, BookingTruck, BookingMaterial
 from quotation.serializers import QuotationSerializer
-from additional_settings.serializers import LabourSerializer, TruckSerializer, MaterialSerializer, ManpowerSerializer
+from additional_settings.serializers import TruckSerializer, MaterialSerializer, ManpowerSerializer
 
 class BookingLabourSerializer(serializers.ModelSerializer):
-    labour_type_name = serializers.CharField(source='labour_type.name', read_only=True)
-    staff_member_name = serializers.CharField(source='staff_member.name', read_only=True)
+    staff_member_name = serializers.CharField(source='staff_member.name', read_only=True, allow_null=True)
     
     class Meta:
         model = BookingLabour
-        fields = ['id', 'booking', 'labour_type', 'labour_type_name', 'staff_member', 'staff_member_name', 'quantity',]
+        fields = ['id', 'booking', 'staff_member', 'staff_member_name', 'quantity']
 
 class BookingTruckSerializer(serializers.ModelSerializer):
     truck_type_name = serializers.CharField(source='truck_type.name', read_only=True)
@@ -30,16 +29,14 @@ class BookingSerializer(serializers.ModelSerializer):
     trucks = BookingTruckSerializer(many=True, read_only=True)
     materials = BookingMaterialSerializer(many=True, read_only=True)
     
-    # Pre-fetching some quotation/survey info for the list table
     client_name = serializers.CharField(source='quotation.survey.full_name', read_only=True)
     move_type = serializers.CharField(source='quotation.survey.service_type', read_only=True)
     contact_number = serializers.CharField(source='quotation.survey.phone_number', read_only=True)
     origin_location = serializers.CharField(source='quotation.survey.origin_city', read_only=True)
     destination_location = serializers.SerializerMethodField()
     
-    # Supervisor details
     supervisor_name = serializers.CharField(source='supervisor.name', read_only=True)
-    supervisor_phone = serializers.CharField(source='supervisor.phone_number', read_only=True)  # ⭐ ADD THIS
+    supervisor_phone = serializers.CharField(source='supervisor.phone_number', read_only=True)
 
     survey_id = serializers.IntegerField(source='quotation.survey.id', read_only=True)
 
@@ -47,7 +44,7 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = [
             'id', 'quotation', 'booking_id', 'survey_id', 'move_date', 'start_time', 
-            'estimated_end_time', 'supervisor', 'supervisor_name', 'supervisor_phone',  # ⭐ ADD supervisor_phone
+            'estimated_end_time', 'supervisor', 'supervisor_name', 'supervisor_phone',
             'notes', 'status',
             'labours', 'trucks', 'materials',
             'client_name', 'move_type', 'contact_number', 'origin_location', 'destination_location',
@@ -55,6 +52,5 @@ class BookingSerializer(serializers.ModelSerializer):
         ]
 
     def get_destination_location(self, obj):
-        # Taking the first destination address if exists
         dest = obj.quotation.survey.destination_addresses.first()
         return dest.city if dest else None

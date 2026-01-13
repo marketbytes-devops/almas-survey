@@ -52,15 +52,35 @@ const BookingConfirmation = forwardRef(
       >
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <img src={CompanyLogo} alt="ALMAS MOVERS" style={{ maxWidth: "250px", marginBottom: "20px" }} />
-          <h1 style={{ fontSize: "32pt", fontWeight: "bold", color: "#4c7085", margin: "10px 0" }}>
+          <img
+            src={CompanyLogo}
+            alt="ALMAS MOVERS"
+            style={{ maxWidth: "250px", marginBottom: "20px" }}
+          />
+          <h1
+            style={{
+              fontSize: "32pt",
+              fontWeight: "bold",
+              color: "#4c7085",
+              margin: "10px 0",
+            }}
+          >
             Booking Confirmation
           </h1>
-          <div style={{ width: "120px", height: "4px", background: "linear-gradient(to right, #4c7085, #6b8ca3)", margin: "15px auto" }}></div>
+          <div
+            style={{
+              width: "120px",
+              height: "4px",
+              background: "linear-gradient(to right, #4c7085, #6b8ca3)",
+              margin: "15px auto",
+            }}
+          ></div>
           <p style={{ fontSize: "16pt", color: "#666" }}>
             <strong>Booking ID:</strong> {booking.booking_id || "TBA"}
           </p>
-          <p style={{ fontSize: "12pt", color: "#888", marginTop: "10px" }}>Generated on: {today}</p>
+          <p style={{ fontSize: "12pt", color: "#888", marginTop: "10px" }}>
+            Generated on: {today}
+          </p>
         </div>
 
         {/* Client & Move Info */}
@@ -77,21 +97,53 @@ const BookingConfirmation = forwardRef(
           }}
         >
           <div>
-            <h2 style={{ fontSize: "16pt", fontWeight: "bold", color: "#4c7085", marginBottom: "15px" }}>Client Details</h2>
-            <p style={{ margin: "8px 0" }}><strong>Name:</strong> {clientName}</p>
-            <p style={{ margin: "8px 0" }}><strong>Contact:</strong> {contactNumber}</p>
-            <p style={{ margin: "8px 0" }}><strong>Move Type:</strong> {moveType}</p>
+            <h2
+              style={{
+                fontSize: "16pt",
+                fontWeight: "bold",
+                color: "#4c7085",
+                marginBottom: "15px",
+              }}
+            >
+              Client Details
+            </h2>
+            <p style={{ margin: "8px 0" }}>
+              <strong>Name:</strong> {clientName}
+            </p>
+            <p style={{ margin: "8px 0" }}>
+              <strong>Contact:</strong> {contactNumber}
+            </p>
+            <p style={{ margin: "8px 0" }}>
+              <strong>Move Type:</strong> {moveType}
+            </p>
           </div>
           <div>
-            <h2 style={{ fontSize: "16pt", fontWeight: "bold", color: "#4c7085", marginBottom: "15px" }}>Move Schedule</h2>
-            <p style={{ margin: "8px 0" }}><strong>Move Date:</strong> {booking.move_date || "—"}</p>
+            <h2
+              style={{
+                fontSize: "16pt",
+                fontWeight: "bold",
+                color: "#4c7085",
+                marginBottom: "15px",
+              }}
+            >
+              Move Schedule
+            </h2>
             <p style={{ margin: "8px 0" }}>
-              <strong>Start Time:</strong> {booking.start_time ? formatTime(booking.start_time) : "—"}
+              <strong>Move Date:</strong> {booking.move_date || "—"}
             </p>
             <p style={{ margin: "8px 0" }}>
-              <strong>Est. End Time:</strong> {booking.estimated_end_time ? formatTime(booking.estimated_end_time) : "—"}
+              <strong>Start Time:</strong>{" "}
+              {booking.start_time ? formatTime(booking.start_time) : "—"}
             </p>
-            <p style={{ margin: "8px 0" }}><strong>From → To:</strong> {origin} → {destination}</p>
+            <p style={{ margin: "8px 0" }}>
+              <strong>Est. End Time:</strong>{" "}
+              {booking.estimated_end_time
+                ? formatTime(booking.estimated_end_time)
+                : "—"}
+            </p>
+            <p style={{ margin: "8px 0" }}>
+              <strong>From → To:</strong> {origin} → {destination}
+            </p>
           </div>
         </div>
 
@@ -106,14 +158,24 @@ const BookingConfirmation = forwardRef(
               border: "1px solid #90caf9",
             }}
           >
-            <h2 style={{ fontSize: "16pt", fontWeight: "bold", color: "#4c7085", marginBottom: "10px" }}>
+            <h2
+              style={{
+                fontSize: "16pt",
+                fontWeight: "bold",
+                color: "#4c7085",
+                marginBottom: "10px",
+              }}
+            >
               Assigned Supervisor
             </h2>
-            <p style={{ fontSize: "14pt", fontWeight: "500" }}>{booking.supervisor_name}</p>
+            <p style={{ fontSize: "14pt", fontWeight: "500" }}>
+              {booking.supervisor_name}
+            </p>
           </div>
         )}
 
         {/* Labours Table */}
+        {/* Labours Table - Updated (Labour Type removed) */}
         {booking.labours?.length > 0 && (
           <div style={{ marginBottom: "30px" }}>
             <h2
@@ -126,14 +188,34 @@ const BookingConfirmation = forwardRef(
                 paddingBottom: "8px",
               }}
             >
-              Labours Assigned
+              Assigned Labours / Manpower
             </h2>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "linear-gradient(to right, #4c7085, #6b8ca3)", color: "white" }}>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "11pt" }}>Labour Type</th>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "11pt" }}>Assigned Staff</th>
-                  <th style={{ padding: "12px", textAlign: "center", fontSize: "11pt" }}>Quantity</th>
+                <tr
+                  style={{
+                    background: "linear-gradient(to right, #4c7085, #6b8ca3)",
+                    color: "white",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontSize: "11pt",
+                    }}
+                  >
+                    Staff Member
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "center",
+                      fontSize: "11pt",
+                    }}
+                  >
+                    Quantity
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -145,9 +227,20 @@ const BookingConfirmation = forwardRef(
                       backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
                     }}
                   >
-                    <td style={{ padding: "10px", fontWeight: "500" }}>{labour.labour_type_name}</td>
-                    <td style={{ padding: "10px" }}>{labour.staff_member_name || "—"}</td>
-                    <td style={{ padding: "10px", textAlign: "center", fontWeight: "bold" }}>{labour.quantity}</td>
+                    <td style={{ padding: "10px", fontWeight: "500" }}>
+                      {labour.staff_member_name ||
+                        labour.name ||
+                        "Unnamed Staff"}
+                    </td>
+                    <td
+                      style={{
+                        padding: "10px",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {labour.quantity || 1}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -172,9 +265,30 @@ const BookingConfirmation = forwardRef(
             </h2>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "linear-gradient(to right, #4c7085, #6b8ca3)", color: "white" }}>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "11pt" }}>Truck Type</th>
-                  <th style={{ padding: "12px", textAlign: "center", fontSize: "11pt" }}>Quantity</th>
+                <tr
+                  style={{
+                    background: "linear-gradient(to right, #4c7085, #6b8ca3)",
+                    color: "white",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontSize: "11pt",
+                    }}
+                  >
+                    Truck Type
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "center",
+                      fontSize: "11pt",
+                    }}
+                  >
+                    Quantity
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -186,8 +300,18 @@ const BookingConfirmation = forwardRef(
                       backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
                     }}
                   >
-                    <td style={{ padding: "10px", fontWeight: "500" }}>{truck.truck_type_name}</td>
-                    <td style={{ padding: "10px", textAlign: "center", fontWeight: "bold" }}>{truck.quantity}</td>
+                    <td style={{ padding: "10px", fontWeight: "500" }}>
+                      {truck.truck_type_name}
+                    </td>
+                    <td
+                      style={{
+                        padding: "10px",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {truck.quantity}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -212,9 +336,30 @@ const BookingConfirmation = forwardRef(
             </h2>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "linear-gradient(to right, #4c7085, #6b8ca3)", color: "white" }}>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "11pt" }}>Material</th>
-                  <th style={{ padding: "12px", textAlign: "center", fontSize: "11pt" }}>Quantity</th>
+                <tr
+                  style={{
+                    background: "linear-gradient(to right, #4c7085, #6b8ca3)",
+                    color: "white",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontSize: "11pt",
+                    }}
+                  >
+                    Material
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "center",
+                      fontSize: "11pt",
+                    }}
+                  >
+                    Quantity
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -226,8 +371,18 @@ const BookingConfirmation = forwardRef(
                       backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
                     }}
                   >
-                    <td style={{ padding: "10px", fontWeight: "500" }}>{mat.material_name}</td>
-                    <td style={{ padding: "10px", textAlign: "center", fontWeight: "bold" }}>{mat.quantity}</td>
+                    <td style={{ padding: "10px", fontWeight: "500" }}>
+                      {mat.material_name}
+                    </td>
+                    <td
+                      style={{
+                        padding: "10px",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {mat.quantity}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -250,28 +405,68 @@ const BookingConfirmation = forwardRef(
             >
               Internal Notes
             </h2>
-            <div style={{ background: "#f9f9f9", padding: "20px", borderRadius: "12px", border: "1px solid #ddd" }}>
+            <div
+              style={{
+                background: "#f9f9f9",
+                padding: "20px",
+                borderRadius: "12px",
+                border: "1px solid #ddd",
+              }}
+            >
               <p style={{ whiteSpace: "pre-wrap" }}>{booking.notes}</p>
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: "60px", paddingTop: "30px", borderTop: "2px solid #ddd" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "60px",
+            paddingTop: "30px",
+            borderTop: "2px solid #ddd",
+          }}
+        >
           <p style={{ fontSize: "14pt", color: "#4c7085", fontWeight: "bold" }}>
             Thank you for choosing Almas Movers International
           </p>
-          <p style={{ color: "#666", marginTop: "10px" }}>Your move is in safe hands.</p>
-          <p style={{ fontSize: "10pt", color: "#888", marginTop: "20px" }}>For any queries, contact your assigned supervisor.</p>
+          <p style={{ color: "#666", marginTop: "10px" }}>
+            Your move is in safe hands.
+          </p>
+          <p style={{ fontSize: "10pt", color: "#888", marginTop: "20px" }}>
+            For any queries, contact your assigned supervisor.
+          </p>
         </div>
 
         {/* Certifications */}
-        <div style={{ marginTop: "40px", textAlign: "center", fontSize: "9pt", color: "#555" }}>
-          <p style={{ margin: "5px 0", fontWeight: "bold" }}>Almas Movers Services</p>
+        <div
+          style={{
+            marginTop: "40px",
+            textAlign: "center",
+            fontSize: "9pt",
+            color: "#555",
+          }}
+        >
+          <p style={{ margin: "5px 0", fontWeight: "bold" }}>
+            Almas Movers Services
+          </p>
           <p style={{ margin: "3px 0" }}>{companyAddress}</p>
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "15px", marginTop: "15px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: "15px",
+              marginTop: "15px",
+            }}
+          >
             {CERTIFICATION_LOGOS.map((logo, i) => (
-              <img key={i} src={logo} alt={`Certification ${i + 1}`} style={{ maxHeight: "40px", maxWidth: "120px" }} />
+              <img
+                key={i}
+                src={logo}
+                alt={`Certification ${i + 1}`}
+                style={{ maxHeight: "40px", maxWidth: "120px" }}
+              />
             ))}
           </div>
         </div>
@@ -301,7 +496,14 @@ const BookingConfirmation = forwardRef(
 
       while (heightLeft >= 0) {
         pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, heightLeft - imgHeight, imgWidth, imgHeight);
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          0,
+          heightLeft - imgHeight,
+          imgWidth,
+          imgHeight
+        );
         heightLeft -= pageHeight;
       }
 
@@ -330,15 +532,23 @@ const BookingConfirmation = forwardRef(
           // WhatsApp message
           const supervisorPhone = booking.supervisor?.phone_number || "";
 
-          const message = `Booking Confirmation - ${booking.booking_id || "TBA"}\n` +
-                          `Move Date: ${booking.move_date || "N/A"}\n` +
-                          `Start Time: ${booking.start_time ? formatTime(booking.start_time) : "N/A"}\n` +
-                          `Supervisor: ${booking.supervisor_name || "N/A"}`;
+          const message =
+            `Booking Confirmation - ${booking.booking_id || "TBA"}\n` +
+            `Move Date: ${booking.move_date || "N/A"}\n` +
+            `Start Time: ${
+              booking.start_time ? formatTime(booking.start_time) : "N/A"
+            }\n` +
+            `Supervisor: ${booking.supervisor_name || "N/A"}`;
 
-          const whatsappUrl = `https://wa.me/${supervisorPhone.replace(/\+/g, '')}?text=${encodeURIComponent(message)}`;
+          const whatsappUrl = `https://wa.me/${supervisorPhone.replace(
+            /\+/g,
+            ""
+          )}?text=${encodeURIComponent(message)}`;
           window.open(whatsappUrl, "_blank");
 
-          alert("PDF downloaded! WhatsApp opened — attach the PDF manually before sending.");
+          alert(
+            "PDF downloaded! WhatsApp opened — attach the PDF manually before sending."
+          );
         } catch (err) {
           console.error("WhatsApp share failed:", err);
           alert("Failed to prepare WhatsApp share.");
