@@ -96,6 +96,7 @@ class Survey(models.Model):
             models.Index(fields=["survey_id"]),
             models.Index(fields=["created_at"]),
         ]
+        ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
         if not self.status:
