@@ -34,9 +34,9 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     excludedServices,
     paymentTerms = [],
     quoteNotes = [],
-    surveyRemarks = [],
+    surveyRemarks = [],           // ← This is your Remarks
     currentSignature,
-    selectedServices = [], // Selected additional services
+    selectedServices = [],
   } = props;
 
   const today = new Date().toLocaleDateString("en-GB", {
@@ -85,7 +85,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             </tr>`;
     }
 
-    // 2. Additional Charges
+    // Additional Charges
     if (additionalCharges?.length > 0) {
       breakdownRows += additionalCharges
         .map((charge) => {
@@ -117,6 +117,15 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         .join("")
       : `<div>Standard Payment Terms Apply</div>`;
 
+    // Survey Remarks (NEW - moved here as per your request)
+    const surveyRemarksHTML = surveyRemarks.length > 0
+      ? surveyRemarks
+        .filter(r => r.is_active)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(r => `<div class="remark-item">${r.description}</div>`)
+        .join("")
+      : "";
+
     // Notes
     const notesHTML = quoteNotes.length > 0
       ? quoteNotes
@@ -126,16 +135,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         .join("")
       : "";
 
-    // Survey Remarks
-    const surveyRemarksHTML = surveyRemarks.length > 0
-      ? surveyRemarks
-        .filter(r => r.is_active)
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .map(r => `<div class="remark-item">${r.description}</div>`)
-        .join("")
-      : "";
-
-    // Selected Services HTML Logic (Updated to match Service Includes Design)
+    // Selected Services HTML
     let selectedServicesSection = "";
     if (Array.isArray(selectedServices) && selectedServices.length > 0) {
       const servicesListHTML = selectedServices.map(service =>
@@ -202,7 +202,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             </div>
         </section>
 
-        <!-- PRICING BREAKDOWN (Simplified) -->
+        <!-- PRICING BREAKDOWN -->
         <section class="pricing-section">
             <div class="breakdown-container">
                 <h3 class="breakdown-title">Breakdown of Charges (All prices in QAR)</h3>
@@ -230,21 +230,16 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             </div>
         </section>
 
-        <!-- SELECTED SERVICES SECTION -->
+        <!-- SELECTED SERVICES -->
         ${selectedServicesSection}
-
-        <!-- PAGE BREAK IF NEEDED FOR LONG CONTENT -->
-        <!-- <div class="page-break"></div> -->
 
         <!-- SERVICE SCOPE (INCLUDES / EXCLUDES) -->
         <section class="service-scope-section">
             <div class="scope-container">
-                <!-- Headers -->
                 <div class="scope-header">
                     <div class="header-col include-header">Service Includes</div>
                     <div class="header-col exclude-header">Service Excludes</div>
                 </div>
-                <!-- Content -->
                 <div class="scope-body">
                     <div class="body-col include-body">
                         <ul class="scope-list">
@@ -259,40 +254,43 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                 </div>
             </div>
         </section>
-        
-        <!-- PAGE BREAK FOR PAGE 2 -->
+
+        <!-- PAGE BREAK -->
         <div class="page-break"></div>
 
-        <!-- TERMS & NOTES -->
-         <section class="terms-section" style="margin-top: 20px;">
-            <div class="terms-box">
-                <h3>PAYMENT TERMS</h3>
-                <div class="text-content">
-                    ${paymentTermsHTML}
-                </div>
-            </div>
-            
-            ${(survey?.surveyRemarksHTML) ? `
-            <div class="terms-box" style="margin-top: 15px;">
-                <h3>SURVEY REMARKS</h3>
+        <!-- NEW ORDER: Remarks → Insurance → Payment Terms → Notes -->
+        <section class="terms-section" style="margin-top: 20px;">
+            <!-- 1. Survey Remarks -->
+            ${surveyRemarksHTML ? `
+            <div class="terms-box" style="margin-bottom: 15px;">
+                <h3>REMARKS</h3>
                 <div class="text-content">
                     ${surveyRemarksHTML}
                 </div>
             </div>` : ''}
 
-            ${notesHTML ? `
-            <div class="terms-box" style="margin-top: 15px;">
-                <h3>IMPORTANT NOTES</h3>
-                <div class="text-content">${notesHTML}</div>
-            </div>
-            ` : ''}
-            
-             <div class="terms-box" style="margin-top: 15px;">
+            <!-- 2. Insurance -->
+            <div class="terms-box" style="margin-bottom: 15px;">
                 <h3>INSURANCE</h3>
                 <div class="text-content">
                     <p>Comprehensive transit insurance is available upon request. Standard liability is limited as per terms.</p>
                 </div>
             </div>
+
+            <!-- 3. Payment Terms -->
+            <div class="terms-box" style="margin-bottom: 15px;">
+                <h3>PAYMENT TERMS</h3>
+                <div class="text-content">
+                    ${paymentTermsHTML}
+                </div>
+            </div>
+
+            <!-- 4. Important Notes -->
+            ${notesHTML ? `
+            <div class="terms-box">
+                <h3>IMPORTANT NOTES</h3>
+                <div class="text-content">${notesHTML}</div>
+            </div>` : ''}
         </section>
 
         <!-- FOOTER & SIGNATURE -->
@@ -415,8 +413,6 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     }
     .services-list { display: flex; flex-direction: column; gap: 10px; }
     
-    /* Removed unused box styles */
-
     /* PAGE BREAK */
     .page-break { page-break-before: always; height: 15px; display: block; }
 
@@ -490,10 +486,8 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         printWindow.document.write(printContent);
         printWindow.document.write("</body></html>");
         printWindow.document.close();
-        // Wait for images to load ideally, but simple timeout works for now
         setTimeout(() => {
           printWindow.print();
-          // printWindow.close(); // Optional, some users prefer to keep it open
         }, 800);
       }
     },
@@ -501,21 +495,19 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     downloadPdf: async () => {
       try {
         const printContent = generateHtmlContent();
-        // Create a temporary container for html2canvas
         const container = document.createElement('div');
         container.innerHTML = `<style>${getStyles()}</style>${printContent}`;
         container.style.position = 'fixed';
         container.style.left = '-9999px';
         container.style.top = '0';
-        container.style.width = '210mm'; // Enforce A4 width
+        container.style.width = '210mm';
         container.style.background = '#fff';
         document.body.appendChild(container);
 
-        // Wait for rendering
         await new Promise(r => setTimeout(r, 1000));
 
         const canvas = await html2canvas(container, {
-          scale: 2, // Higher quality
+          scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff'
