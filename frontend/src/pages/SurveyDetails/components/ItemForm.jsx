@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle }) => {
+const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedImage }) => {
     const [formData, setFormData] = useState({
         [`length_${item.name}`]: existingArticle?.length || item.length || "",
         [`width_${item.name}`]: existingArticle?.width || item.width || "",
@@ -58,7 +58,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle }) => {
 
     return (
         <div className="px-4 pb-4 pt-4 bg-gradient-to-b from-indigo-50 to-white border-t border-indigo-200">
-            <div className="mb-4">
+            <div className="flex items-center gap-4 mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                     <div
                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isMoving ? 'bg-green-500 border-green-500' : 'bg-red-500 border-red-500'}`}
@@ -74,6 +74,17 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle }) => {
                         {isMoving ? "Moving" : "Not Moving"}
                     </span>
                 </label>
+
+                {capturedImage && (
+                    <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <img
+                            src={capturedImage.preview}
+                            alt="Captured item"
+                            className="w-10 h-10 object-cover rounded-md border border-gray-200"
+                        />
+                        <span className="text-xs text-indigo-700 font-medium">Image Captured</span>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">

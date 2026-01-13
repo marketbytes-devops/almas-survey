@@ -6,6 +6,18 @@ from additional_settings.models import (
 )
 from contact.models import Enquiry
 from django.db import transaction
+import base64
+import uuid
+from django.core.files.base import ContentFile
+
+class Base64ImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,') 
+            ext = format.split('/')[-1] 
+            id = uuid.uuid4()
+            data = ContentFile(base64.b64decode(imgstr), name=id.hex + "." + ext)
+        return super().to_internal_value(data)
 
 STATUS_CHOICES = (
     ('pending', 'Pending'),
@@ -60,6 +72,9 @@ class ArticleSerializer(serializers.ModelSerializer):
     is_flagged_display = serializers.SerializerMethodField()
     move_status_display = serializers.SerializerMethodField()
     crate_required_display = serializers.SerializerMethodField()  # Add this
+    photo = Base64ImageField(max_length=None, use_url=True, required=False, allow_null=True)
+    
+    id = serializers.IntegerField(required=False)
     
     class Meta:
         model = Article
@@ -70,9 +85,9 @@ class ArticleSerializer(serializers.ModelSerializer):
             'handyman', 'handyman_name', 'packing_option', 'packing_option_name',
             'move_status', 'move_status_display', 'remarks', 'length', 'width', 'height', 
             'calculated_volume', 'created_at', 'is_flagged', 'is_flagged_display',
-            'crate_required', 'crate_required_display'
+            'crate_required', 'crate_required_display', 'photo'
         ]
-        read_only_fields = ['id', 'created_at', 'calculated_volume']
+        read_only_fields = ['created_at', 'calculated_volume']
     
     def get_move_status_display(self, obj):
         """Get human-readable moving status"""
@@ -144,7 +159,7 @@ class SurveySerializer(serializers.ModelSerializer):
             'service_type', 'service_type_display', 'goods_type', 'status', 'survey_date',
             'survey_start_time', 'survey_end_time', 'work_description',
             'same_as_customer_address', 'origin_address', 'origin_city', 'origin_country',
-            'origin_state', 'origin_zip', 'pod_pol', 'multiple_addresses', 'destination_addresses',
+            'origin_state', 'origin_zip', 'origin_gps', 'pod_pol', 'multiple_addresses', 'destination_addresses',
             'packing_date_from', 'packing_date_to', 'loading_date', 'eta', 'etd', 'est_delivery_date',
             'storage_start_date', 'storage_frequency', 'storage_duration', 'storage_mode', 'transport_mode',
             'general_owner_packed', 'general_owner_packed_notes', 'general_restriction', 'general_restriction_notes',
@@ -251,12 +266,24 @@ class SurveySerializer(serializers.ModelSerializer):
                     DestinationAddress.objects.create(survey=instance, **addr)
 
             if articles_data is not None:
-                instance.articles.all().delete()
+                incoming_ids = set()
                 for article in articles_data:
-                    article_data = article.copy()
-                    if 'crate_required' not in article_data:
-                        article_data['crate_required'] = False
-                    Article.objects.create(survey=instance, **article_data)
+                    article_id = article.get('id')
+                    if article_id and Article.objects.filter(id=article_id, survey=instance).exists():
+                        incoming_ids.add(article_id)
+                        article_obj = Article.objects.get(id=article_id, survey=instance)
+                        for attr, value in article.items():
+                            setattr(article_obj, attr, value)
+                        article_obj.save()
+                    else:
+                        if 'id' in article:
+                            del article['id']
+                        if 'crate_required' not in article:
+                            article['crate_required'] = False
+                        new_art = Article.objects.create(survey=instance, **article)
+                        incoming_ids.add(new_art.id)
+                
+                instance.articles.exclude(id__in=incoming_ids).delete()
 
             if vehicles_data is not None:
                 instance.vehicles.all().delete()

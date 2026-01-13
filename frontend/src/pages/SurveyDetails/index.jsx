@@ -16,6 +16,13 @@ import Article from "./components/Article";
 import AdditionalServicesTab from "./components/AdditionalServicesTab";
 import VehicleDetails from "./components/VehicleDetails";
 
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+
 const salutationOptions = [
     { value: "Mr", label: "Mr" },
     { value: "Mrs", label: "Mrs" },
@@ -154,14 +161,20 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                             } else {
                                 setValue("originAddress", fullAddress, { shouldValidate: true });
                             }
+
+                            // Always set GPS link when location is found
+                            const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                            setValue("originGps", mapsLink, { shouldValidate: true });
                         } else {
                             const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                            setValue("originGps", mapsLink, { shouldValidate: true });
                             setValue("originAddress", mapsLink, { shouldValidate: true });
                         }
 
                     } catch (error) {
                         console.error("Error fetching address:", error);
                         const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                        setValue("originGps", mapsLink, { shouldValidate: true });
                         setValue("originAddress", mapsLink, { shouldValidate: true });
                     } finally {
                         setIsLocating(false);
@@ -211,9 +224,15 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
                 <h3 className="text-lg sm:text-xl font-medium mb-4">Origin Address</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Origin Address" name="originAddress" />
+                    <Input label="Country" name="originCountry" type="select" options={countryOptions} />
+                    <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
+                    <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 mt-4">
                     <div className="flex items-end gap-2">
                         <div className="flex-1">
-                            <Input label="Origin Address" name="originAddress" />
+                            <Input label="GPS" name="originGps" />
                         </div>
                         <button
                             type="button"
@@ -225,9 +244,18 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                             {isLocating ? <FaSpinner className="animate-spin" size={20} /> : <FaMapMarkerAlt size={20} />}
                         </button>
                     </div>
-                    <Input label="Country" name="originCountry" type="select" options={countryOptions} />
-                    <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
-                    <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+                    {watch("originGps") && (
+                        <div>
+                            <a
+                                href={watch("originGps")}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#4c7085] hover:underline text-sm flex items-center gap-1"
+                            >
+                                <FaMapMarkerAlt size={12} /> View Location on Map
+                            </a>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -526,7 +554,8 @@ const SurveyDetails = () => {
             }],
             vehicles: [],
             additionalServices: [],
-            articles: [],               // ← add this
+            articles: [],
+            originGps: "",               // ← add this
         },
     });
 
@@ -595,6 +624,7 @@ const SurveyDetails = () => {
                         workDescription: survey.work_description || "",
                         includeVehicle: survey.include_vehicle || false,
                         originAddress: survey.origin_address || "",
+                        originGps: survey.origin_gps || "",
                         originCity: survey.origin_city || "Doha",
                         originCountry: survey.origin_country || "QA",
                         originState: survey.origin_state || "",
@@ -622,7 +652,7 @@ const SurveyDetails = () => {
                         storageMode: survey.storage_mode || "",
                         transportMode: survey.transport_mode || "road",
                         articles: survey.articles?.map((a) => ({
-                            id: uuidv4(),
+                            id: a.id,
                             itemName: a.item_name || "",
                             quantity: a.quantity || 0,
                             volume: a.volume || "",
@@ -637,6 +667,7 @@ const SurveyDetails = () => {
                             width: a.width || "",
                             height: a.height || "",
                             crateRequired: a.crate_required || false,
+                            photo: a.photo || null,
                         })) || [],
                         vehicles: survey.vehicles?.map((v) => ({
                             id: uuidv4(),
@@ -780,6 +811,45 @@ const SurveyDetails = () => {
 
     const saveSurveyData = async (data) => {
         setIsLoading(true);
+
+        const processedArticles = await Promise.all(data.articles.map(async (a) => {
+            let processedPhoto = undefined;
+            if (a.photo instanceof File) {
+                try {
+                    processedPhoto = await fileToBase64(a.photo);
+                } catch (e) {
+                    console.error("Error converting photo", e);
+                }
+            } else if (typeof a.photo === 'string') {
+                processedPhoto = undefined;
+            } else if (a.photo === null) {
+                processedPhoto = null;
+            }
+
+            const articleObj = {
+                id: (typeof a.id === 'number') ? a.id : undefined,
+                room: a.room || null,
+                item_name: a.itemName,
+                quantity: a.quantity,
+                volume: a.volume || null,
+                volume_unit: a.volumeUnit || null,
+                weight: a.weight || null,
+                weight_unit: a.weightUnit || null,
+                handyman: a.handyman || null,
+                packing_option: a.packingOption || null,
+                move_status: a.moveStatus || "moving",
+                length: a.length || null,
+                width: a.width || null,
+                height: a.height || null,
+                crate_required: a.crateRequired || false,
+            };
+
+            if (processedPhoto !== undefined) {
+                articleObj.photo = processedPhoto;
+            }
+            return articleObj;
+        }));
+
         const payload = {
             enquiry: surveyId ? parseInt(surveyId) : null,
             customer_type: data.customerType || null,
@@ -793,6 +863,7 @@ const SurveyDetails = () => {
             company: data.company,
             goods_type: data.goodsType,
             status: data.status,
+            origin_gps: data.originGps, // Include in payload
             survey_date: data.surveyDate ? data.surveyDate.toISOString().split("T")[0] : null,
             survey_start_time: data.surveyStartTime ? data.surveyStartTime.toTimeString().split(" ")[0].slice(0, 5) : null,
             survey_end_time: data.surveyEndTime ? data.surveyEndTime.toTimeString().split(" ")[0].slice(0, 5) : null,
@@ -823,22 +894,8 @@ const SurveyDetails = () => {
             storage_frequency: data.storageFrequency,
             storage_duration: data.storageDuration,
             storage_mode: data.storageMode,
-            articles: data.articles.map(a => ({
-                room: a.room || null,
-                item_name: a.itemName,
-                quantity: a.quantity,
-                volume: a.volume || null,
-                volume_unit: a.volumeUnit || null,
-                weight: a.weight || null,
-                weight_unit: a.weightUnit || null,
-                handyman: a.handyman || null,
-                packing_option: a.packingOption || null,
-                move_status: a.moveStatus || "moving",
-                length: a.length || null,
-                width: a.width || null,
-                height: a.height || null,
-                crate_required: a.crateRequired || false,
-            })),
+            storage_mode: data.storageMode,
+            articles: processedArticles,
             vehicles: data.vehicles.map(v => ({
                 vehicle_type: v.vehicleType || null,
                 make: v.make || "",

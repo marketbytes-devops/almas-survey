@@ -44,6 +44,7 @@ class Survey(models.Model):
     origin_country = models.CharField(max_length=100, blank=True, null=True)
     origin_state = models.CharField(max_length=100, blank=True, null=True)
     origin_zip = models.CharField(max_length=20, blank=True, null=True)
+    origin_gps = models.TextField(blank=True, null=True)
     pod_pol = models.CharField(max_length=100, blank=True, null=True)
     multiple_addresses = models.BooleanField(default=False, blank=True, null=True)
 
@@ -151,6 +152,7 @@ class Article(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     is_flagged = models.BooleanField(default=False, null=True)
     crate_required = models.BooleanField(default=False, blank=True, null=True)
+    photo = models.ImageField(upload_to='article_photos/', null=True, blank=True)
     
     def save(self, *args, **kwargs):
         if self.length and self.width and self.height:

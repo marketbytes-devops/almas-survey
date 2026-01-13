@@ -1,7 +1,9 @@
 import React from "react";
-import { FaMinus, FaPlus, FaChevronUp, FaChevronDown } from "react-icons/fa";
+import { FaMinus, FaPlus, FaChevronUp, FaChevronDown, FaCamera, FaTrash } from "react-icons/fa";
 import { useFormContext } from "react-hook-form";
 import ItemForm from "./ItemForm";
+import Modal from "../../../components/Modal";
+import CameraCapture from "../../../components/CameraCapture";
 
 const ItemRow = ({
     item,
@@ -61,6 +63,29 @@ const ItemRow = ({
     // Check crate status - prioritize local state which was hydrated from existing article
     const isCrateRequired = itemCratePreferences[itemKey] === true;
 
+    const [capturedImage, setCapturedImage] = React.useState(null);
+    const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+
+    const handleCameraClick = () => {
+        setIsCameraOpen(true);
+    };
+
+    const handleCapture = (file) => {
+        if (file) {
+            // For preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCapturedImage({
+                    file: file,
+                    preview: reader.result
+                });
+            };
+            reader.readAsDataURL(file);
+            setIsCameraOpen(false);
+        }
+    };
+
+
     return (
         <div className="border-b border-gray-200 last:border-0">
             <div
@@ -103,6 +128,20 @@ const ItemRow = ({
                     )}
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleCameraClick}
+                            className={`p-3 rounded-lg border transition-all ${capturedImage
+                                ? "bg-green-50 border-green-200 text-green-600"
+                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                                }`}
+                            title={capturedImage ? "Retake Photo" : "Take Photo"}
+                        >
+                            <FaCamera className="w-4 h-4" />
+                        </button>
+                    </div>
 
                     <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
                         <button
@@ -204,11 +243,24 @@ const ItemRow = ({
                     apiData={apiData}
                     existingArticle={existingArticle}
                     onAdd={(itemName, formData, isM) => {
-                        addArticleCallback(itemName, formData, isM);
+                        addArticleCallback(itemName, { ...formData, photo: capturedImage?.file }, isM);
+                        setCapturedImage(null); // Reset after adding
                     }}
                     onCancel={() => toggleExpandedItem(item.name)}
+                    capturedImage={capturedImage}
                 />
             )}
+
+            <Modal
+                isOpen={isCameraOpen}
+                title="Take Photo"
+                className="z-[70]"
+            >
+                <CameraCapture
+                    onCapture={handleCapture}
+                    onCancel={() => setIsCameraOpen(false)}
+                />
+            </Modal>
         </div>
     );
 };

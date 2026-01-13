@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.85 },
@@ -13,7 +14,7 @@ const backdropVariants = {
 const Modal = ({ isOpen, title, children, footer, className }) => {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
       <motion.div
         className={`fixed inset-0 z-50 flex items-center justify-center px-4 ${className || ""}`}
@@ -30,14 +31,15 @@ const Modal = ({ isOpen, title, children, footer, className }) => {
         </div>
       </motion.div>
       <motion.div
-        className="fixed inset-0 backdrop-brightness-50 z-40"
+        className="fixed inset-0 backdrop-brightness-50 z-40 bg-black/50"
         initial="hidden"
         animate="visible"
         exit="hidden"
         variants={backdropVariants}
         transition={{ duration: 0.3, ease: "easeOut" }}
       />
-    </>
+    </>,
+    document.body
   );
 };
 
