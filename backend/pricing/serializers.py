@@ -138,20 +138,11 @@ class PaymentTermSerializer(serializers.ModelSerializer):
 
 
 class QuoteNoteSerializer(serializers.ModelSerializer):
-    category_display = serializers.CharField(
-        source="get_category_display", read_only=True
-    )
-
     class Meta:
-
         model = QuoteNote
         fields = [
             "id",
-            "title",
             "content",
-            "category",
-            "category_display",
-            "is_default",
             "is_active",
             "order",
             "created_at",
@@ -161,7 +152,7 @@ class QuoteNoteSerializer(serializers.ModelSerializer):
 
 
 class TruckTypeSerializer(serializers.ModelSerializer):
-    dimensions = serializers.SerializerMethodField()
+    # dimensions = serializers.SerializerMethodField()
 
     class Meta:
         model = TruckType
@@ -171,10 +162,7 @@ class TruckTypeSerializer(serializers.ModelSerializer):
             "capacity_cbm",
             "capacity_kg",
             "price_per_trip",
-            "length_meters",
-            "width_meters",
-            "height_meters",
-            "dimensions",
+            # "length_meters", "width_meters", "height_meters", "dimensions",
             "is_default",
             "is_active",
             "order",
@@ -182,30 +170,24 @@ class TruckTypeSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_dimensions(self, obj):
-        if obj.length_meters and obj.width_meters and obj.height_meters:
-            return f"{obj.length_meters} × {obj.width_meters} × {obj.height_meters} m"
-        return "Not specified"
+    # def get_dimensions(self, obj):
+    #     if obj.length_meters and obj.width_meters and obj.height_meters:
+    #         return f"{obj.length_meters} × {obj.width_meters} × {obj.height_meters} m"
+    #     return "Not specified"
 
 
 class SurveyRemarkSerializer(serializers.ModelSerializer):
-    category_display = serializers.CharField(
-        source="get_category_display", read_only=True
-    )
-
     class Meta:
         model = SurveyRemark
         fields = [
             "id",
-            "title",
             "description",
-            "category",
-            "category_display",
             "is_active",
             "order",
             "created_at",
             "updated_at",
         ]
+        read_only_fields = ["created_at", "updated_at"]
 
 
 class ServiceSerializer(serializers.ModelSerializer):

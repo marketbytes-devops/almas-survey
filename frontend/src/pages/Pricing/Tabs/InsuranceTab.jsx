@@ -174,9 +174,8 @@ const InsuranceTab = () => {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 relative transition-all ${
-                plan.is_active ? "border-gray-200" : "border-gray-300 opacity-75"
-              }`}
+              className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 relative transition-all ${plan.is_active ? "border-gray-200" : "border-gray-300 opacity-75"
+                }`}
             >
               {plan.is_default && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-1 rounded-full font-medium">
@@ -195,21 +194,8 @@ const InsuranceTab = () => {
               </p>
 
               <div className="mt-4 space-y-2 text-sm">
-                <p><strong>Type:</strong> {plan.calculation_type_display || plan.calculation_type}</p>
-                <p>
-                  <strong>Rate:</strong>{" "}
-                  {plan.calculation_type === "free"
-                    ? "FREE"
-                    : `${plan.rate} ${
-                        plan.calculation_type === "percentage" ? "%" : "QAR"
-                      }`}
-                </p>
-                {plan.minimum_premium > 0 && (
-                  <p><strong>Min Premium:</strong> QAR {plan.minimum_premium}</p>
-                )}
-                {plan.maximum_coverage && (
-                  <p><strong>Max Coverage:</strong> QAR {plan.maximum_coverage}</p>
-                )}
+                <p><strong>Status:</strong> {plan.is_active ? "Active" : "Inactive"}</p>
+                {/* Removed logic/rate display as requested */}
               </div>
 
               <div className="flex flex-wrap gap-2 mt-6">
@@ -275,7 +261,7 @@ const InsuranceTab = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Calculation Type"
                     type="select"
@@ -312,10 +298,11 @@ const InsuranceTab = () => {
                     value={formData.maximum_coverage}
                     onChange={(e) => setFormData({ ...formData, maximum_coverage: e.target.value })}
                   />
-                </div>
+                </div> */}
 
                 <div className="flex flex-wrap gap-6 text-sm">
-                  <label className="flex items-center gap-3 cursor-pointer">
+                  {/* Removed Default and Mandatory toggles as per simplification request, only active needed */}
+                  {/* <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.is_default}
@@ -332,7 +319,7 @@ const InsuranceTab = () => {
                       className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
                     />
                     <span>Mandatory</span>
-                  </label>
+                  </label> */}
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"

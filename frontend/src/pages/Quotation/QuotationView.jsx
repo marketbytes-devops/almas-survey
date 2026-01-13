@@ -48,6 +48,7 @@ export default function QuotationView() {
   const [quoteNotes, setQuoteNotes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [insurancePlans, setInsurancePlans] = useState([]);
+  const [surveyRemarks, setSurveyRemarks] = useState([]);
 
   const printRef = useRef();
 
@@ -192,7 +193,7 @@ export default function QuotationView() {
         console.error("API fetch error:", err.response?.data || err.message);
         setError(
           "Failed to load quotation: " +
-            (err.response?.data?.detail || err.message)
+          (err.response?.data?.detail || err.message)
         );
       } finally {
         setLoading(false);
@@ -229,14 +230,16 @@ export default function QuotationView() {
   useEffect(() => {
     const fetchPrintData = async () => {
       try {
-        const [notesRes, termsRes, insRes] = await Promise.all([
+        const [notesRes, termsRes, insRes, remarksRes] = await Promise.all([
           apiClient.get("/quote-notes/"),
           apiClient.get("/payment-terms/"),
           apiClient.get("/insurance-plans/"),
+          apiClient.get("/survey-remarks/"),
         ]);
         setQuoteNotes(notesRes.data.filter((n) => n.is_active));
         setPaymentTerms(termsRes.data.filter((t) => t.is_active));
         setInsurancePlans(insRes.data.filter((i) => i.is_active));
+        setSurveyRemarks(remarksRes.data.filter((r) => r.is_active));
       } catch (err) {
         console.error("Failed to load print data");
       }
@@ -733,8 +736,10 @@ export default function QuotationView() {
           generalTerms={quoteNotes}
           paymentTerms={paymentTerms}
           quoteNotes={quoteNotes}
+          surveyRemarks={surveyRemarks}
           currentSignature={currentSignature}
           booking={booking}
+          selectedServices={selectedServices}
         />
       </div>
     </>

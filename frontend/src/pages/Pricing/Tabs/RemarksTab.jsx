@@ -19,9 +19,7 @@ const RemarksTab = () => {
   const [editingRemark, setEditingRemark] = useState(null);
 
   const [formData, setFormData] = useState({
-    title: "",
     description: "",
-    category: "other",
     is_active: true,
     order: 0,
   });
@@ -71,9 +69,7 @@ const RemarksTab = () => {
   const resetForm = () => {
     setEditingRemark(null);
     setFormData({
-      title: "",
       description: "",
-      category: "other",
       is_active: true,
       order: 0,
     });
@@ -82,9 +78,7 @@ const RemarksTab = () => {
   const openEdit = (remark) => {
     setEditingRemark(remark);
     setFormData({
-      title: remark.title,
       description: remark.description || "",
-      category: remark.category,
       is_active: remark.is_active,
       order: remark.order,
     });
@@ -150,24 +144,14 @@ const RemarksTab = () => {
             remarks.map((remark) => (
               <div
                 key={remark.id}
-                className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 transition-all hover:shadow-lg ${
-                  !remark.is_active ? "opacity-75 border-gray-300" : "border-gray-200"
-                }`}
+                className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 transition-all hover:shadow-lg ${!remark.is_active ? "opacity-75 border-gray-300" : "border-gray-200"
+                  }`}
               >
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
-                      <FaCommentDots className="text-lg sm:text-xl text-[#4c7085]" />
-                      <h3 className="text-lg sm:text-xl font-medium text-gray-800">{remark.title}</h3>
-                      <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                        {remark.category_display || remark.category}
-                      </span>
-                    </div>
-                    {remark.description && (
-                      <p className="text-gray-600 text-sm sm:text-base italic mt-2">
-                        {remark.description}
-                      </p>
-                    )}
+                    <p className="text-gray-700 text-sm sm:text-base whitespace-pre-wrap mt-2">
+                      {remark.description}
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-3 sm:gap-4">
@@ -214,29 +198,13 @@ const RemarksTab = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
-                label="Title (shown in dropdown) *"
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g. Long carry > 20 meters"
-                required
-              />
-
-              <Input
-                label="Category"
-                type="select"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                options={categories}
-              />
-
-              <Input
-                label="Description (optional)"
+                label="Description *"
                 type="textarea"
-                rows={3}
+                rows={6}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Extra details for surveyor..."
+                placeholder="e.g. Long carry > 20 meters, elevator not available..."
+                required
               />
 
               <div className="flex items-center gap-6 text-sm">

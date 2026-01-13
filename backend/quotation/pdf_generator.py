@@ -207,6 +207,39 @@ def generate_quotation_pdf(quotation):
         story.append(service_table)
         story.append(Spacer(1, 25))
     
+    # === Insurance Information (CENTERED HEADING) ===
+    # Fetch active insurance plans
+    from pricing.models import InsurancePlan, PaymentTerm
+    
+    active_insurance = InsurancePlan.objects.filter(is_active=True).order_by('order')
+    if active_insurance.exists():
+        story.append(Paragraph("Insurance Options", centered_heading))
+        story.append(Spacer(1, 8))
+        
+        for plan in active_insurance:
+            # Insurance: Description ONLY as requested
+            if plan.description:
+                story.append(Paragraph(plan.description, normal_style))
+                story.append(Spacer(1, 6))
+        story.append(Spacer(1, 25))
+
+    # === Payment Terms (CENTERED HEADING) ===
+    # Fetch active payment terms
+    active_terms = PaymentTerm.objects.filter(is_active=True).order_by('order')
+    if active_terms.exists():
+        story.append(Paragraph("Payment Terms", centered_heading))
+        story.append(Spacer(1, 8))
+        
+        for term in active_terms:
+             # Term Name (Bold)
+            if term.name:
+                story.append(Paragraph(f"<b>{term.name}</b>", normal_style))
+            # Description
+            if term.description:
+                story.append(Paragraph(term.description, normal_style))
+            story.append(Spacer(1, 6))
+        story.append(Spacer(1, 25))
+
     # === Pricing Summary (CENTERED HEADING) ===
     story.append(Paragraph("Pricing Summary", centered_heading))
     story.append(Spacer(1, 8))

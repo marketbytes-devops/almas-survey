@@ -265,6 +265,7 @@ class PaymentTerm(models.Model):
         default=False, help_text="Auto-selected in quote", blank=True, null=True
     )
     is_active = models.BooleanField(default=True, blank=True, null=True)
+    # order kept for sorting potentially
     order = models.PositiveIntegerField(default=0, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -285,33 +286,8 @@ class PaymentTerm(models.Model):
 
 
 class QuoteNote(models.Model):
-    CATEGORY_CHOICES = [
-        ("general", "General"),
-        ("packing", "Packing"),
-        ("delivery", "Delivery"),
-        ("storage", "Storage"),
-        ("payment", "Payment"),
-        ("legal", "Legal / Terms"),
-        ("custom", "Custom"),
-    ]
-
-    title = models.CharField(max_length=150, blank=True, null=True)
     content = models.TextField(
         help_text="Full note text shown in quote", blank=True, null=True
-    )
-    category = models.CharField(
-        max_length=20,
-        choices=CATEGORY_CHOICES,
-        default="general",
-        blank=True,
-        null=True,
-    )
-
-    is_default = models.BooleanField(
-        default=False,
-        help_text="Automatically included in every new quote",
-        blank=True,
-        null=True,
     )
     is_active = models.BooleanField(default=True, blank=True, null=True)
     order = models.PositiveIntegerField(default=0, blank=True, null=True)
@@ -320,7 +296,7 @@ class QuoteNote(models.Model):
     updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     class Meta:
-        ordering = ["order", "title"]
+        ordering = ["order"]
         verbose_name = "Quote Note"
         verbose_name_plural = "Quote Notes"
 
@@ -348,15 +324,16 @@ class TruckType(models.Model):
         null=True,
     )
 
-    length_meters = models.DecimalField(
-        max_digits=5, decimal_places=2, null=True, blank=True
-    )
-    width_meters = models.DecimalField(
-        max_digits=5, decimal_places=2, null=True, blank=True
-    )
-    height_meters = models.DecimalField(
-        max_digits=5, decimal_places=2, null=True, blank=True
-    )
+    # Removed length_meters, width_meters, height_meters as requested
+    # length_meters = models.DecimalField(
+    #     max_digits=5, decimal_places=2, null=True, blank=True
+    # )
+    # width_meters = models.DecimalField(
+    #     max_digits=5, decimal_places=2, null=True, blank=True
+    # )
+    # height_meters = models.DecimalField(
+    #     max_digits=5, decimal_places=2, null=True, blank=True
+    # )
 
     is_active = models.BooleanField(default=True, blank=True, null=True)
     is_default = models.BooleanField(
@@ -382,23 +359,9 @@ class TruckType(models.Model):
 
 
 class SurveyRemark(models.Model):
-    CATEGORY_CHOICES = [
-        ("access", "Access Issues"),
-        ("packing", "Packing Related"),
-        ("items", "Special Items"),
-        ("building", "Building / Elevator"),
-        ("timing", "Timing / Scheduling"),
-        ("other", "Other"),
-    ]
-
-    title = models.CharField(max_length=150, unique=True, blank=True, null=True)
     description = models.TextField(
         help_text="Optional longer explanation", blank=True, null=True
     )
-    category = models.CharField(
-        max_length=20, choices=CATEGORY_CHOICES, default="other", blank=True, null=True
-    )
-
     is_active = models.BooleanField(default=True, blank=True, null=True)
     order = models.PositiveIntegerField(default=0, blank=True, null=True)
 
@@ -406,12 +369,12 @@ class SurveyRemark(models.Model):
     updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     class Meta:
-        ordering = ["order", "title"]
+        ordering = ["order"]
         verbose_name = "Survey Remark"
         verbose_name_plural = "Survey Remarks"
 
     def __str__(self):
-        return self.title
+        return self.description[:50] if self.description else "Survey Remark"
 
 
 class Service(models.Model):

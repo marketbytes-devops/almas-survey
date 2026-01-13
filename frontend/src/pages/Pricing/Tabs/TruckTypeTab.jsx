@@ -24,9 +24,9 @@ const TruckTypeTab = () => {
     capacity_cbm: "",
     capacity_kg: "",
     price_per_trip: "",
-    length_meters: "",
-    width_meters: "",
-    height_meters: "",
+    // length_meters: "",
+    // width_meters: "",
+    // height_meters: "",
     is_default: false,
     is_active: true,
     order: 0,
@@ -56,9 +56,9 @@ const TruckTypeTab = () => {
         capacity_cbm: parseFloat(formData.capacity_cbm) || 0,
         capacity_kg: parseInt(formData.capacity_kg) || 0,
         price_per_trip: parseFloat(formData.price_per_trip) || 0,
-        length_meters: formData.length_meters ? parseFloat(formData.length_meters) : null,
-        width_meters: formData.width_meters ? parseFloat(formData.width_meters) : null,
-        height_meters: formData.height_meters ? parseFloat(formData.height_meters) : null,
+        // length_meters: formData.length_meters ? parseFloat(formData.length_meters) : null,
+        // width_meters: formData.width_meters ? parseFloat(formData.width_meters) : null,
+        // height_meters: formData.height_meters ? parseFloat(formData.height_meters) : null,
       };
 
       if (editingTruck) {
@@ -84,9 +84,9 @@ const TruckTypeTab = () => {
       capacity_cbm: "",
       capacity_kg: "",
       price_per_trip: "",
-      length_meters: "",
-      width_meters: "",
-      height_meters: "",
+      // length_meters: "",
+      // width_meters: "",
+      // height_meters: "",
       is_default: false,
       is_active: true,
       order: 0,
@@ -100,9 +100,9 @@ const TruckTypeTab = () => {
       capacity_cbm: truck.capacity_cbm,
       capacity_kg: truck.capacity_kg,
       price_per_trip: truck.price_per_trip,
-      length_meters: truck.length_meters || "",
-      width_meters: truck.width_meters || "",
-      height_meters: truck.height_meters || "",
+      // length_meters: truck.length_meters || "",
+      // width_meters: truck.width_meters || "",
+      // height_meters: truck.height_meters || "",
       is_default: truck.is_default,
       is_active: truck.is_active,
       order: truck.order,
@@ -172,9 +172,8 @@ const TruckTypeTab = () => {
           {trucks.map((truck) => (
             <div
               key={truck.id}
-              className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 relative transition-all ${
-                truck.is_active ? "border-gray-200" : "border-gray-300 opacity-75"
-              }`}
+              className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 relative transition-all ${truck.is_active ? "border-gray-200" : "border-gray-300 opacity-75"
+                }`}
             >
               {truck.is_default && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-1 rounded-full font-medium">
@@ -190,12 +189,12 @@ const TruckTypeTab = () => {
               <div className="space-y-2 text-sm">
                 <p><strong>Capacity:</strong> {truck.capacity_cbm} CBM / {truck.capacity_kg} KG</p>
                 <p><strong>Price/Trip:</strong> QAR {Number(truck.price_per_trip).toLocaleString()}</p>
-                {(truck.length_meters || truck.width_meters || truck.height_meters) && (
+                {/* {(truck.length_meters || truck.width_meters || truck.height_meters) && (
                   <p>
                     <strong>Size:</strong>{" "}
                     {truck.length_meters || "-"} × {truck.width_meters || "-"} × {truck.height_meters || "-"} m
                   </p>
-                )}
+                )} */}
               </div>
 
               <div className="flex flex-wrap gap-2 mt-6">
@@ -281,7 +280,7 @@ const TruckTypeTab = () => {
                   required
                 />
 
-                <div className="grid grid-cols-3 gap-4">
+                {/* <div className="grid grid-cols-3 gap-4">
                   <Input
                     label="Length (m)"
                     type="number"
@@ -305,7 +304,7 @@ const TruckTypeTab = () => {
                     value={formData.height_meters}
                     onChange={(e) => setFormData({ ...formData, height_meters: e.target.value })}
                   />
-                </div>
+                </div> */}
 
                 <div className="flex flex-wrap gap-6 text-sm">
                   <label className="flex items-center gap-3 cursor-pointer">

@@ -29,7 +29,6 @@ const TAB_LIST = [
   { id: "note", label: "NOTE", component: NoteTab },
   { id: "truck-type", label: "TRUCK TYPE", component: TruckTypeTab },
   { id: "remarks", label: "REMARKS", component: RemarksTab },
-  { id: "locations", label: "LOCATIONS", component: null },
   { id: "services", label: "SERVICES", component: ServicesTab },
 ];
 
@@ -52,7 +51,7 @@ const LocalMove = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasAutoSelectedCity, setHasAutoSelectedCity] = useState(false);
-  const [selectedCity, setSelectedCity] = useState(""); 
+  const [selectedCity, setSelectedCity] = useState("");
   const [selectedMoveType, setSelectedMoveType] = useState("");
   const [selectedTariff, setSelectedTariff] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
@@ -116,7 +115,7 @@ const LocalMove = () => {
   }, [hasAutoSelectedCity]);
 
   const sharedProps = {
-    selectedHub: selectedCity, 
+    selectedHub: selectedCity,
     setSelectedHub: setSelectedCity,
     selectedMoveType,
     setSelectedMoveType,
@@ -128,7 +127,7 @@ const LocalMove = () => {
     setSelectedCurrency,
     dropdownData: {
       ...dropdownData,
-      hubs: QATAR_CITIES.map((city) => ({ id: city, name: city })), 
+      hubs: QATAR_CITIES.map((city) => ({ id: city, name: city })),
     },
   };
 

@@ -150,23 +150,11 @@ const NoteTab = () => {
             notes.map((note) => (
               <div
                 key={note.id}
-                className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 transition-all hover:shadow-lg ${
-                  !note.is_active ? "opacity-75 border-gray-300" : "border-gray-200"
-                }`}
+                className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 transition-all hover:shadow-lg ${!note.is_active ? "opacity-75 border-gray-300" : "border-gray-200"
+                  }`}
               >
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
-                      <h3 className="text-lg sm:text-xl font-medium text-gray-800">{note.title}</h3>
-                      {note.is_default && (
-                        <span className="bg-green-600 text-white text-xs px-3 py-1 rounded-full font-medium">
-                          DEFAULT
-                        </span>
-                      )}
-                      <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                        {note.category_display || note.category}
-                      </span>
-                    </div>
                     <p className="text-gray-700 text-sm sm:text-base whitespace-pre-wrap mt-2">
                       {note.content}
                     </p>
@@ -216,22 +204,6 @@ const NoteTab = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
-                label="Title *"
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-
-              <Input
-                label="Category"
-                type="select"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                options={categories}
-              />
-
-              <Input
                 label="Content (shown in quote) *"
                 type="textarea"
                 rows={6}
@@ -242,15 +214,6 @@ const NoteTab = () => {
               />
 
               <div className="flex flex-wrap gap-6 text-sm">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_default}
-                    onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                  />
-                  <span>Include by default in all quotes</span>
-                </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -280,8 +243,9 @@ const NoteTab = () => {
             </form>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 
