@@ -34,6 +34,7 @@ export default function QuotationView() {
   const [error, setError] = useState("");
   const [hasSignature, setHasSignature] = useState(false);
   const [currentSignature, setCurrentSignature] = useState(null);
+  const [surveySignature, setSurveySignature] = useState(null);
   const [booking, setBooking] = useState(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
 
@@ -68,6 +69,15 @@ export default function QuotationView() {
       setCurrentSignature(signatureRes.data.signature_url);
     } catch (err) {
       setHasSignature(false);
+    }
+  };
+
+  const fetchSurveySignature = async (surveyId) => {
+    try {
+      const res = await apiClient.get(`/surveys/${surveyId}/signature/`);
+      setSurveySignature(res.data.signature_url);
+    } catch (err) {
+      console.warn("Could not load survey signature");
     }
   };
 
@@ -177,6 +187,9 @@ export default function QuotationView() {
           const destCity = surveyData.destination_addresses?.[0]?.city || "";
           setDestinationCity(destCity);
           await checkSignatureExists(quot.quotation_id);
+          if (surveyData.survey_id) {
+            await fetchSurveySignature(surveyData.survey_id);
+          }
 
           try {
             const bookingRes = await apiClient.get(
@@ -738,6 +751,7 @@ export default function QuotationView() {
           quoteNotes={quoteNotes}
           surveyRemarks={surveyRemarks}
           currentSignature={currentSignature}
+          surveySignature={surveySignature}
           booking={booking}
           selectedServices={selectedServices}
         />
