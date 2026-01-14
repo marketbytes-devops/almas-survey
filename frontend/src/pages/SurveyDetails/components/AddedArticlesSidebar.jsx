@@ -20,7 +20,7 @@ const AddedArticlesSidebar = ({
         if (!photo) return null;
         if (photo instanceof File) return URL.createObjectURL(photo);
         if (typeof photo === 'string') {
-            if (photo.startsWith("http")) return photo;
+            if (photo.startsWith("http") || photo.startsWith("data:")) return photo;
             return `http://127.0.0.1:8000${photo}`;
         }
         return null;
@@ -175,17 +175,14 @@ const AddedArticlesSidebar = ({
                                                         className="w-12 h-12 object-cover rounded border"
                                                     />
                                                 )}
-                                                <label className="cursor-pointer px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 flex items-center gap-1 transition">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsCameraOpen(true)}
+                                                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 flex items-center gap-1 transition-all border border-gray-300"
+                                                >
                                                     <FaCamera className="w-3 h-3" />
-                                                    <span>{article.photo || retakeFile ? "Retake" : "Add Photo"}</span>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        capture="environment"
-                                                        className="hidden"
-                                                        onChange={(e) => e.target.files[0] && setRetakeFile(e.target.files[0])}
-                                                    />
-                                                </label>
+                                                    <span>{(article.photo || retakeFile) ? "Retake Photo" : "Add Photo"}</span>
+                                                </button>
                                             </div>
                                         </div>
 
@@ -414,6 +411,22 @@ const AddedArticlesSidebar = ({
                                                 <span className={article.crateRequired ? "text-green-600" : "text-gray-600"}>
                                                     {article.crateRequired ? "Yes" : "No"}
                                                 </span>
+                                            </div>
+                                            <div className="mt-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingArticle(article.id);
+                                                        setIsCameraOpen(true);
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-all border ${article.photo
+                                                        ? "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
+                                                        : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
+                                                        }`}
+                                                >
+                                                    <FaCamera className="w-3 h-3" />
+                                                    <span>{article.photo ? "Retake Photo" : "Add Photo"}</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="flex gap-1 ml-2">

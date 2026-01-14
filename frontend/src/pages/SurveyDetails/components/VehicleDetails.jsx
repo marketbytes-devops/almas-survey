@@ -30,13 +30,6 @@ const VehicleDetails = () => {
         <div className="mt-4 sm:mt-10 bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg sm:text-xl font-medium">Vehicle Details</h2>
-                <button
-                    type="button"
-                    onClick={addVehicle}
-                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded shadow transition hover:shadow-lg"
-                >
-                    <FaPlus /> Add Vehicle
-                </button>
             </div>
 
             {vehicles.length === 0 ? (
@@ -44,7 +37,7 @@ const VehicleDetails = () => {
                     <p className="text-gray-500 mb-4 font-medium italic">No vehicles added yet.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                     {vehicles.map((vehicle, index) => (
                         <div
                             key={vehicle.id}
@@ -107,11 +100,19 @@ const VehicleDetails = () => {
                     ))}
                 </div>
             )}
-
+            <div className="pt-6 flex justify-center items-center text-center">
+                <button
+                    type="button"
+                    onClick={addVehicle}
+                    className="w-full hidden sm:flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-sm text-white rounded shadow transition hover:shadow-lg"
+                >
+                    <FaPlus /> Add Vehicle Details
+                </button>
+            </div>
             <button
                 type="button"
                 onClick={addVehicle}
-                className="w-full flex sm:hidden mt-6 items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg shadow-md font-medium"
+                className="w-full flex sm:hidden mt-6 items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-sm text-white rounded-lg shadow-md font-medium"
             >
                 <FaPlus /> Add Vehicle Details
             </button>

@@ -21,7 +21,9 @@ const ItemRow = ({
     toggleExpandedItem,
     addArticleCallback,
     getItemKey,
-    selectedRoomValue
+    selectedRoomValue,
+    itemCapturedImages,
+    setItemCapturedImages
 }) => {
     const { watch, setValue } = useFormContext();
     const qty = itemQuantities[item.name] || 0;
@@ -63,7 +65,12 @@ const ItemRow = ({
     // Check crate status - prioritize local state which was hydrated from existing article
     const isCrateRequired = itemCratePreferences[itemKey] === true;
 
-    const [capturedImage, setCapturedImage] = React.useState(null);
+    // Check for captured image in parent state
+    const currentCapturedImage = itemCapturedImages[itemKey];
+    // Check for existing photo in article
+    const hasExistingPhoto = !!existingArticle?.photo;
+    const hasPhoto = hasExistingPhoto || !!currentCapturedImage;
+
     const [isCameraOpen, setIsCameraOpen] = React.useState(false);
 
     const handleCameraClick = () => {
@@ -72,13 +79,15 @@ const ItemRow = ({
 
     const handleCapture = (file) => {
         if (file) {
-            // For preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                setCapturedImage({
-                    file: file,
-                    preview: reader.result
-                });
+                setItemCapturedImages(prev => ({
+                    ...prev,
+                    [itemKey]: {
+                        file: file,
+                        preview: reader.result
+                    }
+                }));
             };
             reader.readAsDataURL(file);
             setIsCameraOpen(false);
@@ -133,13 +142,13 @@ const ItemRow = ({
                         <button
                             type="button"
                             onClick={handleCameraClick}
-                            className={`p-3 rounded-lg border transition-all ${capturedImage
-                                ? "bg-green-50 border-green-200 text-green-600"
-                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                            className={`px-4 py-2 rounded-lg border transition-all flex items-center gap-2 text-sm font-medium ${hasPhoto
+                                ? "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
+                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                                 }`}
-                            title={capturedImage ? "Retake Photo" : "Take Photo"}
                         >
                             <FaCamera className="w-4 h-4" />
+                            <span>{hasPhoto ? "Retake Photo" : "Add Photo"}</span>
                         </button>
                     </div>
 
@@ -243,11 +252,10 @@ const ItemRow = ({
                     apiData={apiData}
                     existingArticle={existingArticle}
                     onAdd={(itemName, formData, isM) => {
-                        addArticleCallback(itemName, { ...formData, photo: capturedImage?.file }, isM);
-                        setCapturedImage(null); // Reset after adding
+                        addArticleCallback(itemName, { ...formData, photo: currentCapturedImage?.file }, isM);
                     }}
                     onCancel={() => toggleExpandedItem(item.name)}
-                    capturedImage={capturedImage}
+                    capturedImage={currentCapturedImage}
                 />
             )}
 

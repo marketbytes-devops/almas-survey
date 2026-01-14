@@ -34,6 +34,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     });
     const [manualVolume, setManualVolume] = useState(0);
     const [manualWeight, setManualWeight] = useState(0);
+    const [itemCapturedImages, setItemCapturedImages] = useState({});
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -242,6 +243,7 @@ const Article = ({ apiData, setMessage, setError }) => {
             width,
             height,
             crateRequired,
+            photo: formData.photo || null,
         };
 
         if (existingIndex !== -1) {
@@ -266,6 +268,14 @@ const Article = ({ apiData, setMessage, setError }) => {
 
         setTimeout(() => setMessage(null), 3000);
         toggleExpandedItem(itemName);
+
+        // Clear captured image for this item
+        const itemKey = getItemKey(itemName);
+        setItemCapturedImages(prev => {
+            const next = { ...prev };
+            delete next[itemKey];
+            return next;
+        });
     };
 
     const addMultipleArticles = () => {
@@ -317,6 +327,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                 width,
                 height,
                 crateRequired,
+                photo: itemCapturedImages[itemKey]?.file || null,
             };
 
             if (existingIndex !== -1) {
@@ -346,6 +357,16 @@ const Article = ({ apiData, setMessage, setError }) => {
         setMessage(`${itemsToAdd.length + itemsToUpdate.length} articles processed!`);
         setTimeout(() => setMessage(null), 3000);
         setSelectedItems({});
+
+        // Clear captured images for the processed items
+        setItemCapturedImages(prev => {
+            const next = { ...prev };
+            selectedItemNames.forEach(name => {
+                const itemKey = getItemKey(name);
+                delete next[itemKey];
+            });
+            return next;
+        });
     };
 
     const removeArticle = (id) => {
@@ -607,6 +628,8 @@ const Article = ({ apiData, setMessage, setError }) => {
                                             addArticleCallback={addArticle}
                                             getItemKey={getItemKey}
                                             selectedRoomValue={selectedRoom?.value}
+                                            itemCapturedImages={itemCapturedImages}
+                                            setItemCapturedImages={setItemCapturedImages}
                                         />
                                     );
                                 })
