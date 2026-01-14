@@ -1,7 +1,7 @@
 import axios from "axios";
- 
+
 const apiClient = axios.create({
-  baseURL: "https://backend.almasintl.com/api", 
+  baseURL: "https://backend.almasintl.com/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -10,9 +10,9 @@ const apiClient = axios.create({
 const getAbsoluteImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
-  return `https://backend.almasintl.com${url}`; 
+  return `https://backend.almasintl.com${url}`;
 };
- 
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
@@ -28,7 +28,7 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
- 
+
 apiClient.interceptors.response.use(
   (response) => {
     if (response.data && response.data.image) {
@@ -68,5 +68,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
- 
+
 export default apiClient;

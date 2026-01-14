@@ -36,14 +36,12 @@ class BookingViewSet(viewsets.ModelViewSet):
             
             print(f"DEBUG: Booking ID: {booking.id}")
             
-            # Check if supervisor exists
             if not booking.supervisor:
                 return Response(
                     {"error": "No supervisor assigned to this booking."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Get supervisor phone
             supervisor_phone = booking.supervisor.phone_number
             
             if not supervisor_phone or supervisor_phone.strip() == '':
@@ -52,17 +50,14 @@ class BookingViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Clean phone number
             clean_phone = ''.join(filter(str.isdigit, supervisor_phone))
             if len(clean_phone) == 10:
                 clean_phone = '91' + clean_phone
             
-            # GENERATE PDF
             try:
                 filepath, filename = generate_booking_pdf(booking)
                 print(f"DEBUG: PDF generated at: {filepath}")
                 
-                # Build PDF URL
                 pdf_url = request.build_absolute_uri(
                     f"{settings.MEDIA_URL}booking_pdfs/{filename}"
                 )
@@ -94,7 +89,6 @@ class BookingViewSet(viewsets.ModelViewSet):
                     if dest_qs and hasattr(dest_qs, 'city'):
                         destination = dest_qs.city or 'N/A'
             
-            # Build WhatsApp message with PDF link
             message = f"""Booking Confirmation - Almas Movers
 
 Booking ID: {booking.booking_id}
@@ -110,7 +104,7 @@ From: {origin}
 To: {destination}
 
 ━━━━━━━━━━━━━━━━━━
-📄Download Complete PDF:
+Download Complete PDF:
 {pdf_url}
 
 Please review all details before the move.

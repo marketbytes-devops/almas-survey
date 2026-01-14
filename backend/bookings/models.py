@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from quotation.models import Quotation
-from additional_settings.models import Truck, Material, Manpower, InventoryLog
+from pricing.models import TruckType
+from additional_settings.models import Material, Manpower, InventoryLog
 
 class Booking(models.Model):
     quotation = models.OneToOneField(Quotation, on_delete=models.CASCADE, related_name='booking')
@@ -48,7 +49,7 @@ class BookingLabour(models.Model):
 
 class BookingTruck(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='trucks', null=True, blank=True)
-    truck_type = models.ForeignKey(Truck, on_delete=models.CASCADE, null=True, blank=True)
+    truck_type = models.ForeignKey(TruckType, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1, null=True, blank=True)
 
     def __str__(self):

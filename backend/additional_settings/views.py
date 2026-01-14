@@ -19,7 +19,6 @@ from .models import (
     TariffType,
     SurveyAdditionalService,
     Labour,
-    Truck,
     Material,
     MaterialPurchase,
     InventoryLog,
@@ -43,7 +42,6 @@ from .serializers import (
     TariffTypeSerializer,
     SurveyAdditionalServiceSerializer,
     LabourSerializer,
-    TruckSerializer,
     MaterialSerializer,
     MaterialPurchaseSerializer,
     InventoryLogSerializer,
@@ -165,10 +163,6 @@ class LabourViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 
-class TruckViewSet(viewsets.ModelViewSet):
-    queryset = Truck.objects.all()
-    serializer_class = TruckSerializer
-    permission_classes = [permissions.AllowAny]
 
 
 class MaterialViewSet(viewsets.ModelViewSet):
@@ -187,5 +181,3 @@ class InventoryLogViewSet(viewsets.ModelViewSet):
     queryset = InventoryLog.objects.all().order_by('-date')
     serializer_class = InventoryLogSerializer
     permission_classes = [permissions.AllowAny]
-
-

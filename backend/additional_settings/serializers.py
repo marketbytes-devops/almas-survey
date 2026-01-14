@@ -18,7 +18,6 @@ from .models import (
     TariffType,
     SurveyAdditionalService,
     Labour,
-    Truck,
     Material,
     MaterialPurchase,
     InventoryLog,
@@ -141,10 +140,6 @@ class LabourSerializer(serializers.ModelSerializer):
         model = Labour
         fields = ["id", "name", "description"]
 
-class TruckSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Truck
-        fields = ["id", "name", "description"]
 
 class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
@@ -163,4 +158,3 @@ class InventoryLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryLog
         fields = ["id", "material", "material_name", "transaction_type", "quantity", "date", "reference_id", "notes"]
-

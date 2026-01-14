@@ -78,7 +78,6 @@ class InclusionExclusionSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "country"]
 
     def create(self, validated_data):
-        # Default to Qatar if not provided
         validated_data.setdefault("country", "Qatar")
         return super().create(validated_data)
 
@@ -152,8 +151,6 @@ class QuoteNoteSerializer(serializers.ModelSerializer):
 
 
 class TruckTypeSerializer(serializers.ModelSerializer):
-    # dimensions = serializers.SerializerMethodField()
-
     class Meta:
         model = TruckType
         fields = [
@@ -162,18 +159,12 @@ class TruckTypeSerializer(serializers.ModelSerializer):
             "capacity_cbm",
             "capacity_kg",
             "price_per_trip",
-            # "length_meters", "width_meters", "height_meters", "dimensions",
             "is_default",
             "is_active",
             "order",
             "created_at",
             "updated_at",
         ]
-
-    # def get_dimensions(self, obj):
-    #     if obj.length_meters and obj.width_meters and obj.height_meters:
-    #         return f"{obj.length_meters} × {obj.width_meters} × {obj.height_meters} m"
-    #     return "Not specified"
 
 
 class SurveyRemarkSerializer(serializers.ModelSerializer):

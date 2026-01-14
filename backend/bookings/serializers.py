@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from .models import Booking, BookingLabour, BookingTruck, BookingMaterial
 from quotation.serializers import QuotationSerializer
-from additional_settings.serializers import TruckSerializer, MaterialSerializer, ManpowerSerializer
+from pricing.serializers import TruckTypeSerializer
+from additional_settings.serializers import MaterialSerializer, ManpowerSerializer
 
 class BookingLabourSerializer(serializers.ModelSerializer):
     staff_member_name = serializers.CharField(source='staff_member.name', read_only=True, allow_null=True)

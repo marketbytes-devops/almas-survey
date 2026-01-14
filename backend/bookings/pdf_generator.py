@@ -34,7 +34,6 @@ def generate_booking_pdf(booking):
     story = []
     styles = getSampleStyleSheet()
     
-    # Custom styles
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
@@ -62,7 +61,6 @@ def generate_booking_pdf(booking):
         spaceAfter=8
     )
     
-    # === Header ===
     story.append(Paragraph("BOOKING CONFIRMATION", title_style))
     story.append(Paragraph(
         "ALMAS MOVERS INTERNATIONAL",
@@ -71,7 +69,6 @@ def generate_booking_pdf(booking):
     ))
     story.append(Spacer(1, 20))
     
-    # Basic Info
     info_data = [
         ['Booking ID:', booking.booking_id or 'N/A'],
         ['Generated On:', datetime.now().strftime('%d %B %Y, %I:%M %p')],
@@ -86,7 +83,6 @@ def generate_booking_pdf(booking):
     story.append(info_table)
     story.append(Spacer(1, 30))
     
-    # Client Details
     story.append(Paragraph("Client Details", heading_style))
     client_name = booking.quotation.survey.full_name if booking.quotation.survey else "N/A"
     client_data = [['Client Name:', client_name]]
@@ -101,7 +97,6 @@ def generate_booking_pdf(booking):
     story.append(client_table)
     story.append(Spacer(1, 25))
     
-    # Move Schedule
     story.append(Paragraph("Move Schedule", heading_style))
     schedule_data = [
         ['Move Date:', str(booking.move_date) if booking.move_date else 'TBA'],
@@ -119,7 +114,6 @@ def generate_booking_pdf(booking):
     story.append(schedule_table)
     story.append(Spacer(1, 25))
     
-    # Supervisor
     if booking.supervisor:
         story.append(Paragraph("Assigned Supervisor", heading_style))
         sup_data = [
@@ -137,7 +131,6 @@ def generate_booking_pdf(booking):
         story.append(sup_table)
         story.append(Spacer(1, 25))
     
-    # === Assigned Manpower ===
     labours = booking.labours.all()
     if labours.exists():
         labour_data = [['Staff Member', 'Quantity']]
@@ -161,7 +154,6 @@ def generate_booking_pdf(booking):
             ('PADDING', (0, 0), (-1, -1), 8),
         ]))
         
-        # Wrap heading + table in KeepTogether
         manpower_section = [
             Paragraph("Assigned Manpower", heading_style),
             labour_table,
@@ -169,7 +161,6 @@ def generate_booking_pdf(booking):
         ]
         story.append(KeepTogether(manpower_section))
     
-    # === Trucks Required ===
     trucks = booking.trucks.all()
     if trucks.exists():
         truck_data = [['Truck Type', 'Quantity']]
@@ -193,7 +184,6 @@ def generate_booking_pdf(booking):
             ('PADDING', (0, 0), (-1, -1), 8),
         ]))
         
-        # Wrap heading + table in KeepTogether
         trucks_section = [
             Paragraph("Trucks Required", heading_style),
             truck_table,
@@ -201,7 +191,6 @@ def generate_booking_pdf(booking):
         ]
         story.append(KeepTogether(trucks_section))
     
-    # === Packing Materials ===
     materials = booking.materials.all()
     if materials.exists():
         material_data = [['Material', 'Quantity']]
@@ -225,7 +214,6 @@ def generate_booking_pdf(booking):
             ('PADDING', (0, 0), (-1, -1), 8),
         ]))
         
-        # Wrap heading + table in KeepTogether
         materials_section = [
             Paragraph("Packing Materials", heading_style),
             material_table,
@@ -233,14 +221,12 @@ def generate_booking_pdf(booking):
         ]
         story.append(KeepTogether(materials_section))
     
-    # Internal Notes
     if booking.notes:
         story.append(Paragraph("Internal Notes", heading_style))
         notes_para = Paragraph(booking.notes.replace('\n', '<br/>'), normal_style)
         story.append(notes_para)
         story.append(Spacer(1, 25))
     
-    # Footer
     story.append(Spacer(1, 40))
     story.append(Paragraph(
         "Thank you for choosing Almas Movers International",
@@ -252,7 +238,6 @@ def generate_booking_pdf(booking):
         ParagraphStyle('Footer', alignment=TA_CENTER, fontSize=10, textColor=colors.grey)
     ))
     
-    # Build PDF
     doc.build(story)
     
     return filepath, filename

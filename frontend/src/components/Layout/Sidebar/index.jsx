@@ -132,7 +132,6 @@ const Sidebar = ({ toggleSidebar }) => {
         { to: "/additional-settings/room", label: "Room", icon: <AiOutlineHome className="w-4 h-4" />, page: "room", action: "view" },
         { to: "/additional-settings/additional-services", label: "Additional Services", icon: <AiTwotoneProfile className="w-4 h-4" />, page: "additional-services", action: "view" },
         { to: "/additional-settings/labours", label: "Labours", icon: <AiOutlineTeam className="w-4 h-4" />, page: "labours", action: "view" },
-        { to: "/additional-settings/trucks", label: "Trucks", icon: <AiOutlineSliders className="w-4 h-4" />, page: "trucks", action: "view" },
         { to: "/additional-settings/materials", label: "Materials", icon: <AiOutlineTag className="w-4 h-4" />, page: "materials", action: "view" },
       ],
     },

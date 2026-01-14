@@ -33,7 +33,6 @@ import QuotationView from "./pages/Quotation/QuotationView";
 import QuotationLocalMove from "./components/Templates/QuotationLocalMove";
 import AdditionalServices from "./pages/AdditionalSettings/AdditionalService";
 import Labours from "./pages/AdditionalSettings/Labours";
-import Trucks from "./pages/AdditionalSettings/Trucks";
 import Materials from "./pages/AdditionalSettings/Materials";
 import BookingList from "./pages/Bookings/BookingList";
 import BookingDetailView from "./pages/Bookings/BookingDetailView.jsx"; // NEW - read-only view
@@ -452,17 +451,6 @@ function App() {
               requiredPage="labours"
             >
               <Labours />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "/additional-settings/trucks",
-          element: (
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              requiredPage="trucks"
-            >
-              <Trucks />
             </ProtectedRoute>
           ),
         },

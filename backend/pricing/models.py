@@ -265,7 +265,6 @@ class PaymentTerm(models.Model):
         default=False, help_text="Auto-selected in quote", blank=True, null=True
     )
     is_active = models.BooleanField(default=True, blank=True, null=True)
-    # order kept for sorting potentially
     order = models.PositiveIntegerField(default=0, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -305,7 +304,7 @@ class QuoteNote(models.Model):
 
 
 class TruckType(models.Model):
-    name = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
     capacity_cbm = models.DecimalField(
         max_digits=6,
         decimal_places=2,
@@ -323,17 +322,6 @@ class TruckType(models.Model):
         blank=True,
         null=True,
     )
-
-    # Removed length_meters, width_meters, height_meters as requested
-    # length_meters = models.DecimalField(
-    #     max_digits=5, decimal_places=2, null=True, blank=True
-    # )
-    # width_meters = models.DecimalField(
-    #     max_digits=5, decimal_places=2, null=True, blank=True
-    # )
-    # height_meters = models.DecimalField(
-    #     max_digits=5, decimal_places=2, null=True, blank=True
-    # )
 
     is_active = models.BooleanField(default=True, blank=True, null=True)
     is_default = models.BooleanField(
