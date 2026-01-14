@@ -1,7 +1,6 @@
-/* src/pages/Bookings/BookingForm.jsx */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaSave, FaPlus, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaFilePdf } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
@@ -33,7 +32,6 @@ const BookingForm = () => {
 
     const [assignedLabours, setAssignedLabours] = useState([]);
     const [assignedTrucks, setAssignedTrucks] = useState([]);
-    // For materials: array of { materialId, name, quantity, selected }
     const [assignedMaterials, setAssignedMaterials] = useState([]);
 
     useEffect(() => {
@@ -57,7 +55,7 @@ const BookingForm = () => {
                     material: mat.id,
                     name: mat.name,
                     quantity: 0,
-                    selected: false // initially not selected
+                    selected: false
                 }));
                 setAssignedMaterials(initialMaterials);
 
@@ -77,7 +75,6 @@ const BookingForm = () => {
 
                     setAssignedLabours(Array.isArray(b.labours) ? b.labours.map(l => ({ ...l, isNew: false })) : []);
 
-                    // Load existing materials (merge with full list)
                     const loadedMaterials = initialMaterials.map(mat => {
                         const existing = b.materials?.find(m => m.material === mat.material);
                         return existing ? { ...mat, quantity: existing.quantity, selected: true } : mat;
@@ -120,6 +117,67 @@ const BookingForm = () => {
         fetchData();
     }, [id, quotId, navigate]);
 
+    // Prevent duplicate staff selection across all labour rows
+    const getAvailableStaff = (currentIndex) => {
+        // Get IDs of already selected staff in other rows
+        const selectedIds = assignedLabours
+            .filter((_, idx) => idx !== currentIndex) // exclude current row
+            .map(lab => lab.staff_member)
+            .filter(Boolean); // remove empty
+
+        // Return only staff not selected elsewhere
+        return staffOptions.filter(staff => !selectedIds.includes(String(staff.id)));
+    };
+
+    const toggleMaterialSelection = (materialId) => {
+        setAssignedMaterials(prev =>
+            prev.map(mat =>
+                mat.material === materialId
+                    ? { ...mat, selected: !mat.selected }
+                    : mat
+            )
+        );
+    };
+
+    const updateMaterialQuantity = (materialId, delta) => {
+        setAssignedMaterials(prev =>
+            prev.map(mat =>
+                mat.material === materialId
+                    ? {
+                        ...mat,
+                        quantity: Math.max(0, mat.quantity + delta),
+                        selected: mat.quantity + delta > 0 ? true : mat.selected
+                    }
+                    : mat
+            )
+        );
+    };
+
+    const addItem = (type) => {
+        if (type === 'labour') setAssignedLabours([...assignedLabours, { staff_member: "" }]);
+        if (type === 'truck') setAssignedTrucks([...assignedTrucks, { truck_type: "", quantity: 1, isNew: true }]);
+    };
+
+    const removeItem = (type, index, itemId) => {
+        if (itemId && !window.confirm("Delete this assignment?")) return;
+
+        if (itemId) {
+            let endpoint = type === 'labour' ? 'booking-labours' : type === 'truck' ? 'booking-trucks' : 'booking-materials';
+            apiClient.delete(`/${endpoint}/${itemId}/`);
+        }
+
+        if (type === 'labour') setAssignedLabours(assignedLabours.filter((_, i) => i !== index));
+        if (type === 'truck') setAssignedTrucks(assignedTrucks.filter((_, i) => i !== index));
+    };
+
+    const updateItem = (type, index, field, value) => {
+        const list = type === 'labour' ? [...assignedLabours] : type === 'truck' ? [...assignedTrucks] : [...assignedMaterials];
+        list[index][field] = value;
+        if (type === 'labour') setAssignedLabours(list);
+        if (type === 'truck') setAssignedTrucks(list);
+        if (type === 'material') setAssignedMaterials(list);
+    };
+
     const handleSave = async () => {
         try {
             setLoading(true);
@@ -138,7 +196,7 @@ const BookingForm = () => {
                 currentBookingId = res.data.id;
             }
 
-            // Save labours (unchanged)
+            // Save labours
             for (const labour of assignedLabours) {
                 const labourPayload = {
                     booking: currentBookingId,
@@ -151,7 +209,7 @@ const BookingForm = () => {
                 }
             }
 
-            // Save trucks (unchanged)
+            // Save trucks
             for (const truck of assignedTrucks) {
                 const truckPayload = {
                     booking: currentBookingId,
@@ -173,7 +231,6 @@ const BookingForm = () => {
                     material: material.material,
                     quantity: material.quantity
                 };
-                // Use POST for new, PATCH for existing (if you track IDs)
                 await apiClient.post("/booking-materials/", materialPayload);
             }
 
@@ -185,57 +242,6 @@ const BookingForm = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const toggleMaterialSelection = (materialId) => {
-        setAssignedMaterials(prev =>
-            prev.map(mat =>
-                mat.material === materialId
-                    ? { ...mat, selected: !mat.selected }
-                    : mat
-            )
-        );
-    };
-
-    const updateMaterialQuantity = (materialId, delta) => {
-        setAssignedMaterials(prev =>
-            prev.map(mat =>
-                mat.material === materialId
-                    ? {
-                        ...mat,
-                        quantity: Math.max(0, mat.quantity + delta),
-                        selected: mat.quantity + delta > 0 ? true : mat.selected // auto-select when >0
-                    }
-                    : mat
-            )
-        );
-    };
-
-    const addItem = (type) => {
-        if (type === 'labour') setAssignedLabours([...assignedLabours, { staff_member: "" }]);
-        if (type === 'truck') setAssignedTrucks([...assignedTrucks, { truck_type: "", quantity: 1, isNew: true }]);
-        // No add for materials - full list always shown
-    };
-
-    const removeItem = (type, index, itemId) => {
-        if (itemId && !window.confirm("Delete this assignment?")) return;
-
-        if (itemId) {
-            let endpoint = type === 'labour' ? 'booking-labours' : type === 'truck' ? 'booking-trucks' : 'booking-materials';
-            apiClient.delete(`/${endpoint}/${itemId}/`);
-        }
-
-        if (type === 'labour') setAssignedLabours(assignedLabours.filter((_, i) => i !== index));
-        if (type === 'truck') setAssignedTrucks(assignedTrucks.filter((_, i) => i !== index));
-        // No remove for materials - just set quantity to 0
-    };
-
-    const updateItem = (type, index, field, value) => {
-        const list = type === 'labour' ? [...assignedLabours] : type === 'truck' ? [...assignedTrucks] : [...assignedMaterials];
-        list[index][field] = value;
-        if (type === 'labour') setAssignedLabours(list);
-        if (type === 'truck') setAssignedTrucks(list);
-        if (type === 'material') setAssignedMaterials(list);
     };
 
     if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
@@ -354,7 +360,7 @@ const BookingForm = () => {
 
                 {/* Assignments Sections */}
                 <div className="space-y-8">
-                    {/* Labours - Unchanged */}
+                    {/* Labours / Manpower - With duplicate prevention */}
                     <section className={sectionClasses}>
                         <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                             <h2 className="text-lg font-medium text-[#4c7085]">Labours / Manpower</h2>
@@ -374,9 +380,10 @@ const BookingForm = () => {
                                             className={inputClasses}
                                             value={String(item.staff_member || "")}
                                             onChange={(e) => updateItem('labour', idx, 'staff_member', e.target.value)}
+                                            disabled={getAvailableStaff(idx).length === 0 && !item.staff_member} // disable if no options left
                                         >
                                             <option value="">Select Staff</option>
-                                            {staffOptions.map(s => (
+                                            {getAvailableStaff(idx).map(s => (
                                                 <option key={s.id} value={String(s.id)}>
                                                     {s.name} ({s.employer || "Almas Movers"})
                                                 </option>
@@ -394,8 +401,8 @@ const BookingForm = () => {
                         </div>
                     </section>
 
+                    {/* Trucks */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Trucks - Unchanged */}
                         <section className={sectionClasses}>
                             <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                                 <h2 className="text-lg font-medium text-[#4c7085]">Trucks</h2>
@@ -465,18 +472,16 @@ const BookingForm = () => {
                             </div>
                         </section>
 
-                        {/* Materials - New full list with select + quantity */}
+                        {/* Materials */}
                         <section className={sectionClasses}>
                             <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
                                 <h2 className="text-lg font-medium text-[#4c7085]">Materials</h2>
-                                {/* No + button */}
                             </div>
                             <div className="space-y-4">
                                 {assignedMaterials.length > 0 ? (
                                     assignedMaterials.map((item) => (
                                         <div key={item.material} className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
                                             <div className="flex items-center gap-4 flex-1">
-                                                {/* Checkbox / Select toggle */}
                                                 <input
                                                     type="checkbox"
                                                     checked={item.selected}
@@ -505,7 +510,7 @@ const BookingForm = () => {
                                                     min="0"
                                                     onChange={(e) => {
                                                         const val = parseInt(e.target.value) || 0;
-                                                        updateMaterialQuantity(item.material, val - item.quantity); // delta
+                                                        updateMaterialQuantity(item.material, val - item.quantity);
                                                     }}
                                                 />
 
@@ -520,8 +525,8 @@ const BookingForm = () => {
 
                                             <button
                                                 onClick={() => {
-                                                    updateMaterialQuantity(item.material, -item.quantity); // reset to 0
-                                                    toggleMaterialSelection(item.material, false); // unselect
+                                                    updateMaterialQuantity(item.material, -item.quantity);
+                                                    toggleMaterialSelection(item.material, false);
                                                 }}
                                                 className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition"
                                                 title="Remove"

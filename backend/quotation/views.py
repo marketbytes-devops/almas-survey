@@ -172,39 +172,36 @@ class QuotationViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Error handling quotation signature: {str(e)}", exc_info=True)
             return Response({'error': f'Failed to handle signature: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
     @action(detail=True, methods=["post"], url_path="send-whatsapp")
     def send_whatsapp(self, request, quotation_id=None):
-        """Generate quotation PDF and return WhatsApp share link"""
+        """Generate quotation PDF and return WhatsApp URL with direct attachment"""
         try:
             quotation = self.get_object()
             
             logger.info(f"Generating PDF for quotation {quotation.quotation_id}")
             
-            # Get customer details from survey
-            customer_name = "Customer"
+            # Get customer details
+            customer_name = "Sir/Madam"
             phone_number = None
             
             if quotation.survey:
                 survey = quotation.survey
-                customer_name = getattr(survey, 'full_name', 'Customer') or 'Customer'
+                customer_name = getattr(survey, 'full_name', 'Sir/Madam') or 'Sir/Madam'
                 phone_number = getattr(survey, 'phone_number', None)
             
-            # Validate phone number
             if not phone_number:
                 return Response(
                     {"error": "Customer phone number not found in survey."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Clean phone number
+            # Clean phone (India/Qatar support)
             clean_phone = ''.join(filter(str.isdigit, str(phone_number)))
             clean_phone = clean_phone.lstrip('0')
-            
             if len(clean_phone) == 10:
-                clean_phone = '91' + clean_phone
+                clean_phone = '91' + clean_phone       # India
             elif len(clean_phone) == 8:
-                clean_phone = '974' + clean_phone
+                clean_phone = '974' + clean_phone      # Qatar
             elif len(clean_phone) == 9:
                 clean_phone = '91' + clean_phone
             
@@ -214,18 +211,12 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            logger.info(f"Final clean phone number: {clean_phone}")
-            
             # Generate PDF
             try:
                 filepath, filename = generate_quotation_pdf(quotation)
-                logger.info(f"PDF generated successfully at: {filepath}")
-                
                 pdf_url = request.build_absolute_uri(
                     f"{settings.MEDIA_URL}quotation_pdfs/{filename}"
                 )
-                logger.info(f"PDF URL: {pdf_url}")
-                
             except Exception as pdf_error:
                 logger.error(f"PDF Generation Error: {str(pdf_error)}", exc_info=True)
                 return Response(
@@ -233,17 +224,14 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
             
-            # ⭐ FIX: Calculate amounts correctly
+            # Calculate pricing
             amount = float(quotation.amount or 0)
             discount = float(quotation.discount or 0)
             advance = float(quotation.advance or 0)
-            
-            # Calculate final amount and balance
             final_amount = max(0, amount - discount)
             balance = max(0, final_amount - advance)
             
-            logger.info(f"Amounts - Total: {amount}, Discount: {discount}, Advance: {advance}, Final: {final_amount}, Balance: {balance}")
-            
+            # Move details
             service_type = "Not specified"
             origin = "Not specified"
             destination = "Not specified"
@@ -253,42 +241,49 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 service_type = getattr(survey, 'service_type', 'Not specified') or 'Not specified'
                 origin = getattr(survey, 'origin_city', None) or getattr(survey, 'origin_address', 'Not specified')
                 
-                if hasattr(survey, 'destination_addresses'):
+                if hasattr(survey, 'destination_addresses') and survey.destination_addresses.exists():
                     dest_qs = survey.destination_addresses.first()
-                    if dest_qs:
-                        destination = getattr(dest_qs, 'city', None) or getattr(dest_qs, 'address', 'Not specified')
+                    destination = getattr(dest_qs, 'city', None) or getattr(dest_qs, 'address', 'Not specified')
             
-            # ⭐ Build WhatsApp message with correct balance
-            message = f"""🚚 *Quotation - Almas Movers*
+            # ★★★ NEW PROFESSIONAL MESSAGE FORMAT ★★★
+            message = f"""Dear Sir/Madam
 
-    📋 *Quotation ID:* {quotation.quotation_id}
-    👤 *Client:* {customer_name}
+    Greetings from Almas Movers Intl.
+    Many thanks for the enquiry, please find the attached quotation for your kind perusal.
+    Hope the above meets your requirement, please let us know if any assistance / clarification required.
+    Kindly acknowledge the receipt by return.
+    I welcome your kind feedback.
 
-    🔧 *Service:* {service_type}
-    📍 *From:* {origin}
-    📍 *To:* {destination}
+    Quotation - Almas Movers
 
-    💰 *Pricing Summary:*
-    - Total Amount: {amount:.2f} QAR
-    - Discount: {discount:.2f} QAR
-    - Final Amount: {final_amount:.2f} QAR
-    - Advance Payment: {advance:.2f} QAR
-    - Balance Due: {balance:.2f} QAR
+        � Quotation ID: {quotation.quotation_id}
+        � Client: {customer_name}
 
-    ━━━━━━━━━━━━━━━━━━
-    📥 *DOWNLOAD COMPLETE QUOTATION:*
-    {pdf_url}
+        � Service: {service_type}
+        � From: {origin}
+        � To: {destination}
 
-    _Click the link above to view full quotation details._
+        � Pricing Summary:
+        - Total Amount: {amount:.2f} QAR
+        - Discount: {discount:.2f} QAR
+        - Final Amount: {final_amount:.2f} QAR
+        - Advance Payment: {advance:.2f} QAR
+        - Balance Due: {balance:.2f} QAR
 
-    ✅ Valid for 30 days from date of issue.
+        ━━━━━━━━━━━━━━━━━━
+        � DOWNLOAD COMPLETE QUOTATION:
+        {pdf_url}
 
-    Thank you for choosing Almas Movers! 🙏
-    - Almas Movers Management"""
+        Click the link above to view full quotation details.
+
+        Thank you for choosing Almas Movers! �
+        - Almas Movers Management"""
             
-            whatsapp_url = f"https://wa.me/{clean_phone}?text={quote(message)}"
+            # Create WhatsApp URL with direct attachment
+            encoded_message = quote(message)
+            encoded_pdf_url = quote(pdf_url)
             
-            logger.info(f"WhatsApp URL generated successfully for {customer_name}")
+            whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_message}&attach={encoded_pdf_url}"
             
             return Response({
                 'success': True,
@@ -297,18 +292,10 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 'customer_name': customer_name,
                 'phone_number': phone_number,
                 'clean_phone': clean_phone,
-                'final_amount': final_amount,
-                'balance': balance
             }, status=status.HTTP_200_OK)
             
         except Quotation.DoesNotExist:
-            return Response(
-                {'error': 'Quotation not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'error': 'Quotation not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error in send_whatsapp: {str(e)}", exc_info=True)
-            return Response(
-                {"error": f"Unexpected error: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
