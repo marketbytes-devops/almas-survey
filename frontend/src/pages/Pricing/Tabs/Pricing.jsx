@@ -23,7 +23,7 @@ const PricingTab = ({
   const [selectedPricingCity, setSelectedPricingCity] = useState("");
 
   const API_BASE_URL =
-    apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
+    apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
   useEffect(() => {
     const getQatarCities = () => {
