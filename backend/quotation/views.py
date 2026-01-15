@@ -199,7 +199,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             
             logger.info(f"Generating PDF for quotation {quotation.quotation_id}")
             
-            # Get customer details
             customer_name = "Sir/Madam"
             phone_number = None
             
@@ -214,13 +213,12 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Clean phone (India/Qatar support)
             clean_phone = ''.join(filter(str.isdigit, str(phone_number)))
             clean_phone = clean_phone.lstrip('0')
             if len(clean_phone) == 10:
-                clean_phone = '91' + clean_phone       # India
+                clean_phone = '91' + clean_phone      
             elif len(clean_phone) == 8:
-                clean_phone = '974' + clean_phone      # Qatar
+                clean_phone = '974' + clean_phone     
             elif len(clean_phone) == 9:
                 clean_phone = '91' + clean_phone
             
@@ -230,7 +228,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Generate PDF
             try:
                 filepath, filename = generate_quotation_pdf(quotation)
                 pdf_url = request.build_absolute_uri(
@@ -243,14 +240,12 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
             
-            # Calculate pricing
             amount = float(quotation.amount or 0)
             discount = float(quotation.discount or 0)
             advance = float(quotation.advance or 0)
             final_amount = max(0, amount - discount)
             balance = max(0, final_amount - advance)
             
-            # Move details
             service_type = "Not specified"
             origin = "Not specified"
             destination = "Not specified"
@@ -264,7 +259,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     dest_qs = survey.destination_addresses.first()
                     destination = getattr(dest_qs, 'city', None) or getattr(dest_qs, 'address', 'Not specified')
             
-            # ★★★ NEW PROFESSIONAL MESSAGE FORMAT ★★★
             message = f"""Dear Sir/Madam
 
     Greetings from Almas Movers Intl.
@@ -275,14 +269,14 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
     Quotation - Almas Movers
 
-        � Quotation ID: {quotation.quotation_id}
-        � Client: {customer_name}
+        Quotation ID: {quotation.quotation_id}
+        Client: {customer_name}
 
-        � Service: {service_type}
-        � From: {origin}
-        � To: {destination}
+        Service: {service_type}
+        From: {origin}
+        To: {destination}
 
-        � Pricing Summary:
+        Pricing Summary:
         - Total Amount: {amount:.2f} QAR
         - Discount: {discount:.2f} QAR
         - Final Amount: {final_amount:.2f} QAR
@@ -290,7 +284,7 @@ class QuotationViewSet(viewsets.ModelViewSet):
         - Balance Due: {balance:.2f} QAR
 
         ━━━━━━━━━━━━━━━━━━
-        � DOWNLOAD COMPLETE QUOTATION:
+        DOWNLOAD COMPLETE QUOTATION:
         {pdf_url}
 
         Click the link above to view full quotation details.
@@ -298,7 +292,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
         Thank you for choosing Almas Movers! �
         - Almas Movers Management"""
             
-            # Create WhatsApp URL with direct attachment
             encoded_message = quote(message)
             encoded_pdf_url = quote(pdf_url)
             

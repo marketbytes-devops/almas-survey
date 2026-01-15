@@ -36,7 +36,6 @@ class BookingViewSet(viewsets.ModelViewSet):
             
             print(f"DEBUG: Booking ID: {booking.id}")
             
-            # Check supervisor
             if not booking.supervisor:
                 return Response({"error": "No supervisor assigned."}, status=400)
             
@@ -47,7 +46,6 @@ class BookingViewSet(viewsets.ModelViewSet):
                     status=400
                 )
             
-            # Clean phone (India/Qatar support)
             clean_phone = ''.join(filter(str.isdigit, supervisor_phone))
             if clean_phone.startswith('0'):
                 clean_phone = clean_phone[1:]
@@ -56,7 +54,6 @@ class BookingViewSet(viewsets.ModelViewSet):
             elif len(clean_phone) == 8:
                 clean_phone = '974' + clean_phone
             
-            # Generate PDF
             try:
                 filepath, filename = generate_booking_pdf(booking)
                 pdf_url = request.build_absolute_uri(f"{settings.MEDIA_URL}booking_pdfs/{filename}")
@@ -64,7 +61,6 @@ class BookingViewSet(viewsets.ModelViewSet):
                 print(f"PDF Generation Error: {str(pdf_error)}")
                 return Response({"error": f"Failed to generate PDF: {str(pdf_error)}"}, status=500)
 
-            # Client & Move Info
             client_name = "Customer"
             contact_number = "N/A"
             move_type = "N/A"
@@ -82,20 +78,18 @@ class BookingViewSet(viewsets.ModelViewSet):
                     dest = survey.destination_addresses.first()
                     destination = getattr(dest, 'city', 'N/A') or 'N/A'
 
-            # Get GPS link (if exists)
             gps_link_text = ""
             if booking.quotation and booking.quotation.survey and hasattr(booking.quotation.survey, 'origin_gps'):
                 gps_link = booking.quotation.survey.origin_gps.strip()
                 if gps_link:
                     gps_link_text = f"""
     ━━━━━━━━━━━━━━━━━━
-    � Origin GPS Location:
+    Origin GPS Location:
     {gps_link}
 
     Click above link to view exact pickup location on Google Maps!
     """
 
-            # Final WhatsApp message
             message = f"""Booking Confirmation - Almas Movers
 
     Booking ID: {booking.booking_id}
@@ -111,7 +105,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     To: {destination}
 
     ━━━━━━━━━━━━━━━━━━
-    📄 Download Complete PDF:
+    Download Complete PDF:
     {pdf_url}
 
     {gps_link_text}
