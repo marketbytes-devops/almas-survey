@@ -61,6 +61,14 @@ def generate_booking_pdf(booking):
         spaceAfter=8
     )
     
+    link_style = ParagraphStyle(
+        'LinkStyle',
+        parent=normal_style,
+        textColor=colors.blue,
+        fontName='Helvetica-Bold'
+    )
+    
+    # === Header ===
     story.append(Paragraph("BOOKING CONFIRMATION", title_style))
     story.append(Paragraph(
         "ALMAS MOVERS INTERNATIONAL",
@@ -131,6 +139,29 @@ def generate_booking_pdf(booking):
         story.append(sup_table)
         story.append(Spacer(1, 25))
     
+    # === NEW: Origin GPS Location (Click to open in Google Maps) ===
+    gps_link = None
+    if booking.quotation and booking.quotation.survey and hasattr(booking.quotation.survey, 'origin_gps'):
+        gps_link = booking.quotation.survey.origin_gps.strip()
+
+    if gps_link:
+        story.append(Paragraph("Origin GPS Location", heading_style))
+        story.append(Spacer(1, 8))
+        
+        link_para = Paragraph(
+            f'<link href="{gps_link}" color="blue"><u>Click here to open exact origin location on Google Maps</u></link>',
+            ParagraphStyle(
+                'LinkStyle',
+                parent=normal_style,
+                textColor=colors.blue,
+                fontName='Helvetica-Bold',
+                spaceAfter=6
+            )
+        )
+        story.append(link_para)
+        story.append(Spacer(1, 25))
+    
+    # === Assigned Manpower ===
     labours = booking.labours.all()
     if labours.exists():
         labour_data = [['Staff Member', 'Quantity']]
