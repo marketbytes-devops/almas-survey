@@ -6,23 +6,20 @@ from additional_settings.models import Currency
 
 
 class QuotationSerializer(serializers.ModelSerializer):
-    # ── Read fields (for display) ──────────────────────────────────────
     survey_id = serializers.CharField(source="survey.survey_id", read_only=True)
     survey_id_int = serializers.IntegerField(source="survey.id", read_only=True)
     full_name = serializers.CharField(source="survey.full_name", read_only=True)
     service_type = serializers.CharField(source="survey.service_type", read_only=True)
     currency_code = serializers.CharField(source="currency.name", read_only=True, allow_null=True)
 
-    # Computed fields
     final_amount = serializers.SerializerMethodField(read_only=True)
     balance = serializers.SerializerMethodField(read_only=True)
     signature_url = serializers.SerializerMethodField(read_only=True)
 
-    # ── Write fields ───────────────────────────────────────────────────
     survey = serializers.PrimaryKeyRelatedField(
         queryset=Survey.objects.all(),
         write_only=True,
-        required=True,           # ← Critical: must provide survey on creation
+        required=True,
         allow_null=False
     )
     currency = serializers.PrimaryKeyRelatedField(
@@ -31,7 +28,6 @@ class QuotationSerializer(serializers.ModelSerializer):
         allow_null=True
     )
 
-    # JSON list fields with better defaults
     included_services = serializers.ListField(
         child=serializers.IntegerField(min_value=0),
         required=False,
@@ -51,7 +47,7 @@ class QuotationSerializer(serializers.ModelSerializer):
         default=list
     )
     additional_charges = serializers.ListField(
-        child=serializers.DictField(),  # You can make more strict later
+        child=serializers.DictField(),
         required=False,
         allow_empty=True,
         default=list
@@ -76,7 +72,6 @@ class QuotationSerializer(serializers.ModelSerializer):
             "final_amount", "balance", "signature_url", "signature_uploaded"
         ]
 
-    # ── Computed fields ────────────────────────────────────────────────
     def get_final_amount(self, obj):
         amount = obj.amount or 0
         discount = obj.discount or 0
@@ -93,13 +88,11 @@ class QuotationSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.signature.url) if request else obj.signature.url
         return None
 
-    # ── Creation & Update Validation ───────────────────────────────────
     def validate(self, attrs):
         """
         Main validation - runs on both create & update
         """
-        # 1. On creation: survey must exist and not have quotation yet
-        if self.instance is None:  # ← CREATE
+        if self.instance is None: 
             survey = attrs.get("survey")
             if not survey:
                 raise serializers.ValidationError({"survey": "This field is required."})
@@ -111,7 +104,6 @@ class QuotationSerializer(serializers.ModelSerializer):
                     "existing_quotation_id": Quotation.objects.get(survey=survey).quotation_id
                 })
 
-        # 2. Amount & Advance logical checks
         amount = attrs.get("amount")
         advance = attrs.get("advance", 0)
         discount = attrs.get("discount", 0)
@@ -124,7 +116,6 @@ class QuotationSerializer(serializers.ModelSerializer):
             if advance > (amount - discount):
                 raise serializers.ValidationError({"advance": "Advance cannot exceed final amount (after discount)."})
 
-        # 3. On partial update, check current values if not provided
         if self.instance and advance is not None:
             current_amount = attrs.get("amount", self.instance.amount or 0)
             current_discount = attrs.get("discount", self.instance.discount or 0)
@@ -133,15 +124,12 @@ class QuotationSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    # ── Better representation (clean lists) ────────────────────────────
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        # Ensure lists are never None
         for field in ["included_services", "excluded_services", "selected_services", "additional_charges"]:
             ret[field] = ret[field] or []
         return ret
 
-    # Optional: Auto-set date on creation if not provided
     def create(self, validated_data):
         if "date" not in validated_data:
             validated_data["date"] = timezone.now().date()

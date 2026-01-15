@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router"; 
+import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import bgAuth from "../../assets/images/bg-auth.webp";
+import bgAuth from "../../assets/images/bg-auth.jpg";
 import Button from "../../components/Button";
 import apiClient from "../../api/apiClient";
 import { FormProvider, useForm } from "react-hook-form";
@@ -37,7 +37,7 @@ const Login = ({ setIsAuthenticated }) => {
     } catch (error) {
       setError(
         error.response?.data?.error ||
-          "Login failed. Please check your credentials and try again."
+        "Login failed. Please check your credentials and try again."
       );
     }
   };

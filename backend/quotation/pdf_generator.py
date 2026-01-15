@@ -11,8 +11,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 )
 
-# Import your service model (adjust if name is different)
-from additional_settings.models import SurveyAdditionalService  # or whatever your model is
+from additional_settings.models import SurveyAdditionalService 
 
 
 def get_service_name(service_id):
@@ -52,7 +51,6 @@ def generate_quotation_pdf(quotation):
     story = []
     styles = getSampleStyleSheet()
 
-    # ── Custom Styles ─────────────────────────────────────────────────────
     title_style = ParagraphStyle(
         'Title',
         parent=styles['Heading1'],
@@ -98,12 +96,10 @@ def generate_quotation_pdf(quotation):
         spaceAfter=8
     )
 
-    # ── Header ────────────────────────────────────────────────────────────
     story.append(Paragraph("ALMAS MOVERS INTERNATIONAL", company_style))
     story.append(Paragraph("QUOTATION", title_style))
     story.append(Spacer(1, 20))
 
-    # Quotation Info
     currency_code = quotation.currency.code if quotation.currency else "QAR"
     info_data = [
         ["Quotation ID:", quotation.quotation_id or "N/A", "Date:", quotation.date.strftime('%d %B %Y') if quotation.date else datetime.now().strftime('%d %B %Y')],
@@ -121,7 +117,6 @@ def generate_quotation_pdf(quotation):
     story.append(info_table)
     story.append(Spacer(1, 25))
 
-    # ── 1. Client & Move Details ──────────────────────────────────────────
     survey = quotation.survey
     if survey:
         client_name = getattr(survey, 'full_name', 'N/A')
@@ -159,7 +154,6 @@ def generate_quotation_pdf(quotation):
     story.append(details_table)
     story.append(Spacer(1, 25))
 
-    # ── 2. Additional Services & Charges (moved up) ───────────────────────
     if quotation.additional_charges:
         story.append(Paragraph("Additional Services & Charges", heading_style))
 
@@ -190,7 +184,6 @@ def generate_quotation_pdf(quotation):
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ]))
 
-        # Total row
         add_data.append([
             Paragraph("<b>Total Additional Charges</b>", label_style),
             "", "", f"{total_additional:,.2f} {currency_code}"
@@ -199,7 +192,6 @@ def generate_quotation_pdf(quotation):
         story.append(add_table)
         story.append(Spacer(1, 25))
 
-    # ── 3. Financial Summary ──────────────────────────────────────────────
     amount = float(quotation.amount or 0)
     discount = float(quotation.discount or 0)
     final_amount = float(quotation.final_amount or (amount - discount))
@@ -231,7 +223,6 @@ def generate_quotation_pdf(quotation):
     story.append(fin_table)
     story.append(Spacer(1, 25))
 
-    # ── 4. Included & Excluded Services (Table format like quote view) ─────
     included = [get_service_name(sid) for sid in (quotation.included_services or [])]
     excluded = [get_service_name(sid) for sid in (quotation.excluded_services or [])]
 
@@ -240,7 +231,6 @@ def generate_quotation_pdf(quotation):
 
         services_table_data = [["Included Services", "Excluded Services"]]
 
-        # Make rows balanced
         max_rows = max(len(included), len(excluded))
         included_padded = included + [""] * (max_rows - len(included))
         excluded_padded = excluded + [""] * (max_rows - len(excluded))
@@ -263,7 +253,6 @@ def generate_quotation_pdf(quotation):
         story.append(services_table)
         story.append(Spacer(1, 25))
 
-    # ── Single Signature Area (only Client) ───────────────────────────────
     story.append(Paragraph("Client Signature", heading_style))
 
     sig_data = [
@@ -287,7 +276,6 @@ def generate_quotation_pdf(quotation):
     story.append(sig_table)
     story.append(Spacer(1, 40))
 
-    # ── Footer ────────────────────────────────────────────────────────────
     story.append(Paragraph("Thank you for choosing Almas Movers International!", normal_style))
 
     doc.build(story)

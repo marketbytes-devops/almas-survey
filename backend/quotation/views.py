@@ -35,7 +35,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         lookup_value = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
 
-        # Support both integer PK and custom quotation_id
         if str(lookup_value).isdigit():
             obj = queryset.filter(pk=lookup_value).first()
             if obj:
@@ -59,7 +58,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 {"survey": "This field is required when creating a quotation."}
             )
 
-        # Prevent duplicate quotation
         if Quotation.objects.filter(survey=survey).exists():
             existing = Quotation.objects.select_related("survey").get(survey=survey)
             raise serializers.ValidationError(
@@ -87,7 +85,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
         instance.delete()
         logger.info(f"Quotation deleted for survey {survey_id}")
 
-    # ── Check if quotation exists ───────────────────────────────────────
     @action(detail=False, methods=["get"], url_path="exists")
     def exists(self, request):
         survey_id = request.query_params.get("survey_id")
@@ -107,7 +104,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
         except Survey.DoesNotExist:
             return Response({"exists": False})
 
-    # ── Create draft (optional) ─────────────────────────────────────────
     @action(detail=False, methods=["post"], url_path="create-draft")
     def create_draft(self, request):
         survey_id = request.data.get("survey_id")
@@ -136,7 +132,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
         return Response(self.get_serializer(quotation).data, status=201)
 
-    # ── Delete by quotation_id ──────────────────────────────────────────
     @action(detail=False, methods=["delete"], url_path="delete")
     def delete_quotation(self, request):
         quotation_id = request.data.get("quotation_id")
@@ -154,7 +149,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
         except Quotation.DoesNotExist:
             return Response({"detail": "Quotation not found"}, status=404)
 
-    # ── Signature upload & management (unchanged – already good) ───────
     @action(detail=True, methods=["post"], url_path="upload-signature")
     def upload_signature(self, request, pk=None):
         try:
@@ -206,7 +200,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             logger.error(f"Error handling signature: {str(e)}", exc_info=True)
             return Response({"error": f"Failed to handle signature: {str(e)}"}, status=500)
 
-    # ── WhatsApp sharing (improved phone cleaning) ──────────────────────
     @action(detail=True, methods=["post"], url_path="send-whatsapp")
     def send_whatsapp(self, request, pk=None):
         try:
@@ -222,7 +215,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             if not phone_number:
                 return Response({"error": "Customer phone number not found"}, status=400)
 
-            # Phone cleaning (improved robustness)
             digits = ''.join(filter(str.isdigit, str(phone_number)))
             digits = digits.lstrip('0')
 
@@ -240,7 +232,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"error": f"Unsupported phone number format: {phone_number}"}, status=400)
 
-            # Generate PDF
             try:
                 filepath, filename = generate_quotation_pdf(quotation)
                 pdf_url = request.build_absolute_uri(f"{settings.MEDIA_URL}quotation_pdfs/{filename}")
@@ -248,7 +239,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 logger.error(f"PDF generation failed: {str(pdf_error)}", exc_info=True)
                 return Response({"error": "Failed to generate PDF"}, status=500)
 
-            # Pricing
             amount = float(quotation.amount or 0)
             discount = float(quotation.discount or 0)
             final_amount = float(quotation.final_amount or (amount - discount))
@@ -256,7 +246,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             balance = float(quotation.balance or (final_amount - advance))
             currency_code = quotation.currency.code if quotation.currency else "QAR"
 
-            # Service & Location
             service_type = getattr(survey, "service_type", "Not specified") or "Not specified"
             origin = getattr(survey, "origin_city", None) or getattr(survey, "origin_address", "Not specified")
             destination = "Not specified"
@@ -264,7 +253,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 dest = survey.destination_addresses.first()
                 destination = getattr(dest, "city", None) or getattr(dest, "address", "Not specified")
 
-            # Exact message format you requested
             message = f"""Dear Sir/Madam
 
     Greetings from Almas Movers Intl.
@@ -275,14 +263,14 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
     Quotation - Almas Movers
 
-        � Quotation ID: {quotation.quotation_id}
-        � Client: {customer_name}
+        Quotation ID: {quotation.quotation_id}
+        Client: {customer_name}
 
-        � Service: {service_type}
-        � From: {origin}
-        � To: {destination}
+        Service: {service_type}
+        From: {origin}
+        To: {destination}
 
-        � Pricing Summary:
+        Pricing Summary:
         - Total Amount: {amount:.2f} {currency_code}
         - Discount: {discount:.2f} {currency_code}
         - Final Amount: {final_amount:.2f} {currency_code}
@@ -290,7 +278,7 @@ class QuotationViewSet(viewsets.ModelViewSet):
         - Balance Due: {balance:.2f} {currency_code}
 
         ━━━━━━━━━━━━━━━━━━
-        � DOWNLOAD COMPLETE QUOTATION:
+        DOWNLOAD COMPLETE QUOTATION:
         {pdf_url}
 
         Click the link above to view full quotation details.

@@ -9,7 +9,7 @@ const ExcludesTab = () => {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+  const API_BASE_URL = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
   useEffect(() => {
     fetchItems();

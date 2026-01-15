@@ -148,14 +148,12 @@ class SurveyViewSet(viewsets.ModelViewSet):
         survey = serializer.save()
         send_survey_submission_email(survey)
 
-    # ADD THIS NEW METHOD
     @action(detail=True, methods=['post'], url_path='upload-signature')
     def upload_signature(self, request, survey_id=None):
         """Upload customer signature for a survey"""
         try:
             survey = self.get_object()
             
-            # Check if file was uploaded
             if 'signature' not in request.FILES:
                 return Response(
                     {'error': 'No signature file provided'},
@@ -164,7 +162,6 @@ class SurveyViewSet(viewsets.ModelViewSet):
             
             signature_file = request.FILES['signature']
             
-            # Validate file type
             allowed_types = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
             if signature_file.content_type not in allowed_types:
                 return Response(
@@ -172,15 +169,13 @@ class SurveyViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Validate file size (max 5MB)
-            max_size = 5 * 1024 * 1024  # 5MB in bytes
+            max_size = 5 * 1024 * 1024 
             if signature_file.size > max_size:
                 return Response(
                     {'error': 'File size exceeds 5MB limit'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Save the signature to the survey
             survey.signature = signature_file
             survey.save()
             

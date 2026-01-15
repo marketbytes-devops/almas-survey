@@ -109,21 +109,16 @@ class Quotation(models.Model):
         if not self.quotation_id:
             current_yy = timezone.now().strftime('%y')
             prefix = f"AMSQA-{current_yy}"
-            
-            # Find the last quotation with this prefix
             last_quotation = Quotation.objects.filter(
                 quotation_id__startswith=prefix
             ).order_by('-id').first()
             
             if last_quotation and last_quotation.quotation_id:
                 try:
-                    # Extract the number part: AMSQA-26001 -> '26001' -> '001'
-                    # Use slicing to be safe
                     suffix = last_quotation.quotation_id[len(prefix):]
                     last_number = int(suffix)
                     new_number = last_number + 1
                 except ValueError:
-                    # Fallback if parsing fails
                     new_number = 1
             else:
                 new_number = 1

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router"; 
+import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import apiClient from "../../api/apiClient";
-import bgAuth from "../../assets/images/bg-auth.webp";
+import bgAuth from "../../assets/images/bg-auth.jpg";
 import Button from "../../components/Button";
 import { FormProvider, useForm } from "react-hook-form";
 import InputField from "../../components/Input";
@@ -57,7 +57,7 @@ const ResetPassword = () => {
     } catch (error) {
       setError(
         error.response?.data?.error ||
-          "Invalid or expired OTP. Please try again."
+        "Invalid or expired OTP. Please try again."
       );
       setMessage("");
     }

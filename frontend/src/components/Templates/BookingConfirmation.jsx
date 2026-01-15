@@ -3,7 +3,7 @@ import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
-import Logo1 from "../../assets/images/bg-auth.webp";
+import Logo1 from "../../assets/images/bg-auth.jpg";
 import ProfileIcon from "../../assets/images/profile-icon.png";
 
 const CERTIFICATION_LOGOS = [Logo1, ProfileIcon];
@@ -535,8 +535,7 @@ const BookingConfirmation = forwardRef(
           const message =
             `Booking Confirmation - ${booking.booking_id || "TBA"}\n` +
             `Move Date: ${booking.move_date || "N/A"}\n` +
-            `Start Time: ${
-              booking.start_time ? formatTime(booking.start_time) : "N/A"
+            `Start Time: ${booking.start_time ? formatTime(booking.start_time) : "N/A"
             }\n` +
             `Supervisor: ${booking.supervisor_name || "N/A"}`;
 

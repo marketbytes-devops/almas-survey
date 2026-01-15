@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle } from "react";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
-import Logo1 from "../../assets/images/bg-auth.webp";
+import Logo1 from "../../assets/images/bg-auth.jpg";
 import ProfileIcon from "../../assets/images/profile-icon.png";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -34,7 +34,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         excludedServices,
         paymentTerms = [],
         quoteNotes = [],
-        surveyRemarks = [],         
+        surveyRemarks = [],
         currentSignature,
         surveySignature,
         selectedServices = [],
