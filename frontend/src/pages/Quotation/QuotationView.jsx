@@ -313,14 +313,14 @@ export default function QuotationView() {
       const { whatsapp_url, customer_name } = response.data;
 
       // 1. Trigger the PDF download automatically
-      // This ensures the user has the file locally ready to attach
+      // This ensures the user has the file locally/recent ready to attach
       triggerDownloadPdf();
 
-      // 2. Open WhatsApp directly (skips the system share menu as requested)
+      // 2. Open WhatsApp directly
       window.open(whatsapp_url, "_blank");
 
       alert(
-        `✅ Redirecting to WhatsApp for ${customer_name}.\n\nThe PDF has been automatically downloaded. Please attach it in the WhatsApp chat.`
+        `✅ Redirecting to WhatsApp for ${customer_name || "Customer"}.\n\nStep 1: The PDF is being downloaded.\nStep 2: WhatsApp is opening.\nStep 3: Just click 'Attach' in WhatsApp and select the downloaded PDF.`
       );
     } catch (err) {
       console.error("Send quotation error:", err);
