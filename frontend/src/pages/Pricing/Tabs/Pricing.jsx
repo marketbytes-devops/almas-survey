@@ -35,10 +35,10 @@ const PricingTab = ({
         label: city.name
       }));
     };
-    
+
     const cities = getQatarCities();
     setQatarCities(cities);
-    
+
     const doha = cities.find(c => c.value === "Doha");
     if (doha) {
       setSelectedPricingCity(doha.value);
@@ -58,7 +58,7 @@ const PricingTab = ({
         const params = new URLSearchParams();
         params.append("pricing_city", selectedPricingCity);
         params.append("move_type", selectedMoveType);
-        
+
         const res = await apiClient.get(`${API_BASE_URL}/price/active/?${params}`);
         const apiRows = (res.data || []).map((r, i) => ({
           id: r.id,
@@ -69,7 +69,7 @@ const PricingTab = ({
           variableRate: r.rate_type === "variable" ? String(r.rate) : "0.00",
           rateType: r.rate_type || (i === 0 ? "flat" : "variable"),
         }));
-        
+
         setTableData(apiRows);
         setNextId(apiRows.length ? Math.max(...apiRows.map((x) => x.id)) + 1 : 1);
         setExistingIds(new Set(apiRows.map((r) => r.id)));
@@ -108,11 +108,11 @@ const PricingTab = ({
       prev.map((row) =>
         row.id === id
           ? {
-              ...row,
-              rateType: type,
-              flatRate: type === "flat" ? row.flatRate : "",
-              variableRate: type === "variable" ? row.variableRate : "0.00",
-            }
+            ...row,
+            rateType: type,
+            flatRate: type === "flat" ? row.flatRate : "",
+            variableRate: type === "variable" ? row.variableRate : "0.00",
+          }
           : row
       )
     );
@@ -150,7 +150,7 @@ const PricingTab = ({
       alert("Please fill all required fields: City, Move Type, Tariff, Unit, and Currency");
       return;
     }
-    
+
     if (tableData.length === 0) {
       alert("Please add at least one pricing range");
       return;
@@ -163,8 +163,8 @@ const PricingTab = ({
       max_volume: parseFloat(row.max) || 999999,
       rate: parseFloat(row.rateType === "flat" ? row.flatRate : row.variableRate) || 0,
       rate_type: row.rateType,
-      pricing_country: "Qatar", 
-      pricing_city: selectedPricingCity, 
+      pricing_country: "Qatar",
+      pricing_city: selectedPricingCity,
       move_type: parseInt(selectedMoveType),
       currency: dropdownData.currencies.find((c) => c.id == selectedCurrency)?.name || "QAR",
     }));
@@ -339,11 +339,10 @@ const PricingTab = ({
                         value={row.flatRate}
                         disabled={!isFlat}
                         onChange={(e) => handleInputChange(row.id, "flatRate", e.target.value)}
-                        className={`w-28 px-3 py-2 border rounded-lg font-medium transition ${
-                          isFlat
-                            ? "border-purple-400 bg-purple-50 focus:border-purple-600"
-                            : "bg-gray-100 cursor-not-allowed"
-                        }`}
+                        className={`w-28 px-3 py-2 border rounded-lg font-medium transition ${isFlat
+                          ? "border-purple-400 bg-purple-50 focus:border-purple-600"
+                          : "bg-gray-100 cursor-not-allowed"
+                          }`}
                       />
                     </td>
                     <td className="px-6 py-5">
@@ -352,11 +351,10 @@ const PricingTab = ({
                         value={row.variableRate}
                         disabled={row.rateType !== "variable"}
                         onChange={(e) => handleInputChange(row.id, "variableRate", e.target.value)}
-                        className={`w-28 px-3 py-2 border rounded-lg font-medium transition ${
-                          row.rateType === "variable"
-                            ? "border-green-400 bg-green-50 focus:border-green-600"
-                            : "bg-gray-100 cursor-not-allowed"
-                        }`}
+                        className={`w-28 px-3 py-2 border rounded-lg font-medium transition ${row.rateType === "variable"
+                          ? "border-green-400 bg-green-50 focus:border-green-600"
+                          : "bg-gray-100 cursor-not-allowed"
+                          }`}
                       />
                     </td>
                     <td className="px-6 py-5">

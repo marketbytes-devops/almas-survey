@@ -14,7 +14,7 @@ router.register(r'inclusion-exclusion', InclusionExclusionViewSet, basename='inc
 router.register(r'insurance-plans', InsurancePlanViewSet)
 router.register(r'payment-terms', PaymentTermViewSet)
 router.register(r'quote-notes', QuoteNoteViewSet)
-router.register(r'truck-types', TruckTypeViewSet)#
+router.register(r'truck-types', TruckTypeViewSet)
 router.register(r'survey-remarks', SurveyRemarkViewSet)
 router.register(r'services', ServiceViewSet)
 

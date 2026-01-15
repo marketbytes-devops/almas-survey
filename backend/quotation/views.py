@@ -16,7 +16,6 @@ from django.conf import settings
 from urllib.parse import quote
 import traceback
 
-# ⭐ ADD THIS IMPORT
 from .pdf_generator import generate_quotation_pdf
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,25 @@ class QuotationViewSet(viewsets.ModelViewSet):
     serializer_class = QuotationSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
-    lookup_field = "quotation_id"
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+
+        lookup_value = self.kwargs[lookup_url_kwarg]
+        
+        if str(lookup_value).isdigit():
+            obj = queryset.filter(pk=lookup_value).first()
+            if obj:
+                return obj
+        
+        from django.shortcuts import get_object_or_404
+        return get_object_or_404(queryset, quotation_id=lookup_value)
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -180,7 +197,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
             
             logger.info(f"Generating PDF for quotation {quotation.quotation_id}")
             
-            # Get customer details
             customer_name = "Sir/Madam"
             phone_number = None
             
@@ -195,13 +211,12 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Clean phone (India/Qatar support)
             clean_phone = ''.join(filter(str.isdigit, str(phone_number)))
             clean_phone = clean_phone.lstrip('0')
             if len(clean_phone) == 10:
-                clean_phone = '91' + clean_phone       # India
+                clean_phone = '91' + clean_phone      
             elif len(clean_phone) == 8:
-                clean_phone = '974' + clean_phone      # Qatar
+                clean_phone = '974' + clean_phone     
             elif len(clean_phone) == 9:
                 clean_phone = '91' + clean_phone
             
@@ -211,7 +226,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Generate PDF
             try:
                 filepath, filename = generate_quotation_pdf(quotation)
                 pdf_url = request.build_absolute_uri(
@@ -224,14 +238,12 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
             
-            # Calculate pricing
             amount = float(quotation.amount or 0)
             discount = float(quotation.discount or 0)
             advance = float(quotation.advance or 0)
             final_amount = max(0, amount - discount)
             balance = max(0, final_amount - advance)
             
-            # Move details
             service_type = "Not specified"
             origin = "Not specified"
             destination = "Not specified"
@@ -245,7 +257,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                     dest_qs = survey.destination_addresses.first()
                     destination = getattr(dest_qs, 'city', None) or getattr(dest_qs, 'address', 'Not specified')
             
-            # ★★★ NEW PROFESSIONAL MESSAGE FORMAT ★★★
             message = f"""Dear Sir/Madam
 
     Greetings from Almas Movers Intl.
@@ -279,7 +290,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
         Thank you for choosing Almas Movers! �
         - Almas Movers Management"""
             
-            # Create WhatsApp URL with direct attachment
             encoded_message = quote(message)
             encoded_pdf_url = quote(pdf_url)
             
