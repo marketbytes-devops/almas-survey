@@ -312,15 +312,12 @@ export default function QuotationView() {
 
       const { whatsapp_url, customer_name } = response.data;
 
-      // 1. Trigger the PDF download automatically
-      // This ensures the user has the file locally/recent ready to attach
-      triggerDownloadPdf();
-
-      // 2. Open WhatsApp directly
+      // Simple redirect with the link in the message
       window.open(whatsapp_url, "_blank");
+      setLoading(false);
 
       alert(
-        `✅ Redirecting to WhatsApp for ${customer_name || "Customer"}.\n\nStep 1: The PDF is being downloaded.\nStep 2: WhatsApp is opening.\nStep 3: Just click 'Attach' in WhatsApp and select the downloaded PDF.`
+        `✅ Success!\n\nWhatsApp opened for ${customer_name}.\nPDF link is included in the message.`
       );
     } catch (err) {
       console.error("Send quotation error:", err);
@@ -721,7 +718,7 @@ export default function QuotationView() {
               className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition text-sm font-medium shadow-lg"
             >
               <FaCheckCircle className="w-4 h-4" />
-              <span>Book Move</span>
+              <span>Booked Moves</span>
             </button>
           </div>
         </div>

@@ -99,7 +99,7 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <AiOutlineCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <AiOutlineBarChart className="w-5 h-5" />, page: "survey_summary", action: "view" },
     { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <AiOutlineFileText className="w-5 h-5" />, page: "quotation", action: "view" },
-    { id: "booking", to: "/booking-list", label: "Book Move", icon: <AiTwotoneProfile className="w-5 h-5" />, page: "booking", action: "view" },
+    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <AiTwotoneProfile className="w-5 h-5" />, page: "booking", action: "view" },
     { id: "inventory", to: "/inventory", label: "Inventory", icon: <AiOutlineDatabase className="w-5 h-5" />, page: "inventory", action: "view" },
     {
       id: "pricing",

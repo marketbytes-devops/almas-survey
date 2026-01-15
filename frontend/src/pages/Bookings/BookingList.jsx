@@ -57,7 +57,7 @@ const BookingList = () => {
     return (
         <div className="container mx-auto p-4">
             <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6 rounded-t-lg flex justify-between items-center">
-                <h1 className="text-xl font-medium">Book Move and Assign</h1>
+                <h1 className="text-xl font-medium">Booked Moves and Assign</h1>
             </div>
 
             <div className="bg-white shadow-md rounded-b-lg p-6 space-y-4">

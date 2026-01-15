@@ -429,6 +429,10 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         },
 
         downloadPdf: async () => {
+            await this.getPdfBlob(); // Re-use the logic
+        },
+
+        getPdfBlob: async () => {
             try {
                 const printContent = generateHtmlContent();
                 const container = document.createElement('div');
@@ -456,16 +460,14 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
 
-                const margin = 10; // mm
+                const margin = 10;
                 const contentWidth = pdfWidth - (margin * 2);
                 const fullContentHeight = (canvas.height * contentWidth) / canvas.width;
                 const pageContentHeight = pdfHeight - (margin * 2);
 
                 let heightLeft = fullContentHeight;
                 let position = margin;
-                let canvasOffset = 0;
 
-                // Add first page
                 pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, fullContentHeight);
                 heightLeft -= pageContentHeight;
 
@@ -476,10 +478,21 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                     heightLeft -= pageContentHeight;
                 }
 
-                pdf.save(`Quotation_${quoteNumber}.pdf`);
+                return pdf.output('blob');
             } catch (error) {
-                console.error('PDF Export Error:', error);
-                alert('Failed to export PDF.');
+                console.error('PDF Blob Error:', error);
+                return null;
+            }
+        },
+
+        savePdf: async () => {
+            const blob = await this.getPdfBlob();
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Quotation_${quoteNumber}.pdf`;
+                link.click();
             }
         }
     }));

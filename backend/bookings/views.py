@@ -82,38 +82,35 @@ class BookingViewSet(viewsets.ModelViewSet):
             if booking.quotation and booking.quotation.survey and hasattr(booking.quotation.survey, 'origin_gps'):
                 gps_link = booking.quotation.survey.origin_gps.strip()
                 if gps_link:
-                    gps_link_text = f"""
-    ━━━━━━━━━━━━━━━━━━
-    Origin GPS Location:
-    {gps_link}
+                    gps_link_text = f"""Origin GPS Location:
 
-    Click above link to view exact pickup location on Google Maps!
-    """
+{gps_link}
 
+Click above link to view exact pickup location on Google Maps!
+"""
             message = f"""Booking Confirmation - Almas Movers
 
-    Booking ID: {booking.booking_id}
-    Client: {client_name}
-    Contact: {contact_number}
+Booking ID: {booking.booking_id}
+Client: {client_name}
+Contact: {contact_number}
 
-    Move Date: {booking.move_date if booking.move_date else 'TBA'}
-    Start Time: {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
-    Est. End: {booking.estimated_end_time.strftime('%I:%M %p') if booking.estimated_end_time else 'TBA'}
+Move Date: {booking.move_date if booking.move_date else 'TBA'}
+Start Time: {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
+Est. End: {booking.estimated_end_time.strftime('%I:%M %p') if booking.estimated_end_time else 'TBA'}
 
-    Move Type: {move_type}
-    From: {origin}
-    To: {destination}
+Move Type: {move_type}
+From: {origin}
+To: {destination}
 
-    ━━━━━━━━━━━━━━━━━━
-    Download Complete PDF:
-    {pdf_url}
+Download Complete PDF: {pdf_url}
 
-    {gps_link_text}
+{gps_link_text}
 
-    Please review all details before the move.
+Please review all details before the move.
 
-    Thank you for your service!
-    - Almas Movers Management"""
+Thank you for your service!
+
+Almas Movers Management"""
             
             whatsapp_url = f"https://wa.me/{clean_phone}?text={quote(message)}"
             

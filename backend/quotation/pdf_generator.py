@@ -265,7 +265,7 @@ def generate_quotation_pdf(quotation):
     sig_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.transparent),  # No border
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.transparent), 
     ]))
 
     if quotation.signature and os.path.exists(quotation.signature.path):

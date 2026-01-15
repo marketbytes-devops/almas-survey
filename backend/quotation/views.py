@@ -290,7 +290,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 "whatsapp_url": whatsapp_url,
                 "pdf_url": pdf_url,
                 "pdf_filename": filename,
-                "customer_name": customer_name,
                 "clean_phone": clean_phone,
             }, status=200)
 
