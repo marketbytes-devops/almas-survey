@@ -263,28 +263,24 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
     Quotation - Almas Movers
 
-        Quotation ID: {quotation.quotation_id}
-        Client: {customer_name}
+    Quotation ID: {quotation.quotation_id}
+    Client: {customer_name}
 
-        Service: {service_type}
-        From: {origin}
-        To: {destination}
+    Service: {service_type}
+    From: {origin}
+    To: {destination}
 
-        Pricing Summary:
-        - Total Amount: {amount:.2f} {currency_code}
-        - Discount: {discount:.2f} {currency_code}
-        - Final Amount: {final_amount:.2f} {currency_code}
-        - Advance Payment: {advance:.2f} {currency_code}
-        - Balance Due: {balance:.2f} {currency_code}
+    Pricing Summary:
 
-        ━━━━━━━━━━━━━━━━━━
-        DOWNLOAD COMPLETE QUOTATION:
-        {pdf_url}
+    - Total Amount: {amount:.2f} {currency_code}
+    - Discount: {discount:.2f} {currency_code}
+    - Final Amount: {final_amount:.2f} {currency_code}
+    - Advance Payment: {advance:.2f} {currency_code}
+    - Balance Due: {balance:.2f} {currency_code}
 
-        Click the link above to view full quotation details.
+    Thank you for choosing Almas Movers!
 
-        Thank you for choosing Almas Movers! �
-        - Almas Movers Management"""
+    - Almas Movers Management"""
 
             encoded_message = quote(message)
             whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_message}"
@@ -293,6 +289,7 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 "success": True,
                 "whatsapp_url": whatsapp_url,
                 "pdf_url": pdf_url,
+                "pdf_filename": filename,
                 "clean_phone": clean_phone,
             }, status=200)
 

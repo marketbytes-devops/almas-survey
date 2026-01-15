@@ -310,12 +310,17 @@ export default function QuotationView() {
         `/quotation-create/${quotation.quotation_id}/send-whatsapp/`
       );
 
-      const { whatsapp_url, pdf_url, customer_name } = response.data;
+      const { whatsapp_url, customer_name } = response.data;
 
+      // 1. Trigger the PDF download automatically
+      // This ensures the user has the file locally ready to attach
+      triggerDownloadPdf();
+
+      // 2. Open WhatsApp directly (skips the system share menu as requested)
       window.open(whatsapp_url, "_blank");
 
       alert(
-        `✅ Success!\n\nWhatsApp opened for ${customer_name}.\nPDF link is included in the message.`
+        `✅ Redirecting to WhatsApp for ${customer_name}.\n\nThe PDF has been automatically downloaded. Please attach it in the WhatsApp chat.`
       );
     } catch (err) {
       console.error("Send quotation error:", err);
