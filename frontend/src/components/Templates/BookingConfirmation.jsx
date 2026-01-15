@@ -3,7 +3,7 @@ import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
-import Logo1 from "../../assets/images/bg-auth.jpg";
+import Logo1 from "../../assets/images/bg-auth.JPG";
 import ProfileIcon from "../../assets/images/profile-icon.png";
 
 const CERTIFICATION_LOGOS = [Logo1, ProfileIcon];

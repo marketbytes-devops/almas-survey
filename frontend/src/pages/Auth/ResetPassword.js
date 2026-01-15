@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import apiClient from "../../api/apiClient";
-import bgAuth from "../../assets/images/bg-auth.jpg";
+import bgAuth from "../../assets/images/bg-auth.JPG";
 import Button from "../../components/Button";
 import { FormProvider, useForm } from "react-hook-form";
 import InputField from "../../components/Input";
