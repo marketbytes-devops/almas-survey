@@ -1,205 +1,294 @@
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.units import inch
-from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, KeepTogether, Image
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-from django.conf import settings
 import os
 from datetime import datetime
 
+from django.conf import settings
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+)
+
+# Import your service model (adjust if name is different)
+from additional_settings.models import SurveyAdditionalService  # or whatever your model is
+
+
+def get_service_name(service_id):
+    """Convert service ID to human-readable name"""
+    try:
+        service = SurveyAdditionalService.objects.get(id=service_id)
+        return service.name
+    except SurveyAdditionalService.DoesNotExist:
+        return f"Service {service_id}"
+
+
 def generate_quotation_pdf(quotation):
     """
-    Generate a professional PDF for quotation
-    Returns: (filepath, filename)
+    Updated PDF Generator - Exact order & format you want:
+    1. Header
+    2. Client & Move Details
+    3. Additional Services & Charges (with qty, price, total)
+    4. Financial Summary
+    5. Included & Excluded Services (table format like quote view)
+    6. Single Client Signature area (no authorized signature)
     """
     pdf_dir = os.path.join(settings.MEDIA_ROOT, 'quotation_pdfs')
     os.makedirs(pdf_dir, exist_ok=True)
-    
+
     filename = f"Quotation_{quotation.quotation_id}.pdf"
     filepath = os.path.join(pdf_dir, filename)
-    
+
     doc = SimpleDocTemplate(
         filepath,
         pagesize=A4,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40
+        rightMargin=45,
+        leftMargin=45,
+        topMargin=60,
+        bottomMargin=50
     )
-    
+
     story = []
     styles = getSampleStyleSheet()
-    
+
+    # ── Custom Styles ─────────────────────────────────────────────────────
     title_style = ParagraphStyle(
-        'CustomTitle',
+        'Title',
         parent=styles['Heading1'],
-        fontSize=24,
+        fontSize=22,
         textColor=colors.HexColor('#4c7085'),
-        spaceAfter=10,
         alignment=TA_CENTER,
+        spaceAfter=8,
         fontName='Helvetica-Bold'
     )
-    
-    subtitle_style = ParagraphStyle(
-        'Subtitle',
+
+    company_style = ParagraphStyle(
+        'Company',
         parent=styles['Normal'],
-        fontSize=12,
+        fontSize=16,
+        textColor=colors.black,
         alignment=TA_CENTER,
-        textColor=colors.HexColor('#666666'),
-        spaceAfter=20
+        spaceAfter=20,
+        fontName='Helvetica-Bold'
     )
-    
+
     heading_style = ParagraphStyle(
-        'CustomHeading',
+        'Heading',
         parent=styles['Heading2'],
         fontSize=14,
         textColor=colors.HexColor('#4c7085'),
+        spaceBefore=18,
         spaceAfter=10,
-        spaceBefore=15,
         fontName='Helvetica-Bold'
     )
-    
+
+    label_style = ParagraphStyle(
+        'Label',
+        parent=styles['Normal'],
+        fontSize=10,
+        fontName='Helvetica-Bold',
+        spaceAfter=4
+    )
+
     normal_style = ParagraphStyle(
-        'CustomNormal',
+        'Normal',
         parent=styles['Normal'],
         fontSize=10,
         spaceAfter=8
     )
 
-    label_style = ParagraphStyle(
-        'LabelStyle',
-        parent=styles['Normal'],
-        fontSize=10,
-        fontName='Helvetica-Bold'
-    )
-    
+    # ── Header ────────────────────────────────────────────────────────────
+    story.append(Paragraph("ALMAS MOVERS INTERNATIONAL", company_style))
     story.append(Paragraph("QUOTATION", title_style))
-    story.append(Paragraph("ALMAS MOVERS INTERNATIONAL", subtitle_style))
-    story.append(Spacer(1, 10))
-    
+    story.append(Spacer(1, 20))
+
+    # Quotation Info
+    currency_code = quotation.currency.code if quotation.currency else "QAR"
     info_data = [
-        [Paragraph("Quotation ID:", label_style), quotation.quotation_id or 'N/A', 
-         Paragraph("Date:", label_style), quotation.date.strftime('%d %B %Y') if quotation.date else datetime.now().strftime('%d %B %Y')],
+        ["Quotation ID:", quotation.quotation_id or "N/A", "Date:", quotation.date.strftime('%d %B %Y') if quotation.date else datetime.now().strftime('%d %B %Y')],
     ]
-    info_table = Table(info_data, colWidths=[1.2*inch, 1.8*inch, 1.2*inch, 1.8*inch])
+    info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
     info_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f2f2f2')),
-        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f2f2f2')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f8f9fa')),
+        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f8f9fa')),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
     ]))
     story.append(info_table)
-    story.append(Spacer(1, 20))
-    
+    story.append(Spacer(1, 25))
+
+    # ── 1. Client & Move Details ──────────────────────────────────────────
     survey = quotation.survey
-    client_name = getattr(survey, 'full_name', 'N/A') if survey else 'N/A'
-    client_phone = getattr(survey, 'phone_number', 'N/A') if survey else 'N/A'
-    service_type = getattr(survey, 'service_type', 'N/A') if survey else 'N/A'
-    origin = getattr(survey, 'origin_city', '') or getattr(survey, 'origin_address', 'N/A') if survey else 'N/A'
-    
-    destination = "N/A"
-    if survey and hasattr(survey, 'destination_addresses') and survey.destination_addresses.exists():
-        dest = survey.destination_addresses.first()
-        destination = getattr(dest, 'city', '') or getattr(dest, 'address', 'N/A')
+    if survey:
+        client_name = getattr(survey, 'full_name', 'N/A')
+        client_phone = getattr(survey, 'phone_number', 'N/A')
+        service_type = getattr(survey, 'service_type', 'N/A')
+        origin = getattr(survey, 'origin_city', '') or getattr(survey, 'origin_address', 'N/A')
+        move_date = survey.packing_date_from.strftime('%d %B %Y') if survey.packing_date_from else "As per request"
+
+        destination = "N/A"
+        if hasattr(survey, 'destination_addresses') and survey.destination_addresses.exists():
+            dest = survey.destination_addresses.first()
+            destination = getattr(dest, 'city', '') or getattr(dest, 'address', 'N/A')
+    else:
+        client_name = client_phone = service_type = origin = destination = move_date = "N/A"
 
     details_data = [
-        [Paragraph("Client Name:", label_style), client_name, Paragraph("Phone:", label_style), client_phone],
-        [Paragraph("Service Type:", label_style), service_type, Paragraph("Move Date:", label_style), "As per request"],
-        [Paragraph("Origin:", label_style), origin, Paragraph("Destination:", label_style), destination],
+        ["Client Name:", client_name],
+        ["Phone:", client_phone],
+        ["Service Type:", service_type],
+        ["Move Date:", move_date],
+        ["Origin:", origin],
+        ["Destination:", destination],
     ]
-    details_table = Table(details_data, colWidths=[1.2*inch, 1.8*inch, 1.2*inch, 1.8*inch])
+
+    details_table = Table(details_data, colWidths=[1.8*inch, 4.2*inch])
     details_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f2f2f2')),
-        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f2f2f2')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f8f9fa')),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
     ]))
     story.append(Paragraph("Client & Move Details", heading_style))
     story.append(details_table)
-    story.append(Spacer(1, 20))
-    
+    story.append(Spacer(1, 25))
+
+    # ── 2. Additional Services & Charges (moved up) ───────────────────────
+    if quotation.additional_charges:
+        story.append(Paragraph("Additional Services & Charges", heading_style))
+
+        add_data = [["Service", "Quantity", "Price/Unit", "Total"]]
+        total_additional = 0
+
+        for charge in quotation.additional_charges:
+            name = charge.get('service_name', 'N/A')
+            qty = int(charge.get('quantity', 1))
+            price = float(charge.get('price_per_unit', 0))
+            subtotal = price * qty
+            total_additional += subtotal
+
+            add_data.append([
+                name,
+                str(qty),
+                f"{price:,.2f} {currency_code}",
+                f"{subtotal:,.2f} {currency_code}"
+            ])
+
+        add_table = Table(add_data, colWidths=[2.8*inch, 1*inch, 1.2*inch, 1*inch])
+        add_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e3f2fd')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (2, 0), (3, -1), 'RIGHT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ]))
+
+        # Total row
+        add_data.append([
+            Paragraph("<b>Total Additional Charges</b>", label_style),
+            "", "", f"{total_additional:,.2f} {currency_code}"
+        ])
+
+        story.append(add_table)
+        story.append(Spacer(1, 25))
+
+    # ── 3. Financial Summary ──────────────────────────────────────────────
     amount = float(quotation.amount or 0)
     discount = float(quotation.discount or 0)
     final_amount = float(quotation.final_amount or (amount - discount))
     advance = float(quotation.advance or 0)
     balance = float(quotation.balance or (final_amount - advance))
-    currency = quotation.currency.code if quotation.currency else "QAR"
 
     financial_data = [
         ["Description", "Amount"],
-        ["Quotation Amount", f"{amount:.2f} {currency}"],
-        ["Discount", f"- {discount:.2f} {currency}"],
-        ["Total Amount", f"{final_amount:.2f} {currency}"],
-        ["Advance Payment", f"- {advance:.2f} {currency}"],
-        ["Balance Due", f"{balance:.2f} {currency}"],
+        ["Quotation Amount", f"{amount:,.2f} {currency_code}"],
+        ["Discount", f"-{discount:,.2f} {currency_code}"],
+        ["Total Amount", f"{final_amount:,.2f} {currency_code}"],
+        ["Advance Payment", f"{advance:,.2f} {currency_code}"],
+        ["Balance Due", f"{balance:,.2f} {currency_code}"],
     ]
-    
+
     fin_table = Table(financial_data, colWidths=[4.2*inch, 1.8*inch])
     fin_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4c7085')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('FONTNAME', (0, 3), (0, 3), 'Helvetica-Bold'),
-        ('FONTNAME', (1, 3), (1, 3), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 5), (1, 5), colors.HexColor('#e3f2fd')),
         ('FONTNAME', (0, 5), (0, 5), 'Helvetica-Bold'),
         ('FONTNAME', (1, 5), (1, 5), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, 5), (1, 5), colors.HexColor('#e3f2fd')),
     ]))
     story.append(Paragraph("Financial Summary", heading_style))
     story.append(fin_table)
-    story.append(Spacer(1, 20))
-    
-    if quotation.included_services or quotation.excluded_services:
-        story.append(Paragraph("Service Inclusions & Exclusions", heading_style))
-        serv_data = []
-        if quotation.included_services:
-            serv_data.append([Paragraph("<b>Included:</b>", normal_style), Paragraph(", ".join(map(str, quotation.included_services)), normal_style)])
-        if quotation.excluded_services:
-            serv_data.append([Paragraph("<b>Excluded:</b>", normal_style), Paragraph(", ".join(map(str, quotation.excluded_services)), normal_style)])
-        
-        if serv_data:
-            serv_table = Table(serv_data, colWidths=[1.2*inch, 4.8*inch])
-            serv_table.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ]))
-            story.append(serv_table)
+    story.append(Spacer(1, 25))
 
-    if quotation.notes:
-        story.append(Paragraph("Notes & Terms", heading_style))
-        story.append(Paragraph(quotation.notes.replace('\n', '<br/>'), normal_style))
-        story.append(Spacer(1, 20))
-    
-    if quotation.signature:
-        try:
-            story.append(Paragraph("Client Signature", heading_style))
-            sig_path = quotation.signature.path
-            if os.path.exists(sig_path):
-                img = Image(sig_path, width=2*inch, height=1*inch)
-                img.hAlign = 'LEFT'
-                story.append(img)
-        except Exception:
-            pass
+    # ── 4. Included & Excluded Services (Table format like quote view) ─────
+    included = [get_service_name(sid) for sid in (quotation.included_services or [])]
+    excluded = [get_service_name(sid) for sid in (quotation.excluded_services or [])]
 
+    if included or excluded:
+        story.append(Paragraph("Services Inclusions & Exclusions", heading_style))
+
+        services_table_data = [["Included Services", "Excluded Services"]]
+
+        # Make rows balanced
+        max_rows = max(len(included), len(excluded))
+        included_padded = included + [""] * (max_rows - len(included))
+        excluded_padded = excluded + [""] * (max_rows - len(excluded))
+
+        for inc, exc in zip(included_padded, excluded_padded):
+            services_table_data.append([inc or "—", exc or "—"])
+
+        services_table = Table(services_table_data, colWidths=[3.5*inch, 3.5*inch])
+        services_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4c7085')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#f0f8ff')),
+            ('BACKGROUND', (1, 1), (1, -1), colors.HexColor('#fff5f5')),
+        ]))
+
+        story.append(services_table)
+        story.append(Spacer(1, 25))
+
+    # ── Single Signature Area (only Client) ───────────────────────────────
+    story.append(Paragraph("Client Signature", heading_style))
+
+    sig_data = [
+        [Spacer(1, 1.2*inch)],
+        ["_________________________"],
+        [client_name]
+    ]
+
+    sig_table = Table(sig_data, colWidths=[7*inch])
+    sig_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.transparent),  # No border
+    ]))
+
+    if quotation.signature and os.path.exists(quotation.signature.path):
+        sig_img = Image(quotation.signature.path, width=3*inch, height=1.2*inch)
+        sig_img.hAlign = 'LEFT'
+        sig_data[0][0] = sig_img
+
+    story.append(sig_table)
     story.append(Spacer(1, 40))
-    story.append(Paragraph(
-        "Thank you for choosing Almas Movers International",
-        ParagraphStyle('Footer', alignment=TA_CENTER, fontSize=12,
-                       textColor=colors.HexColor('#4c7085'), spaceAfter=6)
-    ))
-    story.append(Paragraph(
-        "For any queries, please contact us at info@almasmovers.com",
-        ParagraphStyle('FooterSm', alignment=TA_CENTER, fontSize=9, textColor=colors.grey)
-    ))
-    
+
+    # ── Footer ────────────────────────────────────────────────────────────
+    story.append(Paragraph("Thank you for choosing Almas Movers International!", normal_style))
+
     doc.build(story)
-    
     return filepath, filename
