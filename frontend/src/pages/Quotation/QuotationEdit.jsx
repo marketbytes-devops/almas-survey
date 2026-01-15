@@ -106,7 +106,22 @@ export default function QuotationEdit() {
         setSurvey(s);
         setDestinationCity(s.destination_addresses?.[0]?.city || "");
 
-        const checkRes = await apiClient.get(`/quotation-create/check/?survey_id=${id}`);
+        const getFallback = (p, f) => (p && p !== "" && p !== "—") ? p : (f && f !== "" && f !== "—") ? f : "";
+
+        // Set survey basics immediately
+        setForm((prev) => ({
+          ...prev,
+          client: getFallback(s.full_name, s.enquiry?.fullName),
+          mobile: getFallback(s.phone_number, s.enquiry?.phoneNumber),
+          email: getFallback(s.email, s.enquiry?.email),
+          serviceRequired: SERVICE_TYPE_DISPLAY[s.service_type] || "",
+          movingFrom: s.origin_address || "",
+          movingTo: s.destination_addresses?.[0]?.address || "",
+          moveDate: s.packing_date_from || today,
+          jobType: s.service_type === "localMove" ? "Local" : "International",
+        }));
+
+        const checkRes = await apiClient.get(`/quotation-create/exists/?survey_id=${encodeURIComponent(id)}`);
         if (!checkRes.data.exists) {
           setError("No quotation found.");
           setLoading(false);
@@ -121,16 +136,17 @@ export default function QuotationEdit() {
         const selectedServices = s.additional_services || [];
         const breakdown = selectedServices
           .map((service) => {
-            const pricing = chargesRes.data.find((p) => p.service?.id === service.id);
+            const sId = service.service_id || service.id;
+            const pricing = chargesRes.data.find((p) => p.service?.id === sId);
             if (!pricing) return null;
 
             const pricePerUnit = parseFloat(pricing.price_per_unit) || 0;
-            const quantity = pricing.rate_type === "FIX" ? 1 : parseInt(pricing.per_unit_quantity) || 1;
+            const quantity = pricing.rate_type === "FIX" ? 1 : (parseInt(service.quantity) || parseInt(pricing.per_unit_quantity) || 1);
             const total = pricing.rate_type === "FIX" ? pricePerUnit : pricePerUnit * quantity;
 
             return {
               id: pricing.id,
-              service_name: service.name,
+              service_name: pricing.service?.name || service.name,
               price_per_unit: pricePerUnit,
               quantity: quantity,
               rate_type: pricing.rate_type,
@@ -148,16 +164,21 @@ export default function QuotationEdit() {
         });
         setChargeQuantities(qtyMap);
 
-        const get = (p, f) => p ?? f ?? "—";
+
 
         const includedServices = {};
-        dynamicIncludes.forEach((service) => {
-          includedServices[service.id] = q.included_services?.includes(service.id) || false;
-        });
+        if (dynamicIncludes.length > 0) {
+          dynamicIncludes.forEach((service) => {
+            includedServices[service.id] = q.included_services?.includes(service.id) || false;
+          });
+        }
+
         const excludedServices = {};
-        dynamicExcludes.forEach((service) => {
-          excludedServices[service.id] = q.excluded_services?.includes(service.id) || false;
-        });
+        if (dynamicExcludes.length > 0) {
+          dynamicExcludes.forEach((service) => {
+            excludedServices[service.id] = q.excluded_services?.includes(service.id) || false;
+          });
+        }
 
         const serviceSelectionsInit = {};
         if (q.selected_services) {
@@ -167,40 +188,31 @@ export default function QuotationEdit() {
         }
         setServiceSelections(serviceSelectionsInit);
 
-        // Use backend values first (reliable after serializer fix)
-        const totalAmount = safeParse(q.amount);
-        const discount = safeParse(q.discount);
-        const advance = safeParse(q.advance);
-        const finalAmount = safeParse(q.final_amount);
-        const balance = safeParse(q.balance);
-
-        setForm({
+        setForm((prev) => ({
+          ...prev,
           date: q.date || today,
-          client: get(s.full_name, s.enquiry?.fullName),
-          mobile: get(s.phone_number, s.enquiry?.phoneNumber),
-          email: get(s.email, s.enquiry?.email),
-          serviceRequired: SERVICE_TYPE_DISPLAY[s.service_type] || "—",
-          movingFrom: get(s.origin_address),
-          movingTo: s.destination_addresses?.[0]?.address || "—",
-          moveDate: s.packing_date_from || today,
-          jobType: s.service_type === "localMove" ? "Local" : "International",
-          baseAmount: "",
           additionalChargesTotal: breakdown.reduce((sum, c) => sum + c.total, 0),
-          amount: totalAmount.toFixed(2),
-          discount: discount.toString(),
-          finalAmount: finalAmount.toFixed(2),
-          advance: advance.toString(),
-          balance: balance.toFixed(2),
-          includedServices,
-          excludedServices,
-        });
+          amount: safeParse(q.amount).toString(),
+          discount: safeParse(q.discount).toString(),
+          finalAmount: safeParse(q.final_amount).toString(),
+          advance: safeParse(q.advance).toString(),
+          balance: safeParse(q.balance).toString(),
+          includedServices: { ...prev.includedServices, ...includedServices },
+          excludedServices: { ...prev.excludedServices, ...excludedServices },
+        }));
 
-        const sigRes = await apiClient.get(`/quotation-create/${q.quotation_id}/signature/`);
-        setHasSignature(true);
-        setCurrentSignature(sigRes.data.signature_url);
+        try {
+          const sigRes = await apiClient.get(`/quotation-create/${q.quotation_id}/signature/`);
+          if (sigRes.data.signature_url) {
+            setHasSignature(true);
+            setCurrentSignature(sigRes.data.signature_url);
+          }
+        } catch (sigErr) {
+          setHasSignature(false);
+          setCurrentSignature(null);
+        }
       } catch (err) {
         if (err.response?.status !== 404) setError("Failed to load quotation.");
-        setHasSignature(false);
       } finally {
         setLoading(false);
       }
@@ -289,9 +301,7 @@ export default function QuotationEdit() {
   }, [form.baseAmount, form.additionalChargesTotal, form.discount, form.advance]);
 
   // Prefer backend values first (reliable), fallback to computed
-  const displayAmount = safeParse(quotation?.amount) > 0 ? safeParse(quotation?.amount).toFixed(2) : computedValues.amount;
-  const displayFinal = safeParse(quotation?.final_amount) > 0 ? safeParse(quotation?.final_amount).toFixed(2) : computedValues.finalAmount;
-  const displayBalance = safeParse(quotation?.balance) > 0 ? safeParse(quotation?.balance).toFixed(2) : computedValues.balance;
+  // Removed redundant displayAmount/Final/Balance. We now use computedValues directly for live reactivity.
 
   const handleQuantityChange = (chargeId, value) => {
     const qty = Math.max(0, parseInt(value) || 0);
@@ -299,14 +309,14 @@ export default function QuotationEdit() {
   };
 
   const handleUpdate = async () => {
-    if (!displayAmount || !displayFinal || !quotation?.quotation_id) {
+    if (!computedValues.amount || !computedValues.finalAmount || !quotation?.quotation_id) {
       alert("Please ensure all pricing fields are valid.");
       return;
     }
 
     const payload = {
       date: form.date,
-      amount: safeParse(displayAmount), // Use the displayed (reliable) value
+      amount: safeParse(computedValues.amount),
       discount: safeParse(form.discount),
       advance: safeParse(form.advance),
       included_services: Object.keys(form.includedServices).filter((k) => form.includedServices[k]),
@@ -479,6 +489,46 @@ export default function QuotationEdit() {
           </div>
         </div>
 
+        {/* Additional Info from Survey */}
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-[#4c7085] mb-2">Service Required</label>
+            <input
+              type="text"
+              value={form.serviceRequired}
+              readOnly
+              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#4c7085] mb-2">Moving From</label>
+            <input
+              type="text"
+              value={form.movingFrom}
+              readOnly
+              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#4c7085] mb-2">Moving To</label>
+            <input
+              type="text"
+              value={form.movingTo}
+              readOnly
+              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#4c7085] mb-2">Date of Move</label>
+            <input
+              type="text"
+              value={form.moveDate}
+              readOnly
+              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
+            />
+          </div>
+        </div>
+
         {/* Additional Services */}
         {additionalChargesBreakdown.length > 0 && (
           <div className="bg-[#6b8ca3]/5 border-2 border-[#6b8ca3]/30 rounded-xl p-6">
@@ -605,9 +655,8 @@ export default function QuotationEdit() {
                     className="focus:outline-none"
                   >
                     <div
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                        isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-400"
-                      }`}
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-400"
+                        }`}
                     >
                       {isSelected && <div className="w-4 h-4 bg-white rounded-full" />}
                     </div>
@@ -647,13 +696,13 @@ export default function QuotationEdit() {
               <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
                 <label className="block text-sm font-medium text-[#4c7085]">Total Amount</label>
                 <p className="text-2xl font-medium text-[#4c7085] mt-2">
-                  {displayAmount} QAR
+                  {computedValues.amount} QAR
                 </p>
               </div>
               <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
                 <label className="block text-sm font-medium text-[#4c7085]">Balance</label>
                 <p className="text-2xl font-medium text-indigo-700 mt-2">
-                  {displayBalance} QAR
+                  {computedValues.balance} QAR
                 </p>
               </div>
             </div>
@@ -685,9 +734,8 @@ export default function QuotationEdit() {
               <button
                 onClick={() => setIsSignatureModalOpen(true)}
                 disabled={isSignatureUploading}
-                className={`px-8 py-2 rounded-lg text-sm font-medium text-white transition ${
-                  isSignatureUploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#4c7085] hover:bg-[#6b8ca3]"
-                }`}
+                className={`px-8 py-2 rounded-lg text-sm font-medium text-white transition ${isSignatureUploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#4c7085] hover:bg-[#6b8ca3]"
+                  }`}
               >
                 <FaPlus className="inline mr-2" />
                 {isSignatureUploading ? "Uploading..." : "Change"}
@@ -696,16 +744,14 @@ export default function QuotationEdit() {
           </div>
         </div>
 
-        {/* Update Button */}
         <div className="flex justify-center">
           <button
             onClick={handleUpdate}
-            disabled={!displayAmount || !displayFinal || priceError}
-            className={`w-full px-4 py-2 text-sm font-medium rounded-lg shadow-xl transition ${
-              !displayAmount || !displayFinal || priceError
-                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:shadow-2xl"
-            }`}
+            disabled={!computedValues.amount || !computedValues.finalAmount || priceError}
+            className={`w-full px-4 py-2 text-sm font-medium rounded-lg shadow-xl transition ${!computedValues.amount || !computedValues.finalAmount || priceError
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:shadow-2xl"
+              }`}
           >
             Update Quotation
           </button>
