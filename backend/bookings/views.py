@@ -30,41 +30,47 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="share-supervisor-whatsapp")
     def share_supervisor_whatsapp(self, request, pk=None):
-        """Share booking PDF to supervisor via WhatsApp with GPS link"""
+        """Share booking PDF to supervisor via WhatsApp"""
         try:
             booking = self.get_object()
             
             print(f"DEBUG: Booking ID: {booking.id}")
             
-            # Check supervisor
             if not booking.supervisor:
-                return Response({"error": "No supervisor assigned."}, status=400)
-            
-            supervisor_phone = booking.supervisor.phone_number
-            if not supervisor_phone or supervisor_phone.strip() == '':
                 return Response(
-                    {"error": f"Supervisor '{booking.supervisor.name}' has no phone number."},
-                    status=400
+                    {"error": "No supervisor assigned to this booking."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Clean phone (India/Qatar support)
+            supervisor_phone = booking.supervisor.phone_number
+            
+            if not supervisor_phone or supervisor_phone.strip() == '':
+                return Response(
+                    {"error": f"Supervisor '{booking.supervisor.name}' does not have a phone number."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
             clean_phone = ''.join(filter(str.isdigit, supervisor_phone))
-            if clean_phone.startswith('0'):
-                clean_phone = clean_phone[1:]
             if len(clean_phone) == 10:
                 clean_phone = '91' + clean_phone
-            elif len(clean_phone) == 8:
-                clean_phone = '974' + clean_phone
             
-            # Generate PDF
             try:
                 filepath, filename = generate_booking_pdf(booking)
-                pdf_url = request.build_absolute_uri(f"{settings.MEDIA_URL}booking_pdfs/{filename}")
+                print(f"DEBUG: PDF generated at: {filepath}")
+                
+                pdf_url = request.build_absolute_uri(
+                    f"{settings.MEDIA_URL}booking_pdfs/{filename}"
+                )
+                print(f"DEBUG: PDF URL: {pdf_url}")
+                
             except Exception as pdf_error:
                 print(f"PDF Generation Error: {str(pdf_error)}")
-                return Response({"error": f"Failed to generate PDF: {str(pdf_error)}"}, status=500)
+                print(traceback.format_exc())
+                return Response(
+                    {"error": f"Failed to generate PDF: {str(pdf_error)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
-            # Client & Move Info
             client_name = "Customer"
             contact_number = "N/A"
             move_type = "N/A"
@@ -78,48 +84,33 @@ class BookingViewSet(viewsets.ModelViewSet):
                 move_type = getattr(survey, 'service_type', 'N/A') or 'N/A'
                 origin = getattr(survey, 'origin_city', 'N/A') or 'N/A'
                 
-                if hasattr(survey, 'destination_addresses') and survey.destination_addresses.exists():
-                    dest = survey.destination_addresses.first()
-                    destination = getattr(dest, 'city', 'N/A') or 'N/A'
-
-            # Get GPS link (if exists)
-            gps_link_text = ""
-            if booking.quotation and booking.quotation.survey and hasattr(booking.quotation.survey, 'origin_gps'):
-                gps_link = booking.quotation.survey.origin_gps.strip()
-                if gps_link:
-                    gps_link_text = f"""
-    ━━━━━━━━━━━━━━━━━━
-    � Origin GPS Location:
-    {gps_link}
-
-    Click above link to view exact pickup location on Google Maps!
-    """
-
-            # Final WhatsApp message
+                if hasattr(survey, 'destination_addresses'):
+                    dest_qs = survey.destination_addresses.first()
+                    if dest_qs and hasattr(dest_qs, 'city'):
+                        destination = dest_qs.city or 'N/A'
+            
             message = f"""Booking Confirmation - Almas Movers
 
-    Booking ID: {booking.booking_id}
-    Client: {client_name}
-    Contact: {contact_number}
+Booking ID: {booking.booking_id}
+Client: {client_name}
+Contact: {contact_number}
 
-    Move Date: {booking.move_date if booking.move_date else 'TBA'}
-    Start Time: {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
-    Est. End: {booking.estimated_end_time.strftime('%I:%M %p') if booking.estimated_end_time else 'TBA'}
+Move Date: {booking.move_date if booking.move_date else 'TBA'}
+Start Time: {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
+Est. End: {booking.estimated_end_time.strftime('%I:%M %p') if booking.estimated_end_time else 'TBA'}
 
-    Move Type: {move_type}
-    From: {origin}
-    To: {destination}
+Move Type: {move_type}
+From: {origin}
+To: {destination}
 
-    ━━━━━━━━━━━━━━━━━━
-    📄 Download Complete PDF:
-    {pdf_url}
+━━━━━━━━━━━━━━━━━━
+Download Complete PDF:
+{pdf_url}
 
-    {gps_link_text}
+Please review all details before the move.
 
-    Please review all details before the move.
-
-    Thank you for your service!
-    - Almas Movers Management"""
+Thank you for your service!
+- Almas Movers Management"""
             
             whatsapp_url = f"https://wa.me/{clean_phone}?text={quote(message)}"
             
@@ -133,11 +124,14 @@ class BookingViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             print(f"ERROR: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return Response({"error": f"Unexpected error: {str(e)}"}, status=500)
-    
-    
+            print(traceback.format_exc())
+            
+            return Response(
+                {"error": f"Unexpected error: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
 class BookingLabourViewSet(viewsets.ModelViewSet):
     queryset = BookingLabour.objects.all()
     serializer_class = BookingLabourSerializer
