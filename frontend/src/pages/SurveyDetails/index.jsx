@@ -194,8 +194,8 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Customer Details</h3>
+            <div className="bg-white rounded-lg shadow p-2 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-2">Customer Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input label="Customer Type" name="customerType" type="select" options={apiData.customerTypes} />
                     <Input label="Salutation" name="salutation" type="select" options={salutationOptions} />
@@ -212,17 +212,19 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Survey Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg shadow p-2 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-2">Survey Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4">
                     <DatePickerInput label="Survey Date" name="surveyDate" />
-                    <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
-                    <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:col-span-2">
+                        <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
+                        <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Origin Address</h3>
+            <div className="bg-white rounded-lg shadow p-2 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-2">Origin Address</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input label="Origin Address" name="originAddress" />
                     <Input label="Country" name="originCountry" type="select" options={countryOptions} />
@@ -238,10 +240,11 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                             type="button"
                             onClick={handleGetLocation}
                             disabled={isLocating}
-                            className={`p-2 rounded-md transition-colors mb-[2px] ${isLocating ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#4c7085] hover:opacity-90 text-white'}`}
+                            className={`py-2 px-4 rounded-md transition-colors mb-[2px] font-medium text-sm flex items-center justify-center gap-2 ${isLocating ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#4c7085] hover:opacity-90 text-white'}`}
                             title="Get Current Location"
                         >
                             {isLocating ? <FaSpinner className="animate-spin" size={20} /> : <FaMapMarkerAlt size={20} />}
+                            <span className="sm:hidden">Get Current Location</span>
                         </button>
                     </div>
                     {watch("originGps") && (
@@ -259,8 +262,8 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Destination Details</h3>
+            <div className="bg-white rounded-lg shadow p-2 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-2">Destination Details</h3>
                 <div className="space-y-4">
                     <label className="flex items-center gap-2">
                         <input type="checkbox" {...register("multipleAddresses")} />
@@ -274,9 +277,9 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                                 const state = watch(`destinationAddresses[${i}].state`);
 
                                 return (
-                                    <div key={addr.id} className="bg-gray-100 p-4 rounded space-y-4">
+                                    <div key={addr.id} className="bg-gray-100 p-2 sm:p-4 rounded space-y-2 sm:space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <h4 className="font-medium">Address {i + 1}</h4>
+                                            <h4 className="font-medium text-sm sm:text-base">Address {i + 1}</h4>
                                             {destinationAddresses.length > 1 && (
                                                 <button
                                                     type="button"
@@ -288,7 +291,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                                             <Input
                                                 label="Address"
                                                 name={`destinationAddresses[${i}].address`}
@@ -312,7 +315,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                                                 options={getCityOptions(country, state)}
                                             />
                                         </div>
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <div className="grid grid-cols-1 gap-2 sm:gap-4">
                                             <Input
                                                 label="ZIP"
                                                 name={`destinationAddresses[${i}].zip`}
@@ -325,14 +328,14 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                             <button
                                 type="button"
                                 onClick={addAddress}
-                                className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
+                                className="w-full sm:w-auto py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
                             >
                                 Add Another Address
                             </button>
                         </>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                                 <Input label="Address" name="destinationAddresses[0].address" />
                                 <Input
                                     label="Country"
@@ -356,7 +359,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                                     )}
                                 />
                             </div>
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-1 gap-2 sm:gap-4">
                                 <Input label="ZIP" name="destinationAddresses[0].zip" />
                             </div>
                         </>
@@ -364,8 +367,8 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-4">Move Date</h3>
+            <div className="bg-white rounded-lg shadow p-2 md:p-6">
+                <h3 className="text-lg sm:text-xl font-medium mb-2">Move Date</h3>
                 <div className="grid grid-cols-1 gap-4">
                     <DatePickerInput label="Move Date" name="packingDateFrom" />
                 </div>
@@ -378,8 +381,8 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
 
 const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, isSignatureUploading, setIsSignatureModalOpen, isSignatureModalOpen, localSignatureFile }) => {
     return (
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h3 className="text-lg sm:text-xl font-medium mb-4">Survey Status</h3>
+        <div className="bg-white rounded-lg shadow p-2 md:p-6">
+            <h3 className="text-lg sm:text-xl font-medium mb-2">Survey Status</h3>
             <div className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input label="Status" name="status" type="select" options={statusOptions} />
@@ -405,7 +408,7 @@ const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, i
                                         <button
                                             type="button"
                                             onClick={() => setIsSignatureModalOpen(true)}
-                                            className="px-4 py-2 bg-white text-gray-800 text-xs font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
+                                            className="py-2 px-4 bg-white text-gray-800 text-sm font-medium rounded-lg shadow-lg transition-all"
                                         >
                                             Update Signature
                                         </button>
@@ -430,7 +433,7 @@ const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, i
                                 onClick={() => setIsSignatureModalOpen(true)}
                                 disabled={isSignatureUploading}
                                 className={`
-                                    flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all
+                                    w-full md:w-auto flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all
                                     ${(signatureUploaded || signatureImageUrl || localSignatureFile)
                                         ? "bg-white border-2 border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5"
                                         : "bg-[#4c7085] text-white shadow-md hover:shadow-lg hover:bg-[#3d5a6b]"}
@@ -995,19 +998,22 @@ const SurveyDetails = () => {
     return (
         <>
             {isLoading && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><Loading /></div>}
-            {error && <div className="fixed top-28 sm:top-20 right-4 sm:right-8 bg-red-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{error}</div>}
-            {message && <div className="fixed top-28 sm:top-20 right-4 sm:right-8 bg-green-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{message}</div>}
+            {error && <div className="fixed top-20 right-4 sm:right-8 bg-red-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{error}</div>}
+            {message && <div className="fixed top-20 right-4 sm:right-8 bg-green-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{message}</div>}
 
             <div className="min-h-auto">
                 <FormProvider {...methods}>
                     <form onSubmit={handleSubmit(onNext)} className="mx-auto">
-                        <div className="grid sm:grid-cols-4 w-full gap-4 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 w-full gap-2 sm:gap-4 mb-4 sm:mb-8">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.id}
                                     type="button"
                                     onClick={() => handleTabChange(tab.id)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === tab.id ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white" : "bg-gray-200"}`}
+                                    className={`py-2 px-4 rounded-lg text-center transition-all text-sm font-medium ${activeTab === tab.id
+                                        ? "bg-[#4c7085] text-white shadow-xl shadow-[#4c7085]/20 ring-2 ring-[#4c7085]/10"
+                                        : "bg-white text-gray-400 border border-gray-200 hover:bg-gray-50 hover:text-gray-600 shadow-sm"
+                                        }`}
                                 >
                                     {tab.label}
                                 </button>
@@ -1058,18 +1064,18 @@ const SurveyDetails = () => {
                             />
                         )}
 
-                        <div className="flex gap-4 mt-4 sm:mt-10">
+                        <div className="flex flex-col sm:flex-row gap-4 mt-8 sm:mt-10">
                             <button
                                 type="button"
                                 onClick={handleBack}
-                                className="flex-1 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
+                                className="w-full sm:flex-1 py-2 px-4 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium text-sm"
                             >
                                 Back
                             </button>
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="flex-1 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:opacity-90 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full sm:flex-1 py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:opacity-90 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {getButtonText()}
                             </button>

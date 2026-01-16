@@ -253,34 +253,46 @@ class QuotationViewSet(viewsets.ModelViewSet):
                 dest = survey.destination_addresses.first()
                 destination = getattr(dest, "city", None) or getattr(dest, "address", "Not specified")
 
-            message = f"""Dear Sir/Madam
+            service_type_map = {
+                "localMove": "Local Move",
+                "internationalMove": "International Move",
+                "carExport": "Car Import and Export",
+                "storageServices": "Storage Services",
+                "logistics": "Logistics",
+            }
+            service_type_display = service_type_map.get(service_type, service_type)
 
-    Greetings from Almas Movers Intl.
-    Many thanks for the enquiry, please find the attached quotation for your kind perusal.
-    Hope the above meets your requirement, please let us know if any assistance / clarification required.
-    Kindly acknowledge the receipt by return.
-    I welcome your kind feedback.
+            message = f"""Dear {customer_name},
 
-    Quotation - Almas Movers
+Greetings from Almas Movers Intl.
+Many thanks for the enquiry, please find the quotation for your kind perusal.
 
-    Quotation ID: {quotation.quotation_id}
-    Client: {customer_name}
+Quotation Link: {pdf_url}
 
-    Service: {service_type}
-    From: {origin}
-    To: {destination}
+Hope the above meets your requirement, please let us know if any assistance / clarification required.
+Kindly acknowledge the receipt by return.
+I welcome your kind feedback.
 
-    Pricing Summary:
+Quotation - Almas Movers
 
-    - Total Amount: {amount:.2f} {currency_code}
-    - Discount: {discount:.2f} {currency_code}
-    - Final Amount: {final_amount:.2f} {currency_code}
-    - Advance Payment: {advance:.2f} {currency_code}
-    - Balance Due: {balance:.2f} {currency_code}
+Quotation ID: {quotation.quotation_id}
+Client: {customer_name}
 
-    Thank you for choosing Almas Movers!
+Service: {service_type_display}
+From: {origin}
+To: {destination}
 
-    - Almas Movers Management"""
+Pricing Summary:
+
+- Total Amount: {amount:.2f} {currency_code}
+- Discount: {discount:.2f} {currency_code}
+- Final Amount: {final_amount:.2f} {currency_code}
+- Advance Payment: {advance:.2f} {currency_code}
+- Balance Due: {balance:.2f} {currency_code}
+
+Thank you for choosing Almas Movers!
+
+- Almas Movers Management"""
 
             encoded_message = quote(message)
             whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_message}"
@@ -288,9 +300,7 @@ class QuotationViewSet(viewsets.ModelViewSet):
             return Response({
                 "success": True,
                 "whatsapp_url": whatsapp_url,
-                "pdf_url": pdf_url,
-                "pdf_filename": filename,
-                "clean_phone": clean_phone,
+                "customer_name": customer_name,
             }, status=200)
 
         except Quotation.DoesNotExist:

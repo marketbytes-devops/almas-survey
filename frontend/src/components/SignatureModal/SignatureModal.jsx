@@ -10,17 +10,17 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
     if (isOpen && canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      
+
       // Set canvas size
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
-      
+
       // Set drawing styles
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      
+
       // Fill with white background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -31,10 +31,10 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    
+
     const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
     const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-    
+
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -43,15 +43,15 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
 
   const draw = (e) => {
     if (!isDrawing) return;
-    
+
     e.preventDefault();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    
+
     const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
     const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-    
+
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -76,8 +76,8 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
 
     const canvas = canvasRef.current;
     canvas.toBlob((blob) => {
-      const file = new File([blob], `signature_${Date.now()}.png`, { 
-        type: 'image/png' 
+      const file = new File([blob], `signature_${Date.now()}.png`, {
+        type: 'image/png'
       });
       onSave(file);
       onClose();
@@ -136,25 +136,24 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
         <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50">
           <button
             onClick={clearSignature}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+            className="flex items-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
           >
             <RotateCcw className="w-4 h-4" />
             Clear
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+            className="py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
           >
             Cancel
           </button>
           <button
             onClick={saveSignature}
             disabled={!hasDrawn}
-            className={`flex items-center gap-2 px-4 py-2 text-sm text-white rounded transition ${
-              hasDrawn
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-gray-400 cursor-not-allowed'
-            }`}
+            className={`flex items-center gap-2 py-2 px-4 text-sm font-medium text-white rounded transition ${hasDrawn
+              ? 'bg-green-600 hover:bg-green-700'
+              : 'bg-gray-400 cursor-not-allowed'
+              }`}
           >
             <Check className="w-4 h-4" />
             Save Signature

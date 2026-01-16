@@ -21,7 +21,7 @@ const AddedArticlesSidebar = ({
         if (photo instanceof File) return URL.createObjectURL(photo);
         if (typeof photo === 'string') {
             if (photo.startsWith("http") || photo.startsWith("data:")) return photo;
-            return `https://backend.almasintl.com${photo}`;
+            return `http://127.0.0.1:8000${photo}`;
         }
         return null;
     };
@@ -122,7 +122,7 @@ const AddedArticlesSidebar = ({
 
     return (
         <>
-            <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform z-50 ${showArticlesSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl transform transition-transform z-50 ${showArticlesSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white">
                     <h3 className="font-medium">Added Articles ({articles.length})</h3>
                     <button

@@ -105,7 +105,6 @@ To: {destination}
 Download Complete PDF: {pdf_url}
 
 {gps_link_text}
-
 Please review all details before the move.
 
 Thank you for your service!

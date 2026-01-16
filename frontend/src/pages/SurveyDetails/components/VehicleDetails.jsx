@@ -27,8 +27,8 @@ const VehicleDetails = () => {
     };
 
     return (
-        <div className="mt-4 sm:mt-10 bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-6">
+        <div className="mt-4 sm:mt-10 bg-white rounded-lg shadow p-2 sm:p-6">
+            <div className="flex justify-between items-center mb-2 sm:mb-4">
                 <h2 className="text-lg sm:text-xl font-medium">Vehicle Details</h2>
             </div>
 
@@ -41,7 +41,7 @@ const VehicleDetails = () => {
                     {vehicles.map((vehicle, index) => (
                         <div
                             key={vehicle.id}
-                            className="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#4c7085]/30"
+                            className="group relative bg-white border border-gray-200 rounded-xl p-2 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#4c7085]/30"
                         >
                             <button
                                 type="button"
@@ -51,14 +51,14 @@ const VehicleDetails = () => {
                                 <FaTimes size={12} />
                             </button>
 
-                            <div className="flex items-center gap-3 mb-6">
+                            <div className="flex items-center gap-3 mb-3 sm:mb-6">
                                 <div className="w-8 h-8 rounded-lg bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-bold">
                                     {index + 1}
                                 </div>
                                 <h4 className="text-lg font-semibold text-gray-800">Vehicle Specification</h4>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-5">
                                 <div className="sm:col-span-2">
                                     <Input
                                         label="Vehicle Type"
@@ -77,7 +77,7 @@ const VehicleDetails = () => {
                                     placeholder="e.g. Camry"
                                 />
 
-                                <label className="sm:col-span-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer transition hover:bg-gray-100/80 border border-gray-100">
+                                <label className="sm:col-span-2 flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg cursor-pointer transition hover:bg-gray-100/80 border border-gray-100">
                                     <input
                                         type="checkbox"
                                         {...register(`vehicles[${index}].insurance`)}
@@ -100,11 +100,11 @@ const VehicleDetails = () => {
                     ))}
                 </div>
             )}
-            <div className="pt-6 flex justify-center items-center text-center">
+            <div className="flex justify-center items-center text-center pt-2 sm:pt-6">
                 <button
                     type="button"
                     onClick={addVehicle}
-                    className="w-full hidden sm:flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-sm text-white rounded shadow transition hover:shadow-lg"
+                    className="w-full hidden sm:flex items-center justify-center gap-2 py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-sm font-medium text-white rounded shadow transition hover:shadow-lg"
                 >
                     <FaPlus /> Add Vehicle Details
                 </button>
@@ -112,7 +112,7 @@ const VehicleDetails = () => {
             <button
                 type="button"
                 onClick={addVehicle}
-                className="w-full flex sm:hidden mt-6 items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-sm text-white rounded-lg shadow-md font-medium"
+                className="w-full flex sm:hidden  items-center justify-center gap-2 py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-sm font-medium text-white rounded-lg shadow-md"
             >
                 <FaPlus /> Add Vehicle Details
             </button>

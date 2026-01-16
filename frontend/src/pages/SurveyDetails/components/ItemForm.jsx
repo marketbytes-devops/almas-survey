@@ -210,18 +210,18 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
                     </select>
                 </div>
             </div>
-            <div className="flex gap-3 justify-end mt-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-end mt-4">
                 <button
                     type="button"
                     onClick={() => onAdd(item.name, formData, isMoving)}
-                    className="px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transform transition"
+                    className="w-full sm:w-auto py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
                 >
                     {existingArticle ? "Update Article" : "Add to Survey"}
                 </button>
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
+                    className="w-full sm:w-auto py-2 px-4 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition"
                 >
                     Cancel
                 </button>

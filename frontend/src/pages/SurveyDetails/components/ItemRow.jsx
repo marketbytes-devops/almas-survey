@@ -98,7 +98,7 @@ const ItemRow = ({
     return (
         <div className="border-b border-gray-200 last:border-0">
             <div
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4
+                className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-2 sm:p-4
       hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
       transition-all rounded-lg"
             >
@@ -138,11 +138,11 @@ const ItemRow = ({
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
                             type="button"
                             onClick={handleCameraClick}
-                            className={`px-4 py-2 rounded-lg border transition-all flex items-center gap-2 text-sm font-medium ${hasPhoto
+                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg border transition-all flex items-center justify-center gap-2 text-sm font-medium ${hasPhoto
                                 ? "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
                                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                                 }`}
@@ -152,55 +152,55 @@ const ItemRow = ({
                         </button>
                     </div>
 
-                    <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+                    <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden w-full sm:w-auto">
                         <button
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty - 1)}
                             disabled={qty <= 0}
-                            className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 sm:flex-none px-4 py-2 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-300 sm:border-r-0"
                         >
-                            <FaMinus className="w-4 h-4" />
+                            <FaMinus className="w-4 h-4 mx-auto" />
                         </button>
                         <input
                             type="text"
                             value={qty}
                             readOnly
-                            className="w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-3 border-x border-gray-300"
+                            className="flex-1 sm:w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-2 border-r border-gray-300 sm:border-x sm:border-gray-300"
                         />
                         <button
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty + 1)}
-                            className="px-4 py-3 text-gray-600 hover:bg-gray-100 transition"
+                            className="flex-1 sm:flex-none px-4 py-2 text-gray-600 hover:bg-gray-100 transition"
                         >
-                            <FaPlus className="w-4 h-4" />
+                            <FaPlus className="w-4 h-4 mx-auto" />
                         </button>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => toggleMoveStatus(item.name)}
-                            className="flex items-center p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2"
+                            className="flex-1 sm:flex-none flex items-center justify-center p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2"
                             title={isMoving ? "Mark as Not Moving" : "Mark as Moving"}
                         >
                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isMoving ? "bg-green-500 border-green-500" : "bg-red-500 border-red-500"}`}>
                                 {isMoving ? (
-                                    <span className="text-white text-xs">M</span>
+                                    <span className="text-white text-[10px]">M</span>
                                 ) : (
-                                    <span className="text-white text-xs">N</span>
+                                    <span className="text-white text-[10px]">N</span>
                                 )}
                             </div>
-                            <span className="text-xs text-gray-600 hidden sm:inline">
+                            <span className="text-sm text-gray-600">
                                 {isMoving ? "Moving" : "Not Moving"}
                             </span>
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs">
-                        <div className="flex items-center p-3.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2">
-                            <label className="font-medium text-gray-700 whitespace-nowrap">Crate Required?</label>
+                    <div className="flex items-center gap-3 text-sm w-full sm:w-auto">
+                        <div className="flex-1 sm:flex-none flex flex-col sm:flex-row items-start sm:items-center p-3 sm:p-3.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2">
+                            <label className="font-medium text-gray-700 whitespace-nowrap text-xs">Crate Required?</label>
                             <div className="flex gap-4">
                                 <label className="flex items-center gap-1 cursor-pointer">
                                     <input
@@ -211,7 +211,7 @@ const ItemRow = ({
                                         onChange={() => handleCrateChange('yes')}
                                         className="w-4 h-4 text-[#4c7085]"
                                     />
-                                    <span>Yes</span>
+                                    <span className="text-xs">Yes</span>
                                 </label>
                                 <label className="flex items-center gap-1 cursor-pointer">
                                     <input
@@ -222,7 +222,7 @@ const ItemRow = ({
                                         onChange={() => handleCrateChange('no')}
                                         className="w-4 h-4 text-[#4c7085]"
                                     />
-                                    <span>No</span>
+                                    <span className="text-xs">No</span>
                                 </label>
                             </div>
                         </div>
@@ -234,7 +234,7 @@ const ItemRow = ({
                             e.stopPropagation();
                             toggleExpandedItem(item.name);
                         }}
-                        className="text-sm flex gap-2 items-center justify-center p-3 text-[#4c7085] hover:bg-indigo-100 rounded-full transition"
+                        className="w-full sm:w-auto text-sm font-medium flex gap-2 items-center justify-center py-2 px-4 text-[#4c7085] hover:bg-indigo-100 rounded-lg sm:rounded-full transition border border-[#4c7085]/20 sm:border-0"
                     >
                         Item Options{" "}
                         {expandedItems[item.name] ? (

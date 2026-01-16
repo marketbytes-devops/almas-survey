@@ -440,14 +440,14 @@ const Article = ({ apiData, setMessage, setError }) => {
                     onClick={() => setShowArticlesSidebar(false)}
                 />
             )}
-            <div className="space-y-8">
-                <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-                    <div className="flex justify-between items-center mb-6">
+            <div className="space-y-4 sm:space-y-8">
+                <div className="bg-white rounded-2xl shadow-lg p-2 md:p-8 border border-gray-200">
+                    <div className="flex justify-between items-center mb-2 sm:mb-4">
                         <h3 className="text-lg sm:text-xl font-medium text-black">Select Room</h3>
                         <button
                             type="button"
                             onClick={() => setShowArticlesSidebar(true)}
-                            className="hidden sm:flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition transform "
+                            className="hidden sm:flex items-center gap-3 py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition"
                         >
                             <FaBars /> View Added ({articles.length})
                         </button>
@@ -477,7 +477,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     setRoomSearchQuery("");
                                 }
                             }}
-                            className={`w-full px-6 py-2 text-left text-sm font-medium rounded-xl border-2 transition-all duration-300 flex justify-between items-center shadow-sm ${selectedRoom
+                            className={`w-full py-2 px-4 text-left text-sm font-medium rounded-lg border-2 transition-all duration-300 flex justify-between items-center shadow-sm ${selectedRoom
                                 ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
                                 : "border-gray-300 bg-white text-gray-700 hover:border-[#4c7085]"
                                 }`}
@@ -526,7 +526,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                                     setShowRoomDropdown(false);
                                                     setRoomSearchQuery("");
                                                 }}
-                                                className={`w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all text-sm font-medium border-b border-gray-100 last:border-0 ${selectedRoom?.id === room.id ? 'bg-blue-50 text-[#4c7085]' : 'text-gray-800'}`}
+                                                className={`w-full text-left px-4 py-2 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all text-sm font-medium border-b border-gray-100 last:border-0 ${selectedRoom?.id === room.id ? 'bg-blue-50 text-[#4c7085]' : 'text-gray-800'}`}
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span>{room.label}</span>
@@ -546,20 +546,20 @@ const Article = ({ apiData, setMessage, setError }) => {
                 {selectedRoom && (
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
                         {Object.values(selectedItems).some(v => v) && (
-                            <div className="p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex justify-between items-center">
-                                <span className="font-medium">
+                            <div className="p-4 sm:p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex flex-col sm:flex-row justify-between items-center gap-3">
+                                <span className="font-medium text-sm sm:text-base">
                                     {Object.values(selectedItems).filter(Boolean).length} item(s) selected
                                 </span>
                                 <button
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={addMultipleArticles}
-                                    className="px-6 py-2 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg"
+                                    className="w-full sm:w-auto py-2 px-4 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg text-sm"
                                 >
                                     Add and Update Selected
                                 </button>
                             </div>
                         )}
-                        <div className="p-4 bg-gray-50 border-b border-gray-200">
+                        <div className="p-2 sm:p-4 bg-gray-50 border-b border-gray-200">
                             <div className="relative">
                                 <input
                                     type="text"
@@ -580,13 +580,13 @@ const Article = ({ apiData, setMessage, setError }) => {
                                 )}
                             </div>
                         </div>
-                        <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+                        <div className="p-2 sm:p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
                             <button
                                 type="button"
                                 onClick={() => setShowManualAddForm(true)}
-                                className="mx-auto px-8 py-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-xl shadow-xl hover:shadow-2xl transform transition-all duration-300 flex items-center gap-4"
+                                className="w-full sm:w-auto sm:mx-auto py-2 px-4 text-sm font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-4"
                             >
-                                <FaPlus className="w-6 h-6" />
+                                <FaPlus className="w-5 h-5 sm:w-6 sm:h-6" />
                                 Add Item Manually
                             </button>
                         </div>
