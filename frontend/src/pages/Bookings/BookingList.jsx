@@ -1,7 +1,8 @@
 /* src/pages/Bookings/BookingList.jsx */
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaSearch, FaEye, FaEdit, FaTrash, FaUsers } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
@@ -11,6 +12,7 @@ const BookingList = () => {
     const [filteredBookings, setFilteredBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [hoveredBooking, setHoveredBooking] = useState(null);
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -83,6 +85,7 @@ const BookingList = () => {
                                 <th className="px-4 py-3">Contact</th>
                                 <th className="px-4 py-3">Location</th>
                                 <th className="px-4 py-3">Supervisor</th>
+                                <th className="px-4 py-3 text-center">Staff</th>
                                 <th className="px-4 py-3 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -100,6 +103,30 @@ const BookingList = () => {
                                         </td>
                                         <td className="px-4 py-4">
                                             {b.supervisor_name || "Unassigned"}
+                                        </td>
+                                        <td className="px-4 py-4 text-center">
+                                            <div
+                                                className="relative inline-block"
+                                                onMouseEnter={(e) => {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    setHoveredBooking({
+                                                        staff: b.labours || [],
+                                                        pos: {
+                                                            top: rect.bottom + window.scrollY + 10,
+                                                            left: rect.left + rect.width / 2 + window.scrollX
+                                                        }
+                                                    });
+                                                }}
+                                                onMouseLeave={() => setHoveredBooking(null)}
+                                            >
+                                                <FaUsers
+                                                    size={22}
+                                                    className={`mx-auto cursor-pointer transition-all duration-300 hover:scale-110 ${b.labours && b.labours.length > 0
+                                                        ? "text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.3)]"
+                                                        : "text-gray-400"
+                                                        }`}
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-4 text-center">
                                             <div className="flex justify-center gap-4">
@@ -144,6 +171,50 @@ const BookingList = () => {
                     </table>
                 </div>
             </div>
+            {hoveredBooking && createPortal(
+                <div
+                    className="fixed pointer-events-none z-[9999]"
+                    style={{
+                        top: hoveredBooking.pos.top,
+                        left: hoveredBooking.pos.left,
+                        transform: 'translateX(-50%)'
+                    }}
+                >
+                    <div className="w-56 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.4)] overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-200">
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-2.5">
+                            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Assigned Resources</p>
+                            <p className="text-[13px] font-semibold text-white flex items-center gap-1.5">
+                                <FaUsers className="text-blue-400" size={14} />
+                                Staff / Manpower
+                            </p>
+                        </div>
+                        <div className="p-3 max-h-48 overflow-y-auto">
+                            {hoveredBooking.staff.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {hoveredBooking.staff.map((l, idx) => (
+                                        <li key={idx} className="flex items-center gap-2.5 text-[13px] text-gray-700">
+                                            <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-[11px] font-bold text-blue-600 border border-blue-100">
+                                                {idx + 1}
+                                            </div>
+                                            <span className="truncate font-medium">
+                                                {l.staff_member_name || "Unnamed Staff"}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-4 text-gray-400">
+                                    <FaUsers size={24} className="mb-2 opacity-10" />
+                                    <p className="text-[12px] italic">No staff assigned</p>
+                                </div>
+                            )}
+                        </div>
+                        {/* Arrow */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-[8px] border-transparent border-b-white"></div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 };
