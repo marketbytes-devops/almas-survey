@@ -9,7 +9,7 @@ const ServicesTab = () => {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "http://backend.almasintl.com/api";
+  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
   useEffect(() => {
     fetchItems();

@@ -21,7 +21,7 @@ const AddedArticlesSidebar = ({
         if (photo instanceof File) return URL.createObjectURL(photo);
         if (typeof photo === 'string') {
             if (photo.startsWith("http") || photo.startsWith("data:")) return photo;
-            return `http://backend.almasintl.com${photo}`;
+            return `https://backend.almasintl.com${photo}`;
         }
         return null;
     };

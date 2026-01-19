@@ -11,7 +11,7 @@ import {
 import apiClient from "../../../api/apiClient";
 import Input from "../../../components/Input";
 
-const API_BASE = apiClient.defaults.baseURL || "http://backend.almasintl.com/api";
+const API_BASE = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
 const TruckTypeTab = () => {
   const [trucks, setTrucks] = useState([]);
