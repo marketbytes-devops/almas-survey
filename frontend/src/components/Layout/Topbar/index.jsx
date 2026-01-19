@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { RiMenu3Line, RiCloseLine } from "react-icons/ri";
+import { RiMenu3Line, RiMenuFoldFill } from "react-icons/ri";
 import { FaCamera, FaPowerOff } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import apiClient from "../../../api/apiClient";
@@ -108,31 +108,30 @@ const Topbar = ({ toggleSidebar, sidebarOpen, user, setIsAuthenticated }) => {
 
   return (
     <>
-      <div className="rounded-b-none md:rounded-b-xl mx-0 md:mx-8 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white shadow-md sticky top-0 z-30">
+      <div className="mx-0 md:mx-8 md:mt-4 bg-white md:rounded-2xl text-gray-800 shadow-sm border border-gray-100 sticky top-0 md:top-4 z-30 transition-all duration-300">
         <div className="px-4 py-6.5 md:py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={toggleSidebar}
-              className="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm shrink-0"
+              className="p-2.5 rounded-xl hover:bg-gray-50 text-[#4c7085] transition-all duration-300 shrink-0"
             >
               {sidebarOpen ? (
-                <RiCloseLine className="w-6 h-6" />
+                <RiMenuFoldFill className="w-6 h-6" />
               ) : (
                 <RiMenu3Line className="w-6 h-6" />
               )}
-            </motion.button>
+            </button>
 
             <div className="flex items-center gap-2">
-              <div className="hidden sm:block w-2 h-2 bg-white/70 rounded-full animate-pulse"></div>
-              <h1 className="text-sm font-medium truncate">{activePage}</h1>
+              <div className="hidden sm:block w-1.5 h-1.5 bg-[#4c7085]/40 rounded-full"></div>
+              <h1 className="text-sm font-medium text-gray-600 truncate">{activePage}</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {user && (
               <div className="hidden md:flex flex-col text-right leading-tight">
-                <span className="text-xs font-medium">{user.name}</span>
-                <span className="text-[10px] opacity-90 mt-1">{user.role}</span>
+                <span className="text-xs font-medium text-gray-700">{user.name}</span>
+                <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">{user.role}</span>
               </div>
             )}
             <div className="relative group">
@@ -162,22 +161,19 @@ const Topbar = ({ toggleSidebar, sidebarOpen, user, setIsAuthenticated }) => {
                 />
               </label>
             </div>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={handleLogout}
-              className="sm:hidden p-3 rounded-xl bg-white/10 hover:bg-red-500/30 transition-all ml-2"
+              className="sm:hidden p-2.5 rounded-xl bg-gray-50 text-red-500 hover:bg-red-50 transition-all ml-2"
             >
               <FaPowerOff className="w-5 h-5" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            </button>
+            <button
               onClick={handleLogout}
-              className="hidden sm:flex items-center gap-2.5 px-5 py-2.5 bg-white/10 hover:bg-red-500/20 rounded-xl transition-all font-medium text-sm group"
+              className="hidden sm:flex items-center gap-2.5 px-4 py-2 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-xl transition-all font-medium text-xs group"
             >
-              <FiLogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <FiLogOut className="w-4 h-4 transition-transform" />
               <span className="hidden lg:inline">Logout</span>
-            </motion.button>
+            </button>
           </div>
         </div>
       </div>
@@ -192,7 +188,7 @@ const Topbar = ({ toggleSidebar, sidebarOpen, user, setIsAuthenticated }) => {
       >
         {feedback.show && (
           <div
-            className={`px-8 py-4 rounded-2xl shadow-2xl font-bold text-white flex items-center gap-3 backdrop-blur-xl border ${feedback.type === "success"
+            className={`px-8 py-4 rounded-2xl shadow-2xl font-semibold text-white flex items-center gap-3 backdrop-blur-xl border ${feedback.type === "success"
               ? "bg-gradient-to-r from-green-500 to-emerald-600 border-green-300"
               : "bg-gradient-to-r from-red-500 to-rose-600 border-red-300"
               }`}

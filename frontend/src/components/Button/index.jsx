@@ -1,8 +1,7 @@
 import PropTypes from 'prop-types';
 
-const Button = ({ onClick, children, className, disabled }) => {
+const Button = ({ onClick, children, className, disabled, type = "button" }) => {
   const handleClick = (e) => {
-    console.log("Button clicked:", { disabled, children }); 
     if (!disabled && onClick) {
       onClick(e);
     }
@@ -10,10 +9,10 @@ const Button = ({ onClick, children, className, disabled }) => {
 
   return (
     <button
+      type={type}
       onClick={handleClick}
-      className={`bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm py-2 px-3 rounded opacity-100 ${
-        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-100'
-      } ${className}`}
+      className={`btn-primary text-sm py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:shadow-md active:opacity-90'
+        } ${className}`}
       disabled={disabled}
     >
       {children}
@@ -29,7 +28,7 @@ Button.propTypes = {
 };
 
 Button.defaultProps = {
-  onClick: () => {},
+  onClick: () => { },
   className: '',
   disabled: false,
 };

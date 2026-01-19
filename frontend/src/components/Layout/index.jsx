@@ -56,7 +56,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
   const isDesktop = window.innerWidth >= 1024;
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-white overflow-hidden">
+    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
       <AnimatePresence>
         {sidebarOpen && !isDesktop && (
           <motion.div
@@ -75,23 +75,15 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className={`${isDesktop ? "relative" : "fixed inset-y-0 left-0"} z-50 w-72 bg-white shadow-lg`}
+            transition={{ type: "tween", duration: 0.3, ease: "easeInOut" }}
+            className={`${isDesktop ? "relative" : "fixed inset-y-0 left-0"} z-50 w-72 bg-white`}
           >
             <Sidebar toggleSidebar={closeSidebar} user={user} />
           </motion.aside>
         )}
       </AnimatePresence>
 
-      <motion.div
-        className="flex-1 flex flex-col overflow-hidden"
-        animate={{
-          scale: sidebarOpen && !isDesktop ? 0.96 : 1,
-          borderRadius: sidebarOpen && !isDesktop ? "1.5rem" : "0",
-          boxShadow: sidebarOpen && !isDesktop ? "0 20px 40px -10px rgba(0,0,0,0.3)" : "none",
-        }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      >
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar
           toggleSidebar={toggleSidebar}
           sidebarOpen={sidebarOpen}
@@ -108,9 +100,9 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
             ) : (
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <Outlet />
               </motion.div>
@@ -120,8 +112,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated }) => {
         <div className="mt-20 sm:mt-0">
           <BottomNav />
         </div>
-
-      </motion.div>
+      </div>
     </div>
   );
 };

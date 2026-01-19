@@ -1,18 +1,32 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaSearch } from "react-icons/fa";
+import {
+  FiPhone,
+  FiMail,
+  FiMessageSquare,
+  FiSearch,
+  FiPlus,
+  FiFilter,
+  FiTrash2,
+  FiEdit3,
+  FiUserPlus,
+  FiChevronDown,
+  FiChevronUp,
+  FiMoreVertical,
+  FiCheckCircle,
+  FiClock,
+  FiCalendar
+} from "react-icons/fi";
+import { IoLogoWhatsapp } from "react-icons/io";
 import Modal from "../../components/Modal";
+import PageHeader from "../../components/PageHeader";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
-const rowVariants = {
-  hover: { backgroundColor: "#f3f4f6" },
-  rest: { backgroundColor: "#ffffff" },
-};
-
-const Input = ({
+// Shared Input Component with Premium Styling
+const InputField = ({
   label,
   name,
   type = "text",
@@ -30,7 +44,7 @@ const Input = ({
   return (
     <div className="flex flex-col">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
           {label}
           {rules.required && <span className="text-red-500"> *</span>}
         </label>
@@ -38,9 +52,7 @@ const Input = ({
       {type === "select" ? (
         <select
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
-            }`}
-          aria-label={label}
+          className={`input-style w-full ${error ? "border-red-500 shadow-sm shadow-red-50/50" : ""}`}
         >
           <option value="">Select an option</option>
           {options.map((option) => (
@@ -52,22 +64,17 @@ const Input = ({
       ) : type === "textarea" ? (
         <textarea
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
-            }`}
-          rows={4}
-          aria-label={label}
+          className={`input-style w-full min-h-[120px] resize-none ${error ? "border-red-500 shadow-sm shadow-red-50/50" : ""}`}
         />
       ) : (
         <input
           type={type}
           {...register(name, rules)}
-          className={`w-full px-2 py-2 text-sm border rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors ${error ? "border-red-500" : ""
-            }`}
-          aria-label={label}
+          className={`input-style w-full ${error ? "border-red-500 shadow-sm shadow-red-50/50" : ""}`}
           {...props}
         />
       )}
-      {error && <p className="mt-1 text-xs text-red-500">{error.message}</p>}
+      {error && <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">{error.message}</p>}
     </div>
   );
 };
@@ -82,22 +89,21 @@ const Enquiries = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [permissions, setPermissions] = useState([]);
+
+  // Modal States
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [isAssignConfirmOpen, setIsAssignConfirmOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
-  const [assignData, setAssignData] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
-  const [isAddingEnquiry, setIsAddingEnquiry] = useState(false);
-  const [isAssigningEnquiry, setIsAssigningEnquiry] = useState(false);
-  const [assigningEnquiryId, setAssigningEnquiryId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
 
   const addForm = useForm();
   const editForm = useForm();
@@ -110,102 +116,8 @@ const Enquiries = () => {
     },
   });
 
-  const toggleEnquiryExpand = (id) => {
-    setExpandedEnquiries((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
   const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
   const RECAPTCHA_ACTION = "submit_enquiry";
-
-  useEffect(() => {
-    const loadRecaptcha = () => {
-      if (document.querySelector(`script[src*="recaptcha"]`)) return;
-
-      const script = document.createElement("script");
-      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => console.log("reCAPTCHA v3 loaded");
-      script.onerror = () => setError("Failed to load reCAPTCHA. Please check internet.");
-      document.body.appendChild(script);
-    };
-
-    loadRecaptcha();
-  }, [RECAPTCHA_SITE_KEY]);
-
-  const getRecaptchaToken = async () => {
-    return new Promise((resolve, reject) => {
-      if (!window.grecaptcha) {
-        console.error("reCAPTCHA not loaded yet");
-        return reject(new Error("reCAPTCHA not loaded. Try again."));
-      }
-
-      window.grecaptcha.ready(() => {
-        window.grecaptcha
-          .execute(RECAPTCHA_SITE_KEY, { action: RECAPTCHA_ACTION })
-          .then((token) => {
-            console.log("reCAPTCHA Token:", token.substring(0, 30) + "...");
-            resolve(token);
-          })
-          .catch((err) => {
-            console.error("reCAPTCHA execute failed:", err);
-            reject(new Error("reCAPTCHA verification failed. Try again."));
-          });
-      });
-    });
-  };
-
-  const applyCurrentFilters = (dataToFilter) => {
-    const filterData = filterForm.getValues();
-    let filtered = [...dataToFilter];
-
-    if (filterData.filterType === "assigned") {
-      filtered = filtered.filter((e) => e.assigned_user_email);
-    } else if (filterData.filterType === "non-assigned") {
-      filtered = filtered.filter((e) => !e.assigned_user_email);
-    }
-
-    if (filterData.fromDate || filterData.toDate) {
-      const from = filterData.fromDate ? new Date(filterData.fromDate) : null;
-      const to = filterData.toDate ? new Date(filterData.toDate) : null;
-      if (to) to.setHours(23, 59, 59, 999);
-
-      filtered = filtered.filter((e) => {
-        const createdAt = new Date(e.created_at);
-        return (!from || createdAt >= from) && (!to || createdAt <= to);
-      });
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((e) => {
-        return [
-          e.fullName,
-          e.phoneNumber,
-          e.email,
-          e.serviceType,
-          e.message,
-          e.note,
-          e.assigned_user_email,
-        ].some((field) => field?.toLowerCase().includes(query));
-      });
-    }
-
-    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  };
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEnquiries = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
 
   const serviceOptions = [
     { value: "localMove", label: "Local Move" },
@@ -217,10 +129,11 @@ const Enquiries = () => {
 
   const filterOptions = [
     { value: "all", label: "All Enquiries" },
-    { value: "assigned", label: "Assigned Enquiries" },
-    { value: "non-assigned", label: "Non-Assigned Enquiries" },
+    { value: "assigned", label: "Assigned" },
+    { value: "non-assigned", label: "Non-Assigned" },
   ];
 
+  // Logic from original component
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -243,34 +156,17 @@ const Enquiries = () => {
         );
         setEnquiries(sorted);
         setFilteredEnquiries(sorted);
-
         setEmailReceivers(
           usersRes.data.map((u) => ({ value: u.email, label: u.name || u.email }))
         );
       } catch (err) {
         setError("Failed to load data. Please refresh.");
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, []);
-
-  const handleFilter = () => {
-    const filtered = applyCurrentFilters(enquiries);
-    setFilteredEnquiries(filtered);
-    setCurrentPage(1);
-  };
-
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    const filtered = applyCurrentFilters(enquiries);
-    setFilteredEnquiries(filtered);
-    setCurrentPage(1);
-  };
 
   const hasPermission = (page, action) => {
     if (isSuperadmin) return true;
@@ -278,1052 +174,523 @@ const Enquiries = () => {
     return perm?.[`can_${action}`];
   };
 
-  const extractErrorMessage = (error) => {
-    return error.response?.data?.error || error.response?.data?.detail || "An error occurred.";
+  const applyFilters = (data, query = searchQuery) => {
+    const filterData = filterForm.getValues();
+    let filtered = [...data];
+
+    if (filterData.filterType === "assigned") {
+      filtered = filtered.filter((e) => e.assigned_user_email);
+    } else if (filterData.filterType === "non-assigned") {
+      filtered = filtered.filter((e) => !e.assigned_user_email);
+    }
+
+    if (filterData.fromDate || filterData.toDate) {
+      const from = filterData.fromDate ? new Date(filterData.fromDate) : null;
+      const to = filterData.toDate ? new Date(filterData.toDate) : null;
+      if (to) to.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((e) => {
+        const d = new Date(e.created_at);
+        return (!from || d >= from) && (!to || d <= to);
+      });
+    }
+
+    if (query.trim()) {
+      const q = query.toLowerCase().trim();
+      filtered = filtered.filter((e) =>
+        [e.fullName, e.phoneNumber, e.email, e.serviceType, e.message, e.note, e.assigned_user_email]
+          .some(f => f?.toLowerCase().includes(q))
+      );
+    }
+
+    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  };
+
+  const handleSearch = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    setFilteredEnquiries(applyFilters(enquiries, val));
+    setCurrentPage(1);
+  };
+
+  const onFilterSubmit = () => {
+    setFilteredEnquiries(applyFilters(enquiries));
+    setCurrentPage(1);
+    setIsFilterVisible(false);
+  };
+
+  const getRecaptchaToken = async () => {
+    return new Promise((resolve) => {
+      if (!window.grecaptcha) resolve(null);
+      window.grecaptcha.ready(() => {
+        window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: RECAPTCHA_ACTION }).then(resolve);
+      });
+    });
   };
 
   const onAddSubmit = async (data) => {
-    if (!hasPermission("enquiries", "add")) {
-      setError("Permission denied.");
-      return;
-    }
-
-    setIsAddingEnquiry(true);
-    setError(null);
-
+    setIsSubmitting(true);
     try {
-      const recaptchaToken = await getRecaptchaToken();
-
-      const response = await apiClient.post("/contacts/enquiries/", {
-        ...data,
-        recaptchaToken,
-        submittedUrl: window.location.href,
-      });
-
-      const updated = [response.data, ...enquiries].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
+      const token = await getRecaptchaToken();
+      const res = await apiClient.post("/contacts/enquiries/", { ...data, recaptchaToken: token, submittedUrl: window.location.href });
+      const updated = [res.data, ...enquiries];
       setEnquiries(updated);
-      setFilteredEnquiries(applyCurrentFilters(updated));
-      setCurrentPage(1);
-
-      setMessage("Enquiry added successfully!");
-      setTimeout(() => setMessage(null), 4000);
+      setFilteredEnquiries(applyFilters(updated));
       setIsAddOpen(false);
       addForm.reset();
+      setMessage("Enquiry added successfully!");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      console.error("Add Enquiry Error:", err);
-      setError(extractErrorMessage(err));
+      setError(err.response?.data?.error || "Failed to add enquiry");
     } finally {
-      setIsAddingEnquiry(false);
+      setIsSubmitting(false);
     }
   };
 
   const onEditSubmit = async (data) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to edit an enquiry.");
-      return;
-    }
-
+    setIsSubmitting(true);
     try {
-      const response = await apiClient.patch(
-        `/contacts/enquiries/${selectedEnquiry?.id}/`,
-        {
-          fullName: data.fullName,
-          phoneNumber: data.phoneNumber,
-          email: data.email,
-          serviceType: data.serviceType,
-          message: data.message,
-        }
-      );
-
-      const updatedEnquiries = enquiries
-        .map((enquiry) =>
-          enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-        )
-        .sort((a, b) => new Date(b.created_at) - new Date(a, b));
-
-      setEnquiries(updatedEnquiries);
-
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
-
+      const res = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry.id}/`, data);
+      const updated = enquiries.map(e => e.id === selectedEnquiry.id ? res.data : e);
+      setEnquiries(updated);
+      setFilteredEnquiries(applyFilters(updated));
+      setIsEditOpen(false);
       setMessage("Enquiry updated successfully");
       setTimeout(() => setMessage(null), 3000);
-      setIsEditOpen(false);
-      editForm.reset();
-    } catch (error) {
-      setError(extractErrorMessage(error));
+    } catch (err) {
+      setError("Failed to update enquiry");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const onAssignSubmit = async (data) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to assign an enquiry.");
-      return;
-    }
-    setAssignData(data);
-    setIsAssignOpen(false);
-    setIsAssignConfirmOpen(true);
-  };
-
-  const confirmAssign = async () => {
-    setIsAssigningEnquiry(true);
+    setIsSubmitting(true);
     try {
-      const response = await apiClient.patch(
-        `/contacts/enquiries/${selectedEnquiry?.id}/`,
-        {
-          assigned_user_email: assignData.emailReceiver || null,
-          note: assignData.note || null,
-        }
-      );
-
-      const updatedEnquiries = enquiries
-        .map((enquiry) =>
-          enquiry.id === selectedEnquiry?.id ? response.data : enquiry
-        )
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-      setEnquiries(updatedEnquiries);
-
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
-
-      setMessage(
-        "Enquiry assigned successfully and email sent to assigned user"
-      );
+      const res = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry.id}/`, {
+        assigned_user_email: data.emailReceiver || null,
+        note: data.note || null,
+      });
+      const updated = enquiries.map(e => e.id === selectedEnquiry.id ? res.data : e);
+      setEnquiries(updated);
+      setFilteredEnquiries(applyFilters(updated));
+      setIsAssignOpen(false);
+      setMessage("Enquiry assigned successfully");
       setTimeout(() => setMessage(null), 3000);
-      setIsAssignConfirmOpen(false);
-      assignForm.reset();
-    } catch (error) {
-      setError(extractErrorMessage(error));
+    } catch (err) {
+      setError("Assignment failed");
     } finally {
-      setIsAssigningEnquiry(false);
-      setAssigningEnquiryId(null);
+      setIsSubmitting(false);
     }
   };
 
   const onDelete = async () => {
-    if (!hasPermission("enquiries", "delete")) return;
-
-    setIsDeleting(true);
+    setIsSubmitting(true);
     try {
-      await apiClient.delete(`/contacts/enquiries/${selectedEnquiry?.id}/delete/`);
-
-      const updatedEnquiries = enquiries.filter(
-        (e) => e.id !== selectedEnquiry.id
-      );
-      setEnquiries(updatedEnquiries);
-
-      const filtered = applyCurrentFilters(updatedEnquiries);
-      setFilteredEnquiries(filtered);
-
-      const totalPages = Math.ceil(filtered.length / itemsPerPage);
-      if (currentPage > totalPages && totalPages > 0) {
-        setCurrentPage(totalPages);
-      }
-
-      setMessage("Enquiry deleted successfully");
-      setTimeout(() => setMessage(null), 3000);
+      await apiClient.delete(`/contacts/enquiries/${selectedEnquiry.id}/delete/`);
+      const updated = enquiries.filter(e => e.id !== selectedEnquiry.id);
+      setEnquiries(updated);
+      setFilteredEnquiries(applyFilters(updated));
       setIsDeleteOpen(false);
-      setSelectedEnquiry(null);
-    } catch (error) {
-      setError(extractErrorMessage(error) || "Failed to delete enquiry");
+      setMessage("Deleted successfully");
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setError("Delete failed");
     } finally {
-      setIsDeleting(false);
+      setIsSubmitting(false);
     }
   };
 
-  const openEditModal = (enquiry) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to edit an enquiry.");
-      return;
-    }
-    setSelectedEnquiry(enquiry);
-    editForm.reset({
-      fullName: enquiry.fullName,
-      phoneNumber: enquiry.phoneNumber,
-      email: enquiry.email,
-      serviceType: enquiry.serviceType,
-      message: enquiry.message,
+  const toggleExpand = (id) => {
+    setExpandedEnquiries(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
-    setIsEditOpen(true);
   };
 
-  const openAssignModal = (enquiry) => {
-    if (!hasPermission("enquiries", "edit")) {
-      setError("You do not have permission to assign an enquiry.");
-      return;
-    }
-    setSelectedEnquiry(enquiry);
-    assignForm.reset({
-      emailReceiver: enquiry.assigned_user_email,
-      note: enquiry.note,
-    });
-    setIsAssignOpen(true);
-  };
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
 
-  const openDeleteModal = (enquiry) => {
-    if (!hasPermission("enquiries", "delete")) {
-      setError("You do not have permission to delete an enquiry.");
-      return;
-    }
-    setSelectedEnquiry(enquiry);
-    setIsDeleteOpen(true);
-  };
-
-  const openPhoneModal = (enquiry) => {
-    setSelectedEnquiry(enquiry);
-    setIsPhoneModalOpen(true);
-  };
-
-  const closeAddModal = () => {
-    setIsAddOpen(false);
-    addForm.reset();
-  };
-
-  const closeEditModal = () => {
-    setIsEditOpen(false);
-    editForm.reset();
-  };
-
-  const closeAssignModal = () => {
-    setIsAssignOpen(false);
-    assignForm.reset();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
-    <div className="container mx-auto">
-      {error && (
-        <motion.div
-          className="mb-4 p-4 bg-red-100 text-red-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {error}
-        </motion.div>
-      )}
-      {message && (
-        <motion.div
-          className="mb-4 p-4 bg-green-100 text-green-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {message}
-        </motion.div>
-      )}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-        <div className="w-full sm:w-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      <PageHeader
+        title="Enquiry Management"
+        subtitle="Track and manage customer move requests"
+        extra={
           <button
             onClick={() => setIsAddOpen(true)}
-            className="relative top-0 sm:top-3 w-full sm:w-auto text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
+            className="btn-primary"
           >
-            {isAddingEnquiry ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Adding
-              </>
-            ) : (
-              "Add New Enquiry"
-            )}
+            <FiPlus className="w-5 h-5" />
+            <span className="text-sm tracking-wide">Add Enquiry</span>
           </button>
-        </div>
-        <FormProvider {...filterForm}>
-          <form
-            onSubmit={filterForm.handleSubmit(handleFilter)}
-            className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
-          >
-            <div className="w-full sm:w-auto">
-              <Input
-                label="Filter By"
-                name="filterType"
-                type="select"
-                options={filterOptions}
-                rules={{ required: "Filter type is required" }}
-              />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Input
-                label="From Date"
-                name="fromDate"
-                type="date"
-                placeholder="dd-mm-yyyy"
-              />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Input
-                label="To Date"
-                name="toDate"
-                type="date"
-                placeholder="dd-mm-yyyy"
-              />
-            </div>
-            <button
-              type="submit"
-              className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
-            >
-              Apply Filter
-            </button>
-          </form>
-        </FormProvider>
-      </div>
-      <div className="mb-4">
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        }
+      />
+
+      {/* Global Alerts */}
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">×</button>
+          </motion.div>
+        )}
+        {message && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{message}</span>
+            <button onClick={() => setMessage(null)} className="text-green-400 hover:text-green-600">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+        <div className="relative flex-1">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+            <FiSearch className="w-5 h-5" />
+          </div>
           <input
             type="text"
-            placeholder="Search by name, phone, email, service, message, note, or assigned user..."
+            placeholder="Search name, phone, email, or service..."
             value={searchQuery}
             onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-indigo-500 focus:ring focus:ring-indigo-200 transition-colors"
+            className="input-style w-full !pl-12 h-[56px] rounded-2xl border-gray-100 shadow-sm"
           />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsFilterVisible(!isFilterVisible)}
+            className={`flex items-center gap-2 px-5 h-[52px] rounded-2xl border font-medium transition-all ${isFilterVisible ? 'bg-[#4c7085] text-white border-[#4c7085]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+          >
+            <FiFilter className="w-5 h-5" />
+            <span>Filters</span>
+          </button>
         </div>
       </div>
 
+      <AnimatePresence>
+        {isFilterVisible && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+          >
+            <FormProvider {...filterForm}>
+              <form onSubmit={filterForm.handleSubmit(onFilterSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <InputField label="Status" name="filterType" type="select" options={filterOptions} />
+                <InputField label="From Date" name="fromDate" type="date" />
+                <InputField label="To Date" name="toDate" type="date" />
+                <div className="md:col-span-3 flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => { filterForm.reset(); onFilterSubmit(); }} className="btn-secondary !bg-transparent !border-none !shadow-none hover:!text-gray-900">Reset</button>
+                  <button type="submit" className="btn-primary">Apply Filters</button>
+                </div>
+              </form>
+            </FormProvider>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Table & Grid Layout */}
       {filteredEnquiries.length === 0 ? (
-        <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
-          No Enquiries Found
+        <div className="bg-white rounded-3xl p-20 text-center border border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiSearch className="text-gray-300 w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-800">No enquiries found</h3>
+          <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or search query</p>
         </div>
       ) : (
-        <>
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Sl No
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Date & Time
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Customer Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Phone
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Email
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Service
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Message
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Note
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Assigned To
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Actions
-                  </th>
+        <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className="hidden lg:block bg-white rounded-3xl border border-gray-50 shadow-sm overflow-hidden overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Contact</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Created</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentEnquiries.map((enquiry, index) => {
-                  const globalIndex =
-                    filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
-                  return (
-                    <motion.tr
-                      key={enquiry.id}
-                      className="hover:bg-gray-50"
-                      variants={rowVariants}
-                      initial="rest"
-                      whileHover="hover"
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {globalIndex}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {new Date(enquiry.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.fullName || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.phoneNumber ? (
-                          <button
-                            onClick={() => openPhoneModal(enquiry)}
-                            className="flex items-center gap-2 text-[#4c7085]"
-                          >
-                            <FaPhoneAlt className="w-3 h-3" />{" "}
-                            {enquiry.phoneNumber}
-                          </button>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.email ? (
-                          <a
-                            href={`mailto:${enquiry.email}`}
-                            className="flex items-center gap-2 text-[#4c7085]"
-                          >
-                            <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                          </a>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {serviceOptions.find(
-                          (opt) => opt.value === enquiry.serviceType
-                        )?.label ||
-                          enquiry.serviceType ||
-                          "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.message || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.note || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.assigned_user_email || "Unassigned"}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setAssigningEnquiryId(enquiry.id);
-                              openAssignModal(enquiry);
-                            }}
-                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={
-                              !hasPermission("enquiries", "edit") ||
-                              (isAssigningEnquiry &&
-                                assigningEnquiryId === enquiry.id)
-                            }
-                          >
-                            {isAssigningEnquiry &&
-                              assigningEnquiryId === enquiry.id ? (
-                              <>
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Assigning
-                              </>
-                            ) : (
-                              "Assign"
-                            )}
-                          </button>
-                          <button
-                            onClick={() => openEditModal(enquiry)}
-                            className="bg-gray-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!hasPermission("enquiries", "edit")}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(enquiry)}
-                            className="bg-red-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!hasPermission("enquiries", "delete")}
-                          >
-                            Delete
-                          </button>
+              <tbody className="divide-y divide-gray-50">
+                {currentItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/30 transition-colors group">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-semibold text-sm">
+                          {item.fullName?.charAt(0) || "C"}
                         </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
+                        <div>
+                          <p className="font-medium text-gray-800">{item.fullName}</p>
+                          <p className="text-xs text-gray-500">ID: #{item.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <FiPhone className="w-3.5 h-3.5 text-gray-400" /> {item.phoneNumber}
+                        </p>
+                        <p className="text-xs text-gray-500 flex items-center gap-2">
+                          <FiMail className="w-3.5 h-3.5 text-gray-400" /> {item.email}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
+                        {serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      {item.assigned_user_email ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FiCheckCircle className="text-green-500" />
+                          <span className="truncate max-w-[120px]">{item.assigned_user_email}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-amber-500 font-medium italic">
+                          <FiClock /> Unassigned
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="text-sm text-gray-500">
+                        <p>{new Date(item.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs opacity-60">{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-center gap-3">
+                        <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all duration-200" title="Assign">
+                          <FiUserPlus className="w-4.5 h-4.5" />
+                        </button>
+                        <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="w-9 h-9 flex items-center justify-center text-gray-400 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all duration-200" title="Edit">
+                          <FiEdit3 className="w-4.5 h-4.5" />
+                        </button>
+                        <button onClick={() => { setSelectedEnquiry(item); setIsDeleteOpen(true); }} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-200" title="Delete">
+                          <FiTrash2 className="w-4.5 h-4.5" />
+                        </button>
+                        <button onClick={() => { setSelectedEnquiry(item); setIsPhoneModalOpen(true); }} className="w-9 h-9 flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all duration-200" title="Contact">
+                          <IoLogoWhatsapp className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination for Desktop */}
-          {filteredEnquiries.length > 0 && (
-            <div className="hidden md:flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Show:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span className="text-sm text-gray-700 whitespace-nowrap">
-                  enquiries per page
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-
-                <span className="text-sm text-gray-700">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-700">
-                Showing {indexOfFirstItem + 1}-
-                {Math.min(indexOfLastItem, filteredEnquiries.length)} of{" "}
-                {filteredEnquiries.length} enquiries
-              </div>
-            </div>
-          )}
-
-          {/* Cards for Mobile */}
-          <div className="md:hidden space-y-3">
-            {currentEnquiries.map((enquiry, index) => {
-              const isExpanded = expandedEnquiries.has(enquiry.id);
-              const globalIndex =
-                filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
-
+          {/* Mobile Grid */}
+          <div className="lg:hidden space-y-4">
+            {currentItems.map((item) => {
+              const isOpen = expandedEnquiries.has(item.id);
               return (
-                <motion.div
-                  key={enquiry.id}
-                  className="rounded-lg p-4 bg-white shadow-sm border border-gray-200"
-                  variants={rowVariants}
-                  initial="rest"
-                  whileHover="hover"
-                >
-                  {/* Collapsed View */}
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#2d4a5e]">
-                        <strong>SI No:</strong> {globalIndex}
-                      </p>
-                      <p className="text-sm text-[#2d4a5e] mt-1">
-                        <strong>Customer:</strong> {enquiry.fullName || "-"}
-                      </p>
+                <div key={item.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all shadow-sm">
+                  <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(item.id)}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-semibold">
+                        {item.fullName?.charAt(0) || "C"}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-800">{item.fullName}</h4>
+                        <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => toggleEnquiryExpand(enquiry.id)}
-                      className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
-                    >
-                      {isExpanded ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </button>
+                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
                   </div>
+
                   <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-[#2d4a5e] text-sm">
-                          <p>
-                            <strong>Date & Time:</strong>{" "}
-                            {new Date(enquiry.created_at).toLocaleString()}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Phone:</strong>
-                            {enquiry.phoneNumber ? (
-                              <button
-                                onClick={() => openPhoneModal(enquiry)}
-                                className="flex items-center gap-2 text-[#4c7085]"
-                              >
-                                <FaPhoneAlt className="w-3 h-3" />{" "}
-                                {enquiry.phoneNumber}
-                              </button>
-                            ) : (
-                              "-"
-                            )}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Email:</strong>
-                            {enquiry.email ? (
-                              <a
-                                href={`mailto:${enquiry.email}`}
-                                className="flex items-center gap-2 text-[#4c7085]"
-                              >
-                                <FaEnvelope className="w-3 h-3" />{" "}
-                                {enquiry.email}
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </p>
-                          <p>
-                            <strong>Service:</strong>{" "}
-                            {serviceOptions.find(
-                              (opt) => opt.value === enquiry.serviceType
-                            )?.label ||
-                              enquiry.serviceType ||
-                              "-"}
-                          </p>
-                          <p>
-                            <strong>Message:</strong> {enquiry.message || "-"}
-                          </p>
-                          <p>
-                            <strong>Note:</strong> {enquiry.note || "-"}
-                          </p>
-                          <p>
-                            <strong>Assigned To:</strong>{" "}
-                            {enquiry.assigned_user_email || "Unassigned"}
-                          </p>
-                          <div className="flex flex-wrap gap-2 pt-3">
-                            <button
-                              onClick={() => {
-                                setAssigningEnquiryId(enquiry.id);
-                                openAssignModal(enquiry);
-                              }}
-                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-2 px-3 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={
-                                !hasPermission("enquiries", "edit") ||
-                                (isAssigningEnquiry &&
-                                  assigningEnquiryId === enquiry.id)
-                              }
-                            >
-                              {isAssigningEnquiry &&
-                                assigningEnquiryId === enquiry.id ? (
-                                <>
-                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  Assigning
-                                </>
-                              ) : (
-                                "Assign"
-                              )}
-                            </button>
-                            <button
-                              onClick={() => openEditModal(enquiry)}
-                              className="bg-gray-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={!hasPermission("enquiries", "edit")}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(enquiry)}
-                              className="bg-red-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={!hasPermission("enquiries", "delete")}
-                            >
-                              Delete
-                            </button>
+                    {isOpen && (
+                      <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50/50">
+                        <div className="p-4 space-y-4 border-t border-gray-100">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Service</p>
+                              <p className="text-sm font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Assigned To</p>
+                              <p className={`text-sm font-medium mt-0.5 ${item.assigned_user_email ? 'text-gray-700' : 'text-amber-500 italic'}`}>
+                                {item.assigned_user_email || "Not Assigned"}
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Contact Info</p>
+                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {item.phoneNumber}</p>
+                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {item.email}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Message</p>
+                            <p className="text-sm text-gray-600 mt-1 italic">"{item.message}"</p>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 shadow-sm"><FiEdit3 /> Edit</button>
+                            <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 shadow-sm"><FiUserPlus /> Assign</button>
+                            <button onClick={() => { setSelectedEnquiry(item); setIsPhoneModalOpen(true); }} className="w-[52px] bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-6 h-6" /></button>
                           </div>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </>
-      )}
 
-      {/* Pagination for Mobile */}
-      {filteredEnquiries.length > 0 && (
-        <div className="md:hidden flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-700">Show:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-            >
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Previous
-            </button>
-
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Next
-            </button>
+          {/* Pagination */}
+          <div className="flex items-center justify-between pt-6">
+            <p className="text-sm text-gray-500 hidden sm:block">
+              Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredEnquiries.length)}</span> of <span className="font-medium text-gray-800">{filteredEnquiries.length}</span> enquiries
+            </p>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex-1 sm:flex-none px-4 py-2 border border-gray-100 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              >
+                Previous
+              </button>
+              <div className="flex items-center px-4 text-sm font-semibold text-[#4c7085] bg-[#4c7085]/10 rounded-xl">
+                {currentPage} / {totalPages || 1}
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="flex-1 sm:flex-none px-4 py-2 border border-gray-100 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Modals */}
       <AnimatePresence>
-        <Modal
-          isOpen={isAddOpen}
-          onClose={closeAddModal}
-          title="Add New Enquiry"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={closeAddModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isAddingEnquiry}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="add-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!hasPermission("enquiries", "add") || isAddingEnquiry}
-              >
-                {isAddingEnquiry ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Adding
-                  </>
-                ) : (
-                  "Add Enquiry"
-                )}
-              </button>
-            </>
-          }
-        >
-          <FormProvider {...addForm}>
-            <form
-              id="add-enquiry-form"
-              onSubmit={addForm.handleSubmit(onAddSubmit)}
-              className="space-y-4"
-            >
-              <p className="text-sm text-gray-600">
-                Note: Serial Number and Date & Time are auto-generated by the
-                system.
-              </p>
-              <Input
-                label="Customer Name"
-                name="fullName"
-                type="text"
-                rules={{ required: "Customer Name is required" }}
-              />
-              <Input
-                label="Phone Number"
-                name="phoneNumber"
-                type="text"
-                rules={{
-                  required: "Phone Number is required",
-                  pattern: {
-                    value: /^\+?[0-9]{7,15}$/,
-                    message:
-                      "Enter a valid phone number (7-15 digits, optional +)",
-                  },
-                }}
-              />
-              <Input
-                label="Email Id"
-                name="email"
-                type="email"
-                rules={{
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email",
-                  },
-                }}
-              />
-              <Input
-                label="Service Required"
-                name="serviceType"
-                type="select"
-                options={serviceOptions}
-                rules={{ required: "Service Required is required" }}
-              />
-              <Input
-                label="Message"
-                name="message"
-                type="textarea"
-                rules={{ required: "Message is required" }}
-              />
-            </form>
-          </FormProvider>
-        </Modal>
-        <Modal
-          isOpen={isEditOpen}
-          onClose={closeEditModal}
-          title="Edit Enquiry"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={closeEditModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="edit-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                disabled={!hasPermission("enquiries", "edit")}
-              >
-                Update Enquiry
-              </button>
-            </>
-          }
-        >
-          <FormProvider {...editForm}>
-            <form
-              id="edit-enquiry-form"
-              onSubmit={editForm.handleSubmit(onEditSubmit)}
-              className="space-y-4"
-            >
-              <Input
-                label="Customer Name"
-                name="fullName"
-                type="text"
-                rules={{ required: "Customer Name is required" }}
-              />
-              <Input
-                label="Phone Number"
-                name="phoneNumber"
-                type="text"
-                rules={{
-                  required: "Phone Number is required",
-                  pattern: {
-                    value: /^\+?[0-9]{7,15}$/,
-                    message:
-                      "Enter a valid phone number (7-15 digits, optional +)",
-                  },
-                }}
-              />
-              <Input
-                label="Email Id"
-                name="email"
-                type="email"
-                rules={{
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email",
-                  },
-                }}
-              />
-              <Input
-                label="Service Required"
-                name="serviceType"
-                type="select"
-                options={serviceOptions}
-                rules={{ required: "Service Required is required" }}
-              />
-              <Input
-                label="Message"
-                name="message"
-                type="textarea"
-                rules={{ required: "Message is required" }}
-              />
-            </form>
-          </FormProvider>
-        </Modal>
-        <Modal
-          isOpen={isAssignOpen}
-          onClose={closeAssignModal}
-          title="Assign Enquiry"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={closeAssignModal}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isAssigningEnquiry}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="assign-enquiry-form"
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={
-                  !hasPermission("enquiries", "edit") || isAssigningEnquiry
-                }
-              >
-                {isAssigningEnquiry ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Assigning
-                  </>
-                ) : (
-                  "Assign"
-                )}
-              </button>
-            </>
-          }
-        >
-          <FormProvider {...assignForm}>
-            <form
-              id="assign-enquiry-form"
-              onSubmit={assignForm.handleSubmit(onAssignSubmit)}
-              className="space-y-4"
-            >
-              <Input
-                label="Assign To"
-                name="emailReceiver"
-                type="select"
-                options={[...emailReceivers]}
-                rules={{ required: false }}
-              />
-              <Input label="Note (Optional)" name="note" type="textarea" />
-            </form>
-          </FormProvider>
-        </Modal>
-        <Modal
-          isOpen={isAssignConfirmOpen}
-          onClose={() => setIsAssignConfirmOpen(false)}
-          title="Confirm Assignment"
-          footer={
-            <>
-              <button
-                onClick={() => setIsAssignConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isAssigningEnquiry}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmAssign}
-                className="text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={
-                  !hasPermission("enquiries", "edit") || isAssigningEnquiry
-                }
-              >
-                {isAssigningEnquiry ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Assigning
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-            </>
-          }
-        >
-          <p className="text-[#2d4a5e] text-sm">
-            Are you sure you want to assign this enquiry to{" "}
-            {emailReceivers.find(
-              (opt) => opt.value === assignData?.emailReceiver
-            )?.label || "Unassigned"}
-            {assignData?.note ? ` with note: "${assignData.note}"` : ""}?
-          </p>
-        </Modal>
-        <Modal
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
-          title="Delete Enquiry"
-          footer={
-            <>
-              <button
-                onClick={() => setIsDeleteOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onDelete}
-                disabled={isDeleting}
-                className="bg-red-500 text-white py-2 px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </>
-          }
-        >
-          <p className="text-[#2d4a5e] text-sm">
-            Are you sure you want to delete this enquiry?
-          </p>
-        </Modal>
-        <Modal
-          isOpen={isPhoneModalOpen}
-          onClose={() => setIsPhoneModalOpen(false)}
-          title="Contact Options"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsPhoneModalOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-            </>
-          }
-        >
-          <div className="space-y-4">
-            <p className="text-[#2d4a5e] text-sm">
-              Choose how to contact {selectedEnquiry?.fullName || ""}:
-            </p>
-            <div className="flex flex-col gap-3">
-              {selectedEnquiry?.phoneNumber ? (
-                <>
-                  <a
-                    href={`tel:${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                  >
-                    <FaPhoneAlt className="w-5 h-5" /> Call
-                  </a>
-                  <a
-                    href={`https://wa.me/${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 bg-green-500 text-white py-2 px-4 rounded"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FaWhatsapp className="w-5 h-5" /> WhatsApp
-                  </a>
-                </>
-              ) : (
-                <p className="text-[#2d4a5e] text-sm">
-                  No phone number available
-                </p>
-              )}
+        {/* Add Modal */}
+        {isAddOpen && (
+          <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="New Enquiry Request">
+            <FormProvider {...addForm}>
+              <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <InputField label="Customer Full Name" name="fullName" placeholder="e.g. John Doe" rules={{ required: "Required" }} />
+                  <InputField label="Phone Number" name="phoneNumber" placeholder="+91 ..." rules={{ required: "Required" }} />
+                </div>
+                <InputField label="Email Address" name="email" type="email" placeholder="john@example.com" rules={{ required: "Required" }} />
+                <InputField label="Service Type" name="serviceType" type="select" options={serviceOptions} rules={{ required: "Required" }} />
+                <InputField label="Message / Requirement" name="message" type="textarea" placeholder="Detail the move requirement..." rules={{ required: "Required" }} />
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                  <button type="button" onClick={() => setIsAddOpen(false)} className="btn-secondary !bg-transparent !border-none">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? "Submitting..." : "Submit Enquiry"}
+                  </button>
+                </div>
+              </form>
+            </FormProvider>
+          </Modal>
+        )}
+
+        {/* Edit Modal */}
+        {isEditOpen && (
+          <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Client Details">
+            <FormProvider {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <InputField label="Full Name" name="fullName" />
+                  <InputField label="Phone" name="phoneNumber" />
+                </div>
+                <InputField label="Email" name="email" type="email" />
+                <InputField label="Service" name="serviceType" type="select" options={serviceOptions} />
+                <InputField label="Note" name="note" type="textarea" />
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                  <button type="button" onClick={() => setIsEditOpen(false)} className="btn-secondary !bg-transparent !border-none">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? "Updating..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </FormProvider>
+          </Modal>
+        )}
+
+        {/* Assign Modal */}
+        {isAssignOpen && (
+          <Modal isOpen={isAssignOpen} onClose={() => setIsAssignOpen(false)} title="Assign Team Lead">
+            <FormProvider {...assignForm}>
+              <form onSubmit={assignForm.handleSubmit(onAssignSubmit)} className="space-y-6">
+                <InputField
+                  label="Select Salesperson"
+                  name="emailReceiver"
+                  type="select"
+                  options={emailReceivers}
+                  rules={{ required: "Please select a staff member" }}
+                />
+                <InputField label="Assignment Note" name="note" type="textarea" placeholder="Add instructions for the assigned person..." />
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                  <button type="button" onClick={() => setIsAssignOpen(false)} className="btn-secondary !bg-transparent !border-none">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? "Assigning..." : "Confirm Assignment"}
+                  </button>
+                </div>
+              </form>
+            </FormProvider>
+          </Modal>
+        )}
+
+        {/* Delete Confirm */}
+        {isDeleteOpen && (
+          <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Confirm Deletion">
+            <div className="text-center p-4">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiTrash2 className="w-8 h-8" />
+              </div>
+              <p className="text-gray-800 font-medium">Delete this enquiry?</p>
+              <p className="text-sm text-gray-500 mt-1">This action cannot be undone and will remove all associated notes.</p>
+              <div className="flex gap-3 mt-8">
+                <button onClick={() => setIsDeleteOpen(false)} className="flex-1 py-3 text-sm font-medium text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100">Cancel</button>
+                <button onClick={onDelete} disabled={isSubmitting} className="flex-1 py-3 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-sm shadow-red-100">
+                  {isSubmitting ? "Deleting..." : "Delete Perpetually"}
+                </button>
+              </div>
             </div>
-          </div>
-        </Modal>
+          </Modal>
+        )}
+
+        {/* Contact Options */}
+        {isPhoneModalOpen && (
+          <Modal isOpen={isPhoneModalOpen} onClose={() => setIsPhoneModalOpen(false)} title="Contact Client">
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-semibold">
+                  {selectedEnquiry?.fullName?.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">{selectedEnquiry?.fullName}</p>
+                  <p className="text-sm text-gray-500">{selectedEnquiry?.phoneNumber}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <a href={`tel:${selectedEnquiry?.phoneNumber}`} className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-[#4c7085] transition-all group shadow-sm">
+                  <div className="w-12 h-12 bg-[#4c7085]/10 rounded-full flex items-center justify-center text-[#4c7085] group-hover:scale-110 transition-transform"><FiPhone className="w-6 h-6" /></div>
+                  <span className="font-medium text-gray-700">Call Now</span>
+                </a>
+                <a href={`https://wa.me/${selectedEnquiry?.phoneNumber?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-green-500 transition-all group shadow-sm">
+                  <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform"><IoLogoWhatsapp className="w-7 h-7" /></div>
+                  <span className="font-medium text-gray-700">WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </Modal>
+        )}
       </AnimatePresence>
     </div>
   );

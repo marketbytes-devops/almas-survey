@@ -58,8 +58,8 @@ const BookingList = () => {
 
     return (
         <div className="container mx-auto p-4">
-            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6 rounded-t-lg flex justify-between items-center">
-                <h1 className="text-xl font-medium">Booked Moves and Assign</h1>
+            <div className="bg-[#4c7085] text-white py-4 px-6 rounded-t-xl flex justify-between items-center shadow-sm">
+                <h1 className="text-xl font-medium tracking-tight">Booked Moves and Assign</h1>
             </div>
 
             <div className="bg-white shadow-md rounded-b-lg p-6 space-y-4">
@@ -68,7 +68,7 @@ const BookingList = () => {
                     <input
                         type="text"
                         placeholder="Search bookings..."
-                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c7085]"
+                        className="input-style pl-10"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -121,9 +121,9 @@ const BookingList = () => {
                                             >
                                                 <FaUsers
                                                     size={22}
-                                                    className={`mx-auto cursor-pointer transition-all duration-300 hover:scale-110 ${b.labours && b.labours.length > 0
-                                                        ? "text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.3)]"
-                                                        : "text-gray-400"
+                                                    className={`mx-auto cursor-pointer transition-colors duration-200 ${b.labours && b.labours.length > 0
+                                                        ? "text-[#4c7085]"
+                                                        : "text-gray-300"
                                                         }`}
                                                 />
                                             </div>
@@ -181,10 +181,10 @@ const BookingList = () => {
                     }}
                 >
                     <div className="w-56 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.4)] overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-200">
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-2.5">
-                            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Assigned Resources</p>
-                            <p className="text-[13px] font-semibold text-white flex items-center gap-1.5">
-                                <FaUsers className="text-blue-400" size={14} />
+                        <div className="bg-slate-800 px-3 py-3">
+                            <p className="text-[10px] uppercase tracking-widest font-medium text-slate-400 mb-1">Assigned Resources</p>
+                            <p className="text-[14px] font-medium text-white flex items-center gap-2">
+                                <FaUsers className="text-[#6b8ca3]" size={14} />
                                 Staff / Manpower
                             </p>
                         </div>

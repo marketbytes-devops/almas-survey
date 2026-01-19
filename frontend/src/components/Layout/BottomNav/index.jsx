@@ -3,17 +3,18 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import apiClient from "../../../api/apiClient";
 import {
-  AiOutlineProject,
-  AiOutlineSearch,
-  AiOutlineAliwangwang,
-  AiOutlineCalendar,
-  AiOutlineBarChart,
-  AiOutlineDollar,
-  AiOutlineSliders,
-  AiOutlineSafety,
-  AiOutlineIdcard,
-  AiOutlineFileText,
-} from "react-icons/ai";
+  FiGrid,
+  FiSearch,
+  FiPlusSquare,
+  FiCalendar,
+  FiBarChart2,
+  FiFileText,
+  FiBriefcase,
+  FiTruck,
+  FiUser,
+  FiPackage
+} from "react-icons/fi";
+import { BiBox } from "react-icons/bi";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -47,12 +48,15 @@ const BottomNav = () => {
   };
 
   const navItems = [
-    { to: "/", label: "Home", icon: AiOutlineProject, page: "Dashboard" },
-    { to: "/enquiries", label: "Enquiries", icon: AiOutlineSearch, page: "enquiries" },
-    { to: "/new-enquiries", label: "New", icon: AiOutlineAliwangwang, page: "new_enquiries" },
-    { to: "/scheduled-surveys", label: "Surveys", icon: AiOutlineCalendar, page: "scheduled_surveys" },
-    { to: "/survey/survey-summary", label: "Summary", icon: AiOutlineBarChart, page: "survey_summary" },
-    { to: "/quotation-list", label: "Quotes", icon: AiOutlineFileText, page: "quotation" },
+    { to: "/", label: "Home", icon: FiGrid, page: "Dashboard" },
+    { to: "/enquiries", label: "Enquiries", icon: FiSearch, page: "enquiries" },
+    { to: "/new-enquiries", label: "New", icon: FiPlusSquare, page: "new_enquiries" },
+    { to: "/scheduled-surveys", label: "Surveys", icon: FiCalendar, page: "scheduled_surveys" },
+    { to: "/survey/survey-summary", label: "Summary", icon: FiBarChart2, page: "survey_summary" },
+    { to: "/quotation-list", label: "Quotes", icon: FiFileText, page: "quotation" },
+    { to: "/booking-list", label: "Booked", icon: FiBriefcase, page: "booking" },
+    { to: "/inventory", label: "Inventory", icon: BiBox, page: "inventory" },
+    { to: "/profile", label: "Profile", icon: FiUser, page: "Profile" },
   ];
 
   const visibleItems = navItems.filter(item => hasPermission(item.page));
@@ -62,7 +66,7 @@ const BottomNav = () => {
     return location.pathname.startsWith(path);
   };
 
-  if (visibleItems.length === 0 || isLoading) return null;
+  if (isLoading) return null;
 
   return (
     <motion.div
@@ -87,9 +91,8 @@ const BottomNav = () => {
                   <Icon className={`w-6 h-6 ${active ? "text-[#4c7085]" : "text-gray-500"}`} />
                 </div>
                 <span
-                  className={`text-[10px] mt-1 font-medium transition-colors ${
-                    active ? "text-[#4c7085]" : "text-gray-500"
-                  }`}
+                  className={`text-[10px] mt-1 font-medium transition-colors ${active ? "text-[#4c7085]" : "text-gray-500"
+                    }`}
                 >
                   {item.label}
                 </span>
