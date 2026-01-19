@@ -329,6 +329,7 @@ const SurveyPrint = ({ survey }) => {
                   <th>Volume</th>
                   <th>Crate Required</th>
                   <th>Moving Status</th>
+                  <th>Photo</th>
                 </tr>
               </thead>
               <tbody>
@@ -340,12 +341,23 @@ const SurveyPrint = ({ survey }) => {
                     <td>{a.volume ? `${formatVolume(a.volume)} ${a.volume_unit_name || "m³"}` : "-"}</td>
                     <td>{formatBoolean(a.crate_required)}</td>
                     <td>{a.move_status === "not_moving" ? "Not Moving" : "Moving"}</td>
+                    <td style={{ textAlign: "center" }}>
+                      {a.photo ? (
+                        <img
+                          src={a.photo}
+                          alt={a.item_name}
+                          style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "4px", border: "1px solid #ddd" }}
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                   </tr>
                 ))}
                 <tr className="total-row">
                   <td colSpan="3" style={{ textAlign: "right" }}>Total Volume:</td>
                   <td style={{ textAlign: "center" }}>{formatVolume(totalVolume)} m³</td>
-                  <td colSpan="2"></td>
+                  <td colSpan="3"></td>
                 </tr>
               </tbody>
             </table>

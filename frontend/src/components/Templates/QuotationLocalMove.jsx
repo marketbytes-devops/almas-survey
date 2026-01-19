@@ -112,7 +112,6 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map(t => `
             <div class="term-item">
-                <div class="term-title">${t.name}</div>
                 <div class="term-desc">${t.description || ''}</div>
             </div>`)
                 .join("")

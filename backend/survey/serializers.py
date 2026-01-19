@@ -88,7 +88,18 @@ class ArticleSerializer(serializers.ModelSerializer):
             'crate_required', 'crate_required_display', 'photo'
         ]
         read_only_fields = ['created_at', 'calculated_volume']
-    
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.photo and hasattr(instance.photo, 'url'):
+            request = self.context.get('request')
+            if request:
+                ret['photo'] = request.build_absolute_uri(instance.photo.url)
+            else:
+                # Fallback if no request in context (e.g. background task)
+                ret['photo'] = instance.photo.url
+        return ret
+
     def get_move_status_display(self, obj):
         """Get human-readable moving status"""
         if obj.move_status == 'not_moving':

@@ -194,7 +194,7 @@ export default function QuotationList() {
     return <div className="text-center text-red-600 p-5">{error}</div>;
 
   return (
-    <div className="container mx-auto">
+    <div className="mx-auto p-2 sm:p-6">
       <AnimatePresence>
         {isPhoneModalOpen && selectedSurvey && (
           <motion.div
@@ -307,24 +307,27 @@ export default function QuotationList() {
       )}
       {message && (
         <motion.div
-          className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          className="mb-4 p-4 bg-[#4c7085] text-white rounded-lg shadow-lg flex items-center gap-2"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
           onAnimationComplete={() => setTimeout(() => setMessage(""), 3000)}
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
           {message}
         </motion.div>
       )}
 
       <div className="mb-6">
         <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by name, phone, email, service, or survey ID..."
+            placeholder="Search by name, phone, email, service..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+            className="w-full pl-12 pr-4 py-3 text-sm border border-gray-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-[#4c7085] focus:border-transparent outline-none transition-all placeholder:text-gray-400"
           />
         </div>
       </div>
@@ -498,7 +501,7 @@ export default function QuotationList() {
               </tbody>
             </table>
           </div>
-          <div className="md:hidden space-y-4">
+          <div className="md:hidden space-y-2">
             {filteredSurveys.map((s, idx) => {
               const isExpanded = expandedSurveys.has(s.survey_id);
               const name = s.full_name || s.enquiry?.fullName || "—";
@@ -511,130 +514,97 @@ export default function QuotationList() {
               return (
                 <motion.div
                   key={s.survey_id}
-                  className="rounded-lg p-4 bg-white shadow-sm border border-gray-200"
-                  variants={rowVariants}
-                  initial="rest"
-                  whileHover="hover"
+                  className="rounded-3xl bg-white shadow-xl border border-gray-100 overflow-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                 >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#2d4a5e]">
-                        <strong>S.No:</strong> {idx + 1}
-                      </p>
-                      <p className="text-sm text-[#2d4a5e] mt-1">
-                        <strong>Customer:</strong> {name}
-                      </p>
-                      <p className="text-sm text-[#2d4a5e] mt-1">
-                        <strong>Survey ID:</strong> {s.survey_id}
-                      </p>
+                  <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] p-4 text-white">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">#{idx + 1}</span>
+                          <span className="w-1 h-3 bg-white/30 rounded-full"></span>
+                          <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{s.survey_id}</span>
+                        </div>
+                        <h3 className="text-lg font-medium leading-tight">{name}</h3>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${s.hasQuotation ? "bg-white text-[#4c7085]" : "bg-white/20 text-white"}`}>
+                          {s.hasQuotation ? "Quotation Active" : "No Quotation"}
+                        </span>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => toggleSurveyExpand(s.survey_id)}
-                      className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full hover:bg-[#3a5a6d] transition-colors"
-                    >
-                      {isExpanded ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </button>
                   </div>
 
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-[#2d4a5e] text-sm">
-                          <p className="flex items-center gap-2">
-                            <strong>Phone:</strong>
-                            <span className="flex items-center gap-2 text-[#4c7085]">
-                              <FaPhoneAlt className="w-3 h-3" /> {phone}
-                            </span>
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Email:</strong>
-                            <span className="flex items-center gap-2 text-[#4c7085]">
-                              <FaEnvelope className="w-3 h-3" /> {email}
-                            </span>
-                          </p>
-                          <p>
-                            <strong>Service:</strong> {service}
-                          </p>
-                          <p>
-                            <strong>Quotation:</strong>{" "}
-                            {s.hasQuotation ? (
-                              <span className="text-green-600">Quotation ID: {s.quotation_id}</span>
-                            ) : (
-                              <span className="text-red-600">No Quotation is Created</span>
-                            )}
-                          </p>
-                          <div className="pt-2">
-                            <p className="font-medium mb-2">Actions:</p>
-                            {s.hasQuotation ? (
-                              <div className="flex flex-wrap gap-2">
-                                <Link
-                                  to={`/quotation-view/${s.quotation_id}`}
-                                  className="whitespace-nowrap inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-                                >
-                                  <FaEye /> View
-                                </Link>
-                                <Link
-                                  to={`/quotation-edit/${s.survey_id}`}
-                                  className="whitespace-nowrap inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
-                                >
-                                  <FaEdit /> Edit
-                                </Link>
-                                <button
-                                  onClick={() =>
-                                    handleDeleteQuotation(
-                                      s.survey_id,
-                                      s.quotation_id
-                                    )
-                                  }
-                                  className="whitespace-nowrap inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
-                                >
-                                  <FaTrash /> Delete
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() =>
-                                  handleCreateQuotation(s.survey_id)
-                                }
-                                className="whitespace-nowrap inline-flex items-center bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 rounded text-sm font-medium transition shadow-md"
-                              >
-                                Create Quotation
-                              </button>
-                            )}
-                          </div>
-                          <div className="pt-2">
-                            <p className="font-medium mb-2">Signature:</p>
-                            {s.quotation_signature_uploaded ? (
-                              <button
-                                onClick={() => viewSignature(s)}
-                                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
-                              >
-                                <FaSignature /> View Signature
-                              </button>
-                            ) : (
-                              <span className="text-gray-500 text-sm">
-                                No Signature
-                              </span>
-                            )}
-                          </div>
+                  <div className="p-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase font-medium tracking-widest block mb-0.5">Service Type</span>
+                        <span className="text-sm font-medium text-gray-800">{service}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase font-medium tracking-widest block mb-0.5">Created Date</span>
+                        <span className="text-sm font-medium text-gray-800">{s.quotation_created_at ? formatDateTime(s.quotation_created_at).split(',')[0] : "—"}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {phone !== "—" && (
+                        <button onClick={() => openPhoneModal(s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-[#4c7085] rounded-full text-xs font-medium border border-gray-100 transition-colors">
+                          <FaPhoneAlt className="w-3 h-3" /> Call
+                        </button>
+                      )}
+                      {email !== "—" && (
+                        <a href={`mailto:${email}`} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-[#4c7085] rounded-full text-xs font-medium border border-gray-100 transition-colors">
+                          <FaEnvelope className="w-3 h-3" /> Email
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col gap-2">
+                    {s.hasQuotation ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Link
+                            to={`/quotation-view/${s.quotation_id}`}
+                            className="flex items-center justify-center gap-2 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium shadow-md transition-all active:scale-95"
+                          >
+                            <FaEye className="w-3.5 h-3.5" /> View
+                          </Link>
+                          <Link
+                            to={`/quotation-edit/${s.survey_id}`}
+                            className="flex items-center justify-center gap-2 bg-white border border-[#4c7085] text-[#4c7085] py-2.5 rounded-xl text-xs font-medium transition-all active:scale-95"
+                          >
+                            <FaEdit className="w-3.5 h-3.5" /> Edit
+                          </Link>
                         </div>
-                      </motion.div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {s.quotation_signature_uploaded && (
+                            <button
+                              onClick={() => viewSignature(s)}
+                              className="flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-600 py-2.5 rounded-xl text-xs font-medium transition-all"
+                            >
+                              <FaSignature className="w-3.5 h-3.5" /> Signature
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)}
+                            className={`flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-400 hover:text-red-500 py-2.5 rounded-xl text-xs font-medium transition-all ${!s.quotation_signature_uploaded ? 'col-span-2' : ''}`}
+                          >
+                            <FaTrash className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleCreateQuotation(s.survey_id)}
+                        className="flex items-center justify-center gap-2 bg-black text-white py-3 rounded-xl text-sm font-medium shadow-lg transition-all active:scale-95"
+                      >
+                        Create Quotation
+                      </button>
                     )}
-                  </AnimatePresence>
+                  </div>
                 </motion.div>
               );
             })}
