@@ -242,7 +242,7 @@ const InsuranceTab = () => {
                           {plan.is_mandatory && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">MANDATORY</span>}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600 font-medium text-sm max-w-xs truncate">
+                      <td className="px-6 py-4 text-gray-600 font-medium text-sm max-w-xs">
                         {plan.description || "-"}
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -291,7 +291,7 @@ const InsuranceTab = () => {
                         <FaShieldAlt size={18} />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-medium text-gray-800 truncate">{plan.name}</h4>
+                        <h4 className="font-medium text-gray-800">{plan.name}</h4>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {plan.is_default && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-bold">DEFAULT</span>}
                           {plan.is_mandatory && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">MANDATORY</span>}
