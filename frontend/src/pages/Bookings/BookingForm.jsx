@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaFilePdf } from "react-icons/fa";
+import { FiArrowLeft, FiSave, FiPlus, FiTrash2 } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import PageHeader from "../../components/PageHeader";
+import { motion, AnimatePresence } from "framer-motion";
 
 const BookingForm = () => {
     const { id, quotId } = useParams();
@@ -50,7 +52,6 @@ const BookingForm = () => {
                 setMaterialOptions(matRes.data);
                 setStaffOptions(staffRes.data);
 
-                // Initialize materials list with all available materials
                 const initialMaterials = matRes.data.map(mat => ({
                     material: mat.id,
                     name: mat.name,
@@ -117,15 +118,12 @@ const BookingForm = () => {
         fetchData();
     }, [id, quotId, navigate]);
 
-    // Prevent duplicate staff selection across all labour rows
     const getAvailableStaff = (currentIndex) => {
-        // Get IDs of already selected staff in other rows
         const selectedIds = assignedLabours
-            .filter((_, idx) => idx !== currentIndex) // exclude current row
+            .filter((_, idx) => idx !== currentIndex)
             .map(lab => lab.staff_member)
-            .filter(Boolean); // remove empty
+            .filter(Boolean);
 
-        // Return only staff not selected elsewhere
         return staffOptions.filter(staff => !selectedIds.includes(String(staff.id)));
     };
 
@@ -196,7 +194,6 @@ const BookingForm = () => {
                 currentBookingId = res.data.id;
             }
 
-            // Save labours
             for (const labour of assignedLabours) {
                 const labourPayload = {
                     booking: currentBookingId,
@@ -209,7 +206,6 @@ const BookingForm = () => {
                 }
             }
 
-            // Save trucks
             for (const truck of assignedTrucks) {
                 const truckPayload = {
                     booking: currentBookingId,
@@ -223,7 +219,6 @@ const BookingForm = () => {
                 }
             }
 
-            // Save materials - only selected ones with quantity > 0
             const selectedMaterials = assignedMaterials.filter(m => m.selected && m.quantity > 0);
             for (const material of selectedMaterials) {
                 const materialPayload = {
@@ -235,86 +230,107 @@ const BookingForm = () => {
             }
 
             setSuccess("Booking saved successfully!");
-            navigate("/booking-list");
+            setTimeout(() => navigate("/booking-list"), 1500);
         } catch (err) {
             console.error("Save error:", err);
             setError("Failed to save booking: " + (err.response?.data?.detail || err.message));
+            setTimeout(() => setError(""), 3000);
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
-
-    const inputClasses = "w-full rounded-lg border border-[#6b8ca3]/50 bg-white px-4 py-3 text-sm text-[#4c7085] font-medium transition focus:ring-2 focus:ring-[#4c7085]/20 outline-none";
-    const labelClasses = "block text-sm font-medium text-[#4c7085] mb-2";
-    const sectionClasses = "bg-[#4c7085]/5 border border-[#4c7085]/30 rounded-xl p-6 shadow-sm";
+    if (loading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
     return (
-        <div className="bg-gray-100 min-h-screen rounded-lg">
-            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center rounded-t-lg">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-3 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition text-white"
+        <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+            <PageHeader
+                title={id ? "Edit Booking" : "Create New Booking"}
+                subtitle={id ? `Booking ID: ${booking?.booking_id || "—"}` : "Fill in the details to create a new booking"}
+                extra={
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleSave}
+                            className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                            <FiSave className="w-4 h-4" />
+                            <span>{id ? "Save Changes" : "Create Booking"}</span>
+                        </button>
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="btn-secondary flex items-center gap-2"
+                        >
+                            <FiArrowLeft className="w-4 h-4" />
+                            <span>Back</span>
+                        </button>
+                    </div>
+                }
+            />
+
+            {/* Messages */}
+            <AnimatePresence>
+                {success && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-green-50 border border-green-200 text-green-700 rounded-2xl p-4 text-center font-medium"
                     >
-                        <FaArrowLeft className="w-5 h-5" />
-                        <span className="font-medium text-sm">Back</span>
-                    </button>
-                    <h1 className="text-xl font-medium">
-                        {id ? `Edit Booking: ${booking?.booking_id || "Loading..."}` : "Create New Booking"}
-                    </h1>
-                </div>
-                <button
-                    onClick={handleSave}
-                    className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition shadow-lg font-bold"
-                >
-                    <FaSave /> {id ? "Save Changes" : "Create Booking"}
-                </button>
-            </div>
+                        {success}
+                    </motion.div>
+                )}
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 text-center font-medium"
+                    >
+                        {error}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            <div className="p-4 space-y-10">
-                {success && <div className="p-4 bg-green-100 text-green-700 rounded-lg border border-green-200 shadow-sm">{success}</div>}
-                {error && <div className="p-4 bg-red-100 text-red-700 rounded-lg border border-red-200 shadow-sm">{error}</div>}
-
+            <div className="space-y-6">
+                {/* Basic Information & Client Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Basic Information */}
-                    <section className={sectionClasses}>
-                        <h2 className="text-lg font-medium text-[#4c7085] mb-6 border-b border-[#4c7085]/20 pb-2">Basic Information</h2>
-                        <div className="grid grid-cols-1 gap-6">
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                        <h2 className="text-lg font-medium text-gray-800 mb-4">Basic Information</h2>
+                        <div className="space-y-4">
                             <div>
-                                <label className={labelClasses}>Move Date</label>
+                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Move Date</label>
                                 <input
                                     type="date"
-                                    className={inputClasses}
+                                    className="input-style w-full"
                                     value={formData.move_date}
                                     onChange={(e) => setFormData({ ...formData, move_date: e.target.value })}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className={labelClasses}>Start Time</label>
+                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Start Time</label>
                                     <input
                                         type="time"
-                                        className={inputClasses}
+                                        className="input-style w-full"
                                         value={formData.start_time}
                                         onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className={labelClasses}>Estimated End Time</label>
+                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">End Time</label>
                                     <input
                                         type="time"
-                                        className={inputClasses}
+                                        className="input-style w-full"
                                         value={formData.estimated_end_time}
                                         onChange={(e) => setFormData({ ...formData, estimated_end_time: e.target.value })}
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className={labelClasses}>Supervisor</label>
+                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Supervisor</label>
                                 <select
-                                    className={inputClasses}
+                                    className="input-style w-full"
                                     value={String(formData.supervisor || "")}
                                     onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
                                 >
@@ -325,221 +341,213 @@ const BookingForm = () => {
                                 </select>
                             </div>
                         </div>
-                    </section>
+                    </div>
 
                     {/* Client & Move Details */}
-                    <section className={sectionClasses}>
-                        <h2 className="text-lg font-medium text-[#4c7085] mb-6 border-b border-[#4c7085]/20 pb-2">Client & Move Details</h2>
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4 bg-white/50 p-4 rounded-lg border border-[#4c7085]/10 shadow-inner">
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                        <h2 className="text-lg font-medium text-gray-800 mb-4">Client & Move Details</h2>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl">
                                 <div>
-                                    <span className="text-xs font-bold text-[#4c7085] uppercase tracking-wider">Client Name</span>
-                                    <p className="text-sm font-medium text-gray-700 mt-1">
+                                    <span className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Client Name</span>
+                                    <p className="text-sm font-medium text-gray-800">
                                         {booking?.client_name || quotation?.full_name || "N/A"}
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-xs font-bold text-[#4c7085] uppercase tracking-wider">Move Type</span>
-                                    <p className="text-sm font-medium text-indigo-700 mt-1">
+                                    <span className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Move Type</span>
+                                    <p className="text-sm font-medium text-indigo-600">
                                         {booking?.move_type || quotation?.service_type || "N/A"}
                                     </p>
                                 </div>
                             </div>
                             <div>
-                                <label className={labelClasses}>Internal Notes</label>
+                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Internal Notes</label>
                                 <textarea
-                                    className={`${inputClasses} h-32 resize-none`}
+                                    className="input-style w-full h-32 resize-none"
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                     placeholder="Add internal coordination notes here..."
                                 />
                             </div>
                         </div>
-                    </section>
+                    </div>
                 </div>
 
-                {/* Assignments Sections */}
-                <div className="space-y-8">
-                    {/* Labours / Manpower - With duplicate prevention */}
-                    <section className={sectionClasses}>
-                        <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
-                            <h2 className="text-lg font-medium text-[#4c7085]">Labours / Manpower</h2>
-                            <button
-                                onClick={() => addItem('labour')}
-                                className="flex items-center gap-2 px-4 py-2 bg-[#4c7085] text-white text-xs font-medium rounded-lg hover:bg-[#3d5a6a] transition shadow-md"
-                            >
-                                <FaPlus /> Add Labour Assignment
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            {assignedLabours.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-6 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
-                                    <div className="flex-1">
-                                        <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Assigned Staff (Manpower)</label>
-                                        <select
-                                            className={inputClasses}
-                                            value={String(item.staff_member || "")}
-                                            onChange={(e) => updateItem('labour', idx, 'staff_member', e.target.value)}
-                                            disabled={getAvailableStaff(idx).length === 0 && !item.staff_member} // disable if no options left
-                                        >
-                                            <option value="">Select Staff</option>
-                                            {getAvailableStaff(idx).map(s => (
-                                                <option key={s.id} value={String(s.id)}>
-                                                    {s.name} ({s.employer || "Almas Movers"})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <button
-                                        onClick={() => removeItem('labour', idx, item.id)}
-                                        className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition"
+                {/* Labours / Manpower */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-medium text-gray-800">Labours / Manpower</h2>
+                        <button
+                            onClick={() => addItem('labour')}
+                            className="btn-secondary flex items-center gap-2 text-sm"
+                        >
+                            <FiPlus className="w-4 h-4" />
+                            <span>Add Labour</span>
+                        </button>
+                    </div>
+                    <div className="space-y-3">
+                        {assignedLabours.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Assigned Staff</label>
+                                    <select
+                                        className="input-style w-full"
+                                        value={String(item.staff_member || "")}
+                                        onChange={(e) => updateItem('labour', idx, 'staff_member', e.target.value)}
+                                        disabled={getAvailableStaff(idx).length === 0 && !item.staff_member}
                                     >
-                                        <FaTrash />
-                                    </button>
+                                        <option value="">Select Staff</option>
+                                        {getAvailableStaff(idx).map(s => (
+                                            <option key={s.id} value={String(s.id)}>
+                                                {s.name} ({s.employer || "Almas Movers"})
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Trucks */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <section className={sectionClasses}>
-                            <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
-                                <h2 className="text-lg font-medium text-[#4c7085]">Trucks</h2>
                                 <button
-                                    onClick={() => addItem('truck')}
-                                    className="p-2 bg-[#4c7085] text-white rounded"
+                                    onClick={() => removeItem('labour', idx, item.id)}
+                                    className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-6"
                                 >
-                                    <FaPlus />
+                                    <FiTrash2 className="w-4 h-4" />
                                 </button>
                             </div>
-                            <div className="space-y-4">
-                                {assignedTrucks.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
-                                        <div className="flex-1">
-                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Truck Type</label>
-                                            <select
-                                                className={inputClasses}
-                                                value={item.truck_type}
-                                                onChange={(e) => updateItem('truck', idx, 'truck_type', e.target.value)}
-                                            >
-                                                <option value="">Select Truck</option>
-                                                {truckOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                            </select>
-                                        </div>
+                        ))}
+                        {assignedLabours.length === 0 && (
+                            <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-2xl">No labour assigned yet. Click "Add Labour" to assign staff.</p>
+                        )}
+                    </div>
+                </div>
 
-                                        <div className="w-36">
-                                            <label className="text-[10px] font-bold text-[#4c7085] uppercase mb-1 block">Quantity</label>
-                                            <div className="flex items-center border border-[#6b8ca3]/50 rounded-lg overflow-hidden bg-white">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (item.quantity > 0) updateItem('truck', idx, 'quantity', Math.max(0, item.quantity - 1));
-                                                    }}
-                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50"
-                                                >
-                                                    <span className="text-xl font-bold">-</span>
-                                                </button>
-
-                                                <input
-                                                    type="number"
-                                                    className="w-16 text-center border-0 p-2 text-sm focus:ring-0"
-                                                    value={item.quantity}
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 0;
-                                                        updateItem('truck', idx, 'quantity', Math.max(0, val));
-                                                    }}
-                                                />
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateItem('truck', idx, 'quantity', item.quantity + 1)}
-                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700"
-                                                >
-                                                    <span className="text-xl font-bold">+</span>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => removeItem('truck', idx, item.id)}
-                                            className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition self-end mb-1"
+                {/* Trucks & Materials */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Trucks */}
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-lg font-medium text-gray-800">Trucks</h2>
+                            <button
+                                onClick={() => addItem('truck')}
+                                className="p-2 bg-[#4c7085] text-white rounded-xl hover:bg-[#6b8ca3] transition-colors"
+                            >
+                                <FiPlus className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            {assignedTrucks.map((item, idx) => (
+                                <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Truck Type</label>
+                                        <select
+                                            className="input-style w-full"
+                                            value={item.truck_type}
+                                            onChange={(e) => updateItem('truck', idx, 'truck_type', e.target.value)}
                                         >
-                                            <FaTrash />
-                                        </button>
+                                            <option value="">Select Truck</option>
+                                            {truckOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
                                     </div>
-                                ))}
-                            </div>
-                        </section>
 
-                        {/* Materials */}
-                        <section className={sectionClasses}>
-                            <div className="flex justify-between items-center mb-6 border-b border-[#4c7085]/20 pb-2">
-                                <h2 className="text-lg font-medium text-[#4c7085]">Materials</h2>
-                            </div>
-                            <div className="space-y-4">
-                                {assignedMaterials.length > 0 ? (
-                                    assignedMaterials.map((item) => (
-                                        <div key={item.material} className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#4c7085]/10 shadow-sm">
-                                            <div className="flex items-center gap-4 flex-1">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={item.selected}
-                                                    onChange={() => toggleMaterialSelection(item.material)}
-                                                    className="h-5 w-5 text-[#4c7085] focus:ring-[#4c7085] border-gray-300 rounded"
-                                                />
-                                                <label className="text-sm font-medium text-[#4c7085]">
-                                                    {item.name}
-                                                </label>
-                                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Quantity</label>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (item.quantity > 0) updateItem('truck', idx, 'quantity', Math.max(0, item.quantity - 1));
+                                                }}
+                                                className="w-9 h-9 flex items-center justify-center bg-white hover:bg-gray-100 text-gray-700 rounded-xl border border-gray-300 transition-colors"
+                                            >
+                                                <span className="text-lg font-medium">-</span>
+                                            </button>
 
-                                            <div className="w-40 flex items-center justify-end gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateMaterialQuantity(item.material, -1)}
-                                                    disabled={item.quantity <= 0}
-                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-                                                >
-                                                    <span className="text-xl font-bold">-</span>
-                                                </button>
-
-                                                <input
-                                                    type="number"
-                                                    className="w-16 text-center border border-[#6b8ca3]/50 rounded p-2 text-sm focus:ring-0"
-                                                    value={item.quantity}
-                                                    min="0"
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 0;
-                                                        updateMaterialQuantity(item.material, val - item.quantity);
-                                                    }}
-                                                />
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateMaterialQuantity(item.material, 1)}
-                                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
-                                                >
-                                                    <span className="text-xl font-bold">+</span>
-                                                </button>
-                                            </div>
+                                            <input
+                                                type="number"
+                                                className="w-16 text-center border border-gray-300 rounded-xl p-2 text-sm focus:ring-2 focus:ring-[#4c7085]/20 outline-none"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    updateItem('truck', idx, 'quantity', Math.max(0, val));
+                                                }}
+                                            />
 
                                             <button
-                                                onClick={() => {
-                                                    updateMaterialQuantity(item.material, -item.quantity);
-                                                    toggleMaterialSelection(item.material, false);
-                                                }}
-                                                className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition"
-                                                title="Remove"
+                                                type="button"
+                                                onClick={() => updateItem('truck', idx, 'quantity', item.quantity + 1)}
+                                                className="w-9 h-9 flex items-center justify-center bg-white hover:bg-gray-100 text-gray-700 rounded-xl border border-gray-300 transition-colors"
                                             >
-                                                <FaTrash />
+                                                <span className="text-lg font-medium">+</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => removeItem('truck', idx, item.id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors ml-2"
+                                            >
+                                                <FiTrash2 className="w-4 h-4" />
                                             </button>
                                         </div>
-                                    ))
-                                ) : (
-                                    <p className="text-gray-600 text-center py-4">No materials available</p>
-                                )}
-                            </div>
-                        </section>
+                                    </div>
+                                </div>
+                            ))}
+                            {assignedTrucks.length === 0 && (
+                                <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-2xl">No trucks assigned</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Materials */}
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                        <h2 className="text-lg font-medium text-gray-800 mb-6">Materials</h2>
+                        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                            {assignedMaterials.length > 0 ? (
+                                assignedMaterials.map((item) => (
+                                    <div key={item.material} className="flex items-center justify-between bg-gray-50 p-3 rounded-2xl border border-gray-200">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={item.selected}
+                                                onChange={() => toggleMaterialSelection(item.material)}
+                                                className="h-5 w-5 text-[#4c7085] focus:ring-[#4c7085] border-gray-300 rounded accent-[#4c7085]"
+                                            />
+                                            <label className="text-sm font-medium text-gray-700">
+                                                {item.name}
+                                            </label>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateMaterialQuantity(item.material, -1)}
+                                                disabled={item.quantity <= 0}
+                                                className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 text-gray-700 rounded-lg border border-gray-300 disabled:opacity-50 transition-colors"
+                                            >
+                                                <span className="text-base font-medium">-</span>
+                                            </button>
+
+                                            <input
+                                                type="number"
+                                                className="w-14 text-center border border-gray-300 rounded-lg p-1.5 text-sm focus:ring-2 focus:ring-[#4c7085]/20 outline-none"
+                                                value={item.quantity}
+                                                min="0"
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    updateMaterialQuantity(item.material, val - item.quantity);
+                                                }}
+                                            />
+
+                                            <button
+                                                type="button"
+                                                onClick={() => updateMaterialQuantity(item.material, 1)}
+                                                className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 text-gray-700 rounded-lg border border-gray-300 transition-colors"
+                                            >
+                                                <span className="text-base font-medium">+</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-2xl">No materials available</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

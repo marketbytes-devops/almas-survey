@@ -132,12 +132,9 @@ textarea {
 .btn-primary:hover {
   background-color: var(--secondary);
   box-shadow: 0 20px 25px -5px rgba(76, 112, 133, 0.15);
-  transform: translateY(-1px);
 }
 
-.btn-primary:active {
-  transform: scale(0.96);
-}
+.btn-primary:active {}
 
 .btn-primary:disabled {
   opacity: 0.6;

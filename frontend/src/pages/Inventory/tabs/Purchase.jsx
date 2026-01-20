@@ -1,6 +1,5 @@
-/* src/pages/Inventory/tabs/Purchase.jsx */
-import React, { useState, useEffect } from "react";
-import { FaPlus, FaHistory } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FiPlus, FiClock } from "react-icons/fi";
 import apiClient from "../../../api/apiClient";
 import Loading from "../../../components/Loading";
 
@@ -55,8 +54,6 @@ const Purchase = () => {
                 supplier: "",
                 notes: "",
             });
-            // Reload materials to see updated stock in other tabs if needed, 
-            // but usually we rely on parent or re-fetch when switching tabs.
         } catch (err) {
             console.error("Failed to record purchase:", err);
             alert("Failed to record purchase.");
@@ -65,31 +62,28 @@ const Purchase = () => {
         }
     };
 
-    if (loading) return <Loading />;
-
-    const inputClasses = "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c7085] border-gray-300";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    if (loading) return <div className="flex justify-center py-12"><Loading /></div>;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Purchase Form */}
             <div className="lg:col-span-1">
-                <div className="bg-[#4c7085]/5 border border-[#4c7085]/30 p-6 rounded-xl">
+                <div className="bg-gray-50 border border-gray-100 p-6 rounded-3xl">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-[#4c7085] text-white rounded-lg">
-                            <FaPlus className="w-4 h-4" />
+                        <div className="p-2 bg-[#4c7085] text-white rounded-xl shadow-sm">
+                            <FiPlus className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-bold text-[#4c7085]">Record New Purchase</h2>
+                        <h2 className="text-lg font-medium text-gray-800">Record New Purchase</h2>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className={labelClasses}>Material</label>
+                            <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Material</label>
                             <select
                                 name="material"
                                 value={formData.material}
                                 onChange={handleInputChange}
-                                className={inputClasses}
+                                className="input-style w-full"
                                 required
                             >
                                 <option value="">Select Material</option>
@@ -103,26 +97,26 @@ const Purchase = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClasses}>Quantity</label>
+                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Quantity</label>
                                 <input
                                     type="number"
                                     name="quantity"
                                     value={formData.quantity}
                                     onChange={handleInputChange}
-                                    className={inputClasses}
+                                    className="input-style w-full"
                                     required
                                     min="0.01"
                                     step="0.01"
                                 />
                             </div>
                             <div>
-                                <label className={labelClasses}>Unit Price</label>
+                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Unit Price</label>
                                 <input
                                     type="number"
                                     name="unit_price"
                                     value={formData.unit_price}
                                     onChange={handleInputChange}
-                                    className={inputClasses}
+                                    className="input-style w-full"
                                     required
                                     min="0.01"
                                     step="0.01"
@@ -131,24 +125,24 @@ const Purchase = () => {
                         </div>
 
                         <div>
-                            <label className={labelClasses}>Supplier</label>
+                            <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Supplier</label>
                             <input
                                 type="text"
                                 name="supplier"
                                 value={formData.supplier}
                                 onChange={handleInputChange}
-                                className={inputClasses}
+                                className="input-style w-full"
                                 placeholder="Supplier name"
                             />
                         </div>
 
                         <div>
-                            <label className={labelClasses}>Notes</label>
+                            <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Notes</label>
                             <textarea
                                 name="notes"
                                 value={formData.notes}
                                 onChange={handleInputChange}
-                                className={inputClasses}
+                                className="input-style w-full"
                                 rows="3"
                                 placeholder="Additional details..."
                             ></textarea>
@@ -157,7 +151,7 @@ const Purchase = () => {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full bg-[#4c7085] hover:bg-[#6b8ca3] text-white py-3 rounded-lg font-bold shadow-lg transition disabled:opacity-50"
+                            className="btn-primary w-full flex justify-center mt-2"
                         >
                             {submitting ? "Processing..." : "Save Purchase"}
                         </button>
@@ -167,31 +161,31 @@ const Purchase = () => {
 
             {/* Purchase History */}
             <div className="lg:col-span-2">
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <div className="bg-gray-50 px-6 py-4 border-b flex items-center gap-3">
-                        <FaHistory className="text-[#4c7085]" />
-                        <h2 className="font-bold text-gray-700">Recent Purchases</h2>
+                <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm h-full flex flex-col">
+                    <div className="bg-gray-50/50 px-6 py-5 border-b border-gray-100 flex items-center gap-3">
+                        <FiClock className="text-[#4c7085] w-5 h-5" />
+                        <h2 className="font-medium text-gray-800">Recent Purchases</h2>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left text-gray-500">
-                            <thead className="bg-gray-100 text-xs text-uppercase text-gray-600">
-                                <tr>
-                                    <th className="px-6 py-3">Date</th>
-                                    <th className="px-6 py-3">Material</th>
-                                    <th className="px-6 py-3 text-right">Qty</th>
-                                    <th className="px-6 py-3 text-right">Unit Price</th>
-                                    <th className="px-6 py-3 text-right">Total</th>
+                    <div className="overflow-x-auto flex-1">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-gray-50/30 border-b border-gray-100">
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Date</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Material</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-right">Qty</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-right">Unit Price</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-right">Total</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-gray-50">
                                 {purchases.length > 0 ? (
                                     purchases.map((p) => (
-                                        <tr key={p.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4">{new Date(p.purchase_date).toLocaleDateString()}</td>
+                                        <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-6 py-4 text-sm text-gray-600">{new Date(p.purchase_date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 font-medium text-gray-800">{p.material_name}</td>
-                                            <td className="px-6 py-4 text-right">{p.quantity}</td>
-                                            <td className="px-6 py-4 text-right">{p.unit_price} QAR</td>
-                                            <td className="px-6 py-4 text-right font-bold">{p.total_price} QAR</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 text-right">{p.quantity}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 text-right">{p.unit_price} QAR</td>
+                                            <td className="px-6 py-4 font-medium text-[#4c7085] text-right">{p.total_price} QAR</td>
                                         </tr>
                                     ))
                                 ) : (

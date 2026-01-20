@@ -2,12 +2,18 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { v4 as uuidv4 } from "uuid";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaBars, FaChevronDown, FaSearch, FaTimes, FaPlus, FaCheck } from "react-icons/fa";
+import { FaBars, FaChevronDown, FaSearch, FaTimes, FaPlus, FaCheck, FaBoxOpen, FaMinus, FaCamera, FaBox } from "react-icons/fa";
 
 import Input from "../../../components/Input";
 import Modal from "../../../components/Modal";
 import AddedArticlesSidebar from "./AddedArticlesSidebar";
 import ItemRow from "./ItemRow";
+import CameraCapture from "../../../components/CameraCapture";
+
+const CARD_CLASS = "bg-white rounded-2xl border border-gray-200 shadow-sm transition-all hover:shadow-md";
+const BUTTON_PRIMARY = "bg-[#4c7085] text-white hover:shadow-lg active:scale-95 transition-all rounded-xl px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2";
+const BUTTON_SECONDARY = "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 active:scale-95 transition-all rounded-xl px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2";
+const INPUT_SEARCH = "w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#4c7085] focus:ring-0 transition-all outline-none text-sm text-gray-900 placeholder-gray-500";
 
 const Article = ({ apiData, setMessage, setError }) => {
     const { watch, setValue } = useFormContext();
@@ -31,10 +37,15 @@ const Article = ({ apiData, setMessage, setError }) => {
         length: "",
         width: "",
         height: "",
+        quantity: 1,
+        moveStatus: "moving",
+        crateRequired: false,
     });
     const [manualVolume, setManualVolume] = useState(0);
     const [manualWeight, setManualWeight] = useState(0);
     const [itemCapturedImages, setItemCapturedImages] = useState({});
+    const [manualItemPhoto, setManualItemPhoto] = useState(null);
+    const [isManualCameraOpen, setIsManualCameraOpen] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -65,7 +76,6 @@ const Article = ({ apiData, setMessage, setError }) => {
         const currentRoomArticles = selectedRoom ? articles.filter(a => a.room === selectedRoom.value) : [];
 
         if (roomChanged) {
-            // Full reset on room change
             setExpandedItems({});
             setSelectedItems({});
             setItemQuantities({});
@@ -81,7 +91,6 @@ const Article = ({ apiData, setMessage, setError }) => {
                 currentRoomArticles.forEach(article => {
                     newQuantities[article.itemName] = article.quantity;
                     newSelectedItems[article.itemName] = true;
-
                     const itemKey = `${selectedRoom.value}-${article.itemName}`;
                     newMoveStatuses[itemKey] = article.moveStatus;
                     newCratePreferences[itemKey] = article.crateRequired;
@@ -93,11 +102,6 @@ const Article = ({ apiData, setMessage, setError }) => {
                 setItemCratePreferences(newCratePreferences);
             }
         } else {
-            // Room hasn't changed, but articles might have (e.g., added/removed via sidebar or manual add)
-            // We want to ensure saved articles are reflected in local state, 
-            // but we MUST NOT wipe out provisional selections (items checked but not yet added/saved).
-
-            // Find items that were REMOVED from the current room in the articles list
             const removedItems = prevRoomArticlesRef.current.filter(pa =>
                 !currentRoomArticles.some(ca => ca.itemName === pa.itemName)
             );
@@ -105,23 +109,15 @@ const Article = ({ apiData, setMessage, setError }) => {
             if (currentRoomArticles.length > 0 || removedItems.length > 0) {
                 setSelectedItems(prev => {
                     const next = { ...prev };
-                    currentRoomArticles.forEach(article => {
-                        next[article.itemName] = true;
-                    });
-                    removedItems.forEach(article => {
-                        next[article.itemName] = false;
-                    });
+                    currentRoomArticles.forEach(article => { next[article.itemName] = true; });
+                    removedItems.forEach(article => { next[article.itemName] = false; });
                     return next;
                 });
-
                 setItemQuantities(prev => {
                     const next = { ...prev };
-                    currentRoomArticles.forEach(article => {
-                        next[article.itemName] = article.quantity;
-                    });
+                    currentRoomArticles.forEach(article => { next[article.itemName] = article.quantity; });
                     return next;
                 });
-
                 setItemMoveStatuses(prev => {
                     const next = { ...prev };
                     currentRoomArticles.forEach(article => {
@@ -130,7 +126,6 @@ const Article = ({ apiData, setMessage, setError }) => {
                     });
                     return next;
                 });
-
                 setItemCratePreferences(prev => {
                     const next = { ...prev };
                     currentRoomArticles.forEach(article => {
@@ -141,15 +136,12 @@ const Article = ({ apiData, setMessage, setError }) => {
                 });
             }
         }
-
         prevRoomArticlesRef.current = currentRoomArticles;
     }, [selectedRoom, articles]);
 
 
     const filteredRooms = useMemo(() => {
-        if (!roomSearchQuery.trim()) {
-            return apiData.rooms;
-        }
+        if (!roomSearchQuery.trim()) return apiData.rooms;
         const query = roomSearchQuery.toLowerCase().trim();
         return apiData.rooms.filter(room => {
             const roomLabel = room.label?.toLowerCase() || '';
@@ -162,9 +154,7 @@ const Article = ({ apiData, setMessage, setError }) => {
         if (!selectedRoom) return [];
         let roomItems = apiData.items.filter(i => i.room === selectedRoom.id);
 
-        if (!itemSearchQuery.trim()) {
-            return roomItems;
-        }
+        if (!itemSearchQuery.trim()) return roomItems;
 
         const query = itemSearchQuery.toLowerCase().trim();
         return roomItems.filter(item => {
@@ -178,23 +168,12 @@ const Article = ({ apiData, setMessage, setError }) => {
         setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
     };
 
-    // Helper to generate a unique key for item state
     const getItemKey = (itemName) => `${selectedRoom?.value || 'general'}-${itemName}`;
 
     const updateQuantity = (itemName, qty) => {
         const newQty = Math.max(0, qty);
-
         setItemQuantities((prev) => ({ ...prev, [itemName]: newQty }));
-
-        if (newQty > 0) {
-            setSelectedItems((prev) => ({ ...prev, [itemName]: true }));
-        }
-        else {
-            setSelectedItems((prev) => ({ ...prev, [itemName]: false }));
-        }
-    };
-    const toggleItemSelection = (itemName) => {
-        setSelectedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
+        setSelectedItems((prev) => ({ ...prev, [itemName]: newQty > 0 }));
     };
 
     const toggleMoveStatus = (itemName) => {
@@ -218,10 +197,8 @@ const Article = ({ apiData, setMessage, setError }) => {
         const length = formData[`length_${itemName}`] || "";
         const width = formData[`width_${itemName}`] || "";
         const height = formData[`height_${itemName}`] || "";
-
         const volume = calculateVolume(length, width, height);
         const weight = calculateWeight(volume);
-
         const crateRequired = formData.crateRequired || false;
 
         const existingIndex = articles.findIndex(
@@ -247,29 +224,18 @@ const Article = ({ apiData, setMessage, setError }) => {
         };
 
         if (existingIndex !== -1) {
-            // Update existing
             const updatedArticles = [...articles];
-            updatedArticles[existingIndex] = {
-                ...updatedArticles[existingIndex],
-                ...newArticleData,
-                id: updatedArticles[existingIndex].id // keep ID
-            };
+            updatedArticles[existingIndex] = { ...updatedArticles[existingIndex], ...newArticleData, id: updatedArticles[existingIndex].id };
             setValue("articles", updatedArticles);
             setMessage("Article updated!");
         } else {
-            // Add new
-            const newArticle = {
-                id: uuidv4(),
-                ...newArticleData
-            };
+            const newArticle = { id: uuidv4(), ...newArticleData, addedAt: new Date().toISOString() };
             setValue("articles", [...articles, newArticle]);
             setMessage("Article added!");
         }
 
         setTimeout(() => setMessage(null), 3000);
         toggleExpandedItem(itemName);
-
-        // Clear captured image for this item
         const itemKey = getItemKey(itemName);
         setItemCapturedImages(prev => {
             const next = { ...prev };
@@ -284,25 +250,14 @@ const Article = ({ apiData, setMessage, setError }) => {
 
         const itemsToAdd = [];
         const itemsToUpdate = [];
+        const timestamp = new Date().toISOString();
 
         selectedItemNames.forEach(itemName => {
-            const existingIndex = articles.findIndex(
-                a => a.itemName === itemName && a.room === (selectedRoom?.value || "")
-            );
-
+            const existingIndex = articles.findIndex(a => a.itemName === itemName && a.room === (selectedRoom?.value || ""));
             const item = apiData.items.find(i => i.name === itemName && i.room === selectedRoom.id);
-            // Default values if not in formData (for multiple add we use simplified defaults or existing logic)
-            // For multiple add, we might not have specific form data, so we use ItemRow state or defaults.
-            // But if the user opened the form and typed something, where is it?
-            // It's in `ItemForm` local state. We don't have access to it here easily.
-            // Assumption: Multiple add adds basic items with defaults or whatever state we have tracked.
-            // We have tracked: Quantity, MoveStatus, CrateRequired.
-            // We DO NOT track dimensions/etc in parent state.
-
             const length = item?.length || "";
             const width = item?.width || "";
             const height = item?.height || "";
-
             const volumeValue = calculateVolume(length, width, height);
             const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
             const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
@@ -331,57 +286,55 @@ const Article = ({ apiData, setMessage, setError }) => {
             };
 
             if (existingIndex !== -1) {
-                // Prepare update
                 const original = articles[existingIndex];
-                itemsToUpdate.push({
-                    index: existingIndex,
-                    data: { ...original, ...articleData, id: original.id }
-                });
+
+                const mergedData = {
+                    ...original,
+                    ...articleData,
+                    id: original.id,
+                    length: (length && length !== "") ? length : original.length,
+                    width: (width && width !== "") ? width : original.width,
+                    height: (height && height !== "") ? height : original.height,
+                    volume: (volume && parseFloat(volume) > 0) ? volume : original.volume,
+                    weight: (weight && parseFloat(weight) > 0) ? weight : original.weight,
+                    volumeUnit: (articleData.volumeUnit) ? articleData.volumeUnit : original.volumeUnit,
+                    weightUnit: (articleData.weightUnit) ? articleData.weightUnit : original.weightUnit,
+                    photo: itemCapturedImages[itemKey]?.file || original.photo,
+                    description: original.description, // Bulk add doesn't support description, keep original
+                    handyman: original.handyman, // Bulk add doesn't support handyman, keep original
+                    packingOption: original.packingOption, // Bulk add doesn't support packing, keep original
+                    // Always update status fields from bulk controls
+                    quantity,
+                    moveStatus,
+                    crateRequired
+                };
+
+                itemsToUpdate.push({ index: existingIndex, data: mergedData });
             } else {
-                itemsToAdd.push({
-                    id: uuidv4(),
-                    ...articleData
-                });
+                itemsToAdd.push({ id: uuidv4(), ...articleData, addedAt: timestamp });
             }
         });
 
         let newArticlesList = [...articles];
-        // Apply updates
-        itemsToUpdate.forEach(update => {
-            newArticlesList[update.index] = update.data;
-        });
-        // Apply adds
+        itemsToUpdate.forEach(update => { newArticlesList[update.index] = update.data; });
         newArticlesList = [...newArticlesList, ...itemsToAdd];
 
         setValue("articles", newArticlesList);
-        setMessage(`${itemsToAdd.length + itemsToUpdate.length} articles processed!`);
+        setMessage(`${itemsToAdd.length + itemsToUpdate.length} articles added/updated!`);
         setTimeout(() => setMessage(null), 3000);
         setSelectedItems({});
-
-        // Clear captured images for the processed items
         setItemCapturedImages(prev => {
             const next = { ...prev };
-            selectedItemNames.forEach(name => {
-                const itemKey = getItemKey(name);
-                delete next[itemKey];
-            });
+            selectedItemNames.forEach(name => { delete next[getItemKey(name)]; });
             return next;
         });
     };
 
-    const removeArticle = (id) => {
-        setValue("articles", articles.filter(a => a.id !== id));
-        setMessage("Article removed!");
-        setTimeout(() => setMessage(null), 3000);
-    };
-
     const handleManualDimensionChange = (field, value) => {
         setManualFormData(prev => ({ ...prev, [field]: value }));
-
         const l = field === 'length' ? value : manualFormData.length;
         const w = field === 'width' ? value : manualFormData.width;
         const h = field === 'height' ? value : manualFormData.height;
-
         if (l && w && h && !isNaN(l) && !isNaN(w) && !isNaN(h)) {
             const vol = (parseFloat(l) * parseFloat(w) * parseFloat(h)) / 1000000;
             setManualVolume(vol);
@@ -397,11 +350,17 @@ const Article = ({ apiData, setMessage, setError }) => {
             setError("Item name is required");
             return;
         }
+
+        console.log("=== Adding Manual Item ===");
+        console.log("manualFormData:", manualFormData);
+        console.log("manualVolume:", manualVolume);
+        console.log("manualWeight:", manualWeight);
+
         const newArticle = {
             id: uuidv4(),
             itemName: manualFormData.itemName.trim(),
             description: manualFormData.description || "",
-            quantity: 1,
+            quantity: manualFormData.quantity || 1,
             length: manualFormData.length || "",
             width: manualFormData.width || "",
             height: manualFormData.height || "",
@@ -411,110 +370,93 @@ const Article = ({ apiData, setMessage, setError }) => {
             weightUnit: apiData.weightUnits[0]?.value || "",
             handyman: "",
             packingOption: "",
-            moveStatus: "moving",
-            crateRequired: false,
+            moveStatus: manualFormData.moveStatus || "moving",
+            crateRequired: manualFormData.crateRequired || false,
             room: selectedRoom?.value || "",
+            photo: manualItemPhoto || null,
+            addedAt: new Date().toISOString(),
         };
 
-        setValue("articles", [...articles, newArticle]);
-        setMessage("Custom item added successfully!");
-        setTimeout(() => setMessage(null), 3000);
+        console.log("newArticle:", newArticle);
 
+        setValue("articles", [...articles, newArticle]);
+        setMessage("Custom item added!");
+        setTimeout(() => setMessage(null), 3000);
         setShowManualAddForm(false);
-        setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
+        setManualFormData({ itemName: "", description: "", length: "", width: "", height: "", quantity: 1, moveStatus: "moving", crateRequired: false });
         setManualVolume(0);
         setManualWeight(0);
+        setManualItemPhoto(null);
     };
 
-
     return (
-        <div className="relative">
-            <AddedArticlesSidebar
-                showArticlesSidebar={showArticlesSidebar}
-                setShowArticlesSidebar={setShowArticlesSidebar}
-                apiData={apiData}
-            />
-            {showArticlesSidebar && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40"
-                    onClick={() => setShowArticlesSidebar(false)}
-                />
-            )}
-            <div className="space-y-4 sm:space-y-8">
-                <div className="bg-white rounded-2xl shadow-lg p-2 md:p-8 border border-gray-200">
-                    <div className="flex justify-between items-center mb-2 sm:mb-4">
-                        <h3 className="text-lg sm:text-xl font-medium text-black">Select Room</h3>
-                        <button
-                            type="button"
-                            onClick={() => setShowArticlesSidebar(true)}
-                            className="hidden sm:flex items-center gap-3 py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium rounded-lg text-sm shadow-md hover:shadow-xl transition"
-                        >
-                            <FaBars /> View Added ({articles.length})
-                        </button>
-                    </div>
-                    {articles.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setShowArticlesSidebar(true)}
-                            className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-14 h-14 sm:hidden bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-full shadow-2xl hover:shadow-xl transform hover:scale-110 transition-all duration-300"
-                            aria-label="View added articles"
-                        >
-                            <div className="relative">
-                                <FaBars className="w-5 h-5" />
-                                <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-4 h-4 bg-red-500 text-white text-xs font-light rounded-full px-2">
-                                    {articles.length}
-                                </span>
+        <div className="relative animate-in fade-in duration-500">
+            <AddedArticlesSidebar showArticlesSidebar={showArticlesSidebar} setShowArticlesSidebar={setShowArticlesSidebar} apiData={apiData} />
+            {showArticlesSidebar && <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setShowArticlesSidebar(false)} />}
+
+            <div className={`space-y-6 ${CARD_CLASS} p-6 border-gray-200`}>
+
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                    <div>
+                        <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                <FaBoxOpen className="w-4 h-4" />
                             </div>
-                        </button>
-                    )}
+                            Room
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1 ml-10">Select a room to begin adding items</p>
+                    </div>
 
-                    <div ref={dropdownRef} className="relative">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setShowRoomDropdown(prev => !prev);
-                                if (!showRoomDropdown) {
-                                    setRoomSearchQuery("");
-                                }
-                            }}
-                            className={`w-full py-2 px-4 text-left text-sm font-medium rounded-lg border-2 transition-all duration-300 flex justify-between items-center shadow-sm ${selectedRoom
-                                ? "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white"
-                                : "border-gray-300 bg-white text-gray-700 hover:border-[#4c7085]"
-                                }`}
-                        >
-                            <span>{selectedRoom ? selectedRoom.label : "Choose a room to add items"}</span>
-                            <FaChevronDown className={`w-4 h-4 transition-transform ${showRoomDropdown ? "rotate-180" : ""}`} />
-                        </button>
+                    <button type="button" onClick={() => setShowArticlesSidebar(true)} className={`${BUTTON_SECONDARY} ml-auto`}>
+                        <FaBars /> View List ({articles.length})
+                    </button>
+                </div>
 
+                {/* Room Selector */}
+                <div ref={dropdownRef} className="relative z-20">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setShowRoomDropdown(prev => !prev);
+                            if (!showRoomDropdown) setRoomSearchQuery("");
+                        }}
+                        className={`w-full py-3 px-4 text-left text-sm font-medium rounded-xl border transition-all flex justify-between items-center ${selectedRoom ? "bg-white border-[#4c7085] ring-1 ring-[#4c7085]" : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300"
+                            }`}
+                    >
+                        <span className={selectedRoom ? "text-gray-900" : "text-gray-400"}>
+                            {selectedRoom ? selectedRoom.label : "Select a room..."}
+                        </span>
+                        <FaChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showRoomDropdown ? "rotate-180" : ""}`} />
+                    </button>
+
+                    <AnimatePresence>
                         {showRoomDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-indigo-200 rounded-xl shadow-2xl z-20 max-h-96 overflow-hidden">
-                                <div className="p-3 border-b border-gray-100 bg-gray-50">
+                            <motion.div
+                                initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
+                                className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-80 flex flex-col"
+                            >
+                                <div className="p-3 border-b border-gray-100 bg-gray-50/50 sticky top-0">
                                     <div className="relative">
+                                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                                         <input
                                             type="text"
                                             value={roomSearchQuery}
                                             onChange={(e) => setRoomSearchQuery(e.target.value)}
                                             placeholder="Search rooms..."
-                                            className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6b8ca3] focus:border-transparent"
+                                            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#4c7085] bg-white transition-colors"
                                             autoFocus
                                         />
-                                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         {roomSearchQuery && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setRoomSearchQuery("")}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                            >
-                                                <FaTimes className="w-4 h-4" />
+                                            <button onClick={() => setRoomSearchQuery("")} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                                <FaTimes className="w-3 h-3" />
                                             </button>
                                         )}
                                     </div>
                                 </div>
-                                <div className="max-h-64 overflow-y-auto">
+                                <div className="overflow-y-auto flex-1">
                                     {filteredRooms.length === 0 ? (
-                                        <div className="px-6 py-8 text-center text-gray-500">
-                                            {roomSearchQuery ? "No rooms found matching your search" : "No rooms available"}
-                                        </div>
+                                        <div className="p-8 text-center text-gray-500 text-sm">No rooms found</div>
                                     ) : (
                                         filteredRooms.map(room => (
                                             <button
@@ -524,236 +466,236 @@ const Article = ({ apiData, setMessage, setError }) => {
                                                     setSelectedRoom(room);
                                                     setValue("selectedRoom", room);
                                                     setShowRoomDropdown(false);
-                                                    setRoomSearchQuery("");
                                                 }}
-                                                className={`w-full text-left px-4 py-2 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all text-sm font-medium border-b border-gray-100 last:border-0 ${selectedRoom?.id === room.id ? 'bg-blue-50 text-[#4c7085]' : 'text-gray-800'}`}
+                                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b border-gray-50 last:border-0 flex justify-between items-center ${selectedRoom?.id === room.id ? 'bg-[#4c7085]/5 text-[#4c7085] font-medium' : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
                                             >
-                                                <div className="flex items-center justify-between">
-                                                    <span>{room.label}</span>
-                                                    {selectedRoom?.id === room.id && (
-                                                        <FaCheck className="w-4 h-4 text-[#4c7085]" />
-                                                    )}
-                                                </div>
+                                                {room.label}
+                                                {selectedRoom?.id === room.id && <FaCheck className="w-3.5 h-3.5" />}
                                             </button>
                                         ))
                                     )}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
-                    </div>
+                    </AnimatePresence>
                 </div>
 
+                {/* Items Section */}
                 {selectedRoom && (
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-                        {Object.values(selectedItems).some(v => v) && (
-                            <div className="p-4 sm:p-5 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white flex flex-col sm:flex-row justify-between items-center gap-3">
-                                <span className="font-medium text-sm sm:text-base">
-                                    {Object.values(selectedItems).filter(Boolean).length} item(s) selected
-                                </span>
-                                <button
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={addMultipleArticles}
-                                    className="w-full sm:w-auto py-2 px-4 bg-white text-[#4c7085] font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg text-sm"
-                                >
-                                    Add and Update Selected
-                                </button>
-                            </div>
-                        )}
-                        <div className="p-2 sm:p-4 bg-gray-50 border-b border-gray-200">
-                            <div className="relative">
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4">
+
+                        {/* Search & Actions Bar */}
+                        <div className="flex flex-col md:flex-row gap-3">
+                            <div className="relative flex-1">
+                                <FaSearch className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
                                     value={itemSearchQuery}
                                     onChange={(e) => setItemSearchQuery(e.target.value)}
-                                    placeholder="Search items in this room..."
-                                    className="w-full px-4 py-3 pl-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder={`Search items in ${selectedRoom.label}...`}
+                                    className={INPUT_SEARCH}
                                 />
-                                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 {itemSearchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setItemSearchQuery("")}
-                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    >
-                                        <FaTimes className="w-5 h-5" />
+                                    <button onClick={() => setItemSearchQuery("")} className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        <FaTimes className="w-4 h-4" />
                                     </button>
                                 )}
                             </div>
-                        </div>
-                        <div className="p-2 sm:p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
-                            <button
-                                type="button"
-                                onClick={() => setShowManualAddForm(true)}
-                                className="w-full sm:w-auto sm:mx-auto py-2 px-4 text-sm font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-4"
-                            >
-                                <FaPlus className="w-5 h-5 sm:w-6 sm:h-6" />
-                                Add Item Manually
+                            <button type="button" onClick={() => setShowManualAddForm(true)} className={`${BUTTON_SECONDARY} whitespace-nowrap`}>
+                                <FaPlus /> Custom Item
                             </button>
                         </div>
-                        <div className="divide-y divide-gray-200">
-                            {filteredItems.length === 0 ? (
-                                <div className="text-center py-16 text-gray-500">
-                                    <p className="text-lg">
-                                        {itemSearchQuery
-                                            ? `No items found matching "${itemSearchQuery}"`
-                                            : "No items in this room"}
-                                    </p>
-                                    <p className="text-sm mt-2 text-gray-400">
-                                        Use "Add Item Manually" to create custom items
-                                    </p>
-                                </div>
-                            ) : (
-                                filteredItems.map(item => {
-                                    // Find existing article to pass down (not strictly needed since we hydrated state, but good for ItemForm)
-                                    const existingArticle = articles.find(
-                                        a => a.itemName === item.name && a.room === selectedRoom.value
-                                    );
 
-                                    return (
-                                        <ItemRow
-                                            key={item.id || item.name}
-                                            item={item}
-                                            apiData={apiData}
-                                            existingArticle={existingArticle} // Pass existing article data
-                                            itemQuantities={itemQuantities}
-                                            setItemQuantities={setItemQuantities}
-                                            selectedItems={selectedItems}
-                                            setSelectedItems={setSelectedItems}
-                                            itemMoveStatuses={itemMoveStatuses}
-                                            toggleMoveStatus={toggleMoveStatus}
-                                            itemCratePreferences={itemCratePreferences}
-                                            setItemCratePreferences={setItemCratePreferences}
-                                            expandedItems={expandedItems}
-                                            toggleExpandedItem={toggleExpandedItem}
-                                            addArticleCallback={addArticle}
-                                            getItemKey={getItemKey}
-                                            selectedRoomValue={selectedRoom?.value}
-                                            itemCapturedImages={itemCapturedImages}
-                                            setItemCapturedImages={setItemCapturedImages}
-                                        />
-                                    );
-                                })
-                            )}
-                        </div>
-                        {/* MANUAL ADD MODAL */}
-                        {showManualAddForm && (
-                            <Modal
-                                isOpen={showManualAddForm}
-                                onClose={() => {
-                                    setShowManualAddForm(false);
-                                    setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
-                                    setManualVolume(0);
-                                    setManualWeight(0);
-                                }}
-                                title={`Add Custom Item — ${selectedRoom?.label || "General"}`}
-                                footer={
-                                    <>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowManualAddForm(false);
-                                                setManualFormData({ itemName: "", description: "", length: "", width: "", height: "" });
-                                                setManualVolume(0);
-                                                setManualWeight(0);
-                                            }}
-                                            className="w-full px-8 py-2 text-sm font-medium bg-gray-300 text-gray-700 rounded-sm hover:bg-gray-400 transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={addManualItem}
-                                            disabled={!manualFormData.itemName.trim()}
-                                            className="whitespace-nowrap w-full px-8 py-2 text-sm font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-sm hover:shadow-2xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Add Item to Survey
-                                        </button>
-                                    </>
-                                }
-                            >
+                        {/* Bulk Add Action Bar */}
+                        <AnimatePresence>
+                            {Object.values(selectedItems).some(v => v) && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="space-y-4"
+                                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
                                 >
-                                    <Input
-                                        label="Item Name"
-                                        name="itemName"
-                                        type="text"
-                                        value={manualFormData.itemName}
-                                        onChange={(e) => setManualFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                                        rules={{ required: true }}
-                                        placeholder="e.g., Antique Piano"
-                                    />
-                                    <Input
-                                        label="Description (Optional)"
-                                        name="description"
-                                        type="textarea"
-                                        value={manualFormData.description}
-                                        onChange={(e) => setManualFormData(prev => ({ ...prev, description: e.target.value }))}
-                                        rows={4}
-                                        placeholder="Any special notes..."
-                                    />
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Dimensions (cm)
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <Input
-                                                label="Length (cm)"
-                                                name="length"
-                                                type="number"
-                                                step="0.01"
-                                                value={manualFormData.length}
-                                                onChange={(e) => handleManualDimensionChange('length', e.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                            <Input
-                                                label="Width (cm)"
-                                                name="width"
-                                                type="number"
-                                                step="0.01"
-                                                value={manualFormData.width}
-                                                onChange={(e) => handleManualDimensionChange('width', e.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                            <Input
-                                                label="Height (cm)"
-                                                name="height"
-                                                type="number"
-                                                step="0.01"
-                                                value={manualFormData.height}
-                                                onChange={(e) => handleManualDimensionChange('height', e.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">
-                                                Volume (m³)
-                                            </label>
-                                            <div className="w-full px-6 py-4 text-center text-sm font-semibold bg-gray-100 border border-gray-300 rounded-xl">
-                                                {manualVolume.toFixed(4)}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">
-                                                Weight (kg) <span className="text-sm font-normal text-gray-500">(estimated)</span>
-                                            </label>
-                                            <div className="w-full px-6 py-4 text-center text-sm font-semibold bg-gray-100 border border-gray-300 rounded-xl">
-                                                {manualWeight.toFixed(2)}
-                                            </div>
-                                        </div>
+                                    <div className="bg-[#4c7085]/10 border border-[#4c7085]/20 rounded-xl p-3 grid grid-cols-1 md:grid-cols-2 gap-3 items-center justify-between text-center md:text-left">
+                                        <span className="text-sm font-medium text-[#4c7085]">
+                                            {Object.values(selectedItems).filter(Boolean).length} items selected
+                                        </span>
+                                        <button type="button" onClick={addMultipleArticles} className={BUTTON_PRIMARY}>
+                                            Save Selected Items
+                                        </button>
                                     </div>
                                 </motion.div>
-                            </Modal>
-                        )}
+                            )}
+                        </AnimatePresence>
+
+                        {/* Items List */}
+                        <div className="border border-gray-100 rounded-xl divide-y divide-gray-100 bg-gray-50/30 max-h-[600px] overflow-y-auto">
+                            {filteredItems.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                                        <FaSearch className="w-6 h-6" />
+                                    </div>
+                                    <p className="text-gray-900 font-medium">No items found</p>
+                                    <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">
+                                        We couldn't find matches for "{itemSearchQuery || 'this room'}". Try a different search or add a custom item.
+                                    </p>
+                                    <button onClick={() => setShowManualAddForm(true)} className="mt-4 text-[#4c7085] text-sm font-medium hover:underline">
+                                        Add Custom Item
+                                    </button>
+                                </div>
+                            ) : (
+                                filteredItems.map(item => (
+                                    <ItemRow
+                                        key={item.id || item.name}
+                                        item={item}
+                                        apiData={apiData}
+                                        existingArticle={articles.find(a => a.itemName === item.name && a.room === selectedRoom.value)}
+                                        itemQuantities={itemQuantities}
+                                        setItemQuantities={setItemQuantities}
+                                        selectedItems={selectedItems}
+                                        setSelectedItems={setSelectedItems}
+                                        itemMoveStatuses={itemMoveStatuses}
+                                        toggleMoveStatus={toggleMoveStatus}
+                                        itemCratePreferences={itemCratePreferences}
+                                        setItemCratePreferences={setItemCratePreferences}
+                                        expandedItems={expandedItems}
+                                        toggleExpandedItem={toggleExpandedItem}
+                                        addArticleCallback={addArticle}
+                                        getItemKey={getItemKey}
+                                        selectedRoomValue={selectedRoom?.value}
+                                        itemCapturedImages={itemCapturedImages}
+                                        setItemCapturedImages={setItemCapturedImages}
+                                    />
+                                ))
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
+
+            {/* Manual Add Modal */}
+            <Modal
+                isOpen={showManualAddForm}
+                onClose={() => setShowManualAddForm(false)}
+                title={`Add Custom Item — ${selectedRoom?.label || "General"}`}
+            >
+                <div className="space-y-4">
+                    <Input label="Item Name" name="itemName" value={manualFormData.itemName} onChange={(e) => setManualFormData(prev => ({ ...prev, itemName: e.target.value }))} rules={{ required: true }} placeholder="e.g., Antique Piano" />
+                    <Input label="Description (Optional)" name="description" type="textarea" value={manualFormData.description} onChange={(e) => setManualFormData(prev => ({ ...prev, description: e.target.value }))} rows={3} />
+
+                    {/* Quantity, Status, Photo Row */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Quantity</label>
+                            <div className="flex items-center border border-gray-200 rounded-lg h-10 bg-white shadow-sm overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => setManualFormData(prev => ({ ...prev, quantity: Math.max(1, (prev.quantity || 1) - 1) }))}
+                                    className="w-10 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100"
+                                >
+                                    <FaMinus className="w-2.5 h-2.5" />
+                                </button>
+                                <input
+                                    type="number"
+                                    value={manualFormData.quantity || 1}
+                                    onChange={(e) => setManualFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                                    className="flex-1 text-center text-sm font-medium text-gray-900 border-none focus:ring-0 p-0"
+                                    min="1"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setManualFormData(prev => ({ ...prev, quantity: (prev.quantity || 1) + 1 }))}
+                                    className="w-10 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100"
+                                >
+                                    <FaPlus className="w-2.5 h-2.5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Photo</label>
+                            <button
+                                type="button"
+                                onClick={() => setIsManualCameraOpen(true)}
+                                className={`w-full h-10 flex items-center justify-center rounded-lg border transition-all ${manualItemPhoto
+                                    ? "bg-indigo-50 border-indigo-200 text-indigo-600"
+                                    : "bg-white border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+                                    }`}
+                            >
+                                <FaCamera className="w-4 h-4 mr-2" />
+                                {manualItemPhoto ? "Photo Added" : "Add Photo"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Status Toggles */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setManualFormData(prev => ({ ...prev, moveStatus: prev.moveStatus === 'moving' ? 'not_moving' : 'moving' }))}
+                            className={`h-10 px-3 rounded-lg text-xs font-medium border flex items-center justify-center gap-2 transition-all ${manualFormData.moveStatus === 'moving'
+                                ? "bg-green-50 border-green-200 text-green-700"
+                                : "bg-red-50 border-red-200 text-red-700"
+                                }`}
+                        >
+                            <span className={`w-2 h-2 rounded-full ${manualFormData.moveStatus === 'moving' ? "bg-green-500" : "bg-red-500"}`} />
+                            {manualFormData.moveStatus === 'moving' ? "Moving" : "Not Moving"}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setManualFormData(prev => ({ ...prev, crateRequired: !prev.crateRequired }))}
+                            className={`h-10 px-3 rounded-lg text-xs font-medium border flex items-center justify-center gap-2 transition-all ${manualFormData.crateRequired
+                                ? "bg-amber-50 border-amber-200 text-amber-700"
+                                : "bg-white border-gray-200 text-gray-500"
+                                }`}
+                        >
+                            <FaBox className={`w-3 h-3 ${manualFormData.crateRequired ? "text-amber-600" : "text-gray-400"}`} />
+                            {manualFormData.crateRequired ? "Crate Required" : "No Crate"}
+                        </button>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Dimensions (cm)</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            <Input label="" name="length" type="number" placeholder="L" value={manualFormData.length} onChange={(e) => handleManualDimensionChange('length', e.target.value)} />
+                            <Input label="" name="width" type="number" placeholder="W" value={manualFormData.width} onChange={(e) => handleManualDimensionChange('width', e.target.value)} />
+                            <Input label="" name="height" type="number" placeholder="H" value={manualFormData.height} onChange={(e) => handleManualDimensionChange('height', e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div>
+                            <span className="block text-xs text-gray-500 mb-1">Volume</span>
+                            <div className="font-mono text-lg text-gray-800">{manualVolume.toFixed(4)} <span className="text-xs text-gray-400">m³</span></div>
+                        </div>
+                        <div>
+                            <span className="block text-xs text-gray-500 mb-1">Est. Weight</span>
+                            <div className="font-mono text-lg text-gray-800">{manualWeight.toFixed(2)} <span className="text-xs text-gray-400">kg</span></div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button type="button" onClick={() => setShowManualAddForm(false)} className={`${BUTTON_SECONDARY} flex-1`}>Cancel</button>
+                        <button type="button" onClick={addManualItem} disabled={!manualFormData.itemName.trim()} className={`${BUTTON_PRIMARY} flex-1 disabled:opacity-50`}>Add Item</button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Manual Item Camera Modal */}
+            <Modal
+                isOpen={isManualCameraOpen}
+                title="Take Photo"
+                className="z-[70]"
+            >
+                <CameraCapture
+                    onCapture={(file) => {
+                        if (file) {
+                            setManualItemPhoto(file);
+                            setIsManualCameraOpen(false);
+                        }
+                    }}
+                    onCancel={() => setIsManualCameraOpen(false)}
+                />
+            </Modal>
         </div>
     );
 };

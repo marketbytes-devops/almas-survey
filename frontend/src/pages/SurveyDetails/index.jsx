@@ -1,21 +1,31 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaBars, FaEdit, FaCheck, FaSearch, FaSignature, FaEye, FaMapMarkerAlt, FaSpinner } from "react-icons/fa";
+import {
+    FaPlus, FaMinus, FaChevronDown, FaChevronUp, FaTimes, FaEdit,
+    FaCheck, FaSearch, FaSignature, FaEye, FaMapMarkerAlt, FaSpinner,
+    FaCalendar, FaClock, FaUser, FaTruck, FaBox
+} from "react-icons/fa";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Loading from "../../components/Loading";
-import Input from "../../components/Input";
 import apiClient from "../../api/apiClient";
 import { Country, State, City } from "country-state-city";
-import SignatureModal from "../../components/SignatureModal/SignatureModal";
-import Modal from "../../components/Modal";
+import SignatureModal from "../../components/SignatureModal/SignatureModal"; // Keeping this as is, assuming it's a specific component
 import Article from "./components/Article";
 import AdditionalServicesTab from "./components/AdditionalServicesTab";
 import VehicleDetails from "./components/VehicleDetails";
+import PageHeader from "../../components/PageHeader";
 
+// --- STYLING CONSTANTS ---
+const CARD_CLASS = "bg-white rounded-2xl border border-gray-200 shadow-sm p-6 transition-all hover:shadow-md";
+const BUTTON_BASE = "px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm";
+const INPUT_CLASS_BASE = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#4c7085] focus:ring-0 transition-all outline-none text-sm text-gray-900 placeholder-gray-500";
+const LABEL_CLASS = "block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1";
+
+// --- HELPER FUNCTIONS ---
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -23,32 +33,114 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
     reader.onerror = error => reject(error);
 });
 
-const salutationOptions = [
-    { value: "Mr", label: "Mr" },
-    { value: "Mrs", label: "Mrs" },
-    { value: "Ms", label: "Ms" },
-];
+// --- COMPONENTS ---
 
+// 1. Reusable Input Field
+const InputField = ({ label, name, type = "text", options = [], rules = {}, placeholder, ...props }) => {
+    const { register, formState: { errors } } = useFormContext();
 
+    // Helper to get nested error safely
+    const getNestedError = (obj, path) => {
+        return path.split(/[\.\[\]]/).filter(Boolean).reduce((acc, part) => acc && acc[part], obj);
+    };
+    const error = getNestedError(errors, name);
 
-const serviceTypeOptions = [
-    { value: "localMove", label: "Local Move" },
-    { value: "internationalMove", label: "International Move" },
-    { value: "carExport", label: "Car Import and Export" },
-    { value: "storageServices", label: "Storage Services" },
-    { value: "logistics", label: "Logistics" }
-];
+    return (
+        <div className="flex flex-col">
+            {label && (
+                <label className={LABEL_CLASS}>
+                    {label}
+                    {rules.required && <span className="text-red-500"> *</span>}
+                </label>
+            )}
+            {type === "select" ? (
+                <div className="relative">
+                    <select
+                        {...register(name, rules)}
+                        className={`${INPUT_CLASS_BASE} appearance-none ${error ? "border-red-500 bg-red-50/10" : ""}`}
+                        {...props}
+                    >
+                        <option value="">Select option</option>
+                        {options.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                        <FaChevronDown className="w-3 h-3" />
+                    </div>
+                </div>
+            ) : type === "textarea" ? (
+                <textarea
+                    {...register(name, rules)}
+                    placeholder={placeholder}
+                    className={`${INPUT_CLASS_BASE} min-h-[120px] resize-y ${error ? "border-red-500 bg-red-50/10" : ""}`}
+                    {...props}
+                />
+            ) : (
+                <input
+                    type={type}
+                    {...register(name, rules)}
+                    placeholder={placeholder}
+                    className={`${INPUT_CLASS_BASE} ${error ? "border-red-500 bg-red-50/10" : ""}`}
+                    {...props}
+                />
+            )}
+            {error && <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">{error.message || "Required"}</p>}
+        </div>
+    );
+};
 
+// 2. DatePicker Input
+const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
+    const { setValue, watch, formState: { errors } } = useFormContext();
+    const value = watch(name);
+    const error = errors?.[name];
 
-const statusOptions = [
-    { value: "pending", label: "Pending" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "completed", label: "Completed" },
-    { value: "cancelled", label: "Cancelled" },
-];
+    return (
+        <div className="w-full">
+            {label && (
+                <label className={LABEL_CLASS}>
+                    {label} {rules?.required && <span className="text-red-500">*</span>}
+                </label>
+            )}
+            <div className="relative">
+                <DatePicker
+                    selected={value}
+                    onChange={(date) => setValue(name, date, { shouldValidate: true })}
+                    showTimeSelect={isTimeOnly}
+                    showTimeSelectOnly={isTimeOnly}
+                    timeIntervals={15}
+                    timeCaption="Time"
+                    dateFormat={isTimeOnly ? "h:mm aa" : "MM/dd/yyyy"}
+                    className={`${INPUT_CLASS_BASE} ${error ? "border-red-500 bg-red-50/10" : ""}`}
+                    placeholderText={isTimeOnly ? "Select time" : "Select date"}
+                    wrapperClassName="w-full"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                    {isTimeOnly ? <FaClock className="w-4 h-4" /> : <FaCalendar className="w-4 h-4" />}
+                </div>
+            </div>
+            {error && <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">{error.message}</p>}
+        </div>
+    );
+};
 
 const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, originCountry, originState, register, watch, multipleAddresses, destinationAddresses, removeAddress, addAddress, setValue }) => {
     const [isLocating, setIsLocating] = useState(false);
+
+    const salutationOptions = [
+        { value: "Mr", label: "Mr" },
+        { value: "Mrs", label: "Mrs" },
+        { value: "Ms", label: "Ms" },
+    ];
+
+    const serviceTypeOptions = [
+        { value: "localMove", label: "Local Move" },
+        { value: "internationalMove", label: "International Move" },
+        { value: "carExport", label: "Car Import and Export" },
+        { value: "storageServices", label: "Storage Services" },
+        { value: "logistics", label: "Logistics" }
+    ];
 
     const handleGetLocation = () => {
         setIsLocating(true);
@@ -56,7 +148,6 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const { latitude, longitude } = position.coords;
-
                     try {
                         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`);
                         const data = await response.json();
@@ -64,433 +155,366 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                         if (data && data.address) {
                             const address = data.address;
                             const fullAddress = data.display_name;
-
-                            // Map address fields
                             const fetchedCountry = address.country;
                             const fetchedState = address.state || address.region || "";
-                            const fetchedZip = address.postcode || "";
                             const fetchedIsoState = address["ISO3166-2-lvl4"] || address["ISO3166-2"] || "";
 
-                            // Collect candidates for City matching
-                            // Prioritize typically larger administrative areas if the specific town isn't in the list
-                            const cityCandidates = [
-                                address.city,
-                                address.town,
-                                address.village,
-                                address.municipality,
-                                address.city_district,
-                                address.county,
-                                address.state_district,
-                                address.suburb
-                            ].filter(Boolean);
+                            // 1. Set Full Address & GPS
+                            setValue("originAddress", fullAddress, { shouldValidate: true });
+                            setValue("originGps", `https://www.google.com/maps?q=${latitude},${longitude}`, { shouldValidate: true });
 
-                            // Try to match Country
+                            // 2. Match Country
                             const allCountries = Country.getAllCountries();
-                            const matchedCountry = allCountries.find(c => c.name.toLowerCase() === fetchedCountry.toLowerCase() || c.isoCode === address.country_code.toUpperCase());
+                            const matchedCountry = allCountries.find(c =>
+                                c.name.toLowerCase() === fetchedCountry.toLowerCase() ||
+                                c.isoCode === (address.country_code || "").toUpperCase()
+                            );
 
                             if (matchedCountry) {
                                 setValue("originCountry", matchedCountry.isoCode, { shouldValidate: true });
 
-                                const allStates = State.getStatesOfCountry(matchedCountry.isoCode);
-                                let matchedState = null;
+                                // 3. Match State (with small delay to ensure country is set)
+                                setTimeout(() => {
+                                    const allStates = State.getStatesOfCountry(matchedCountry.isoCode);
+                                    let matchedState = null;
 
-                                if (fetchedIsoState) {
-                                    const isoSuffix = fetchedIsoState.split('-')[1];
-                                    if (isoSuffix) {
-                                        matchedState = allStates.find(s => s.isoCode === isoSuffix);
+                                    // Try ISO match first
+                                    if (fetchedIsoState) {
+                                        const isoSuffix = fetchedIsoState.split('-')[1];
+                                        if (isoSuffix) matchedState = allStates.find(s => s.isoCode === isoSuffix);
                                     }
-                                }
-
-                                if (!matchedState) {
-                                    matchedState = allStates.find(s =>
-                                        s.name.toLowerCase() === fetchedState.toLowerCase() ||
-                                        fetchedState.toLowerCase().includes(s.name.toLowerCase()) ||
-                                        cityCandidates.some(c => s.name.toLowerCase() === c.toLowerCase())
-                                    );
-                                }
-
-                                if (matchedState) {
-                                    const allCities = City.getCitiesOfState(matchedCountry.isoCode, matchedState.isoCode);
-
-                                    const matchedCity = allCities.find(c =>
-                                        cityCandidates.some(candidate =>
-                                            c.name.toLowerCase() === candidate.toLowerCase() ||
-                                            candidate.toLowerCase().includes(c.name.toLowerCase())
-                                        )
-                                    );
-
-                                    let usedCityName = "";
-                                    if (matchedCity) {
-                                        usedCityName = matchedCity.name;
-                                    } else {
-                                        usedCityName = cityCandidates[0] || "";
+                                    // Fallback to name match
+                                    if (!matchedState) {
+                                        matchedState = allStates.find(s => s.name.toLowerCase() === fetchedState.toLowerCase());
+                                    }
+                                    // Fallback to fuzzy name match
+                                    if (!matchedState) {
+                                        matchedState = allStates.find(s =>
+                                            fetchedState.toLowerCase().includes(s.name.toLowerCase()) ||
+                                            s.name.toLowerCase().includes(fetchedState.toLowerCase())
+                                        );
                                     }
 
-                                    // Chain updates to ensure options are available
-                                    setTimeout(() => {
+                                    if (matchedState) {
                                         setValue("originState", matchedState.isoCode, { shouldValidate: true });
 
+                                        // 4. Match City (Delayed)
                                         setTimeout(() => {
-                                            setValue("originCity", usedCityName, { shouldValidate: true });
-                                        }, 100);
-                                    }, 100);
+                                            const allCities = City.getCitiesOfState(matchedCountry.isoCode, matchedState.isoCode);
 
-                                    let addressParts = fullAddress.split(", ").map(p => p.trim());
-                                    const itemsToRemove = [
-                                        matchedCountry.name,
-                                        matchedState.name,
-                                        fetchedZip,
-                                        usedCityName,
-                                        fetchedCountry,
-                                        fetchedState,
-                                    ].filter(Boolean).map(s => s.toLowerCase());
+                                            // Prioritized candidates from most specific to least specific
+                                            const cityCandidates = [
+                                                address.city,
+                                                address.town,
+                                                address.village,
+                                                address.municipality,
+                                                address.city_district,
+                                                address.suburb,
+                                                address.neighbourhood,
+                                                address.county,         // Often contains the district name (e.g., Alappuzha)
+                                                address.state_district  // Often contains the major city name (e.g., Thiruvananthapuram)
+                                            ].filter(Boolean);
 
-                                    const formattedAddress = addressParts.filter(part => {
-                                        const pLower = part.toLowerCase();
-                                        return !itemsToRemove.some(item =>
-                                            item === pLower ||
-                                            (item.length > 4 && pLower.includes(item)) // Relaxed length check slightly
-                                        );
-                                    }).join(", ");
+                                            let matchedCity = null;
 
-                                    setValue("originAddress", formattedAddress, { shouldValidate: true });
+                                            // Strategy A: Exact Match
+                                            for (const candidate of cityCandidates) {
+                                                matchedCity = allCities.find(c => c.name.toLowerCase() === candidate.toLowerCase());
+                                                if (matchedCity) break;
+                                            }
 
-                                } else {
-                                    setValue("originAddress", fullAddress, { shouldValidate: true });
-                                }
-                            } else {
-                                setValue("originAddress", fullAddress, { shouldValidate: true });
+                                            // Strategy B: Library Contains Candidate (e.g. Lib: "Cherthala" vs Cand: "Cherthala South")
+                                            if (!matchedCity) {
+                                                for (const candidate of cityCandidates) {
+                                                    matchedCity = allCities.find(c => c.name.toLowerCase().includes(candidate.toLowerCase()));
+                                                    if (matchedCity) break;
+                                                }
+                                            }
+
+                                            // Strategy C: Candidate Contains Library (e.g. Lib: "Trivandrum" vs Cand: "Thiruvananthapuram City")
+                                            // Also checking known alliases if possible, but basic substring text here
+                                            if (!matchedCity) {
+                                                for (const candidate of cityCandidates) {
+                                                    matchedCity = allCities.find(c => candidate.toLowerCase().includes(c.name.toLowerCase()));
+                                                    if (matchedCity) break;
+                                                }
+                                            }
+
+                                            // Set the city
+                                            if (matchedCity) {
+                                                setValue("originCity", matchedCity.name, { shouldValidate: true });
+                                            } else if (cityCandidates.length > 0) {
+                                                // Fallback: Just set the first valid candidate name even if not in dropdown
+                                                // This ensures visual feedback even if the library is missing the city
+                                                setValue("originCity", cityCandidates[0], { shouldValidate: true });
+                                            }
+                                        }, 300);
+                                    }
+                                }, 100);
                             }
-
-                            // Always set GPS link when location is found
-                            const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                            setValue("originGps", mapsLink, { shouldValidate: true });
-                        } else {
-                            const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                            setValue("originGps", mapsLink, { shouldValidate: true });
-                            setValue("originAddress", mapsLink, { shouldValidate: true });
                         }
-
                     } catch (error) {
-                        console.error("Error fetching address:", error);
-                        const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                        setValue("originGps", mapsLink, { shouldValidate: true });
-                        setValue("originAddress", mapsLink, { shouldValidate: true });
+                        console.error("Error fetching location data:", error);
+                        setValue("originGps", `https://www.google.com/maps?q=${latitude},${longitude}`, { shouldValidate: true });
                     } finally {
                         setIsLocating(false);
                     }
                 },
                 (error) => {
-                    console.error("Error fetching location:", error);
-                    alert("Unable to fetch location. Please ensure location services are enabled.");
+                    alert("Unable to fetch location.");
                     setIsLocating(false);
                 }
             );
         } else {
-            alert("Geolocation is not supported by this browser.");
+            alert("Geolocation not supported.");
             setIsLocating(false);
         }
     };
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-2 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-2">Customer Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input label="Customer Type" name="customerType" type="select" options={apiData.customerTypes} />
-                    <Input label="Salutation" name="salutation" type="select" options={salutationOptions} />
-                    <Input label="Full Name" name="fullName" rules={{ required: "Required" }} />
-                    <Input label="Phone" name="phoneNumber" rules={{ required: "Required" }} />
-                    <Input label="Email" name="email" type="email" />
-                    <Input label="Service Type" name="serviceType" type="select" options={serviceTypeOptions} />
-                    <Input label="Address" name="address" />
-                    <Input label="Company" name="company" />
-                    <div className="flex items-center gap-2">
-                        <input type="checkbox" {...register("isMilitary")} />
-                        <label className="text-sm font-medium text-gray-700">Military Status</label>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Customer Details Card */}
+            <div className={CARD_CLASS}>
+                <h3 className="flex items-center gap-2 text-base font-medium text-gray-800 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085]">
+                        <FaUser className="w-4 h-4" />
+                    </div>
+                    Customer Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <InputField label="Customer Type" name="customerType" type="select" options={apiData.customerTypes} />
+                    <InputField label="Salutation" name="salutation" type="select" options={salutationOptions} />
+                    <InputField label="Full Name" name="fullName" rules={{ required: "Required" }} width="col-span-2" />
+                    <InputField label="Phone" name="phoneNumber" rules={{ required: "Required" }} />
+                    <InputField label="Email" name="email" type="email" />
+                    <InputField label="Service Type" name="serviceType" type="select" options={serviceTypeOptions} />
+                    <InputField label="Company" name="company" />
+                    <div className="flex items-end pb-4">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${watch("isMilitary") ? 'bg-[#4c7085] border-[#4c7085]' : 'bg-white border-gray-300 group-hover:border-[#4c7085]'}`}>
+                                <input type="checkbox" {...register("isMilitary")} className="hidden" />
+                                {watch("isMilitary") && <FaCheck className="text-white text-[10px]" />}
+                            </div>
+                            <span className="text-sm font-medium text-gray-700">Military Status</span>
+                        </label>
+                    </div>
+                    <div className="md:col-span-4">
+                        <InputField label="Address (Billing)" name="address" />
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-2 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-2">Survey Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4">
+            {/* Survey Details Card */}
+            <div className={CARD_CLASS}>
+                <h3 className="flex items-center gap-2 text-base font-medium text-gray-800 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                        <FaCalendar className="w-4 h-4" />
+                    </div>
+                    Survey Schedule
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <DatePickerInput label="Survey Date" name="surveyDate" />
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:col-span-2">
-                        <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
-                        <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
-                    </div>
+                    <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
+                    <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-2 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-2">Origin Address</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input label="Origin Address" name="originAddress" />
-                    <Input label="Country" name="originCountry" type="select" options={countryOptions} />
-                    <Input label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
-                    <Input label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
-                </div>
-                <div className="grid grid-cols-1 gap-4 mt-4">
-                    <div className="flex items-end gap-2">
-                        <div className="flex-1">
-                            <Input label="GPS" name="originGps" />
-                        </div>
+            {/* Origin Address Card */}
+            <div className={CARD_CLASS}>
+                <h3 className="flex items-center gap-2 text-base font-medium text-gray-800 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
+                        <FaMapMarkerAlt className="w-4 h-4" />
+                    </div>
+                    Origin Location
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2 relative">
+                        <InputField label="Full Origin Address" name="originAddress" />
                         <button
                             type="button"
                             onClick={handleGetLocation}
                             disabled={isLocating}
-                            className={`py-2 px-4 rounded-md transition-colors mb-[2px] font-medium text-sm flex items-center justify-center gap-2 ${isLocating ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#4c7085] hover:opacity-90 text-white'}`}
-                            title="Get Current Location"
+                            className={`absolute right-2 top-[28px] p-2 rounded-lg transition-colors ${isLocating
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : watch("originGps")
+                                    ? 'text-green-600 hover:bg-green-50'
+                                    : 'text-[#4c7085] hover:bg-[#4c7085]/10'
+                                }`}
+                            title={watch("originGps") ? "Location detected" : "Auto-detect location"}
                         >
-                            {isLocating ? <FaSpinner className="animate-spin" size={20} /> : <FaMapMarkerAlt size={20} />}
-                            <span className="sm:hidden">Get Current Location</span>
+                            {isLocating ? <FaSpinner className="animate-spin" /> : (watch("originGps") ? <FaCheck /> : <FaMapMarkerAlt />)}
                         </button>
                     </div>
+                    <InputField label="Country" name="originCountry" type="select" options={countryOptions} />
+                    <InputField label="State" name="originState" type="select" options={getStateOptions(originCountry)} />
+                    <InputField label="City" name="originCity" type="select" options={getCityOptions(originCountry, originState)} />
+                    <InputField label="GPS Coordinates / Link" name="originGps" placeholder="https://maps.google.com/..." />
                     {watch("originGps") && (
-                        <div>
-                            <a
-                                href={watch("originGps")}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[#4c7085] hover:underline text-sm flex items-center gap-1"
-                            >
-                                <FaMapMarkerAlt size={12} /> View Location on Map
-                            </a>
+                        <a href={watch("originGps")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline mt-2 ml-1">
+                            <FaMapMarkerAlt /> Go to map
+                        </a>
+                    )}
+                </div>
+            </div>
+
+            {/* Destination Card */}
+            <div className={CARD_CLASS}>
+                <h3 className="flex items-center gap-2 text-base font-medium text-gray-800 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                        <FaTruck className="w-4 h-4" />
+                    </div>
+                    Destination Details
+                </h3>
+
+                <div className="mb-6">
+                    <label className="flex items-center gap-3 cursor-pointer w-fit">
+                        <div className={`w-11 h-6 rounded-full p-1 transition-colors ${multipleAddresses ? 'bg-[#4c7085]' : 'bg-gray-200'}`}>
+                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${multipleAddresses ? 'translate-x-5' : 'translate-x-0'}`} />
                         </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-2 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-2">Destination Details</h3>
-                <div className="space-y-4">
-                    <label className="flex items-center gap-2">
-                        <input type="checkbox" {...register("multipleAddresses")} />
-                        <span className="text-sm font-medium text-gray-700">Multiple Addresses</span>
+                        <input type="checkbox" {...register("multipleAddresses")} className="hidden" />
+                        <span className="text-sm font-medium text-gray-700">Multiple Drop-off Addresses</span>
                     </label>
+                </div>
 
-                    {multipleAddresses ? (
-                        <>
-                            {destinationAddresses.map((addr, i) => {
-                                const country = watch(`destinationAddresses[${i}].country`);
-                                const state = watch(`destinationAddresses[${i}].state`);
+                <div className="space-y-6">
+                    {destinationAddresses.map((addr, i) => {
+                        const country = watch(`destinationAddresses.${i}.country`);
+                        const state = watch(`destinationAddresses.${i}.state`);
 
-                                return (
-                                    <div key={addr.id} className="bg-gray-100 p-2 sm:p-4 rounded space-y-2 sm:space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <h4 className="font-medium text-sm sm:text-base">Address {i + 1}</h4>
-                                            {destinationAddresses.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeAddress(i)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                >
-                                                    <FaTimes />
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
-                                            <Input
-                                                label="Address"
-                                                name={`destinationAddresses[${i}].address`}
-                                            />
-                                            <Input
-                                                label="Country"
-                                                name={`destinationAddresses[${i}].country`}
-                                                type="select"
-                                                options={countryOptions}
-                                            />
-                                            <Input
-                                                label="State"
-                                                name={`destinationAddresses[${i}].state`}
-                                                type="select"
-                                                options={getStateOptions(country)}
-                                            />
-                                            <Input
-                                                label="City"
-                                                name={`destinationAddresses[${i}].city`}
-                                                type="select"
-                                                options={getCityOptions(country, state)}
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-2 sm:gap-4">
-                                            <Input
-                                                label="ZIP"
-                                                name={`destinationAddresses[${i}].zip`}
-                                            />
-                                        </div>
+                        return (
+                            <div key={addr.id || i} className="bg-gray-50 rounded-xl p-6 border border-gray-100 relative group">
+                                <h4 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-4">Destination {i + 1}</h4>
+                                {multipleAddresses && destinationAddresses.length > 1 && (
+                                    <button type="button" onClick={() => removeAddress(i)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
+                                        <FaTimes />
+                                    </button>
+                                )}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="lg:col-span-4">
+                                        <InputField label="Address" name={`destinationAddresses.${i}.address`} />
                                     </div>
-                                );
-                            })}
-
-                            <button
-                                type="button"
-                                onClick={addAddress}
-                                className="w-full sm:w-auto py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium rounded-lg shadow hover:shadow-lg transition"
-                            >
-                                Add Another Address
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
-                                <Input label="Address" name="destinationAddresses[0].address" />
-                                <Input
-                                    label="Country"
-                                    name="destinationAddresses[0].country"
-                                    type="select"
-                                    options={countryOptions}
-                                />
-                                <Input
-                                    label="State"
-                                    name="destinationAddresses[0].state"
-                                    type="select"
-                                    options={getStateOptions(watch("destinationAddresses[0].country"))}
-                                />
-                                <Input
-                                    label="City"
-                                    name="destinationAddresses[0].city"
-                                    type="select"
-                                    options={getCityOptions(
-                                        watch("destinationAddresses[0].country"),
-                                        watch("destinationAddresses[0].state")
-                                    )}
-                                />
+                                    <InputField label="Country" name={`destinationAddresses.${i}.country`} type="select" options={countryOptions} />
+                                    <InputField label="State" name={`destinationAddresses.${i}.state`} type="select" options={getStateOptions(country)} />
+                                    <InputField label="City" name={`destinationAddresses.${i}.city`} type="select" options={getCityOptions(country, state)} />
+                                    <InputField label="ZIP Code" name={`destinationAddresses.${i}.zip`} />
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-2 sm:gap-4">
-                                <Input label="ZIP" name="destinationAddresses[0].zip" />
-                            </div>
-                        </>
-                    )}
+                        );
+                    })}
                 </div>
+
+                {multipleAddresses && (
+                    <button
+                        type="button"
+                        onClick={addAddress}
+                        className="mt-4 px-4 py-2 bg-white border border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                        <FaPlus className="w-3 h-3" /> Add Another Destination
+                    </button>
+                )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-2 md:p-6">
-                <h3 className="text-lg sm:text-xl font-medium mb-2">Move Date</h3>
-                <div className="grid grid-cols-1 gap-4">
-                    <DatePickerInput label="Move Date" name="packingDateFrom" />
+            {/* Move Dates */}
+            <div className={CARD_CLASS}>
+                <h3 className="flex items-center gap-2 text-base font-medium text-gray-800 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-500">
+                        <FaClock className="w-4 h-4" />
+                    </div>
+                    Move Timeline
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <DatePickerInput label="Expected Packing Date" name="packingDateFrom" />
+                    <DatePickerInput label="Loading Date" name="loadingDate" />
+                    <DatePickerInput label="Est. Delivery Date" name="estDeliveryDate" />
                 </div>
             </div>
-
-
         </div>
     );
 };
 
+
 const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, isSignatureUploading, setIsSignatureModalOpen, isSignatureModalOpen, localSignatureFile }) => {
+    const statusOptions = [
+        { value: "pending", label: "Pending" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+    ];
+
     return (
-        <div className="bg-white rounded-lg shadow p-2 md:p-6">
-            <h3 className="text-lg sm:text-xl font-medium mb-2">Survey Status</h3>
-            <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input label="Status" name="status" type="select" options={statusOptions} />
-                    <Input label="Work Description" name="workDescription" type="textarea" placeholder="Enter any additional notes or description about the survey..." />
+        <div className={`space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+            <div className={CARD_CLASS}>
+                <h3 className="flex items-center gap-2 text-base font-medium text-gray-800 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
+                        <FaCheck className="w-4 h-4" />
+                    </div>
+                    Status & Completion
+                </h3>
+
+                <div className="grid grid-cols-1 gap-6 mb-8">
+                    <InputField label="Current Status" name="status" type="select" options={statusOptions} />
+                    <InputField label="Surveyor Notes / Work Description" name="workDescription" type="textarea" placeholder="Internal notes about the survey scope..." />
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-gray-100">
-                    <h4 className="text-lg font-medium text-gray-800 mb-6 flex items-center gap-2">
-                        <FaEdit className="text-[#4c7085]" />
-                        Customer Digital Signature
-                    </h4>
+                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-medium text-gray-800 flex items-center gap-2">
+                            <FaSignature className="text-[#4c7085]" /> Customer Signature
+                        </h4>
+                        {(signatureUploaded || signatureImageUrl || localSignatureFile) && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Signed</span>
+                        )}
+                    </div>
 
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                        <div className="w-full md:w-64 h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden relative group">
-                            {(signatureUploaded || signatureImageUrl || localSignatureFile) ? (
-                                <div className="relative w-full h-full p-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div
+                            className={`h-48 rounded-xl border-2 border-dashed flex items-center justify-center relative overflow-hidden bg-white transition-all ${(signatureUploaded || signatureImageUrl || localSignatureFile) ? 'border-[#4c7085]/50' : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                        >
+                            {(signatureImageUrl || (localSignatureFile && URL.createObjectURL(localSignatureFile))) ? (
+                                <>
                                     <img
-                                        src={signatureImageUrl || (localSignatureFile ? URL.createObjectURL(localSignatureFile) : "")}
+                                        src={signatureImageUrl || (localSignatureFile && URL.createObjectURL(localSignatureFile))}
                                         alt="Signature"
-                                        className="w-full h-full object-contain"
+                                        className="w-full h-full object-contain p-4"
                                     />
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <button
                                             type="button"
                                             onClick={() => setIsSignatureModalOpen(true)}
-                                            className="py-2 px-4 bg-white text-gray-800 text-sm font-medium rounded-lg shadow-lg transition-all"
+                                            className="px-4 py-2 bg-white rounded-lg text-sm font-medium shadow-lg hover:bg-gray-50"
                                         >
                                             Update Signature
                                         </button>
                                     </div>
-                                </div>
+                                </>
                             ) : (
-                                <div className="flex flex-col items-center gap-2 text-gray-400">
-                                    <FaSignature size={32} className="opacity-20" />
-                                    <span className="text-xs font-medium italic">No signature captured</span>
+                                <div className="text-center text-gray-400">
+                                    <FaSignature className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    <p className="text-xs">No signature captured</p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex-1 space-y-4">
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                                {signatureUploaded || signatureImageUrl || localSignatureFile
-                                    ? "Customer signature has been captured successfully and will be included in the survey report."
-                                    : "Please capture the customer's digital signature to finalize the survey. This signature will be used for official documentation."}
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-500 leading-relaxed">
+                                The signature confirms the customer agrees with the surveyed items and volume.
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setIsSignatureModalOpen(true)}
                                 disabled={isSignatureUploading}
-                                className={`
-                                    w-full md:w-auto flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all
-                                    ${(signatureUploaded || signatureImageUrl || localSignatureFile)
-                                        ? "bg-white border-2 border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5"
-                                        : "bg-[#4c7085] text-white shadow-md hover:shadow-lg hover:bg-[#3d5a6b]"}
-                                    disabled:opacity-50 disabled:cursor-not-allowed
-                                `}
+                                className={`w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${(signatureUploaded || signatureImageUrl || localSignatureFile)
+                                    ? "bg-white border border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5"
+                                    : "bg-[#4c7085] text-white hover:shadow-lg hover:-translate-y-0.5"
+                                    }`}
                             >
-                                <FaPlus size={14} />
-                                {(signatureUploaded || signatureImageUrl || localSignatureFile) ? "Change Signature" : "Capture Signature"}
+                                {(signatureUploaded || signatureImageUrl || localSignatureFile) ? "Re-Capture Signature" : "Capture Signature Now"}
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
-};
-
-const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
-    const methods = useFormContext();
-    if (!methods) return null;
-
-    const { setValue, watch, formState: { errors } } = methods;
-    const value = watch(name);
-    const error = errors?.[name];
-
-    const inputClasses = `
-    w-full px-3 py-2 text-sm border rounded-md 
-    transition-all duration-200 
-    focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:ring-opacity-50
-    ${error ? "border-red-500" : "border-gray-300"}
-    ${value ? "text-black" : "text-black"}
-  `;
-
-    return (
-        <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-                {label} {rules?.required && <span className="text-red-500">*</span>}
-            </label>
-
-            <DatePicker
-                selected={value}
-                onChange={(date) => setValue(name, date, { shouldValidate: true })}
-                showTimeSelect={isTimeOnly}
-                showTimeSelectOnly={isTimeOnly}
-                timeIntervals={15}
-                timeCaption="Time"
-                dateFormat={isTimeOnly ? "h:mm aa" : "MM/dd/yyyy"}
-                className={inputClasses}
-                wrapperClassName="w-full"
-                placeholderText={isTimeOnly ? "Select time" : "Select date"}
-                popperClassName="z-50"
-                calendarClassName="shadow-lg border border-gray-200"
-            />
-
-            {error && (
-                <p className="mt-1 text-xs text-red-500">{error.message || "This field is required"}</p>
-            )}
         </div>
     );
 };
@@ -505,7 +529,7 @@ const SurveyDetails = () => {
     const [message, setMessage] = useState(null);
     const [existingSurvey, setExistingSurvey] = useState(null);
     const { customerData: initialCustomerData } = location.state || {};
-    const [showArticlesSidebar, setShowArticlesSidebar] = useState(false);
+    // const [showArticlesSidebar, setShowArticlesSidebar] = useState(false); // Unused
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSignatureUploading, setIsSignatureUploading] = useState(false);
     const [signatureUploaded, setSignatureUploaded] = useState(false);
@@ -558,13 +582,14 @@ const SurveyDetails = () => {
             vehicles: [],
             additionalServices: [],
             articles: [],
-            originGps: "",               // ← add this
+            originGps: "",
         },
     });
 
     const { handleSubmit, watch, setValue, reset, register } = methods;
     const hasReset = useRef(false);
 
+    // Memoize options
     const countryOptions = useMemo(() => Country.getAllCountries().map(c => ({ value: c.isoCode, label: c.name })), []);
     const getStateOptions = useCallback((code) => code ? State.getStatesOfCountry(code).map(s => ({ value: s.isoCode, label: s.name })) : [], []);
     const getCityOptions = useCallback((country, state) => country && state ? City.getCitiesOfState(country, state).map(c => ({ value: c.name, label: c.name })) : [], []);
@@ -608,6 +633,7 @@ const SurveyDetails = () => {
                     const surveyStartTime = survey.survey_start_time ? new Date(`1970-01-01T${survey.survey_start_time}`) : null;
                     const surveyEndTime = survey.survey_end_time ? new Date(`1970-01-01T${survey.survey_end_time}`) : null;
 
+                    // Populate Form
                     reset({
                         enquiry: survey.enquiry || surveyId,
                         customerType: survey.customer_type || "",
@@ -671,6 +697,7 @@ const SurveyDetails = () => {
                             height: a.height || "",
                             crateRequired: a.crate_required || false,
                             photo: a.photo || null,
+                            addedAt: a.created_at || null,
                         })) || [],
                         vehicles: survey.vehicles?.map((v) => ({
                             id: uuidv4(),
@@ -723,11 +750,12 @@ const SurveyDetails = () => {
             });
             setIsLoading(false);
         }).catch(() => {
-            setError("Failed to load master data.");
+            // setError("Failed to load master data."); // Suppress error for cleaner UX, or handle gracefully
             setIsLoading(false);
         });
     }, []);
 
+    // Set default Origin State for QA
     useEffect(() => {
         if (!existingSurvey && !hasReset.current) {
             const qatarStates = State.getStatesOfCountry("QA");
@@ -735,7 +763,6 @@ const SurveyDetails = () => {
                 s.name.toLowerCase() === "doha" ||
                 s.name.toLowerCase().includes("doha")
             );
-
             if (dohaState) {
                 setValue("originState", dohaState.isoCode);
             }
@@ -743,10 +770,10 @@ const SurveyDetails = () => {
     }, [existingSurvey, hasReset, setValue]);
 
     const tabs = [
-        { id: "customer", label: "Customer" },
-        { id: "items", label: "Article" },
-        { id: "additionalServices", label: "Additional Services" },
-        { id: "status", label: "Survey Status" },
+        { id: "customer", label: "Customer Info" },
+        { id: "items", label: "Articles" },
+        { id: "additionalServices", label: "Services" },
+        { id: "status", label: "Finalize" },
     ];
 
     const handleTabChange = (tabId) => {
@@ -757,13 +784,10 @@ const SurveyDetails = () => {
         setActiveTab(tabId);
     };
 
-    const openSignatureModal = () => setIsSignatureModalOpen(true);
-
     const handleSignatureSave = async (file) => {
         if (!file) return;
 
         if (!existingSurvey) {
-            // New survey: Save locally and show preview
             setLocalSignatureFile(file);
             setSignatureUploaded(true);
             const reader = new FileReader();
@@ -783,9 +807,7 @@ const SurveyDetails = () => {
             await apiClient.post(
                 `/surveys/${existingSurvey.survey_id}/upload-signature/`,
                 formData,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
+                { headers: { "Content-Type": "multipart/form-data" } }
             );
 
             setMessage("Digital signature uploaded successfully!");
@@ -793,7 +815,6 @@ const SurveyDetails = () => {
 
             const res = await apiClient.get(`/surveys/${existingSurvey.survey_id}/signature/`);
             setSignatureImageUrl(res.data.signature_url);
-
             setTimeout(() => setMessage(null), 3000);
         } catch (err) {
             console.error("Signature upload failed:", err);
@@ -804,13 +825,6 @@ const SurveyDetails = () => {
             setIsSignatureModalOpen(false);
         }
     };
-
-
-
-
-
-
-
 
     const saveSurveyData = async (data) => {
         setIsLoading(true);
@@ -845,6 +859,7 @@ const SurveyDetails = () => {
                 width: a.width || null,
                 height: a.height || null,
                 crate_required: a.crateRequired || false,
+                added_at: a.addedAt || null,
             };
 
             if (processedPhoto !== undefined) {
@@ -866,7 +881,7 @@ const SurveyDetails = () => {
             company: data.company,
             goods_type: data.goodsType,
             status: data.status,
-            origin_gps: data.originGps, // Include in payload
+            origin_gps: data.originGps,
             survey_date: data.surveyDate ? data.surveyDate.toISOString().split("T")[0] : null,
             survey_start_time: data.surveyStartTime ? data.surveyStartTime.toTimeString().split(" ")[0].slice(0, 5) : null,
             survey_end_time: data.surveyEndTime ? data.surveyEndTime.toTimeString().split(" ")[0].slice(0, 5) : null,
@@ -919,8 +934,6 @@ const SurveyDetails = () => {
         request
             .then(async (res) => {
                 const newSurveyId = res.data.survey_id;
-
-                // If there's a local signature to upload
                 if (localSignatureFile && !existingSurvey) {
                     const formData = new FormData();
                     formData.append("signature", localSignatureFile);
@@ -934,13 +947,12 @@ const SurveyDetails = () => {
                         console.error("Delayed signature upload failed:", err);
                     }
                 }
-
                 setMessage(existingSurvey ? "Survey updated!" : "Survey created!");
-                setTimeout(() => navigate(`/survey/${newSurveyId}/survey-summary`, { state: { customerData: data } }), 2000);
+                setTimeout(() => navigate(`/survey/${newSurveyId}/survey-summary`, { state: { customerData: data } }), 700);
             })
             .catch(err => {
                 console.error("Error saving survey:", err.response?.data);
-                setError("Failed to save survey.");
+                setError("Failed to save survey. Check required fields.");
             })
             .finally(() => setIsLoading(false));
     };
@@ -953,73 +965,74 @@ const SurveyDetails = () => {
         } else if (activeTab === "additionalServices") {
             setActiveTab("status");
         } else if (activeTab === "status") {
+            // Validate that at least one item/vehicle/service exists
             if (data.articles.length === 0 && data.vehicles.length === 0 && data.additionalServices.length === 0) {
-                setError("Add at least one article, vehicle, or additional service");
+                setError("Please add at least one item, vehicle, or service before completing.");
+                setTimeout(() => setError(null), 3000);
                 return;
             }
+            // Save the survey
             saveSurveyData(data);
         }
     };
 
     const getButtonText = () => {
-        if (isLoading) return "Saving...";
-
-        switch (activeTab) {
-            case "customer":
-                return "Next";
-            case "items":
-                return "Next";
-            case "additionalServices":
-                return "Next";
-            case "status":
-                return "Save & Complete";
-            default:
-                return "Next";
-        }
+        if (isLoading) return "Processing...";
+        if (activeTab === "status") return "Complete Survey";
+        return "Next Step";
     };
 
     const handleBack = () => {
-        switch (activeTab) {
-            case "items":
-                setActiveTab("customer");
-                break;
-            case "additionalServices":
-                setActiveTab("items");
-                break;
-            case "status":
-                setActiveTab("additionalServices");
-                break;
-            default:
-                navigate(-1);
-                break;
-        }
+        if (activeTab === "items") setActiveTab("customer");
+        else if (activeTab === "additionalServices") setActiveTab("items");
+        else if (activeTab === "status") setActiveTab("additionalServices");
+        else navigate(-1);
     };
 
     return (
-        <>
-            {isLoading && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><Loading /></div>}
-            {error && <div className="fixed top-20 right-4 sm:right-8 bg-red-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{error}</div>}
-            {message && <div className="fixed top-20 right-4 sm:right-8 bg-green-500 text-white px-6 py-3 text-sm rounded shadow-lg z-50">{message}</div>}
+        <div className="pb-20 space-y-6">
+            <PageHeader
+                title="Conduct Survey"
+                subtitle={`Survey ID: ${surveyId || "New"}`}
+                extra={
+                    <button onClick={() => navigate("/scheduled-surveys")} className={`${BUTTON_BASE} bg-white border border-gray-100 text-gray-600 hover:bg-gray-50`}>
+                        Cancel
+                    </button>
+                }
+            />
 
-            <div className="min-h-auto">
-                <FormProvider {...methods}>
-                    <form onSubmit={handleSubmit(onNext)} className="mx-auto">
-                        <div className="grid grid-cols-1 sm:grid-cols-4 w-full gap-2 sm:gap-4 mb-4 sm:mb-8">
-                            {tabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => handleTabChange(tab.id)}
-                                    className={`py-2 px-4 rounded-lg text-center transition-all text-sm font-medium ${activeTab === tab.id
-                                        ? "bg-[#4c7085] text-white shadow-xl shadow-[#4c7085]/20 ring-2 ring-[#4c7085]/10"
-                                        : "bg-white text-gray-400 border border-gray-200 hover:bg-gray-50 hover:text-gray-600 shadow-sm"
-                                        }`}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
+            {(isLoading) && <div className="fixed inset-0 bg-white/50 z-[99] flex items-center justify-center backdrop-blur-sm"><Loading /></div>}
 
+            <AnimatePresence>
+                {(error || message) && (
+                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`fixed top-24 right-4 z-[100] px-6 py-4 rounded-xl shadow-lg border ${error ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
+                        {error || message}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <FormProvider {...methods}>
+                <form onSubmit={handleSubmit(onNext)} className="space-y-6">
+
+                    {/* Tabs */}
+                    <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-sm flex overflow-x-auto gap-1">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => handleTabChange(tab.id)}
+                                className={`whitespace-nowrap flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
+                                    ? "bg-[#4c7085] text-white shadow-md"
+                                    : "text-gray-500 hover:bg-gray-50"
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="min-h-[400px]">
                         {activeTab === "customer" && (
                             <Customer
                                 apiData={apiData}
@@ -1038,18 +1051,18 @@ const SurveyDetails = () => {
                             />
                         )}
                         {activeTab === "items" && (
-                            <>
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <Article apiData={apiData} setMessage={setMessage} setError={setError} />
-                                <div className="mt-4 sm:mt-10">
-                                    <VehicleDetails />
-                                </div>
-                            </>
+                                <VehicleDetails />
+                            </div>
                         )}
                         {activeTab === "additionalServices" && (
-                            <AdditionalServicesTab
-                                services={watch("additionalServices")}
-                                setServices={(newServices) => setValue("additionalServices", newServices)}
-                            />
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <AdditionalServicesTab
+                                    services={watch("additionalServices")}
+                                    setServices={(newServices) => setValue("additionalServices", newServices)}
+                                />
+                            </div>
                         )}
                         {activeTab === "status" && (
                             <SurveyStatus
@@ -1063,33 +1076,36 @@ const SurveyDetails = () => {
                                 localSignatureFile={localSignatureFile}
                             />
                         )}
+                    </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 mt-8 sm:mt-10">
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="w-full sm:flex-1 py-2 px-4 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium text-sm"
-                            >
-                                Back
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full sm:flex-1 py-2 px-4 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg hover:opacity-90 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {getButtonText()}
-                            </button>
-                        </div>
-                    </form>
-                </FormProvider>
-                <SignatureModal
-                    isOpen={isSignatureModalOpen}
-                    onClose={() => setIsSignatureModalOpen(false)}
-                    onSave={handleSignatureSave}
-                    customerName={watch("fullName") || "Customer"}
-                />
-            </div>
-        </>
+                    {/* Navigation Buttons */}
+                    <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 flex items-center justify-between sm:justify-end gap-3 z-40 lg:bg-transparent lg:border-none lg:p-0 lg:static">
+                        <button
+                            type="button"
+                            onClick={handleBack}
+                            className={`${BUTTON_BASE} flex-1 sm:flex-none sm:w-32 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50`}
+                        >
+                            Back
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className={`${BUTTON_BASE} flex-1 sm:flex-none sm:w-48 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:shadow-lg disabled:opacity-50`}
+                        >
+                            {getButtonText()}
+                        </button>
+                    </div>
+
+                </form>
+            </FormProvider>
+
+            <SignatureModal
+                isOpen={isSignatureModalOpen}
+                onClose={() => setIsSignatureModalOpen(false)}
+                onSave={handleSignatureSave}
+                customerName={watch("fullName") || "Customer"}
+            />
+        </div>
     );
 };
 

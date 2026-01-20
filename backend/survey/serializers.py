@@ -71,8 +71,12 @@ class ArticleSerializer(serializers.ModelSerializer):
     packing_option_name = serializers.CharField(source='packing_option.name', read_only=True, allow_null=True)
     is_flagged_display = serializers.SerializerMethodField()
     move_status_display = serializers.SerializerMethodField()
-    crate_required_display = serializers.SerializerMethodField()  # Add this
+    crate_required_display = serializers.SerializerMethodField()
     photo = Base64ImageField(max_length=None, use_url=True, required=False, allow_null=True)
+    length = serializers.DecimalField(max_digits=20, decimal_places=10, required=False, allow_null=True)
+    width = serializers.DecimalField(max_digits=20, decimal_places=10, required=False, allow_null=True)
+    height = serializers.DecimalField(max_digits=20, decimal_places=10, required=False, allow_null=True)
+    created_at = serializers.DateTimeField(read_only=True)
     
     id = serializers.IntegerField(required=False)
     

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiPhone,
   FiMail,
-  FiMessageSquare,
   FiSearch,
   FiPlus,
   FiFilter,
@@ -12,10 +11,8 @@ import {
   FiUserPlus,
   FiChevronDown,
   FiChevronUp,
-  FiMoreVertical,
   FiCheckCircle,
-  FiClock,
-  FiCalendar
+  FiClock
 } from "react-icons/fi";
 import { IoLogoWhatsapp } from "react-icons/io";
 import Modal from "../../components/Modal";
@@ -411,12 +408,12 @@ const Enquiries = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Contact</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Service</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Assigned To</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Created</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Contact</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Created</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -424,7 +421,7 @@ const Enquiries = () => {
                   <tr key={item.id} className="hover:bg-gray-50/30 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-semibold text-sm">
+                        <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-sm">
                           {item.fullName?.charAt(0) || "C"}
                         </div>
                         <div>
@@ -452,7 +449,7 @@ const Enquiries = () => {
                       {item.assigned_user_email ? (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FiCheckCircle className="text-green-500" />
-                          <span className="truncate max-w-[120px]">{item.assigned_user_email}</span>
+                          <span className="truncate max-w-[120px] font-medium">{item.assigned_user_email}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 text-sm text-amber-500 font-medium italic">
@@ -496,12 +493,12 @@ const Enquiries = () => {
                 <div key={item.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all shadow-sm">
                   <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(item.id)}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-semibold">
+                      <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium">
                         {item.fullName?.charAt(0) || "C"}
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-800">{item.fullName}</h4>
-                        <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
+                        <h4 className="font-medium text-gray-800 text-sm">{item.fullName}</h4>
+                        <p className="text-[10px] text-gray-500 font-medium">{new Date(item.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                     {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
@@ -513,29 +510,29 @@ const Enquiries = () => {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Service</p>
-                              <p className="text-sm font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Assigned To</p>
-                              <p className={`text-sm font-medium mt-0.5 ${item.assigned_user_email ? 'text-gray-700' : 'text-amber-500 italic'}`}>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Assigned To</p>
+                              <p className={`text-xs font-medium mt-0.5 ${item.assigned_user_email ? 'text-gray-700' : 'text-amber-500 italic'}`}>
                                 {item.assigned_user_email || "Not Assigned"}
                               </p>
                             </div>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Contact Info</p>
-                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {item.phoneNumber}</p>
-                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {item.email}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Contact Info</p>
+                            <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {item.phoneNumber}</p>
+                            <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {item.email}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Message</p>
-                            <p className="text-sm text-gray-600 mt-1 italic">"{item.message}"</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Message</p>
+                            <p className="text-xs text-gray-600 mt-1 italic font-medium">"{item.message}"</p>
                           </div>
                           <div className="flex gap-2 pt-2">
-                            <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 shadow-sm"><FiEdit3 /> Edit</button>
-                            <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 shadow-sm"><FiUserPlus /> Assign</button>
-                            <button onClick={() => { setSelectedEnquiry(item); setIsPhoneModalOpen(true); }} className="w-[52px] bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-6 h-6" /></button>
+                            <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm"><FiEdit3 /> Edit</button>
+                            <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm"><FiUserPlus /> Assign</button>
+                            <button onClick={() => { setSelectedEnquiry(item); setIsPhoneModalOpen(true); }} className="w-[52px] bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-5 h-5" /></button>
                           </div>
                         </div>
                       </motion.div>
@@ -559,7 +556,7 @@ const Enquiries = () => {
               >
                 Previous
               </button>
-              <div className="flex items-center px-4 text-sm font-semibold text-[#4c7085] bg-[#4c7085]/10 rounded-xl">
+              <div className="flex items-center px-4 text-sm font-medium text-[#4c7085] bg-[#4c7085]/10 rounded-xl">
                 {currentPage} / {totalPages || 1}
               </div>
               <button
@@ -654,10 +651,10 @@ const Enquiries = () => {
                 <FiTrash2 className="w-8 h-8" />
               </div>
               <p className="text-gray-800 font-medium">Delete this enquiry?</p>
-              <p className="text-sm text-gray-500 mt-1">This action cannot be undone and will remove all associated notes.</p>
+              <p className="text-xs text-gray-500 mt-1 font-medium">This action cannot be undone and will remove all associated notes.</p>
               <div className="flex gap-3 mt-8">
-                <button onClick={() => setIsDeleteOpen(false)} className="flex-1 py-3 text-sm font-medium text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100">Cancel</button>
-                <button onClick={onDelete} disabled={isSubmitting} className="flex-1 py-3 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-sm shadow-red-100">
+                <button onClick={() => setIsDeleteOpen(false)} className="flex-1 py-3 text-xs font-medium text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100">Cancel</button>
+                <button onClick={onDelete} disabled={isSubmitting} className="flex-1 py-3 text-xs font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-sm shadow-red-100">
                   {isSubmitting ? "Deleting..." : "Delete Perpetually"}
                 </button>
               </div>
@@ -670,21 +667,21 @@ const Enquiries = () => {
           <Modal isOpen={isPhoneModalOpen} onClose={() => setIsPhoneModalOpen(false)} title="Contact Client">
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-semibold">
+                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-medium">
                   {selectedEnquiry?.fullName?.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{selectedEnquiry?.fullName}</p>
-                  <p className="text-sm text-gray-500">{selectedEnquiry?.phoneNumber}</p>
+                  <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
+                  <p className="text-sm text-gray-500 font-medium">{selectedEnquiry?.phoneNumber}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <a href={`tel:${selectedEnquiry?.phoneNumber}`} className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-[#4c7085] transition-all group shadow-sm">
-                  <div className="w-12 h-12 bg-[#4c7085]/10 rounded-full flex items-center justify-center text-[#4c7085] group-hover:scale-110 transition-transform"><FiPhone className="w-6 h-6" /></div>
+                  <div className="w-12 h-12 bg-[#4c7085]/10 rounded-full flex items-center justify-center text-[#4c7085] transition-transform"><FiPhone className="w-6 h-6" /></div>
                   <span className="font-medium text-gray-700">Call Now</span>
                 </a>
                 <a href={`https://wa.me/${selectedEnquiry?.phoneNumber?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-green-500 transition-all group shadow-sm">
-                  <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform"><IoLogoWhatsapp className="w-7 h-7" /></div>
+                  <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 transition-transform"><IoLogoWhatsapp className="w-7 h-7" /></div>
                   <span className="font-medium text-gray-700">WhatsApp</span>
                 </a>
               </div>

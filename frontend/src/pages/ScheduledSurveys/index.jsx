@@ -1,18 +1,82 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaSearch } from "react-icons/fa";
+import {
+  FiPhone,
+  FiMail,
+  FiSearch,
+  FiCalendar,
+  FiClock,
+  FiFilter,
+  FiChevronDown,
+  FiChevronUp,
+  FiCheckCircle,
+  FiXCircle,
+  FiPlay,
+  FiRotateCw,
+  FiFileText
+} from "react-icons/fi";
+import { IoLogoWhatsapp } from "react-icons/io";
 import Modal from "../../components/Modal";
-import Input from "../../components/Input";
-import { FormProvider, useForm } from "react-hook-form";
+import PageHeader from "../../components/PageHeader";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router";
 
-const rowVariants = {
-  hover: { backgroundColor: "#f3f4f6" },
-  rest: { backgroundColor: "#ffffff" },
+// Shared Input Component with Premium Styling
+const InputField = ({
+  label,
+  name,
+  type = "text",
+  options = [],
+  rules = {},
+  ...props
+}) => {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext();
+
+  const error = errors[name];
+
+  return (
+    <div className="flex flex-col">
+      {label && (
+        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+          {label}
+          {rules.required && <span className="text-red-500"> *</span>}
+        </label>
+      )}
+      {type === "select" ? (
+        <select
+          {...register(name, rules)}
+          className={`input-style w-full ${error ? "border-red-500 shadow-sm shadow-red-50/50" : ""}`}
+        >
+          <option value="">Select an option</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      ) : type === "textarea" ? (
+        <textarea
+          {...register(name, rules)}
+          className={`input-style w-full min-h-[120px] resize-none ${error ? "border-red-500 shadow-sm shadow-red-50/50" : ""}`}
+        />
+      ) : (
+        <input
+          type={type}
+          {...register(name, rules)}
+          className={`input-style w-full ${error ? "border-red-500 shadow-sm shadow-red-50/50" : ""}`}
+          {...props}
+        />
+      )}
+      {error && <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">{error.message}</p>}
+    </div>
+  );
 };
 
 const ScheduledSurveys = () => {
@@ -25,11 +89,9 @@ const ScheduledSurveys = () => {
   const [permissions, setPermissions] = useState([]);
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [isRescheduleSurveyOpen, setIsRescheduleSurveyOpen] = useState(false);
-  const [isRescheduleSurveyConfirmOpen, setIsRescheduleSurveyConfirmOpen] =
-    useState(false);
+  const [isRescheduleSurveyConfirmOpen, setIsRescheduleSurveyConfirmOpen] = useState(false);
   const [isCancelSurveyOpen, setIsCancelSurveyOpen] = useState(false);
-  const [isCancelSurveyConfirmOpen, setIsCancelSurveyConfirmOpen] =
-    useState(false);
+  const [isCancelSurveyConfirmOpen, setIsCancelSurveyConfirmOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [rescheduleSurveyData, setRescheduleSurveyData] = useState(null);
   const [cancelSurveyData, setCancelSurveyData] = useState(null);
@@ -42,6 +104,8 @@ const ScheduledSurveys = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   const rescheduleSurveyForm = useForm();
@@ -60,10 +124,7 @@ const ScheduledSurveys = () => {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEnquiries = filteredEnquiries.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+  const currentEnquiries = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
 
   const toggleEnquiryExpand = (enquiryId) => {
@@ -74,9 +135,7 @@ const ScheduledSurveys = () => {
     });
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const getSurveyStatus = (enquiry) => {
+  const getSurveyStatusDisplay = (enquiry) => {
     if (!enquiry.survey_status) return "Pending";
     const map = {
       pending: "Pending",
@@ -87,75 +146,38 @@ const ScheduledSurveys = () => {
     return map[enquiry.survey_status] || enquiry.survey_status;
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "text-yellow-600 bg-yellow-100",
-      in_progress: "text-blue-600 bg-blue-100",
-      completed: "text-green-600 bg-green-100",
-      cancelled: "text-red-600 bg-red-100",
+  const getStatusStyles = (status) => {
+    const styles = {
+      pending: "text-amber-500 bg-amber-50 border-amber-100",
+      in_progress: "text-blue-500 bg-blue-50 border-blue-100",
+      completed: "text-green-500 bg-green-50 border-green-100",
+      cancelled: "text-red-500 bg-red-50 border-red-100",
     };
-    return colors[status] || "text-gray-600 bg-gray-100";
+    return styles[status] || "text-gray-500 bg-gray-50 border-gray-100";
   };
 
-  const getButtonConfig = (enquiry) => {
-    const status = enquiry.survey_status || "pending";
-    const configs = {
-      pending: {
-        text: "Start Survey",
-        color: "bg-green-500 hover:bg-green-600",
-        disabled: false,
-        loadingText: "Starting...",
-      },
-      in_progress: {
-        text: "Continue Survey",
-        color: "bg-blue-500 hover:bg-blue-600",
-        disabled: false,
-        loadingText: "Resuming...",
-      },
-      completed: {
-        text: "Completed",
-        color: "bg-gray-400 cursor-not-allowed",
-        disabled: true,
-      },
-      cancelled: {
-        text: "Cancelled",
-        color: "bg-gray-400 cursor-not-allowed",
-        disabled: true,
-      },
-    };
-    return configs[status] || configs.pending;
-  };
-
-  const isSurveyFinished = (enquiry) =>
-    ["completed", "cancelled"].includes(enquiry.survey_status);
+  const isSurveyFinished = (enquiry) => ["completed", "cancelled"].includes(enquiry.survey_status);
 
   useEffect(() => {
-    const fetchProfileAndPermissions = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const response = await apiClient.get("/auth/profile/");
-        const user = response.data;
+        const profileResponse = await apiClient.get("/auth/profile/");
+        const user = profileResponse.data;
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
         const roleId = user.role?.id;
         if (roleId) {
           const res = await apiClient.get(`/auth/roles/${roleId}/`);
           setPermissions(res.data.permissions || []);
         }
-      } catch (error) {
-        setPermissions([]);
-        setIsSuperadmin(false);
-      }
-    };
 
-    const fetchEnquiriesAndSurveys = async () => {
-      setIsLoading(true);
-      try {
-        const enquiriesResponse = await apiClient.get("/contacts/enquiries/", {
-          params: { has_survey: "true" },
-        });
-        const surveysResponse = await apiClient.get("/surveys/");
+        const [enquiriesRes, surveysRes] = await Promise.all([
+          apiClient.get("/contacts/enquiries/", { params: { has_survey: "true" } }),
+          apiClient.get("/surveys/"),
+        ]);
 
         const surveyMap = {};
-        surveysResponse.data.forEach((survey) => {
+        surveysRes.data.forEach((survey) => {
           if (survey.survey_id) {
             const match = survey.survey_id.match(/^SURVEY-(\d+)-/);
             if (match) {
@@ -169,7 +191,7 @@ const ScheduledSurveys = () => {
           }
         });
 
-        const scheduledEnquiries = enquiriesResponse.data
+        const scheduledEnquiries = enquiriesRes.data
           .filter((enquiry) => enquiry.survey_date !== null)
           .map((enquiry) => ({
             ...enquiry,
@@ -183,14 +205,12 @@ const ScheduledSurveys = () => {
         setEnquiries(scheduledEnquiries);
         setFilteredEnquiries(scheduledEnquiries);
       } catch (error) {
-        setError("Failed to fetch scheduled surveys. Please try again.");
+        setError("Failed to fetch scheduled surveys.");
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchProfileAndPermissions();
-    fetchEnquiriesAndSurveys();
+    fetchData();
   }, []);
 
   const applyFiltersAndSearch = (filterData, search = searchQuery) => {
@@ -208,103 +228,70 @@ const ScheduledSurveys = () => {
     }
 
     if (search && search.trim() !== "") {
-      const searchLower = search.toLowerCase().trim();
-      filtered = filtered.filter((enquiry) => {
-        const fields = [
-          enquiry.fullName,
-          enquiry.phoneNumber,
-          enquiry.email,
-          serviceOptions.find((opt) => opt.value === enquiry.serviceType)
-            ?.label,
-          enquiry.serviceType,
-          enquiry.message,
-          enquiry.note,
-          enquiry.assigned_user_email,
-          getSurveyStatus(enquiry),
-          enquiry.cancel_reason,
-          enquiry.contact_status,
-        ];
-        return fields.some((f) =>
-          f?.toString().toLowerCase().includes(searchLower)
-        );
-      });
+      const q = search.toLowerCase().trim();
+      filtered = filtered.filter((e) =>
+        [e.fullName, e.phoneNumber, e.email, e.assigned_user_email, e.survey_status]
+          .some(f => f?.toLowerCase().includes(q))
+      );
     }
 
-    filtered.sort((a, b) => new Date(b.survey_date) - new Date(a.survey_date));
-    setFilteredEnquiries(filtered);
+    setFilteredEnquiries(filtered.sort((a, b) => new Date(b.survey_date) - new Date(a.survey_date)));
   };
 
-  const handleFilter = (data) => applyFiltersAndSearch(data);
+  const handleFilter = (data) => {
+    applyFiltersAndSearch(data);
+    setIsFilterVisible(false);
+  };
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
     applyFiltersAndSearch(filterForm.getValues(), value);
   };
 
-  const hasPermission = (page, action) =>
-    isSuperadmin ||
-    permissions.some((p) => p.page === page && p[`can_${action}`]);
-
-  const openPhoneModal = (enquiry) => {
-    if (!hasPermission("scheduled_surveys", "view"))
-      return setError("No permission");
-    setSelectedEnquiry(enquiry);
-    setIsPhoneModalOpen(true);
-  };
+  const hasPermission = (page, action) => isSuperadmin || permissions.some((p) => p.page === page && p[`can_${action}`]);
 
   const openRescheduleSurveyModal = (enquiry) => {
-    if (!hasPermission("scheduled_surveys", "edit"))
-      return setError("No permission");
     setSelectedEnquiry(enquiry);
-    rescheduleSurveyForm.reset();
+    rescheduleSurveyForm.reset({
+      surveyDate: enquiry.survey_date ? new Date(enquiry.survey_date) : new Date()
+    });
     setIsRescheduleSurveyOpen(true);
   };
 
   const openCancelSurveyModal = (enquiry) => {
-    if (!hasPermission("scheduled_surveys", "edit"))
-      return setError("No permission");
     setSelectedEnquiry(enquiry);
     cancelSurveyForm.reset();
     setIsCancelSurveyOpen(true);
   };
 
+  const openPhoneModal = (enquiry) => {
+    setSelectedEnquiry(enquiry);
+    setIsPhoneModalOpen(true);
+  };
+
   const startSurvey = async (enquiry) => {
-    if (isSurveyFinished(enquiry))
-      return setError("Survey is already finished");
+    if (isSurveyFinished(enquiry)) return;
     setIsStartingSurvey(true);
     setStartingSurveyId(enquiry.id);
     try {
       let surveyData = null;
-      let serviceTypeDisplay = enquiry.serviceType;
-
-      const existing = await apiClient.get(
-        `/surveys/?enquiry_id=${enquiry.id}`
-      );
+      const existing = await apiClient.get(`/surveys/?enquiry_id=${enquiry.id}`);
       if (existing.data.length > 0) {
         surveyData = existing.data[0];
         if (["completed", "cancelled"].includes(surveyData.status)) {
           setError(`Survey is already ${surveyData.status}`);
+          setIsStartingSurvey(false);
+          setStartingSurveyId(null);
           return;
         }
         if (surveyData.status === "pending") {
-          await apiClient.patch(`/surveys/${surveyData.survey_id}/`, {
-            status: "in_progress",
-          });
+          await apiClient.patch(`/surveys/${surveyData.survey_id}/`, { status: "in_progress" });
         }
-        serviceTypeDisplay =
-          surveyData.service_type_display || enquiry.serviceType;
       }
 
-      const serviceLabel =
-        serviceOptions.find((opt) => opt.value === serviceTypeDisplay)?.label ||
-        serviceTypeDisplay ||
-        "Not Specified";
-
+      const serviceLabel = serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label || enquiry.serviceType || "Not Specified";
       localStorage.setItem("selectedSurveyId", enquiry.id);
-      localStorage.setItem(
-        "currentSurveyData",
-        JSON.stringify(surveyData || {})
-      );
+      localStorage.setItem("currentSurveyData", JSON.stringify(surveyData || {}));
 
       navigate(`/survey/${enquiry.id}/survey-details`, {
         state: {
@@ -312,12 +299,7 @@ const ScheduledSurveys = () => {
             fullName: enquiry.fullName,
             phoneNumber: enquiry.phoneNumber,
             email: enquiry.email,
-            surveyDate: enquiry.survey_date
-              ? new Date(enquiry.survey_date)
-              : null,
-            surveyStartTime: enquiry.survey_date
-              ? new Date(enquiry.survey_date)
-              : null,
+            surveyDate: enquiry.survey_date ? new Date(enquiry.survey_date) : null,
             serviceType: enquiry.serviceType,
             serviceTypeDisplay: serviceLabel,
             surveyId: surveyData?.survey_id || "",
@@ -332,720 +314,345 @@ const ScheduledSurveys = () => {
     }
   };
 
-  const onRescheduleSurveySubmit = async (data) => {
-    if (!data.surveyDate)
-      return rescheduleSurveyForm.setError("surveyDate", {
-        message: "Required",
-      });
+  const onRescheduleSubmit = (data) => {
+    if (!data.surveyDate) return rescheduleSurveyForm.setError("surveyDate", { message: "Required" });
     setRescheduleSurveyData(data);
     setIsRescheduleSurveyOpen(false);
     setIsRescheduleSurveyConfirmOpen(true);
   };
 
-  const confirmRescheduleSurvey = async () => {
+  const confirmReschedule = async () => {
     setIsReschedulingSurvey(true);
-    setReschedulingSurveyId(selectedEnquiry.id);
     try {
-      const response = await apiClient.post(
-        `/contacts/enquiries/${selectedEnquiry.id}/schedule/`,
-        {
-          survey_date: rescheduleSurveyData.surveyDate.toISOString(),
-        }
-      );
-      const updated = enquiries
-        .map((e) => (e.id === selectedEnquiry.id ? response.data : e))
-        .sort((a, b) => new Date(b.survey_date) - new Date(a.survey_date));
+      const res = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/schedule/`, {
+        survey_date: rescheduleSurveyData.surveyDate.toISOString(),
+      });
+      const updated = enquiries.map((e) => (e.id === selectedEnquiry.id ? res.data : e));
       setEnquiries(updated);
       setFilteredEnquiries(updated);
       setMessage("Survey rescheduled successfully");
       setIsRescheduleSurveyConfirmOpen(false);
-    } catch (error) {
-      setError(error.response?.data?.error || "Failed to reschedule");
+    } catch (err) {
+      setError("Failed to reschedule");
     } finally {
       setIsReschedulingSurvey(false);
-      setReschedulingSurveyId(null);
     }
   };
 
-  const onCancelSurveySubmit = async (data) => {
+  const onCancelSubmit = (data) => {
     setCancelSurveyData(data);
     setIsCancelSurveyOpen(false);
     setIsCancelSurveyConfirmOpen(true);
   };
 
-  const confirmCancelSurvey = async () => {
+  const confirmCancel = async () => {
     setIsCancelingSurvey(true);
-    setCancelingSurveyId(selectedEnquiry.id);
     try {
-      const response = await apiClient.post(
-        `/contacts/enquiries/${selectedEnquiry.id}/cancel-survey/`,
-        {
-          reason: cancelSurveyData.reason,
-        }
-      );
-      const updated = enquiries
-        .map((e) => (e.id === selectedEnquiry.id ? response.data : e))
-        .sort((a, b) => new Date(b.survey_date) - new Date(a.survey_date));
+      const res = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/cancel-survey/`, { reason: cancelSurveyData.reason });
+      const updated = enquiries.map((e) => (e.id === selectedEnquiry.id ? res.data : e));
       setEnquiries(updated);
       setFilteredEnquiries(updated);
       setMessage("Survey cancelled successfully");
       setIsCancelSurveyConfirmOpen(false);
-    } catch (error) {
-      setError(error.response?.data?.error || "Failed to cancel");
+    } catch (err) {
+      setError("Failed to cancel");
     } finally {
       setIsCancelingSurvey(false);
-      setCancelingSurveyId(null);
     }
   };
 
-  const formatTime = (dateTimeString) =>
-    dateTimeString
-      ? new Date(dateTimeString).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "Not set";
-
-  if (isLoading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
+  if (isLoading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
-    <div className="container mx-auto">
-      {error && (
-        <motion.div
-          className="mb-4 p-4 bg-red-100 text-red-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          {error}
-        </motion.div>
-      )}
-      {message && (
-        <motion.div
-          className="mb-4 p-4 bg-green-100 text-green-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          {message}
-        </motion.div>
-      )}
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      <PageHeader
+        title="Scheduled Surveys"
+        subtitle="Manage and execute pending survey requests"
+        extra={
+          <div className="flex items-center gap-2 text-sm font-medium text-blue-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-50">
+            <FiCalendar className="animate-pulse" />
+            Calendar View Active
+          </div>
+        }
+      />
 
-      <div className="flex flex-col lg:flex-row justify-end items-start lg:items-center gap-4 mb-6">
-        <FormProvider {...filterForm}>
-          <form
-            onSubmit={filterForm.handleSubmit(handleFilter)}
-            className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
-          >
-            <div className="w-full sm:w-auto">
-              <Input label="From Date" name="fromDate" type="date" />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Input label="To Date" name="toDate" type="date" />
-            </div>
-            <button
-              type="submit"
-              className="mt-2 sm:mt-6 text-sm bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded w-full sm:w-auto"
-            >
-              Apply Filter
-            </button>
-          </form>
-        </FormProvider>
-      </div>
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">×</button>
+          </motion.div>
+        )}
+        {message && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{message}</span>
+            <button onClick={() => setMessage(null)} className="text-green-400 hover:text-green-600">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="mb-4">
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+        <div className="relative flex-1">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+            <FiSearch className="w-5 h-5" />
+          </div>
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search by name, phone, email, or status..."
             value={searchQuery}
             onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded focus:outline-indigo-500"
+            className="input-style w-full !pl-12 h-[56px] rounded-2xl border-gray-100 shadow-sm"
           />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsFilterVisible(!isFilterVisible)}
+            className={`flex items-center gap-2 px-5 h-[52px] rounded-2xl border font-medium transition-all ${isFilterVisible ? 'bg-[#4c7085] text-white border-[#4c7085]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+          >
+            <FiFilter className="w-5 h-5" />
+            <span>Filters</span>
+          </button>
         </div>
       </div>
 
+      <AnimatePresence>
+        {isFilterVisible && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <FormProvider {...filterForm}>
+              <form onSubmit={filterForm.handleSubmit(handleFilter)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField label="From Date" name="fromDate" type="date" />
+                <InputField label="To Date" name="toDate" type="date" />
+                <div className="md:col-span-2 flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => { filterForm.reset(); applyFiltersAndSearch(filterForm.getValues()); setIsFilterVisible(false); }} className="btn-secondary !bg-transparent !border-none !shadow-none hover:!text-gray-900">Reset</button>
+                  <button type="submit" className="btn-primary">Apply Filters</button>
+                </div>
+              </form>
+            </FormProvider>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {filteredEnquiries.length === 0 ? (
-        <div className="text-center text-[#2d4a5e] text-sm p-5 bg-white shadow-sm rounded-lg">
-          No Scheduled Surveys Found
+        <div className="bg-white rounded-3xl p-20 text-center border border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiCalendar className="text-gray-300 w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-800">No scheduled surveys found</h3>
+          <p className="text-gray-500 text-sm mt-1">Refine your dates or search query</p>
         </div>
       ) : (
-        <>
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Sl No
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Survey Date
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Survey Time
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Customer Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Phone
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Email
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Service
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Message
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Note
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Assigned To
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Contact Status
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Survey Status
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                    Actions
-                  </th>
+        <div className="space-y-6">
+          <div className="hidden lg:block bg-white rounded-3xl border border-gray-50 shadow-sm overflow-hidden overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Survey Info</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentEnquiries.map((enquiry, index) => {
-                  const globalIndex =
-                    filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
-                  const btn = getButtonConfig(enquiry);
+              <tbody className="divide-y divide-gray-50">
+                {currentEnquiries.map((enquiry) => {
+                  const status = enquiry.survey_status || "pending";
                   return (
-                    <motion.tr
-                      key={enquiry.id}
-                      className="hover:bg-gray-50"
-                      variants={rowVariants}
-                      initial="rest"
-                      whileHover="hover"
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {globalIndex}
+                    <tr key={enquiry.id} className="hover:bg-gray-50/30 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-gray-800 flex items-center gap-2">
+                            <FiCalendar className="w-4 h-4 text-[#4c7085]" />
+                            {new Date(enquiry.survey_date).toLocaleDateString()}
+                          </p>
+                          <p className="text-xs text-gray-500 flex items-center gap-2">
+                            <FiClock className="w-4 h-4 text-gray-400" />
+                            {new Date(enquiry.survey_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.survey_date
-                          ? new Date(enquiry.survey_date).toLocaleDateString()
-                          : "Not scheduled"}
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-sm">
+                            {enquiry.fullName?.charAt(0) || "C"}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">{enquiry.fullName}</p>
+                            <p className="text-xs text-gray-500">{enquiry.phoneNumber}</p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {formatTime(enquiry.survey_date)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.fullName || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.phoneNumber ? (
-                          <button
-                            onClick={() => openPhoneModal(enquiry)}
-                            className="flex items-center gap-2 text-[#4c7085]"
-                          >
-                            <FaPhoneAlt className="w-3 h-3" />{" "}
-                            {enquiry.phoneNumber}
-                          </button>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.email ? (
-                          <a
-                            href={`mailto:${enquiry.email}`}
-                            className="flex items-center gap-2 text-[#4c7085]"
-                          >
-                            <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                          </a>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {serviceOptions.find(
-                          (opt) => opt.value === enquiry.serviceType
-                        )?.label ||
-                          enquiry.serviceType ||
-                          "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.message || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.note || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        {enquiry.assigned_user_email || "Unassigned"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        <span
-                          className={
-                            enquiry.contact_status === "Attended"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                        >
-                          {enquiry.contact_status || "Not Attended"}
+                      <td className="px-6 py-5">
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
+                          {serviceOptions.find(o => o.value === enquiry.serviceType)?.label || enquiry.serviceType}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                            enquiry.survey_status
-                          )}`}
-                        >
-                          {getSurveyStatus(enquiry)}
+                      <td className="px-6 py-5">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-medium border ${getStatusStyles(status)}`}>
+                          {getSurveyStatusDisplay(enquiry)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
-                        <div className="flex gap-2">
-                          {(!enquiry.survey_status ||
-                            enquiry.survey_status === "cancelled") && (
+                      <td className="px-6 py-5">
+                        <p className="text-sm text-gray-600 font-medium">{enquiry.assigned_user_email || "Unassigned"}</p>
+                      </td>
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
+                          {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && (
                             <button
-                              onClick={() =>
-                                navigate(
-                                  `/quotation-create/enquiry/${enquiry.id}`
-                                )
-                              }
-                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-medium py-1.5 px-3 rounded-lg shadow transition"
+                              onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
+                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-medium rounded-xl shadow-sm transition-all"
                             >
                               Create Quote
                             </button>
                           )}
-
-                          <button
-                            onClick={() => openRescheduleSurveyModal(enquiry)}
-                            className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50"
-                            disabled={
-                              !hasPermission("scheduled_surveys", "edit") ||
-                              isReschedulingSurvey ||
-                              isSurveyFinished(enquiry)
-                            }
-                          >
-                            {isReschedulingSurvey &&
-                            reschedulingSurveyId === enquiry.id ? (
-                              <>Rescheduling</>
-                            ) : (
-                              "Re-Schedule"
-                            )}
-                          </button>
-                          <button
-                            onClick={() => openCancelSurveyModal(enquiry)}
-                            className="bg-red-500 text-white text-xs py-1 px-2 rounded disabled:opacity-50"
-                            disabled={
-                              !hasPermission("scheduled_surveys", "edit") ||
-                              isCancelingSurvey ||
-                              isSurveyFinished(enquiry)
-                            }
-                          >
-                            {isCancelingSurvey &&
-                            cancelingSurveyId === enquiry.id ? (
-                              <>Canceling</>
-                            ) : (
-                              "Cancel"
-                            )}
-                          </button>
-                          <button
-                            onClick={() => startSurvey(enquiry)}
-                            className={`text-white text-xs py-1 px-2 rounded flex items-center gap-1 ${
-                              btn.disabled
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : btn.color
-                            }`}
-                            disabled={btn.disabled || isStartingSurvey}
-                          >
-                            {isStartingSurvey &&
-                            startingSurveyId === enquiry.id ? (
-                              <>{btn.loadingText}</>
-                            ) : (
-                              btn.text
-                            )}
+                          {!isSurveyFinished(enquiry) && (
+                            <>
+                              <button
+                                onClick={() => startSurvey(enquiry)}
+                                disabled={isStartingSurvey}
+                                className={`px-4 py-2 rounded-xl text-xs font-medium text-white transition-all shadow-sm ${status === 'in_progress' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'}`}
+                              >
+                                {status === 'in_progress' ? (isStartingSurvey && startingSurveyId === enquiry.id ? 'Resuming...' : 'Continue') : (isStartingSurvey && startingSurveyId === enquiry.id ? 'Starting...' : 'Start')}
+                              </button>
+                              <button
+                                onClick={() => openRescheduleSurveyModal(enquiry)}
+                                className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all"
+                                title="Reschedule"
+                              >
+                                <FiRotateCw className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openCancelSurveyModal(enquiry)}
+                                className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                                title="Cancel"
+                              >
+                                <FiXCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {isSurveyFinished(enquiry) && (
+                            <div className="flex items-center gap-2 text-xs text-gray-400 font-medium bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+                              <FiCheckCircle className="text-gray-300" />
+                              Task Finished
+                            </div>
+                          )}
+                          <button onClick={() => openPhoneModal(enquiry)} className="w-9 h-9 flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all">
+                            <IoLogoWhatsapp className="w-5 h-5" />
                           </button>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })}
               </tbody>
             </table>
-          </div>
 
-          {filteredEnquiries.length > 0 && (
-            <div className="hidden md:flex justify-between items-center mt-6 p-4 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Show:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="text-sm text-gray-700">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-              <div className="text-sm text-gray-700">
-                Showing {indexOfFirstItem + 1}-
-                {Math.min(indexOfLastItem, filteredEnquiries.length)} of{" "}
-                {filteredEnquiries.length}
+            {/* Pagination Desktop */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-50">
+              <p className="text-sm text-gray-500">
+                Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredEnquiries.length)}</span> of <span className="font-medium text-gray-800">{filteredEnquiries.length}</span> surveys
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 border border-gray-100 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-30 transition-colors">Previous</button>
+                <div className="flex items-center px-4 text-sm font-medium text-[#4c7085] bg-[#4c7085]/10 rounded-xl">{currentPage} / {totalPages || 1}</div>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-2 border border-gray-100 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-30 transition-colors">Next</button>
               </div>
             </div>
-          )}
+          </div>
 
-          <div className="md:hidden space-y-3">
+          <div className="lg:hidden space-y-4">
             {currentEnquiries.map((enquiry) => {
-              const isExpanded = expandedEnquiries.has(enquiry.id);
-              const globalIndex =
-                filteredEnquiries.findIndex((e) => e.id === enquiry.id) + 1;
-              const btn = getButtonConfig(enquiry);
+              const isOpen = expandedEnquiries.has(enquiry.id);
+              const status = enquiry.survey_status || "pending";
               return (
-                <motion.div
-                  key={enquiry.id}
-                  className="rounded-lg p-4 bg-white shadow-sm border border-gray-200"
-                  variants={rowVariants}
-                  initial="rest"
-                  whileHover="hover"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#2d4a5e]">
-                        <strong>SI No:</strong> {globalIndex}
-                      </p>
-                      <p className="text-sm text-[#2d4a5e] mt-1">
-                        <strong>Customer:</strong> {enquiry.fullName || "-"}
-                      </p>
-                      <p className="text-sm text-[#2d4a5e]">
-                        <strong>Survey Date:</strong>{" "}
-                        {enquiry.survey_date
-                          ? new Date(enquiry.survey_date).toLocaleDateString()
-                          : "Not scheduled"}
-                      </p>
+                <div key={enquiry.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all">
+                  <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleEnquiryExpand(enquiry.id)}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium">
+                        {enquiry.fullName?.charAt(0) || "C"}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-800 text-sm">{enquiry.fullName}</h4>
+                        <p className="text-[10px] text-gray-500 font-medium">{new Date(enquiry.survey_date).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => toggleEnquiryExpand(enquiry.id)}
-                      className="ml-4 w-8 h-8 flex items-center justify-center bg-[#4c7085] text-white rounded-full"
-                    >
-                      {isExpanded ? (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 15l7-7 7 7"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      )}
-                    </button>
+                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
                   </div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-[#2d4a5e] text-sm">
-                          <p>
-                            <strong>Survey Time:</strong>{" "}
-                            {formatTime(enquiry.survey_date)}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Phone:</strong>{" "}
-                            {enquiry.phoneNumber ? (
-                              <button
-                                onClick={() => openPhoneModal(enquiry)}
-                                className="flex items-center gap-2 text-[#4c7085]"
-                              >
-                                <FaPhoneAlt className="w-3 h-3" />{" "}
-                                {enquiry.phoneNumber}
-                              </button>
-                            ) : (
-                              "-"
-                            )}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <strong>Email:</strong>{" "}
-                            {enquiry.email ? (
-                              <a
-                                href={`mailto:${enquiry.email}`}
-                                className="flex items-center gap-2 text-[#4c7085]"
-                              >
-                                <FaEnvelope className="w-3 h-3" />{" "}
-                                {enquiry.email}
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </p>
-                          <p>
-                            <strong>Service Required:</strong>{" "}
-                            {serviceOptions.find(
-                              (opt) => opt.value === enquiry.serviceType
-                            )?.label ||
-                              enquiry.serviceType ||
-                              "-"}
-                          </p>
-                          <p>
-                            <strong>Message:</strong> {enquiry.message || "-"}
-                          </p>
-                          <p>
-                            <strong>Note:</strong> {enquiry.note || "-"}
-                          </p>
-                          <p>
-                            <strong>Assigned To:</strong>{" "}
-                            {enquiry.assigned_user_email || "Unassigned"}
-                          </p>
-                          <p>
-                            <strong>Contact Status:</strong>{" "}
-                            <span
-                              className={
-                                enquiry.contact_status === "Attended"
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {enquiry.contact_status || "Not Attended"}
-                            </span>
-                          </p>
-                          <p>
-                            <strong>Survey Status:</strong>{" "}
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                enquiry.survey_status
-                              )}`}
-                            >
-                              {getSurveyStatus(enquiry)}
-                            </span>
-                          </p>
 
-                          <div className="flex flex-wrap gap-2 pt-3">
-                            {/* NEW: Create Quote Button - Mobile */}
-                            {(!enquiry.survey_status ||
-                              enquiry.survey_status === "cancelled") && (
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50/50">
+                        <div className="p-4 space-y-4 border-t border-gray-100">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === enquiry.serviceType)?.label || enquiry.serviceType}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Status</p>
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-medium border mt-1 ${getStatusStyles(status)}`}>{getSurveyStatusDisplay(enquiry)}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && (
                               <button
-                                onClick={() =>
-                                  navigate(
-                                    `/quotation-create/enquiry/${enquiry.id}`
-                                  )
-                                }
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-medium py-2 px-4 rounded-lg shadow transition"
+                                onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
+                                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2.5 rounded-xl text-[11px] font-medium shadow-sm"
                               >
                                 Create Quote
                               </button>
                             )}
-
-                            <button
-                              onClick={() => openRescheduleSurveyModal(enquiry)}
-                              className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-xs py-2 px-3 rounded disabled:opacity-50"
-                              disabled={
-                                !hasPermission("scheduled_surveys", "edit") ||
-                                isReschedulingSurvey ||
-                                isSurveyFinished(enquiry)
-                              }
-                            >
-                              {isReschedulingSurvey &&
-                              reschedulingSurveyId === enquiry.id ? (
-                                <>Rescheduling</>
-                              ) : (
-                                "Re-Schedule"
-                              )}
-                            </button>
-                            <button
-                              onClick={() => openCancelSurveyModal(enquiry)}
-                              className="bg-red-500 text-white text-xs py-2 px-3 rounded disabled:opacity-50"
-                              disabled={
-                                !hasPermission("scheduled_surveys", "edit") ||
-                                isCancelingSurvey ||
-                                isSurveyFinished(enquiry)
-                              }
-                            >
-                              {isCancelingSurvey &&
-                              cancelingSurveyId === enquiry.id ? (
-                                <>Canceling</>
-                              ) : (
-                                "Cancel"
-                              )}
-                            </button>
-                            <button
-                              onClick={() => startSurvey(enquiry)}
-                              className={`text-white text-xs py-2 px-3 rounded ${
-                                btn.disabled
-                                  ? "bg-gray-400 cursor-not-allowed"
-                                  : btn.color
-                              }`}
-                              disabled={btn.disabled || isStartingSurvey}
-                            >
-                              {isStartingSurvey &&
-                              startingSurveyId === enquiry.id ? (
-                                <>{btn.loadingText}</>
-                              ) : (
-                                btn.text
-                              )}
-                            </button>
+                            {!isSurveyFinished(enquiry) && (
+                              <>
+                                <button onClick={() => startSurvey(enquiry)} className={`flex-1 ${status === 'in_progress' ? 'bg-blue-500' : 'bg-green-500'} text-white py-2.5 rounded-xl text-[11px] font-medium shadow-sm transition-transform active:scale-95`}>
+                                  {status === 'in_progress' ? 'Continue Survey' : 'Start Survey'}
+                                </button>
+                                <button onClick={() => openRescheduleSurveyModal(enquiry)} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-[#4c7085] shadow-sm"><FiRotateCw /></button>
+                                <button onClick={() => openCancelSurveyModal(enquiry)} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-red-500 shadow-sm"><FiXCircle /></button>
+                              </>
+                            )}
+                            <button onClick={() => openPhoneModal(enquiry)} className="w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-5 h-5" /></button>
                           </div>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </>
+        </div>
       )}
 
+      {/* Modals */}
       <AnimatePresence>
-        <Modal
-          isOpen={isPhoneModalOpen}
-          onClose={() => setIsPhoneModalOpen(false)}
-          title="Contact Options"
-          footer={
-            <button
-              onClick={() => setIsPhoneModalOpen(false)}
-              className="bg-gray-500 text-white py-2 px-4 rounded"
-            >
-              Close
-            </button>
-          }
-        >
-          <div className="space-y-4">
-            <p className="text-[#2d4a5e] text-sm">
-              Choose how to contact {selectedEnquiry?.fullName}:
-            </p>
-            {selectedEnquiry?.phoneNumber ? (
-              <>
-                <a
-                  href={`tel:${selectedEnquiry.phoneNumber}`}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                >
-                  <FaPhoneAlt className="w-5 h-5" /> Call
-                </a>
-                <a
-                  href={`https://wa.me/${selectedEnquiry.phoneNumber}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-green-500 text-white py-2 px-4 rounded"
-                >
-                  <FaWhatsapp className="w-5 h-5" /> WhatsApp
-                </a>
-              </>
-            ) : (
-              <p className="text-[#2d4a5e] text-sm">
-                No phone number available
-              </p>
-            )}
-          </div>
-        </Modal>
-
         <Modal
           isOpen={isRescheduleSurveyOpen}
           onClose={() => setIsRescheduleSurveyOpen(false)}
-          title="Re-Schedule Survey"
+          title="Reschedule Survey"
           footer={
             <>
-              <button
-                onClick={() => setIsRescheduleSurveyOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="reschedule-survey-form"
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-              >
-                Submit
-              </button>
+              <button onClick={() => setIsRescheduleSurveyOpen(false)} className="btn-secondary !bg-transparent !border-none">Cancel</button>
+              <button type="submit" form="reschedule-form" className="btn-primary">Apply Update</button>
             </>
           }
         >
           <FormProvider {...rescheduleSurveyForm}>
-            <form
-              id="reschedule-survey-form"
-              onSubmit={rescheduleSurveyForm.handleSubmit(
-                onRescheduleSurveySubmit
-              )}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-[#2d4a5e] text-sm font-medium mb-1">
-                  Survey Date and Time <span className="text-red-500">*</span>
-                </label>
+            <form id="reschedule-form" onSubmit={rescheduleSurveyForm.handleSubmit(onRescheduleSubmit)} className="space-y-4">
+              <div className="flex flex-col">
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">New Date and Time <span className="text-red-500">*</span></label>
                 <DatePicker
                   selected={rescheduleSurveyForm.watch("surveyDate")}
-                  onChange={(date) =>
-                    rescheduleSurveyForm.setValue("surveyDate", date)
-                  }
+                  onChange={(date) => rescheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
                   showTimeSelect
                   timeFormat="HH:mm"
                   timeIntervals={15}
                   dateFormat="yyyy-MM-dd HH:mm"
                   minDate={new Date()}
+                  className="input-style w-full"
+                  placeholderText="Select new date/time"
                   wrapperClassName="w-full"
-                  className="w-full p-2 border border-gray-300 rounded text-sm"
-                  placeholderText="Select date and time"
                 />
-                {rescheduleSurveyForm.formState.errors.surveyDate && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {rescheduleSurveyForm.formState.errors.surveyDate.message}
-                  </p>
-                )}
               </div>
             </form>
           </FormProvider>
@@ -1057,25 +664,12 @@ const ScheduledSurveys = () => {
           title="Confirm Reschedule"
           footer={
             <>
-              <button
-                onClick={() => setIsRescheduleSurveyConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRescheduleSurvey}
-                className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-              >
-                Confirm
-              </button>
+              <button onClick={() => setIsRescheduleSurveyConfirmOpen(false)} className="btn-secondary !bg-transparent !border-none">Cancel</button>
+              <button onClick={confirmReschedule} className="btn-primary" disabled={isReschedulingSurvey}>{isReschedulingSurvey ? "Updating..." : "Confirm"}</button>
             </>
           }
         >
-          <p className="text-[#2d4a5e] text-sm">
-            Reschedule survey to{" "}
-            {rescheduleSurveyData?.surveyDate?.toLocaleString()}?
-          </p>
+          <p className="text-sm font-medium text-gray-600">Are you sure you want to reschedule this survey to {rescheduleSurveyData?.surveyDate?.toLocaleString()}?</p>
         </Modal>
 
         <Modal
@@ -1084,33 +678,14 @@ const ScheduledSurveys = () => {
           title="Cancel Survey"
           footer={
             <>
-              <button
-                onClick={() => setIsCancelSurveyOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="cancel-survey-form"
-                className="bg-red-500 text-white py-2 px-4 rounded"
-              >
-                Submit
-              </button>
+              <button onClick={() => setIsCancelSurveyOpen(false)} className="btn-secondary !bg-transparent !border-none">Close</button>
+              <button type="submit" form="cancel-form" className="btn-primary !bg-red-500 hover:!bg-red-600">Proceed Cancellation</button>
             </>
           }
         >
           <FormProvider {...cancelSurveyForm}>
-            <form
-              id="cancel-survey-form"
-              onSubmit={cancelSurveyForm.handleSubmit(onCancelSurveySubmit)}
-            >
-              <Input
-                label="Reason for Cancellation"
-                name="reason"
-                type="textarea"
-                rules={{ required: "Reason is required" }}
-              />
+            <form id="cancel-form" onSubmit={cancelSurveyForm.handleSubmit(onCancelSubmit)} className="space-y-4">
+              <InputField label="Reason for Cancellation" name="reason" type="textarea" placeholder="Explain why the survey is being cancelled..." rules={{ required: "Reason is required" }} />
             </form>
           </FormProvider>
         </Modal>
@@ -1121,24 +696,39 @@ const ScheduledSurveys = () => {
           title="Confirm Cancellation"
           footer={
             <>
-              <button
-                onClick={() => setIsCancelSurveyConfirmOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmCancelSurvey}
-                className="bg-red-500 text-white py-2 px-4 rounded"
-              >
-                Confirm
-              </button>
+              <button onClick={() => setIsCancelSurveyConfirmOpen(false)} className="btn-secondary !bg-transparent !border-none">No, Go Back</button>
+              <button onClick={confirmCancel} className="btn-primary !bg-red-500 hover:!bg-red-600" disabled={isCancelingSurvey}>{isCancelingSurvey ? "Processing..." : "Yes, Cancel"}</button>
             </>
           }
         >
-          <p className="text-[#2d4a5e] text-sm">
-            Cancel survey with reason: "{cancelSurveyData?.reason}"?
-          </p>
+          <p className="text-sm font-medium text-gray-600">This will perpetually mark the survey for {selectedEnquiry?.fullName} as cancelled. Continue?</p>
+        </Modal>
+
+        <Modal
+          isOpen={isPhoneModalOpen}
+          onClose={() => setIsPhoneModalOpen(false)}
+          title="Contact Options"
+          footer={<button type="button" onClick={() => setIsPhoneModalOpen(false)} className="btn-secondary !bg-transparent !border-none">Close</button>}
+        >
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-medium text-lg">{selectedEnquiry?.fullName?.charAt(0)}</div>
+              <div>
+                <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
+                <p className="text-sm text-gray-500 font-medium">{selectedEnquiry?.phoneNumber}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <a href={`tel:${selectedEnquiry?.phoneNumber}`} className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-[#4c7085] transition-all group shadow-sm">
+                <div className="w-12 h-12 bg-[#4c7085]/10 rounded-full flex items-center justify-center text-[#4c7085] transition-transform"><FiPhone className="w-6 h-6" /></div>
+                <span className="font-medium text-gray-700">Call Now</span>
+              </a>
+              <a href={`https://wa.me/${selectedEnquiry?.phoneNumber?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-green-500 transition-all group shadow-sm">
+                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 transition-transform"><IoLogoWhatsapp className="w-7 h-7" /></div>
+                <span className="font-medium text-gray-700">WhatsApp</span>
+              </a>
+            </div>
+          </div>
         </Modal>
       </AnimatePresence>
     </div>

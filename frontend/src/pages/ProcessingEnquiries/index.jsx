@@ -1,24 +1,31 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope } from "react-icons/fa";
+import {
+  FiPhone,
+  FiMail,
+  FiSearch,
+  FiClock,
+  FiChevronDown,
+  FiChevronUp,
+  FiClipboard
+} from "react-icons/fi";
+import { IoLogoWhatsapp } from "react-icons/io";
 import Modal from "../../components/Modal";
+import PageHeader from "../../components/PageHeader";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 
-const rowVariants = {
-  hover: { backgroundColor: "#f3f4f6" },
-  rest: { backgroundColor: "#ffffff" },
-};
-
 const ProcessingEnquiries = () => {
   const [enquiries, setEnquiries] = useState([]);
+  const [filteredEnquiries, setFilteredEnquiries] = useState([]);
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedEnquiries, setExpandedEnquiries] = useState(new Set());
 
   const serviceOptions = [
     { value: "localMove", label: "Local Move" },
@@ -29,289 +36,256 @@ const ProcessingEnquiries = () => {
   ];
 
   useEffect(() => {
-    const fetchProfileAndPermissions = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiClient.get("/auth/profile/");
-        const user = response.data;
+        const profileResponse = await apiClient.get("/auth/profile/");
+        const user = profileResponse.data;
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
+
         const roleId = user.role?.id;
         if (roleId) {
           const res = await apiClient.get(`/auth/roles/${roleId}/`);
           setPermissions(res.data.permissions || []);
-        } else {
-          setPermissions([]);
         }
-      } catch (error) {
-        console.error("Unable to fetch user profile:", error);
-        setPermissions([]);
-        setIsSuperadmin(false);
-      }
-    };
 
-    const fetchEnquiries = async () => {
-      setIsLoading(true);
-      try {
-        const response = await apiClient.get("/contacts/enquiries/", {
+        const enquiryResponse = await apiClient.get("/contacts/enquiries/", {
           params: {
             assigned_user_email: "not_null",
             contact_status: "Under Processing",
           },
         });
-        // Sort by created_at in descending order
-        const sortedEnquiries = response.data.sort((a, b) => 
+
+        const sortedEnquiries = enquiryResponse.data.sort((a, b) =>
           new Date(b.created_at) - new Date(a.created_at)
         );
         setEnquiries(sortedEnquiries);
-      } catch (error) {
-        setError("Failed to fetch processing enquiries. Please try again.");
+        setFilteredEnquiries(sortedEnquiries);
+      } catch (err) {
+        setError("Failed to fetch processing enquiries.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProfileAndPermissions();
-    fetchEnquiries();
+    fetchData();
   }, []);
 
-  const hasPermission = (page, action) => {
-    if (isSuperadmin) return true;
-    const perm = permissions.find((p) => p.page === page);
-    return perm && perm[`can_${action}`];
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredEnquiries(enquiries);
+    } else {
+      const lowerQuery = searchQuery.toLowerCase();
+      const filtered = enquiries.filter(e =>
+        (e.fullName || "").toLowerCase().includes(lowerQuery) ||
+        (e.phoneNumber || "").toLowerCase().includes(lowerQuery) ||
+        (e.email || "").toLowerCase().includes(lowerQuery) ||
+        (e.assigned_user_email || "").toLowerCase().includes(lowerQuery)
+      );
+      setFilteredEnquiries(filtered);
+    }
+  }, [searchQuery, enquiries]);
+
+  const toggleEnquiryExpand = (id) => {
+    setExpandedEnquiries(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const openPhoneModal = (enquiry) => {
-    if (!hasPermission("processing_enquiries", "view")) {
-      setError("You do not have permission to view this enquiry.");
-      return;
-    }
     setSelectedEnquiry(enquiry);
     setIsPhoneModalOpen(true);
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
-  }
+  if (isLoading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
-    <div className="container mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      <PageHeader
+        title="Processing Enquiries"
+        subtitle="Track and manage enquiries currently under processing"
+        extra={
+          <div className="flex items-center gap-2 text-sm font-medium text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
+            <FiClock className="animate-spin-slow" />
+            In Progress
+          </div>
+        }
+      />
+
       {error && (
-        <motion.div
-          className="mb-4 p-4 bg-red-100 text-red-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {error}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center justify-between">
+          <span className="text-sm font-medium">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">×</button>
         </motion.div>
       )}
-      {message && (
-        <motion.div
-          className="mb-4 p-4 bg-green-100 text-green-700 rounded"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {message}
-        </motion.div>
-      )}
-      {enquiries.length === 0 ? (
-        <div className="text-center text-[#2d4a5e] text-sm sm:text-base p-5 bg-white shadow-sm rounded-lg">
-          No Processing Enquiries Found
+
+      {/* Search Bar */}
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <FiSearch className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search by client name, email, phone or assigned staff..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-style w-full !pl-12 h-[56px] rounded-2xl border-gray-100 shadow-sm"
+        />
+      </div>
+
+      {filteredEnquiries.length === 0 ? (
+        <div className="bg-white rounded-3xl p-20 text-center border border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiClipboard className="text-gray-300 w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-800">No processing enquiries</h3>
+          <p className="text-gray-500 text-sm mt-1">Refine your search or check back later</p>
         </div>
       ) : (
-        <>
-          {/* Table for Desktop */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Sl No
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Date & Time
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Customer Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Phone
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Email
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Service
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Message
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Note
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Assigned To
-                  </th>
+        <div className="space-y-6">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block bg-white rounded-3xl border border-gray-50 shadow-sm overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Contact</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Received Date</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {enquiries.map((enquiry, index) => (
-                  <motion.tr
-                    key={enquiry.id}
-                    className="hover:bg-gray-50"
-                    variants={rowVariants}
-                    initial="rest"
-                    whileHover="hover"
-                  >
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {index + 1}
+              <tbody className="divide-y divide-gray-50">
+                {filteredEnquiries.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-sm">
+                          {item.fullName?.charAt(0) || "C"}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">{item.fullName}</p>
+                          <p className="text-xs text-gray-500">#{item.id}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {new Date(enquiry.created_at).toLocaleString()}
+                    <td className="px-6 py-5">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-700">{item.phoneNumber}</p>
+                        <p className="text-xs text-gray-500">{item.email}</p>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.fullName || "-"}
+                    <td className="px-6 py-5">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
+                        {serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.phoneNumber ? (
-                        <button
-                          onClick={() => openPhoneModal(enquiry)}
-                          className="flex items-center gap-2 text-[#4c7085]"
-                        >
-                          <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                        </button>
-                      ) : (
-                        "-"
-                      )}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        <span className="text-sm text-gray-600 font-medium">{item.assigned_user_email}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.email ? (
-                        <a
-                          href={`mailto:${enquiry.email}`}
-                          className="flex items-center gap-2 text-[#4c7085]"
-                        >
-                          <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                        </a>
-                      ) : (
-                        "-"
-                      )}
+                    <td className="px-6 py-5">
+                      <span className="text-sm text-gray-500">{new Date(item.created_at).toLocaleDateString()}</span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                        enquiry.serviceType ||
-                        "-"}
+                    <td className="px-6 py-5 text-center">
+                      <button
+                        onClick={() => openPhoneModal(item)}
+                        className="w-10 h-10 inline-flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all shadow-sm"
+                      >
+                        <IoLogoWhatsapp className="w-5 h-5" />
+                      </button>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.message || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.note || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {enquiry.assigned_user_email || "-"}
-                    </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {/* Cards for Mobile */}
-          <div className="md:hidden space-y-4">
-            {enquiries.map((enquiry, index) => (
-              <motion.div
-                key={enquiry.id}
-                className="rounded-lg p-5 bg-white shadow-sm"
-                variants={rowVariants}
-                initial="rest"
-                whileHover="hover"
-              >
-                <div className="space-y-2 text-[#2d4a5e] text-sm sm:text-base">
-                  <p><strong>Sl No:</strong> {index + 1}</p>
-                  <p><strong>Date & Time:</strong> {new Date(enquiry.created_at).toLocaleString()}</p>
-                  <p><strong>Customer Name:</strong> {enquiry.fullName || ""}</p>
-                  <p className="flex items-center gap-2">
-                    <strong>Phone:</strong>
-                    {enquiry.phoneNumber ? (
-                      <button
-                        onClick={() => openPhoneModal(enquiry)}
-                        className="flex items-center gap-2 text-[#4c7085]"
-                      >
-                        <FaPhoneAlt className="w-3 h-3" /> {enquiry.phoneNumber}
-                      </button>
-                    ) : (
-                      ""
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4">
+            {filteredEnquiries.map((item) => {
+              const isOpen = expandedEnquiries.has(item.id);
+              return (
+                <div key={item.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all">
+                  <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleEnquiryExpand(item.id)}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium">{item.fullName?.charAt(0) || "C"}</div>
+                      <div>
+                        <h4 className="font-medium text-gray-800 text-sm">{item.fullName}</h4>
+                        <p className="text-[10px] text-gray-500 font-medium">{item.assigned_user_email}</p>
+                      </div>
+                    </div>
+                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                  </div>
+
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50/50">
+                        <div className="p-4 space-y-4 border-t border-gray-100">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Date</p>
+                              <p className="text-xs font-medium text-gray-600 mt-0.5">{new Date(item.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Contact</p>
+                            <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {item.phoneNumber}</p>
+                            <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {item.email}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openPhoneModal(item)}
+                              className="w-full bg-green-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm shadow-sm transition-transform"
+                            >
+                              <IoLogoWhatsapp className="w-5 h-5" /> Chat on WhatsApp
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <strong>Email:</strong>
-                    {enquiry.email ? (
-                      <a
-                        href={`mailto:${enquiry.email}`}
-                        className="flex items-center gap-2 text-[#4c7085]"
-                      >
-                        <FaEnvelope className="w-3 h-3" /> {enquiry.email}
-                      </a>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p>
-                    <strong>Service:</strong>{" "}
-                    {serviceOptions.find((opt) => opt.value === enquiry.serviceType)?.label ||
-                      enquiry.serviceType ||
-                      ""}
-                  </p>
-                  <p><strong>Message:</strong> {enquiry.message || ""}</p>
-                  <p><strong>Note:</strong> {enquiry.note || ""}</p>
-                  <p><strong>Assigned To:</strong> {enquiry.assigned_user_email || ""}</p>
+                  </AnimatePresence>
                 </div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
-        </>
+        </div>
       )}
+
+      {/* WhatsApp Modal */}
       <AnimatePresence>
         <Modal
           isOpen={isPhoneModalOpen}
           onClose={() => setIsPhoneModalOpen(false)}
           title="Contact Options"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsPhoneModalOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-            </>
-          }
+          footer={<button type="button" onClick={() => setIsPhoneModalOpen(false)} className="btn-secondary !bg-transparent !border-none">Close</button>}
         >
           <div className="space-y-4">
-            <p className="text-[#2d4a5e] text-sm sm:text-base">
-              Choose how to contact {selectedEnquiry?.fullName || ""}:
-            </p>
-            <div className="flex flex-col gap-3">
-              {selectedEnquiry?.phoneNumber ? (
-                <>
-                  <a
-                    href={`tel:${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-2 px-4 rounded"
-                  >
-                    <FaPhoneAlt className="w-5 h-5" /> Call
-                  </a>
-                  <a
-                    href={`https://wa.me/${selectedEnquiry.phoneNumber}`}
-                    className="flex items-center gap-2 bg-green-500 text-white py-2 px-4 rounded"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FaWhatsapp className="w-5 h-5" /> WhatsApp
-                  </a>
-                </>
-              ) : (
-                <p className="text-[#2d4a5e] text-sm sm:text-base">No phone number available</p>
-              )}
+            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-medium text-lg">{selectedEnquiry?.fullName?.charAt(0)}</div>
+              <div>
+                <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
+                <p className="text-sm text-gray-500">{selectedEnquiry?.phoneNumber}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <a href={`tel:${selectedEnquiry?.phoneNumber}`} className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-[#4c7085] transition-all group shadow-sm text-center">
+                <div className="w-12 h-12 bg-[#4c7085]/10 rounded-full flex items-center justify-center text-[#4c7085] transition-transform"><FiPhone className="w-6 h-6" /></div>
+                <span className="font-medium text-gray-700">Call Now</span>
+              </a>
+              <a href={`https://wa.me/${selectedEnquiry?.phoneNumber?.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-gray-50 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-green-500 transition-all group shadow-sm text-center">
+                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 transition-transform"><IoLogoWhatsapp className="w-7 h-7" /></div>
+                <span className="font-medium text-gray-700">WhatsApp</span>
+              </a>
             </div>
           </div>
         </Modal>

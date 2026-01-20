@@ -113,8 +113,8 @@ const Sidebar = ({ toggleSidebar }) => {
       page: "pricing",
       action: "view",
       subItems: [
-        { to: "/pricing/local-move", label: "Local Move", icon: <FiHome className="w-4 h-4" />, page: "local_move", action: "view" },
-        { to: "/pricing/international-move", label: "International Move", icon: <FiGlobe className="w-4 h-4" />, page: "international_move", action: "view" },
+        { to: "/pricing/local-move", label: "Local Move", icon: <FiHome className="w-3 h-3" />, page: "local_move", action: "view" },
+        { to: "/pricing/international-move", label: "International Move", icon: <FiGlobe className="w-3 h-3" />, page: "international_move", action: "view" },
       ],
     },
     {
@@ -126,16 +126,16 @@ const Sidebar = ({ toggleSidebar }) => {
       page: "additional_settings",
       action: "view",
       subItems: [
-        { to: "/additional-settings/types", label: "Types", icon: <FiTag className="w-4 h-4" />, page: "types", action: "view" },
-        { to: "/additional-settings/units", label: "Units", icon: <FiLayers className="w-4 h-4" />, page: "units", action: "view" },
-        { to: "/additional-settings/currency", label: "Currency", icon: <BiMoneyWithdraw className="w-4 h-4" />, page: "currency", action: "view" },
-        { to: "/additional-settings/tax", label: "Tax", icon: <FiPercent className="w-4 h-4" />, page: "tax", action: "view" },
-        { to: "/additional-settings/handyman", label: "Handyman", icon: <FiTool className="w-4 h-4" />, page: "handyman", action: "view" },
-        { to: "/additional-settings/manpower", label: "Manpower", icon: <HiOutlineUserGroup className="w-4 h-4" />, page: "manpower", action: "view" },
-        { to: "/additional-settings/room", label: "Room", icon: <FiHome className="w-4 h-4" />, page: "room", action: "view" },
-        { to: "/additional-settings/additional-services", label: "Additional Services", icon: <FiPlusSquare className="w-4 h-4" />, page: "additional-services", action: "view" },
-        { to: "/additional-settings/labours", label: "Labours", icon: <FiUsers className="w-4 h-4" />, page: "labours", action: "view" },
-        { to: "/additional-settings/materials", label: "Materials", icon: <FiPackage className="w-4 h-4" />, page: "materials", action: "view" },
+        { to: "/additional-settings/types", label: "Types", icon: <FiTag className="w-3 h-3" />, page: "types", action: "view" },
+        { to: "/additional-settings/units", label: "Units", icon: <FiLayers className="w-3 h-3" />, page: "units", action: "view" },
+        { to: "/additional-settings/currency", label: "Currency", icon: <BiMoneyWithdraw className="w-3 h-3" />, page: "currency", action: "view" },
+        { to: "/additional-settings/tax", label: "Tax", icon: <FiPercent className="w-3 h-3" />, page: "tax", action: "view" },
+        { to: "/additional-settings/handyman", label: "Handyman", icon: <FiTool className="w-3 h-3" />, page: "handyman", action: "view" },
+        { to: "/additional-settings/manpower", label: "Manpower", icon: <HiOutlineUserGroup className="w-3 h-3" />, page: "manpower", action: "view" },
+        { to: "/additional-settings/room", label: "Room", icon: <FiHome className="w-3 h-3" />, page: "room", action: "view" },
+        { to: "/additional-settings/additional-services", label: "Additional Services", icon: <FiPlusSquare className="w-3 h-3" />, page: "additional-services", action: "view" },
+        { to: "/additional-settings/labours", label: "Labours", icon: <FiUsers className="w-3 h-3" />, page: "labours", action: "view" },
+        { to: "/additional-settings/materials", label: "Materials", icon: <FiPackage className="w-3 h-3" />, page: "materials", action: "view" },
       ],
     },
     {
@@ -147,9 +147,9 @@ const Sidebar = ({ toggleSidebar }) => {
       page: "users",
       action: "view",
       subItems: [
-        { to: "/user-roles/roles", label: "Roles", icon: <FiShield className="w-4 h-4" />, page: "roles", action: "view" },
-        { to: "/user-roles/users", label: "Users", icon: <FiUsers className="w-4 h-4" />, page: "users", action: "view" },
-        { to: "/user-roles/permissions", label: "Permissions", icon: <FiKey className="w-4 h-4" />, page: "permissions", action: "view" },
+        { to: "/user-roles/roles", label: "Roles", icon: <FiShield className="w-3 h-3" />, page: "roles", action: "view" },
+        { to: "/user-roles/users", label: "Users", icon: <FiUsers className="w-3 h-3" />, page: "users", action: "view" },
+        { to: "/user-roles/permissions", label: "Permissions", icon: <FiKey className="w-3 h-3" />, page: "permissions", action: "view" },
       ],
     },
     { id: "profile", to: "/profile", label: "Profile", icon: <FiUser className="w-5 h-5" />, page: "Profile", action: "view" },
@@ -191,7 +191,7 @@ const Sidebar = ({ toggleSidebar }) => {
               {item.icon}
               <span className="font-medium">{item.label}</span>
             </span>
-            {item.isOpen ? <FaChevronUp className="w-4 h-4" /> : <FaChevronDown className="w-4 h-4" />}
+            {item.isOpen ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
           </button>
 
           <AnimatePresence>

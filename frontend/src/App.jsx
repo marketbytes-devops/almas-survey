@@ -35,10 +35,10 @@ import AdditionalServices from "./pages/AdditionalSettings/AdditionalService";
 import Labours from "./pages/AdditionalSettings/Labours";
 import Materials from "./pages/AdditionalSettings/Materials";
 import BookingList from "./pages/Bookings/BookingList";
-import BookingDetailView from "./pages/Bookings/BookingDetailView.jsx"; // NEW - read-only view
 import BookingForm from "./pages/Bookings/BookingForm"; // NEW - create + edit form
 import Inventory from "./pages/Inventory";
 import ManpowerManagement from "./pages/Admin/ManpowerManagement";
+import BookingDetailView from "./pages/Bookings/BookingDetailView";
 
 const ProtectedRoute = ({
   children,

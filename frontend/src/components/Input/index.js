@@ -80,7 +80,7 @@ const Input = ({
             <input
               type="checkbox"
               {...registered}
-              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-1 disabled:bg-gray-100"
+              className="w-4 h-4 text-[#4c7085] border-gray-300 rounded focus:ring-[#4c7085] focus:ring-1 disabled:bg-gray-100"
               disabled={readOnly}
             />
             <span className="text-sm text-gray-700">
@@ -169,6 +169,7 @@ const Input = ({
             onChange={onChange}
             className={`${baseInputClasses} ${borderColor} ${bgColor} ${type === "password" ? "pr-10" : ""}`}
             disabled={readOnly}
+            {...props}
           />
           {type === "password" && !readOnly && (
             <button

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, RotateCcw, Check } from 'lucide-react';
+import { FaTimes, FaUndo, FaCheck } from 'react-icons/fa';
 
 const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
   const canvasRef = useRef(null);
@@ -87,32 +87,34 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brightness-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-all duration-300">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden transform transition-all scale-100 opacity-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">
             Digital Signature
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition"
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-6 h-6" />
+            <FaTimes className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-sm text-gray-600 mb-4">
-            {customerName && `Customer: ${customerName}`}
-          </p>
-          <p className="text-sm text-gray-700 mb-4">
-            Please sign in the box below using your mouse or touchscreen:
+          <p className="text-sm font-medium text-gray-700 mb-4">
+            {customerName ? `Customer: ${customerName}` : "Sign below:"}
           </p>
 
           {/* Canvas */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-white">
+          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-inner relative group">
+            {!hasDrawn && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-gray-300 text-2xl font-handwriting opacity-50 select-none">Sign Here</span>
+              </div>
+            )}
             <canvas
               ref={canvasRef}
               className="w-full h-64 cursor-crosshair touch-none"
@@ -126,38 +128,40 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
             />
           </div>
 
-          {/* Instructions */}
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Draw your signature above. Use mouse or touch to sign.
+          <p className="text-xs text-gray-500 mt-3 text-center">
+            Use your mouse or finger to sign within the box.
           </p>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50">
+        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-100">
           <button
             onClick={clearSignature}
-            className="flex items-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+            className="flex items-center gap-2 py-2 px-4 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors shadow-sm"
           >
-            <RotateCcw className="w-4 h-4" />
+            <FaUndo className="w-3 h-3" />
             Clear
           </button>
-          <button
-            onClick={onClose}
-            className="py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={saveSignature}
-            disabled={!hasDrawn}
-            className={`flex items-center gap-2 py-2 px-4 text-sm font-medium text-white rounded transition ${hasDrawn
-              ? 'bg-green-600 hover:bg-green-700'
-              : 'bg-gray-400 cursor-not-allowed'
-              }`}
-          >
-            <Check className="w-4 h-4" />
-            Save Signature
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="py-2 px-4 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors shadow-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveSignature}
+              disabled={!hasDrawn}
+              className={`flex items-center gap-2 py-2 px-6 text-sm font-bold text-white rounded-lg shadow-sm transition-all ${hasDrawn
+                ? 'bg-[#4c7085] hover:bg-[#3e5c6e] active:scale-95'
+                : 'bg-gray-300 cursor-not-allowed'
+                }`}
+            >
+              <FaCheck className="w-3 h-3" />
+              Confirm Signature
+            </button>
+          </div>
         </div>
       </div>
     </div>

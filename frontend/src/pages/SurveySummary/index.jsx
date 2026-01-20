@@ -2,21 +2,54 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Country, State, City } from "country-state-city";
+import {
+  FiSearch,
+  FiFilter,
+  FiChevronDown,
+  FiChevronUp,
+  FiEye,
+  FiPrinter,
+  FiEdit,
+  FiTrash2,
+  FiFileText,
+  FiCheckCircle,
+  FiXCircle,
+  FiClock,
+  FiCalendar,
+  FiMapPin,
+  FiTruck,
+  FiBox,
+  FiPlusCircle,
+  FiPhone,
+  FiMail,
+  FiUser
+} from "react-icons/fi";
+import { FaSignature } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
-import Button from "../../components/Button";
 import Loading from "../../components/Loading";
+import PageHeader from "../../components/PageHeader";
+import Modal from "../../components/Modal"; // Assuming this exists based on other files
 import ReactDOMServer from "react-dom/server";
 import SurveyPrint from "../SurveyPrint";
-import { FaEye, FaEdit, FaTrash, FaSignature } from "react-icons/fa";
+
+// Reusable styling constants
+const CARD_CLASS = "bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md";
+const INPUT_CLASS = "w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4c7085] focus:ring-0 transition-all outline-none text-sm text-gray-700 placeholder-gray-400";
+const LABEL_CLASS = "block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1";
+const BUTTON_BASE = "px-4 py-2 rounded-xl text-xs font-medium transition-all active:scale-95 flex items-center justify-center gap-2";
 
 const SurveySummary = () => {
   const navigate = useNavigate();
   const [surveys, setSurveys] = useState([]);
+  const [filteredSurveys, setFilteredSurveys] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [printing, setPrinting] = useState(null);
+
+  // Modal States
   const [statusModal, setStatusModal] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [signatureModalUrl, setSignatureModalUrl] = useState(null);
@@ -40,6 +73,15 @@ const SurveySummary = () => {
     return map[status] || status || "Not filled";
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-50 text-green-600 border-green-100';
+      case 'cancelled': return 'bg-red-50 text-red-600 border-red-100';
+      case 'in_progress': return 'bg-blue-50 text-blue-600 border-blue-100';
+      default: return 'bg-amber-50 text-amber-600 border-amber-100';
+    }
+  };
+
   useEffect(() => {
     const fetchSurveys = async () => {
       setLoading(true);
@@ -51,7 +93,10 @@ const SurveySummary = () => {
           quotation_id: survey.quotation_id,
           quotation_created_at: survey.quotation_created_at,
         }));
-        setSurveys(surveysWithQuotationStatus);
+        // Sort by date descending
+        const sorted = surveysWithQuotationStatus.sort((a, b) => new Date(b.created_at || b.survey_date) - new Date(a.created_at || a.survey_date));
+        setSurveys(sorted);
+        setFilteredSurveys(sorted);
       } catch (err) {
         setError("Failed to fetch surveys. Please try again.");
       } finally {
@@ -62,25 +107,20 @@ const SurveySummary = () => {
   }, []);
 
   useEffect(() => {
-    if (surveys.length === 0) return;
-
     const fetchSignatureUrls = async () => {
+      if (surveys.length === 0) return;
+
       const newSignatures = { ...surveySignatures };
       let hasUpdate = false;
 
       for (const survey of surveys) {
         if (survey.signature_uploaded && !newSignatures[survey.survey_id]) {
           try {
-            const res = await apiClient.get(
-              `/surveys/${survey.survey_id}/signature/`
-            );
+            const res = await apiClient.get(`/surveys/${survey.survey_id}/signature/`);
             newSignatures[survey.survey_id] = res.data.signature_url;
             hasUpdate = true;
           } catch (err) {
-            console.warn(
-              `Failed to load signature for survey ${survey.survey_id}:`,
-              err
-            );
+            console.warn(`Failed to load signature for survey ${survey.survey_id}:`, err);
           }
         }
       }
@@ -93,12 +133,23 @@ const SurveySummary = () => {
     fetchSignatureUrls();
   }, [surveys]);
 
-  const getCountryName = (code) =>
-    code ? Country.getCountryByCode(code)?.name || code : "Not filled";
-  const getStateName = (country, state) =>
-    country && state
-      ? State.getStateByCodeAndCountry(state, country)?.name || state
-      : "Not filled";
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredSurveys(surveys);
+    } else {
+      const q = searchQuery.toLowerCase();
+      const filtered = surveys.filter(s =>
+        (s.survey_id && s.survey_id.toLowerCase().includes(q)) ||
+        (s.full_name && s.full_name.toLowerCase().includes(q)) ||
+        (s.enquiry?.fullName && s.enquiry.fullName.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q))
+      );
+      setFilteredSurveys(filtered);
+    }
+  }, [searchQuery, surveys]);
+
+  const getCountryName = (code) => code ? Country.getCountryByCode(code)?.name || code : "Not filled";
+  const getStateName = (country, state) => country && state ? State.getStateByCodeAndCountry(state, country)?.name || state : "Not filled";
   const getCityName = (country, state, city) => city || "Not filled";
 
   const toggleSectionExpansion = (id) => {
@@ -110,20 +161,13 @@ const SurveySummary = () => {
   };
 
   const handleDeleteSurvey = async (surveyId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this survey? This action cannot be undone."
-      )
-    )
-      return;
+    if (!window.confirm("Are you sure you want to delete this survey? This action cannot be undone.")) return;
     try {
       await apiClient.delete(`/surveys/${surveyId}/`);
       setSuccess("Survey deleted successfully!");
       setSurveys((prev) => prev.filter((s) => s.survey_id !== surveyId));
-      setTimeout(() => setSuccess(null), 3000);
     } catch {
       setError("Failed to delete survey.");
-      setTimeout(() => setError(null), 3000);
     }
   };
 
@@ -132,18 +176,13 @@ const SurveySummary = () => {
       state: {
         customerData: {
           surveyId: survey.survey_id,
-          fullName:
-            survey.full_name || survey.enquiry?.fullName || "Not filled",
-          phoneNumber:
-            survey.phone_number || survey.enquiry?.phoneNumber || "Not filled",
+          fullName: survey.full_name || survey.enquiry?.fullName || "Not filled",
+          phoneNumber: survey.phone_number || survey.enquiry?.phoneNumber || "Not filled",
           email: survey.email || survey.enquiry?.email || "Not filled",
           serviceType: survey.service_type || survey.enquiry?.serviceType || "",
-          serviceTypeDisplay:
-            survey.service_type_display || survey.service_type_name || "N/A",
+          serviceTypeDisplay: survey.service_type_display || survey.service_type_name || "N/A",
           surveyDate: survey.survey_date ? new Date(survey.survey_date) : null,
-          surveyStartTime: survey.survey_start_time
-            ? new Date(`1970-01-01T${survey.survey_start_time}`)
-            : null,
+          surveyStartTime: survey.survey_start_time ? new Date(`1970-01-01T${survey.survey_start_time}`) : null,
           customer_id: survey.enquiry?.id || null,
           enquiry_id: survey.enquiry || null,
         },
@@ -178,29 +217,18 @@ const SurveySummary = () => {
     });
   };
 
-  const openStatusModal = (survey) => setStatusModal(survey);
-
   const updateSurveyStatus = async () => {
     if (!statusModal || updatingStatus) return;
     setUpdatingStatus(true);
     try {
-      const response = await apiClient.patch(
-        `/surveys/${statusModal.survey_id}/`,
-        {
-          status: statusModal.newStatus,
-        }
-      );
-      setSurveys((prev) =>
-        prev.map((s) =>
-          s.survey_id === statusModal.survey_id ? response.data : s
-        )
-      );
+      const response = await apiClient.patch(`/surveys/${statusModal.survey_id}/`, {
+        status: statusModal.newStatus,
+      });
+      setSurveys((prev) => prev.map((s) => s.survey_id === statusModal.survey_id ? response.data : s));
       setSuccess(`Status updated to ${formatStatus(statusModal.newStatus)}`);
-      setTimeout(() => setSuccess(null), 3000);
       setStatusModal(null);
     } catch {
       setError("Failed to update status.");
-      setTimeout(() => setError(null), 3000);
     } finally {
       setUpdatingStatus(false);
     }
@@ -210,14 +238,8 @@ const SurveySummary = () => {
     if (printing) return;
     setPrinting(survey.survey_id);
     try {
-      const htmlContent = ReactDOMServer.renderToString(
-        <SurveyPrint survey={survey} />
-      );
-      const printWindow = window.open(
-        "",
-        "_blank",
-        "width=850,height=650,scrollbars=yes,resizable=yes"
-      );
+      const htmlContent = ReactDOMServer.renderToString(<SurveyPrint survey={survey} />);
+      const printWindow = window.open("", "_blank", "width=850,height=650,scrollbars=yes,resizable=yes");
       if (!printWindow) throw new Error("Popup blocked");
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -248,524 +270,277 @@ const SurveySummary = () => {
       printWindow.focus();
     } catch (err) {
       setError(`Print failed: ${err.message}`);
-      setTimeout(() => setError(null), 5000);
     } finally {
       setTimeout(() => setPrinting(null), 1500);
     }
-  };
-
-  const formatDate = (d) =>
-    d
-      ? new Date(d).toLocaleDateString("en-GB").split("/").reverse().join("/")
-      : "Not filled";
-  const formatTime = (t) => {
-    if (!t) return "Not filled";
-    const [h, m] = t.split(":").map(Number);
-    const period = h >= 12 ? "PM" : "AM";
-    return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${period}`;
-  };
-  const formatBoolean = (v) => (v ? "Yes" : "No");
-  const formatVolume = (volume) => {
-    if (!volume && volume !== 0) return "-";
-    const num = parseFloat(volume);
-    return num % 1 === 0
-      ? num.toString()
-      : num.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
-  };
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "—";
-    return new Date(dateString).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
   };
 
   const handleCreateQuotation = (surveyId) => {
     navigate(`/quotation-create/survey/${surveyId}`);
   };
 
-  const handleDeleteQuotation = async (surveyId, quotationId) => {
-    if (!window.confirm("Are you sure you want to delete this quotation?"))
-      return;
-    try {
-      await apiClient.delete("/quotation-create/delete/", {
-        data: { quotation_id: quotationId },
-      });
-      setSurveys((prev) =>
-        prev.map((s) =>
-          s.survey_id === surveyId
-            ? { ...s, hasQuotation: false, quotation_id: null }
-            : s
-        )
-      );
-      setSuccess("Quotation deleted successfully");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch {
-      setError("Failed to delete quotation");
-      setTimeout(() => setError(null), 3000);
-    }
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-GB") : "Not filled";
+  const formatTime = (t) => {
+    if (!t) return "Not filled";
+    const [h, m] = t.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${period}`;
+  };
+  const formatVolume = (volume) => {
+    if (!volume && volume !== 0) return "-";
+    const num = parseFloat(volume);
+    return num % 1 === 0 ? num.toString() : num.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
   };
 
+  // Internal Component for expanding details
   const SurveyDetailsView = ({ survey }) => {
-    const getPhone = () =>
-      survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
-    const getService = () =>
-      survey.service_type_display || survey.service_type_name || "N/A";
-
-    const totalVolume = survey.articles
-      ? survey.articles.reduce((total, a) => {
-        const vol = parseFloat(a.volume) || 0;
-        const qty = parseInt(a.quantity) || 1;
-        return total + vol * qty;
-      }, 0)
-      : 0;
+    const totalVolume = survey.articles ? survey.articles.reduce((total, a) => {
+      const vol = parseFloat(a.volume) || 0;
+      const qty = parseInt(a.quantity) || 1;
+      return total + vol * qty;
+    }, 0) : 0;
 
     return (
-      <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
-        <div className="section">
-          <h4 className="font-semibold text-gray-800 mb-2">Customer Details</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-gray-400">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="border border-gray-400 px-4 py-2 text-left">
-                    Field
-                  </th>
-                  <th className="border border-gray-400 px-4 py-2 text-left">
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Customer Type
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {survey.customer_type_name || "Not filled"}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Full Name
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {survey.full_name ||
-                      survey.enquiry?.fullName ||
-                      "Not filled"}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Mobile
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {getPhone()}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Email
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {survey.email || survey.enquiry?.email || "Not filled"}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Service Type
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {getService()}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <div className="bg-gray-50/50 border-t border-gray-100 p-6 space-y-8">
+
+        {/* Basic Info Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Full Name</span>
+            <p className="text-sm font-medium text-gray-800">{survey.full_name || survey.enquiry?.fullName || "Not filled"}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Mobile</span>
+            <p className="text-sm font-medium text-gray-800">{survey.phone_number || survey.enquiry?.phoneNumber || "Not filled"}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Email</span>
+            <p className="text-sm font-medium text-gray-800 break-all">{survey.email || survey.enquiry?.email || "Not filled"}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Customer Type</span>
+            <p className="text-sm font-medium text-gray-800">{survey.customer_type_name || "Not filled"}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Survey Date</span>
+            <p className="text-sm font-medium text-gray-800">{formatDate(survey.survey_date)}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Start Time</span>
+            <p className="text-sm font-medium text-gray-800">{formatTime(survey.survey_start_time)}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>End Time</span>
+            <p className="text-sm font-medium text-gray-800">{formatTime(survey.survey_end_time)}</p>
+          </div>
+          <div className="space-y-1">
+            <span className={LABEL_CLASS}>Service Type</span>
+            <p className="text-sm font-medium text-gray-800">{survey.service_type_display || survey.service_type_name || "N/A"}</p>
           </div>
         </div>
 
-        <div className="section">
-          <h4 className="font-semibold text-gray-800 mb-2">Survey Details</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-gray-400">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="border border-gray-400 px-4 py-2 text-left">
-                    Field
-                  </th>
-                  <th className="border border-gray-400 px-4 py-2 text-left">
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Status
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {formatStatus(survey.status)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Survey Date
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {formatDate(survey.survey_date)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Start Time
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {formatTime(survey.survey_start_time)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    End Time
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {formatTime(survey.survey_end_time)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="section">
-          <h4 className="font-semibold text-gray-800 mb-2">Origin Address</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-gray-400">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="border border-gray-400 px-4 py-2 text-left">
-                    Field
-                  </th>
-                  <th className="border border-gray-400 px-4 py-2 text-left">
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Address
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {survey.origin_address || "Not filled"}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    City
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {getCityName(
-                      survey.origin_country,
-                      survey.origin_state,
-                      survey.origin_city
-                    )}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    Country
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {getCountryName(survey.origin_country)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    State
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {getStateName(survey.origin_country, survey.origin_state)}
-                  </td>
-                </tr>
-                {/* ← NEW ROW: GPS Link */}
-                <tr>
-                  <td className="border border-gray-400 px-4 py-2 font-medium">
-                    GPS Location
-                  </td>
-                  <td className="border border-gray-400 px-4 py-2">
-                    {survey.origin_gps ? (
-                      <a
-                        href={survey.origin_gps}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline flex items-center"
-                      >
-                        <span className="inline-block"></span>
-                        View on Google Maps
-                      </a>
-                    ) : (
-                      <span className="text-gray-500 italic">Not captured</span>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {survey.destination_addresses?.length > 0 && (
-          <div className="section">
-            <h4 className="font-semibold text-gray-800 mb-2">
-              Destination Address(es)
+        {/* Addresses */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <h4 className="flex items-center gap-2 text-sm font-medium text-[#4c7085] mb-4">
+              <FiMapPin className="w-4 h-4" /> Origin Address
             </h4>
-            {survey.destination_addresses.map((a, i) => (
-              <div key={i} className="mb-4">
-                <h5 className="font-medium text-gray-700 mb-2">
-                  Address {i + 1}
-                </h5>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-gray-400">
-                    <thead className="bg-gray-200">
-                      <tr>
-                        <th className="border border-gray-400 px-4 py-2 text-left">
-                          Field
-                        </th>
-                        <th className="border border-gray-400 px-4 py-2 text-left">
-                          Value
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-gray-400 px-4 py-2 font-medium">
-                          Address
-                        </td>
-                        <td className="border border-gray-400 px-4 py-2">
-                          {a.address || "Not filled"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-gray-400 px-4 py-2 font-medium">
-                          City
-                        </td>
-                        <td className="border border-gray-400 px-4 py-2">
-                          {getCityName(a.country, a.state, a.city)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-gray-400 px-4 py-2 font-medium">
-                          Country
-                        </td>
-                        <td className="border border-gray-400 px-4 py-2">
-                          {getCountryName(a.country)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-gray-400 px-4 py-2 font-medium">
-                          State
-                        </td>
-                        <td className="border border-gray-400 px-4 py-2">
-                          {getStateName(a.country, a.state)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+            <div className="space-y-3">
+              <div>
+                <span className="text-xs text-gray-400 block mb-1">Address</span>
+                <p className="text-sm text-gray-700">{survey.origin_address || "Not filled"}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <span className="text-xs text-gray-400 block mb-1">City</span>
+                  <p className="text-sm text-gray-700">{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block mb-1">State</span>
+                  <p className="text-sm text-gray-700">{getStateName(survey.origin_country, survey.origin_state)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block mb-1">Country</span>
+                  <p className="text-sm text-gray-700">{getCountryName(survey.origin_country)}</p>
+                </div>
+              </div>
+              {survey.origin_gps && (
+                <a href={survey.origin_gps} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-medium text-blue-500 hover:underline mt-2">
+                  Open in Maps &rarr;
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {survey.destination_addresses?.map((a, i) => (
+              <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <h4 className="flex items-center gap-2 text-sm font-medium text-[#4c7085] mb-4">
+                  <FiMapPin className="w-4 h-4" /> Destination Address {i + 1}
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-xs text-gray-400 block mb-1">Address</span>
+                    <p className="text-sm text-gray-700">{a.address || "Not filled"}</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="text-xs text-gray-400 block mb-1">City</span>
+                      <p className="text-sm text-gray-700">{getCityName(a.country, a.state, a.city)}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block mb-1">State</span>
+                      <p className="text-sm text-gray-700">{getStateName(a.country, a.state)}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block mb-1">Country</span>
+                      <p className="text-sm text-gray-700">{getCountryName(a.country)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
+            {(!survey.destination_addresses || survey.destination_addresses.length === 0) && (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center p-8 h-full min-h-[150px]">
+                <p className="text-gray-400 text-sm">No destination address recorded</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Articles */}
+        {survey.articles?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+              <h4 className="font-medium text-gray-800 flex items-center gap-2">
+                <FiBox className="text-[#4c7085]" /> Articles
+                <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">{survey.articles.length}</span>
+              </h4>
+              <p className="text-sm font-medium text-[#4c7085]">Total Vol: {formatVolume(totalVolume)} m³</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-3 font-normal">Room</th>
+                    <th className="px-6 py-3 font-normal">Item</th>
+                    <th className="px-6 py-3 font-normal">Qty</th>
+                    <th className="px-6 py-3 font-normal">Volume</th>
+                    <th className="px-6 py-3 font-normal">Crate</th>
+                    <th className="px-6 py-3 font-normal">Status</th>
+                    <th className="px-6 py-3 font-normal text-right">Photo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {survey.articles.map((a, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 text-gray-600">{a.room_name || a.room || "-"}</td>
+                      <td className="px-6 py-3 font-medium text-gray-800">{a.item_name || "-"}</td>
+                      <td className="px-6 py-3 text-gray-600 bg-gray-50/30">{a.quantity || "-"}</td>
+                      <td className="px-6 py-3 text-gray-600">{a.volume ? `${formatVolume(a.volume)} ${a.volume_unit_name || "m³"}` : "-"}</td>
+                      <td className="px-6 py-3">
+                        {a.crate_required ? (
+                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase font-semibold">Yes</span>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 uppercase font-semibold">No</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3">
+                        {a.move_status === "not_moving" ? (
+                          <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-100">Not Moving</span>
+                        ) : (
+                          <span className="text-xs text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-100">Moving</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        {a.photo ? (
+                          <button
+                            onClick={() => setSelectedArticlePhoto({ url: a.photo, item: a.item_name, room: a.room_name || a.room })}
+                            className="text-[#4c7085] hover:text-[#3a586d] underline text-xs"
+                          >
+                            View
+                          </button>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-50/80 font-semibold text-[#4c7085]">
+                  <tr>
+                    <td colSpan="3" className="px-6 py-3 text-right uppercase tracking-wider text-[10px]">Total Inventory Volume</td>
+                    <td className="px-6 py-3 text-base">{formatVolume(totalVolume)} m³</td>
+                    <td colSpan="3"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         )}
 
-        {survey.articles?.length > 0 && (
-          <div className="section">
-            <h4 className="font-semibold text-gray-800 mb-2">
-              Articles ({survey.articles.length})
-            </h4>
+        {/* Vehicles */}
+        {survey.vehicles?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="p-4 bg-gray-50 border-b border-gray-100">
+              <h4 className="font-medium text-gray-800 flex items-center gap-2">
+                <FiTruck className="text-[#4c7085]" /> Vehicles
+                <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">{survey.vehicles.length}</span>
+              </h4>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-gray-400">
-                <thead className="bg-gray-200">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
                   <tr>
-                    <th className="border border-gray-400 px-3 py-2">Room</th>
-                    <th className="border border-gray-400 px-3 py-2">Item</th>
-                    <th className="border border-gray-400 px-3 py-2">Qty</th>
-                    <th className="border border-gray-400 px-3 py-2">Volume</th>
-                    <th className="border border-gray-400 px-3 py-2">
-                      Crate Required
-                    </th>
-                    <th className="border border-gray-400 px-3 py-2">
-                      Moving Status
-                    </th>
-                    <th className="border border-gray-400 px-3 py-2">
-                      Photo
-                    </th>
+                    <th className="px-6 py-3 font-normal">Type</th>
+                    <th className="px-6 py-3 font-normal">Make</th>
+                    <th className="px-6 py-3 font-normal">Model</th>
+                    <th className="px-6 py-3 font-normal">Insurance</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {survey.articles.map((a, i) => (
-                    <tr key={i}>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {a.room_name || a.room || "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {a.item_name || "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {a.quantity || "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {a.volume
-                          ? `${formatVolume(a.volume)} ${a.volume_unit_name || "m³"
-                          }`
-                          : "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.crate_required
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                            }`}
-                        >
-                          {a.crate_required ? "Yes" : "No"}
-                        </span>
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${a.move_status === "not_moving"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-green-100 text-green-800"
-                            }`}
-                        >
-                          {a.move_status === "not_moving"
-                            ? "Not Moving"
-                            : "Moving"}
-                        </span>
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2 text-center">
-                        {a.photo ? (
-                          <div
-                            className="relative group cursor-pointer inline-block"
-                            onClick={() => setSelectedArticlePhoto({
-                              url: a.photo,
-                              item: a.item_name,
-                              room: a.room_name || a.room
-                            })}
-                          >
-                            <img
-                              src={a.photo}
-                              alt={a.item_name}
-                              className="w-12 h-12 object-cover rounded-md border border-gray-200 transition-transform hover:scale-110 shadow-sm"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-md transition-opacity">
-                              <FaEye className="text-white text-xs" />
-                            </div>
-                          </div>
+                <tbody className="divide-y divide-gray-50">
+                  {survey.vehicles.map((v, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 text-gray-600">{v.vehicle_type_name || v.vehicle_type || "-"}</td>
+                      <td className="px-6 py-3 font-medium text-gray-800">{v.make || "-"}</td>
+                      <td className="px-6 py-3 text-gray-600">{v.model || "-"}</td>
+                      <td className="px-6 py-3">
+                        {v.insurance ? (
+                          <span className="text-xs text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-100">Yes</span>
                         ) : (
-                          <span className="text-gray-400 text-xs italic">No photo</span>
+                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">No</span>
                         )}
                       </td>
                     </tr>
                   ))}
-                  <tr className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white font-medium">
-                    <td
-                      colSpan="3"
-                      className="border border-gray-400 px-3 py-3 text-right"
-                    >
-                      Total Volume:
-                    </td>
-                    <td className="border border-gray-400 px-3 py-3 text-center">
-                      {formatVolume(totalVolume)} m³
-                    </td>
-                    <td colSpan="3"></td>
-                  </tr>
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {survey.vehicles?.length > 0 && (
-          <div className="section">
-            <h4 className="font-semibold text-gray-800 mb-2">
-              Vehicles ({survey.vehicles.length})
-            </h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-gray-400">
-                <thead className="bg-gray-200">
-                  <tr>
-                    <th className="border border-gray-400 px-3 py-2">Type</th>
-                    <th className="border border-gray-400 px-3 py-2">Make</th>
-                    <th className="border border-gray-400 px-3 py-2">Model</th>
-                    <th className="border border-gray-400 px-3 py-2">
-                      Insurance
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {survey.vehicles.map((v, i) => (
-                    <tr key={i}>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {v.vehicle_type_name || v.vehicle_type || "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {v.make || "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        {v.model || "-"}
-                      </td>
-                      <td className="border border-gray-400 px-3 py-2">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${v.insurance
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                            }`}
-                        >
-                          {v.insurance ? "Yes" : "No"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
+        {/* Additional Services */}
         {survey.additional_services?.length > 0 && (
-          <div className="section">
-            <h4 className="font-semibold text-gray-800 mb-2">
-              Additional Services ({survey.additional_services.length})
-            </h4>
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="p-4 bg-gray-50 border-b border-gray-100">
+              <h4 className="font-medium text-gray-800 flex items-center gap-2">
+                <FiPlusCircle className="text-[#4c7085]" /> Additional Services
+                <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">{survey.additional_services.length}</span>
+              </h4>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-gray-400">
-                <thead className="bg-gray-200">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
                   <tr>
-                    <th className="border border-gray-400 px-4 py-2 text-left">
-                      Service
-                    </th>
-                    <th className="border border-gray-400 px-4 py-2 text-center w-24">
-                      Qty
-                    </th>
-                    <th className="border border-gray-400 px-4 py-2 text-left">
-                      Remarks
-                    </th>
+                    <th className="px-6 py-3 font-normal">Service</th>
+                    <th className="px-6 py-3 font-normal">Qty</th>
+                    <th className="px-6 py-3 font-normal">Remarks</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-50">
                   {survey.additional_services.map((service, i) => (
-                    <tr key={i}>
-                      <td className="border border-gray-400 px-4 py-2">
-                        {service.name || "Unknown Service"}
-                      </td>
-                      <td className="border border-gray-400 px-4 py-2 text-center font-medium">
-                        {service.quantity || 1}
-                      </td>
-                      <td className="border border-gray-400 px-4 py-2 text-gray-600">
-                        {service.remarks || "-"}
-                      </td>
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-gray-800">{service.name || "Unknown Service"}</td>
+                      <td className="px-6 py-3 text-gray-600">{service.quantity || 1}</td>
+                      <td className="px-6 py-3 text-gray-500 italic">{service.remarks || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -777,351 +552,274 @@ const SurveySummary = () => {
     );
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  if (surveys.length === 0)
-    return (
-      <div className="text-center text-gray-600 py-10">
-        No surveys available.
-      </div>
-    );
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loading /></div>;
 
   return (
-    <div className="mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      <PageHeader
+        title="Survey Summaries"
+        subtitle="Overview of all completed and pending surveys"
+        extra={
+          <button
+            onClick={() => navigate("/scheduled-surveys")}
+            className={`${BUTTON_BASE} bg-white text-gray-600 border border-gray-100 hover:bg-gray-50 shadow-sm`}
+          >
+            <FiCalendar className="w-4 h-4" /> Schedule
+          </button>
+        }
+      />
+
       <AnimatePresence>
-        {success && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"
-          >
-            {success}
-          </motion.div>
-        )}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
-          >
-            {error}
+        {(error || success) && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className={`p-4 rounded-xl border flex items-center justify-between mb-4 ${error ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
+              <span className="text-sm font-medium">{error || success}</span>
+              <button onClick={() => { setError(null); setSuccess(null); }} className="text-current opacity-70 hover:opacity-100">×</button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex justify-between items-center mb-6">
-        <Button
-          onClick={() => navigate("/scheduled-surveys")}
-          className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-        >
-          Back to Scheduled
-        </Button>
+      {/* Filter and Search */}
+      <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="relative flex-1 w-full">
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search surveys by ID, client name, email..."
+            className={`${INPUT_CLASS} pl-11`}
+          />
+        </div>
+        <div className="text-sm text-gray-500 font-medium px-2">
+          {filteredSurveys.length} Records
+        </div>
       </div>
 
-      <div className="space-y-6">
-        {surveys.map((survey) => {
-          const phone =
-            survey.phone_number || survey.enquiry?.phoneNumber || "Not filled";
-          const service =
-            survey.service_type_display || survey.service_type_name || "N/A";
-          const surveyDate = formatDate(survey.survey_date);
-          const startTime = formatTime(survey.survey_start_time);
-          const endTime = formatTime(survey.survey_end_time);
+      {/* Data Display */}
+      {filteredSurveys.length === 0 ? (
+        <div className="bg-white rounded-3xl p-16 text-center border border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiSearch className="text-gray-300 w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-800">No surveys found</h3>
+          <p className="text-gray-400 text-sm mt-1">Try adjusting your search criteria</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Desktop Table Header (Only Visible on LG) */}
+          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/50 rounded-xl border border-gray-100 text-xs font-medium text-gray-400 uppercase tracking-widest">
+            <div className="col-span-3">Survey & Client</div>
+            <div className="col-span-2">Contact</div>
+            <div className="col-span-2">Service</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-3 text-right">Actions</div>
+          </div>
 
-          return (
-            <motion.div
-              key={survey.survey_id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="border border-gray-300 rounded-lg overflow-hidden shadow-md"
-            >
-              <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] p-5 text-white">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-xs sm:text-lg font-medium">
-                      {survey.survey_id}
-                    </h3>
-                    <p className="text-xs sm:text-sm mt-2">
-                      {survey.full_name || survey.enquiry?.fullName || "N/A"}
-                    </p>
-                    <p className="text-xs sm:text-sm mt-2">{phone}</p>
-                    <div className="mt-3 block sm:flex items-center justify-center space-x-4 space-y-2 sm:space-y-0 text-xs">
-                      <div>
-                        <span className="font-medium">Survey Date:</span>{" "}
-                        {surveyDate}
+          {filteredSurveys.map((survey, index) => {
+            const isExpanded = expandedSections.has(survey.survey_id);
+            const statusClass = getStatusColor(survey.status);
+
+            return (
+              <motion.div
+                layout
+                key={`${survey.survey_id}-${index}`}
+                className={CARD_CLASS}
+              >
+                <div className="p-5">
+                  <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:items-center">
+
+                    {/* Survey & Client */}
+                    <div className="col-span-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{survey.survey_id}</span>
+                        {survey.quotation_id && (
+                          <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Quote sent</span>
+                        )}
                       </div>
-                      <div>
-                        <span className="font-medium">Start:</span> {startTime}
-                      </div>
-                      <div>
-                        <span className="font-medium">End:</span> {endTime}
+                      <h3 className="font-medium text-gray-800 text-base">{survey.full_name || survey.enquiry?.fullName || "Unknown Client"}</h3>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <FiCalendar /> {formatDate(survey.survey_date)}
                       </div>
                     </div>
+
+                    {/* Contact */}
+                    <div className="col-span-2 space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <FiPhone className="text-gray-300" /> {survey.phone_number || survey.enquiry?.phoneNumber || "-"}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <FiMail className="text-gray-300" />
+                        <span className="truncate max-w-[150px]" title={survey.email}>{survey.email || "-"}</span>
+                      </div>
+                    </div>
+
+                    {/* Service */}
+                    <div className="col-span-2">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100/50">
+                        <FiTruck className="w-3.5 h-3.5" />
+                        {survey.service_type_display || survey.service_type_name || "Service"}
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="col-span-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setStatusModal({ ...survey, newStatus: survey.status }); }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 w-fit transition-all hover:brightness-95 ${statusClass}`}
+                      >
+                        {formatStatus(survey.status)}
+                        <FiEdit className="w-3 h-3 opacity-50" />
+                      </button>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-3 flex items-center justify-end flex-wrap gap-2">
+                      {survey.hasQuotation ? (
+                        <button onClick={() => navigate(`/quotation-view/${survey.quotation_id}`)} className={`${BUTTON_BASE} bg-purple-50 text-purple-600 hover:bg-purple-100`} title="View Quotation">
+                          <FiFileText /> Quote
+                        </button>
+                      ) : (
+                        <button onClick={() => handleCreateQuotation(survey.survey_id)} className={`${BUTTON_BASE} bg-indigo-50 text-indigo-600 hover:bg-indigo-100`} title="Create Quote">
+                          <FiFileText /> Quote
+                        </button>
+                      )}
+
+                      <button onClick={() => handleEditSurvey(survey)} className={`${BUTTON_BASE} bg-amber-50 text-amber-600 hover:bg-amber-100`} title="Edit Survey">
+                        <FiEdit />
+                      </button>
+
+                      <button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`${BUTTON_BASE} bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50`} title="Print">
+                        <FiPrinter />
+                      </button>
+
+                      {survey.signature_uploaded && surveySignatures[survey.survey_id] && (
+                        <button onClick={() => setSignatureModalUrl(surveySignatures[survey.survey_id])} className={`${BUTTON_BASE} bg-teal-50 text-teal-600 hover:bg-teal-100`} title="Signature">
+                          <FaSignature />
+                        </button>
+                      )}
+
+                      <button onClick={() => handleDeleteSurvey(survey.survey_id)} className={`${BUTTON_BASE} bg-red-50 text-red-600 hover:bg-red-100`} title="Delete">
+                        <FiTrash2 />
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{service}</p>
-                    <p
-                      className={`inline-block mt-1 px-3 py-1 rounded text-xs font-medium ${survey.status === "completed"
-                        ? "bg-green-200 text-green-800"
-                        : survey.status === "cancelled"
-                          ? "bg-red-200 text-red-800"
-                          : "bg-yellow-200 text-yellow-800"
-                        }`}
-                    >
-                      {formatStatus(survey.status)}
-                    </p>
-                    {survey.quotation_created_at && (
-                      <p className="text-xs mt-1 text-white/80">
-                        Quotation: {formatDateTime(survey.quotation_created_at)}
-                      </p>
+
+                  {/* Expand Toggle */}
+                  <button
+                    onClick={() => toggleSectionExpansion(survey.survey_id)}
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-gray-400 hover:text-[#4c7085] hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    {isExpanded ? (
+                      <>Hide Details <FiChevronUp /></>
+                    ) : (
+                      <>Show Full Details <FiChevronDown /></>
                     )}
-                  </div>
+                  </button>
                 </div>
-              </div>
 
-              <div className="p-4 bg-gray-50 flex flex-wrap gap-3 justify-end">
-                <Button
-                  onClick={() =>
-                    openStatusModal({ ...survey, newStatus: survey.status })
-                  }
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded"
-                >
-                  Update Survey Status
-                </Button>
+                {/* Expanded Details */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+                      <SurveyDetailsView survey={survey} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
-                {survey.hasQuotation ? (
-                  <>
-                    <Button
-                      onClick={() =>
-                        navigate(`/quotation-view/${survey.quotation_id}`)
-                      }
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2"
-                    >
-                      <FaEye /> View Quotation
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    onClick={() => handleCreateQuotation(survey.survey_id)}
-                    className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white px-4 py-2 text-xs sm:text-sm font-medium rounded"
-                  >
-                    Create Quotation
-                  </Button>
-                )}
-                <Button
-                  onClick={() => handleEditSurvey(survey)}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 text-sm rounded"
-                >
-                  Edit
-                </Button>
-                <Button
-                  onClick={() => handlePrintSurvey(survey)}
-                  disabled={printing === survey.survey_id}
-                  className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2 ${printing === survey.survey_id ? "opacity-50" : ""
-                    }`}
-                >
-                  {printing === survey.survey_id ? <>Printing...</> : "Print"}
-                </Button>
-                <Button
-                  onClick={() => handleDeleteSurvey(survey.survey_id)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded"
-                >
-                  Delete
-                </Button>
-                {survey.signature_uploaded &&
-                  surveySignatures[survey.survey_id] ? (
-                  <Button
-                    onClick={() =>
-                      setSignatureModalUrl(surveySignatures[survey.survey_id])
-                    }
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-xs sm:text-sm font-medium rounded flex items-center gap-2"
-                  >
-                    <FaSignature /> View Signature
-                  </Button>
-                ) : (
-                  <span className="text-gray-500 text-xs italic">
-                    No Signature
-                  </span>
-                )}
-              </div>
+      {/* Modals */}
+      <AnimatePresence>
 
+        {/* Status Update Modal */}
+        <Modal
+          isOpen={!!statusModal}
+          onClose={() => setStatusModal(null)}
+          title={`Update Status - ${statusModal?.survey_id}`}
+          footer={
+            <>
               <button
-                onClick={() => toggleSectionExpansion(survey.survey_id)}
-                className="w-full py-3 text-center bg-gray-200 hover:bg-[#6b8ca3] hover:text-white transition-colors text-xs sm:text-sm font-medium"
+                onClick={() => setStatusModal(null)}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                {expandedSections.has(survey.survey_id)
-                  ? "Hide Details"
-                  : "Show Details"}
+                Cancel
               </button>
-
-              <AnimatePresence>
-                {expandedSections.has(survey.survey_id) && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <SurveyDetailsView survey={survey} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      <AnimatePresence>
-        {statusModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setStatusModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-lg max-w-md w-full p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-sm font-medium mb-4">
-                Update Survey Status - {statusModal.survey_id}
-              </h3>
-              <select
-                value={statusModal.newStatus || ""}
-                onChange={(e) =>
-                  setStatusModal((prev) => ({
-                    ...prev,
-                    newStatus: e.target.value,
-                  }))
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#4c7085]"
+              <button
+                onClick={updateSurveyStatus}
+                disabled={updatingStatus}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[#4c7085] text-white hover:bg-[#3a586d] transition-shadow shadow-sm disabled:opacity-50"
               >
-                {statusOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <div className="flex justify-end gap-3">
-                <Button
-                  onClick={() => setStatusModal(null)}
-                  className="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={updateSurveyStatus}
-                  disabled={updatingStatus || !statusModal.newStatus}
-                  className="px-5 py-2 bg-[#4c7085] hover:bg-[#6b8ca3] text-white rounded-lg disabled:opacity-50"
-                >
-                  {updatingStatus ? "Updating..." : "Update Survey Status"}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {updatingStatus ? "Updating" : "Confirm Update"}
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-gray-500">Change the current status of the survey.</p>
+            <div className="space-y-2">
+              {statusOptions.map((opt) => (
+                <label key={opt.value} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${statusModal?.newStatus === opt.value ? 'bg-[#4c7085]/5 border-[#4c7085] shadow-sm' : 'bg-white border-gray-100 hover:bg-gray-50'}`}>
+                  <input
+                    type="radio"
+                    name="status"
+                    value={opt.value}
+                    checked={statusModal?.newStatus === opt.value}
+                    onChange={(e) => setStatusModal({ ...statusModal, newStatus: e.target.value })}
+                    className="text-[#4c7085] focus:ring-[#4c7085]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </Modal>
 
-      <AnimatePresence>
-        {signatureModalUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSignatureModalUrl(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-lg max-w-3xl w-full p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-lg">Digital Signature</h3>
-                <button
-                  onClick={() => setSignatureModalUrl(null)}
-                  className="text-3xl hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-              <img
-                src={signatureModalUrl}
-                alt="Customer signature"
-                className="w-full max-h-[70vh] object-contain border border-gray-300 rounded-lg shadow-lg"
-              />
-              <Button
-                onClick={() => setSignatureModalUrl(null)}
-                className="mt-6 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-3 rounded-lg"
-              >
-                Close
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Signature Modal */}
+        <Modal
+          isOpen={!!signatureModalUrl}
+          onClose={() => setSignatureModalUrl(null)}
+          title="Digital Signature"
+          footer={
+            <button onClick={() => setSignatureModalUrl(null)} className="w-full px-5 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Close Preview
+            </button>
+          }
+        >
+          <div className="flex items-center justify-center p-4 bg-gray-50 rounded-xl border border-gray-100 min-h-[200px]">
+            <img src={signatureModalUrl} alt="Signature" className="max-w-full max-h-[50vh] object-contain mix-blend-multiply" />
+          </div>
+        </Modal>
 
-      <AnimatePresence>
-        {selectedArticlePhoto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 backdrop-brightness-50 flex items-center justify-center z-[60] p-4"
-            onClick={() => setSelectedArticlePhoto(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-4xl w-full overflow-hidden shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] p-4 flex justify-between items-center text-white">
-                <div>
-                  <h3 className="font-semibold text-lg">{selectedArticlePhoto.item}</h3>
-                  <p className="text-xs text-white/80">{selectedArticlePhoto.room}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedArticlePhoto(null)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors text-2xl"
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="p-2 bg-gray-100 flex items-center justify-center min-h-[300px] max-h-[80vh]">
-                <img
-                  src={selectedArticlePhoto.url}
-                  alt={selectedArticlePhoto.item}
-                  className="max-w-full max-h-[75vh] object-contain rounded-lg"
-                />
-              </div>
-              <div className="p-4 bg-white flex justify-end">
-                <Button
-                  onClick={() => setSelectedArticlePhoto(null)}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium"
-                >
-                  Close Preview
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+        {/* Photo Preview Modal */}
+        <Modal
+          isOpen={!!selectedArticlePhoto}
+          onClose={() => setSelectedArticlePhoto(null)}
+          title={selectedArticlePhoto?.item || "Photo Preview"}
+          footer={
+            <button onClick={() => setSelectedArticlePhoto(null)} className="w-full px-5 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Close
+            </button>
+          }
+        >
+          <div className="p-1">
+            <p className="text-xs text-gray-500 mb-3 flex items-center gap-1"><FiMapPin /> {selectedArticlePhoto?.room}</p>
+            <div className="flex items-center justify-center bg-black/5 rounded-xl overflow-hidden min-h-[300px]">
+              <img src={selectedArticlePhoto?.url} alt="Item" className="max-w-full max-h-[60vh] object-contain" />
+            </div>
+          </div>
+        </Modal>
+
       </AnimatePresence>
     </div>
   );
 };
+
+// Simple Button Component Replacement for the internal 'Button' usage if needed, 
+// strictly we will use standard HTML buttons with Tailwind classes in the render for best control.
+// The imported Button component is removed from usage in favor of direct standard elements to ensure styling match.
 
 export default SurveySummary;

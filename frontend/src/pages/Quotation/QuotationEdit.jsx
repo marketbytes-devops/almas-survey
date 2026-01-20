@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaEye, FaPlus } from "react-icons/fa";
+import { FiArrowLeft, FiEye, FiCheckCircle } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import SignatureModal from "../../components/SignatureModal/SignatureModal";
+import PageHeader from "../../components/PageHeader";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -108,7 +110,6 @@ export default function QuotationEdit() {
 
         const getFallback = (p, f) => (p && p !== "" && p !== "—") ? p : (f && f !== "" && f !== "—") ? f : "";
 
-        // Set survey basics immediately
         setForm((prev) => ({
           ...prev,
           client: getFallback(s.full_name, s.enquiry?.fullName),
@@ -163,8 +164,6 @@ export default function QuotationEdit() {
           qtyMap[c.id] = c.quantity;
         });
         setChargeQuantities(qtyMap);
-
-
 
         const includedServices = {};
         if (dynamicIncludes.length > 0) {
@@ -281,7 +280,6 @@ export default function QuotationEdit() {
     setForm((prev) => ({ ...prev, additionalChargesTotal: totalAdditional }));
   }, [chargeQuantities]);
 
-  // Use memoized computed values (safe, no loop)
   const computedValues = useMemo(() => {
     const base = safeParse(form.baseAmount);
     const additional = safeParse(form.additionalChargesTotal);
@@ -299,9 +297,6 @@ export default function QuotationEdit() {
       balance: balance.toFixed(2),
     };
   }, [form.baseAmount, form.additionalChargesTotal, form.discount, form.advance]);
-
-  // Prefer backend values first (reliable), fallback to computed
-  // Removed redundant displayAmount/Final/Balance. We now use computedValues directly for live reactivity.
 
   const handleQuantityChange = (chargeId, value) => {
     const qty = Math.max(0, parseInt(value) || 0);
@@ -331,8 +326,6 @@ export default function QuotationEdit() {
         .map((key) => parseInt(key)),
     };
 
-    console.log("PATCH Payload:", payload); // Debug
-
     try {
       await apiClient.patch(`/quotation-create/${quotation.quotation_id}/`, payload);
       setMessage("Quotation updated successfully!");
@@ -342,11 +335,11 @@ export default function QuotationEdit() {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
-  if (error && !message) return <div className="text-center text-red-600 p-5">{error}</div>;
+  if (loading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
+  if (error && !message) return <div className="text-center text-red-600 p-5 font-medium">{error}</div>;
 
   return (
-    <div className="bg-gray-100 min-h-screen rounded-lg">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* Signature Modal */}
       <SignatureModal
         isOpen={isSignatureModalOpen}
@@ -375,165 +368,152 @@ export default function QuotationEdit() {
       />
 
       {/* Signature View Modal */}
-      {isSignatureViewModalOpen && currentSignature && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-medium">Digital Signature</h3>
-              <button onClick={() => setIsSignatureViewModalOpen(false)} className="text-3xl">×</button>
-            </div>
-            <img src={currentSignature} alt="Signature" className="w-full rounded-lg border" />
-            <button
-              onClick={() => setIsSignatureViewModalOpen(false)}
-              className="mt-6 w-full bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 rounded-lg font-medium"
+      <AnimatePresence>
+        {isSignatureViewModalOpen && currentSignature && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setIsSignatureViewModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8"
+              onClick={(e) => e.stopPropagation()}
             >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-medium text-gray-800">Digital Signature</h3>
+                <button onClick={() => setIsSignatureViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+              </div>
+              <img src={currentSignature} alt="Signature" className="w-full rounded-2xl border border-gray-200" />
+              <button
+                onClick={() => setIsSignatureViewModalOpen(false)}
+                className="mt-6 w-full bg-[#4c7085] hover:bg-[#6b8ca3] text-white py-3 rounded-xl font-medium transition-colors"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-8 flex justify-between items-center rounded-t-lg">
-        <div className="flex items-center gap-4">
+      <PageHeader
+        title="Edit Quotation"
+        subtitle={`Survey ID: ${survey?.survey_id || id} • Quotation ID: ${quotation?.quotation_id || "—"}`}
+        extra={
           <button
             onClick={() => navigate("/quotation-list")}
-            className="flex items-center gap-3 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition text-white"
+            className="btn-secondary flex items-center gap-2"
           >
-            <FaArrowLeft className="w-5 h-5" />
-            <span className="font-medium text-sm">Back to List</span>
+            <FiArrowLeft className="w-4 h-4" />
+            <span>Back to List</span>
           </button>
-          <h2 className="text-lg font-medium">Edit Quotation</h2>
-        </div>
-      </div>
+        }
+      />
 
       {/* Messages */}
-      {message && (
-        <div className="mx-4 mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium">
-          {message}
-        </div>
-      )}
-      {error && (
-        <div className="mx-4 mt-4 p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-green-50 border border-green-200 text-green-700 rounded-2xl p-4 text-center font-medium"
+          >
+            {message}
+          </motion.div>
+        )}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 text-center font-medium"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="p-4 space-y-10">
+      <div className="space-y-6">
         {/* Pricing Location */}
-        <div className="bg-[#4c7085]/5 border border-[#4c7085]/30 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-[#4c7085] mb-4">Pricing Location</h3>
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-800 mb-4">Pricing Location</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-[#4c7085] mb-2">Destination City</label>
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Destination City</label>
               <input
                 type="text"
                 value={destinationCity || "Not specified"}
                 readOnly
-                className="w-full rounded-lg border border-[#6b8ca3]/50 bg-white px-4 py-3 text-sm text-[#4c7085] font-medium cursor-not-allowed"
+                className="input-style w-full bg-gray-50 cursor-not-allowed"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#4c7085] mb-2">Country</label>
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Country</label>
               <input
                 type="text"
                 value="Qatar"
                 readOnly
-                className="w-full rounded-lg border border-[#6b8ca3]/50 bg-white px-4 py-3 text-sm text-[#4c7085] font-medium cursor-not-allowed"
+                className="input-style w-full bg-gray-50 cursor-not-allowed"
               />
             </div>
           </div>
         </div>
 
         {/* Quotation Date */}
-        <div className="grid grid-cols-1 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Quotation Date</label>
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 text-sm text-[#4c7085] focus:outline-none"
-            />
-          </div>
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Quotation Date</label>
+          <input
+            type="date"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            className="input-style w-full"
+          />
         </div>
 
-        {/* Client Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Client Name</label>
-            <input
-              type="text"
-              value={form.client}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Mobile</label>
-            <input
-              type="text"
-              value={form.mobile}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Email</label>
-            <input
-              type="text"
-              value={form.email}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
-          </div>
-        </div>
-
-        {/* Additional Info from Survey */}
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Service Required</label>
-            <input
-              type="text"
-              value={form.serviceRequired}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Moving From</label>
-            <input
-              type="text"
-              value={form.movingFrom}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Moving To</label>
-            <input
-              type="text"
-              value={form.movingTo}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#4c7085] mb-2">Date of Move</label>
-            <input
-              type="text"
-              value={form.moveDate}
-              readOnly
-              className="w-full rounded-lg border-2 border-[#4c7085] px-4 py-3 bg-gray-100 text-sm text-[#4c7085] font-medium cursor-not-allowed"
-            />
+        {/* Client Information */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-800 mb-4">Client Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Client Name</label>
+              <input
+                type="text"
+                value={form.client}
+                readOnly
+                className="input-style w-full bg-gray-50 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Mobile</label>
+              <input
+                type="text"
+                value={form.mobile}
+                readOnly
+                className="input-style w-full bg-gray-50 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Email</label>
+              <input
+                type="text"
+                value={form.email}
+                readOnly
+                className="input-style w-full bg-gray-50 cursor-not-allowed"
+              />
+            </div>
           </div>
         </div>
 
         {/* Additional Services */}
         {additionalChargesBreakdown.length > 0 && (
-          <div className="bg-[#6b8ca3]/5 border-2 border-[#6b8ca3]/30 rounded-xl p-6">
-            <h3 className="text-xl font-medium text-[#4c7085] mb-4">Additional Services</h3>
-            <div className="space-y-4">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">Additional Services</h3>
+            <div className="space-y-3">
               {additionalChargesBreakdown.map((charge) => {
                 const quantity =
                   chargeQuantities[charge.id] !== undefined
@@ -547,31 +527,29 @@ export default function QuotationEdit() {
                 return (
                   <div
                     key={charge.id}
-                    className="bg-white border border-[#4c7085]/20 rounded-lg p-5"
+                    className="bg-gray-50 rounded-2xl p-4 flex flex-col md:flex-row justify-between gap-4"
                   >
-                    <div className="flex flex-col md:flex-row justify-between gap-4">
-                      <div>
-                        <div className="font-medium text-gray-800">{charge.service_name}</div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {charge.price_per_unit} {charge.currency} × {quantity} unit(s)
-                        </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800">{charge.service_name}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {charge.price_per_unit} {charge.currency} × {quantity} unit(s)
                       </div>
-                      <div className="flex items-center gap-4">
-                        {charge.rate_type !== "FIX" && (
-                          <>
-                            <label className="text-sm font-medium text-[#4c7085]">Qty:</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={quantity}
-                              onChange={(e) => handleQuantityChange(charge.id, e.target.value)}
-                              className="w-20 px-3 py-1 border border-[#4c7085] rounded text-sm"
-                            />
-                          </>
-                        )}
-                        <div className="text-right text-xl font-medium text-[#4c7085]">
-                          {subtotal.toFixed(2)} {charge.currency}
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {charge.rate_type !== "FIX" && (
+                        <>
+                          <label className="text-sm font-medium text-gray-600">Qty:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={quantity}
+                            onChange={(e) => handleQuantityChange(charge.id, e.target.value)}
+                            className="w-20 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4c7085]/20"
+                          />
+                        </>
+                      )}
+                      <div className="text-right text-lg font-medium text-[#4c7085] min-w-[100px]">
+                        {subtotal.toFixed(2)} {charge.currency}
                       </div>
                     </div>
                   </div>
@@ -582,68 +560,71 @@ export default function QuotationEdit() {
         )}
 
         {/* Service Includes/Excludes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-[#4c7085]/30 rounded-xl overflow-hidden">
-          <div className="bg-[#4c7085] text-white p-5 text-center font-medium text-lg">Service Includes</div>
-          <div className="bg-red-700 text-white p-5 text-center font-medium text-lg">Service Excludes</div>
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            <div className="bg-[#4c7085] text-white p-4 text-center font-medium">Service Includes</div>
+            <div className="bg-red-600 text-white p-4 text-center font-medium">Service Excludes</div>
 
-          <div className="p-4 bg-gray-100 max-h-96 overflow-y-auto space-y-4">
-            {dynamicIncludes.map((service) => (
-              <label key={service.id} className="flex items-center space-x-4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.includedServices[service.id] || false}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      includedServices: {
-                        ...form.includedServices,
-                        [service.id]: e.target.checked,
-                      },
-                    })
-                  }
-                  className="w-4 h-4 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                />
-                <span className="text-base font-medium">{service.text}</span>
-              </label>
-            ))}
-          </div>
+            <div className="p-6 bg-gray-50 max-h-96 overflow-y-auto space-y-3">
+              {dynamicIncludes.map((service) => (
+                <label key={service.id} className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={form.includedServices[service.id] || false}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        includedServices: {
+                          ...form.includedServices,
+                          [service.id]: e.target.checked,
+                        },
+                      })
+                    }
+                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085] accent-[#4c7085]"
+                  />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{service.text}</span>
+                </label>
+              ))}
+            </div>
 
-          <div className="p-4 bg-red-50 max-h-96 overflow-y-auto space-y-4">
-            {dynamicExcludes.map((service) => (
-              <label key={service.id} className="flex items-center space-x-4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.excludedServices[service.id] || false}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      excludedServices: {
-                        ...form.excludedServices,
-                        [service.id]: e.target.checked,
-                      },
-                    })
-                  }
-                  className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
-                />
-                <span className="text-base font-medium">{service.text}</span>
-              </label>
-            ))}
+            <div className="p-6 bg-red-50 max-h-96 overflow-y-auto space-y-3">
+              {dynamicExcludes.map((service) => (
+                <label key={service.id} className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={form.excludedServices[service.id] || false}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        excludedServices: {
+                          ...form.excludedServices,
+                          [service.id]: e.target.checked,
+                        },
+                      })
+                    }
+                    className="w-5 h-5 text-red-600 rounded focus:ring-red-500 accent-red-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{service.text}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Your Rate */}
-        <div className="bg-gradient-to-r from-[#4c7085]/10 to-[#6b8ca3]/10 border-2 border-[#4c7085]/30 rounded-xl p-4">
-          <h3 className="text-2xl font-medium text-center text-[#4c7085] mb-8">Your Rate</h3>
+        {/* Your Rate Section */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-xl font-medium text-center text-gray-800 mb-6">Your Rate</h3>
 
-          <div className="space-y-6 mb-8">
+          {/* Service Selections */}
+          <div className="space-y-3 mb-6">
             {allServices.map((service) => {
               const isSelected = serviceSelections[service.id] === true;
               return (
                 <div
                   key={service.id}
-                  className="bg-white rounded-lg p-6 shadow-md border border-[#4c7085]/20 flex items-center justify-between"
+                  className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
                 >
-                  <div className="text-lg font-medium text-gray-800">{service.name}</div>
+                  <div className="text-base font-medium text-gray-800">{service.name}</div>
                   <button
                     type="button"
                     onClick={() =>
@@ -655,10 +636,10 @@ export default function QuotationEdit() {
                     className="focus:outline-none"
                   >
                     <div
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-400"
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-300"
                         }`}
                     >
-                      {isSelected && <div className="w-4 h-4 bg-white rounded-full" />}
+                      {isSelected && <FiCheckCircle className="w-5 h-5 text-white" />}
                     </div>
                   </button>
                 </div>
@@ -666,42 +647,54 @@ export default function QuotationEdit() {
             })}
           </div>
 
-          <div className="grid gap-6 bg-white p-4 rounded-2xl shadow-xl border border-[#4c7085]/30">
+          {/* Pricing Details */}
+          <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
+            {/* Advance & Discount */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">Advance</label>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  Advance
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={form.advance}
                   onChange={(e) => setForm({ ...form, advance: e.target.value })}
-                  className="w-full mt-2 px-4 py-2 border border-[#4c7085] text-sm text-[#4c7085] rounded-lg focus:outline-none"
+                  className="input-style w-full"
                 />
               </div>
-              <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">Discount</label>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  Discount
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={form.discount}
                   onChange={(e) => setForm({ ...form, discount: e.target.value })}
-                  className="w-full mt-2 px-4 py-2 border border-[#4c7085] text-sm text-[#4c7085] rounded-lg focus:outline-none"
+                  className="input-style w-full"
                 />
               </div>
             </div>
 
+            {/* Total Amount & Balance */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">Total Amount</label>
-                <p className="text-2xl font-medium text-[#4c7085] mt-2">
+              <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                  Total Amount
+                </label>
+                <p className="text-2xl font-medium text-[#4c7085]">
                   {computedValues.amount} QAR
                 </p>
               </div>
-              <div className="bg-[#4c7085]/5 p-5 rounded-lg text-center">
-                <label className="block text-sm font-medium text-[#4c7085]">Balance</label>
-                <p className="text-2xl font-medium text-indigo-700 mt-2">
+
+              <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                  Balance
+                </label>
+                <p className="text-2xl font-medium text-indigo-600">
                   {computedValues.balance} QAR
                 </p>
               </div>
@@ -709,48 +702,50 @@ export default function QuotationEdit() {
           </div>
 
           {priceError && (
-            <div className="mt-6 bg-red-100 border-2 border-red-400 rounded-lg p-5 text-center text-red-700 font-medium">
+            <div className="mt-6 bg-red-50 border border-red-200 rounded-2xl p-4 text-center text-red-600 font-medium text-sm">
               {priceError}
             </div>
           )}
         </div>
 
         {/* Digital Signature */}
-        <div className="bg-gray-100 p-4 rounded-xl border border-[#4c7085]/30">
-          <h3 className="text-xl font-medium text-[#4c7085] mb-4">Digital Signature</h3>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <p className="text-gray-700">
-              {hasSignature ? "✓ Customer has digitally signed this quotation" : "Add customer signature"}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-800 mb-4">Digital Signature</h3>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <p className="text-sm text-gray-600 font-medium">
+              {hasSignature ? "✓ Customer has digitally signed this quotation" : "Add customer signature to complete quotation"}
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {hasSignature && (
                 <button
                   onClick={() => setIsSignatureViewModalOpen(true)}
-                  className="px-6 py-2 bg-[#4c7085] hover:bg-[#6b8ca3] text-white rounded-lg flex items-center gap-2 text-sm font-medium"
+                  className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors"
                 >
-                  <FaEye /> View
+                  <FiEye className="w-4 h-4" /> View
                 </button>
               )}
               <button
                 onClick={() => setIsSignatureModalOpen(true)}
                 disabled={isSignatureUploading}
-                className={`px-8 py-2 rounded-lg text-sm font-medium text-white transition ${isSignatureUploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#4c7085] hover:bg-[#6b8ca3]"
+                className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${isSignatureUploading
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
                   }`}
               >
-                <FaPlus className="inline mr-2" />
                 {isSignatureUploading ? "Uploading..." : "Change"}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-center">
+        {/* Update Button */}
+        <div className="flex justify-center pt-4">
           <button
             onClick={handleUpdate}
             disabled={!computedValues.amount || !computedValues.finalAmount || priceError}
-            className={`w-full px-4 py-2 text-sm font-medium rounded-lg shadow-xl transition ${!computedValues.amount || !computedValues.finalAmount || priceError
-              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-              : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:shadow-2xl"
+            className={`w-full md:w-auto px-8 py-3 text-sm font-medium rounded-xl transition-all ${!computedValues.amount || !computedValues.finalAmount || priceError
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#4c7085] text-white hover:bg-[#6b8ca3] shadow-sm"
               }`}
           >
             Update Quotation

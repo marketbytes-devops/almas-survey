@@ -1,5 +1,5 @@
 import React from "react";
-import { FaMinus, FaPlus, FaChevronUp, FaChevronDown, FaCamera, FaTrash } from "react-icons/fa";
+import { FaMinus, FaPlus, FaChevronUp, FaChevronDown, FaCamera, FaBox } from "react-icons/fa";
 import { useFormContext } from "react-hook-form";
 import ItemForm from "./ItemForm";
 import Modal from "../../../components/Modal";
@@ -28,10 +28,7 @@ const ItemRow = ({
     const { watch, setValue } = useFormContext();
     const qty = itemQuantities[item.name] || 0;
     const isSelected = selectedItems[item.name] || false;
-
-    // Stable keys are crucial here
     const itemKey = getItemKey(item.name);
-    // Determine if moving. Default is true (moving) unless explicitly set to 'not_moving'
     const isMoving = itemMoveStatuses[itemKey] !== 'not_moving';
 
     const toggleItemSelection = (itemName) => {
@@ -52,22 +49,11 @@ const ItemRow = ({
 
     const handleCrateChange = (val) => {
         const rowItemKey = getItemKey(item.name);
-        // Directly update local state first
         setItemCratePreferences(prev => ({ ...prev, [rowItemKey]: val === 'yes' }));
-
-        // Also update existing article if present (optional here, but better done on "Add/Update")
-        // Or we could trigger an update immediately?
-        // The requirement says "once selected I want auto active". 
-        // If we update here, we might want to call `addArticleCallback` implicitly?
-        // For now, let's keep it in local state until "Update" or "Add" is clicked.
     };
 
-    // Check crate status - prioritize local state which was hydrated from existing article
     const isCrateRequired = itemCratePreferences[itemKey] === true;
-
-    // Check for captured image in parent state
     const currentCapturedImage = itemCapturedImages[itemKey];
-    // Check for existing photo in article
     const hasExistingPhoto = !!existingArticle?.photo;
     const hasPhoto = hasExistingPhoto || !!currentCapturedImage;
 
@@ -94,169 +80,142 @@ const ItemRow = ({
         }
     };
 
-
     return (
-        <div className="border-b border-gray-200 last:border-0">
-            <div
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-2 sm:p-4
-      hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
-      transition-all rounded-lg"
-            >
-                <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => toggleItemSelection(item.name)}
-                    className="focus:outline-none"
-                >
-                    <div
-                        className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all duration-200 ${isSelected
-                            ? "bg-[#4c7085] border-[#4c7085]"
-                            : "bg-white border-gray-400"
-                            }`}
-                    >
-                        {isSelected && (
-                            <div className="w-4 h-4 bg-white rounded-full" />
-                        )}
-                    </div>
-                </button>
-                <div className="flex-1">
-                    <div className="font-semibold text-gray-800 text-sm sm:text-base">
-                        {item.name}
-                    </div>
-                    {item.description && (
-                        <div className="text-xs text-gray-500 mt-1">
-                            {item.description}
-                        </div>
-                    )}
-                    {(item.length || item.width || item.height) && (
-                        <div className="text-xs text-gray-500 mt-1">
-                            {item.length && `L:${item.length}cm`}
-                            {item.width && ` × W:${item.width}cm`}
-                            {item.height && ` × H:${item.height}cm`}
-                        </div>
-                    )}
-                </div>
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+        <div className="group transition-colors bg-white hover:bg-gray-50/80">
+            <div className={`flex flex-col md:flex-row items-center gap-4 p-4 ${isSelected ? 'bg-[#4c7085]/5' : ''}`}>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={handleCameraClick}
-                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg border transition-all flex items-center justify-center gap-2 text-sm font-medium ${hasPhoto
-                                ? "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
-                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                {/* Selection & Info */}
+                <div className="flex-1 flex items-start gap-4 w-full md:w-auto">
+                    <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => toggleItemSelection(item.name)}
+                        className="focus:outline-none mt-1"
+                    >
+                        <div
+                            className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${isSelected
+                                ? "bg-[#4c7085] border-[#4c7085]"
+                                : "bg-white border-gray-300 group-hover:border-[#4c7085]"
                                 }`}
                         >
-                            <FaCamera className="w-4 h-4" />
-                            <span>{hasPhoto ? "Retake Photo" : "Add Photo"}</span>
-                        </button>
+                            {isSelected && <div className="w-2 h-2 bg-white rounded-sm" />}
+                        </div>
+                    </button>
+                    <div>
+                        <div className={`text-sm font-medium ${isSelected ? 'text-[#4c7085]' : 'text-gray-900'}`}>
+                            {item.name}
+                        </div>
+                        {item.description && (
+                            <div className="text-xs text-gray-500 mt-0.5 max-w-md">
+                                {item.description}
+                            </div>
+                        )}
                     </div>
+                </div>
 
-                    <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden w-full sm:w-auto">
+                {/* Controls */}
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+
+                    {/* Quantity Selector */}
+                    <div className="flex items-center border border-gray-200 rounded-lg h-9 bg-white shadow-sm overflow-hidden">
                         <button
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty - 1)}
                             disabled={qty <= 0}
-                            className="flex-1 sm:flex-none px-4 py-2 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-300 sm:border-r-0"
+                            className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-gray-100"
                         >
-                            <FaMinus className="w-4 h-4 mx-auto" />
+                            <FaMinus className="w-2.5 h-2.5" />
                         </button>
                         <input
                             type="text"
                             value={qty}
                             readOnly
-                            className="flex-1 sm:w-16 text-center font-medium text-gray-800 bg-transparent outline-none py-2 border-r border-gray-300 sm:border-x sm:border-gray-300"
+                            className="w-10 text-center text-sm font-medium text-gray-900 border-none focus:ring-0 p-0"
                         />
                         <button
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty + 1)}
-                            className="flex-1 sm:flex-none px-4 py-2 text-gray-600 hover:bg-gray-100 transition"
+                            className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#4c7085] transition-colors border-l border-gray-100"
                         >
-                            <FaPlus className="w-4 h-4 mx-auto" />
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => toggleMoveStatus(item.name)}
-                            className="flex-1 sm:flex-none flex items-center justify-center p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2"
-                            title={isMoving ? "Mark as Not Moving" : "Mark as Moving"}
-                        >
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isMoving ? "bg-green-500 border-green-500" : "bg-red-500 border-red-500"}`}>
-                                {isMoving ? (
-                                    <span className="text-white text-[10px]">M</span>
-                                ) : (
-                                    <span className="text-white text-[10px]">N</span>
-                                )}
-                            </div>
-                            <span className="text-sm text-gray-600">
-                                {isMoving ? "Moving" : "Not Moving"}
-                            </span>
+                            <FaPlus className="w-2.5 h-2.5" />
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3 text-sm w-full sm:w-auto">
-                        <div className="flex-1 sm:flex-none flex flex-col sm:flex-row items-start sm:items-center p-3 sm:p-3.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none gap-2">
-                            <label className="font-medium text-gray-700 whitespace-nowrap text-xs">Crate Required?</label>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-1 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name={`crate-row-${item.name.replace(/\s+/g, '-')}-${selectedRoomValue || 'general'}`}
-                                        value="yes"
-                                        checked={isCrateRequired}
-                                        onChange={() => handleCrateChange('yes')}
-                                        className="w-4 h-4 text-[#4c7085]"
-                                    />
-                                    <span className="text-xs">Yes</span>
-                                </label>
-                                <label className="flex items-center gap-1 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name={`crate-row-${item.name.replace(/\s+/g, '-')}-${selectedRoomValue || 'general'}`}
-                                        value="no"
-                                        checked={!isCrateRequired}
-                                        onChange={() => handleCrateChange('no')}
-                                        className="w-4 h-4 text-[#4c7085]"
-                                    />
-                                    <span className="text-xs">No</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Move Status Toggle */}
                     <button
                         type="button"
-                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => toggleMoveStatus(item.name)}
+                        className={`h-9 px-3 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all ${isMoving
+                            ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                            : "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                            }`}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${isMoving ? "bg-green-500" : "bg-red-500"}`} />
+                        {isMoving ? "Moving" : "Not Moving"}
+                    </button>
+
+                    {/* Crate Required Toggle */}
+                    <button
+                        type="button"
+                        onClick={() => handleCrateChange(isCrateRequired ? 'no' : 'yes')}
+                        className={`h-9 px-3 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all ${isCrateRequired
+                            ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                            : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+                            }`}
+                        title="Toggle Crate Requirement"
+                    >
+                        <FaBox className={`w-3 h-3 ${isCrateRequired ? "text-amber-600" : "text-gray-400"}`} />
+                        {isCrateRequired ? "Crate" : "No Crate"}
+                    </button>
+
+                    {/* Photo Button */}
+                    <button
+                        type="button"
+                        onClick={handleCameraClick}
+                        className={`h-9 w-9 flex items-center justify-center rounded-lg border transition-all ${hasPhoto
+                            ? "bg-indigo-50 border-indigo-200 text-indigo-600 shadow-inner"
+                            : "bg-white border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+                            }`}
+                        title={hasPhoto ? "Photo Added" : "Add Photo"}
+                    >
+                        <FaCamera className="w-4 h-4" />
+                    </button>
+
+                    {/* Expand Options */}
+                    <button
+                        type="button"
                         onClick={(e) => {
                             e.stopPropagation();
                             toggleExpandedItem(item.name);
                         }}
-                        className="w-full sm:w-auto text-sm font-medium flex gap-2 items-center justify-center py-2 px-4 text-[#4c7085] hover:bg-indigo-100 rounded-lg sm:rounded-full transition border border-[#4c7085]/20 sm:border-0"
+                        className={`h-9 px-3 rounded-lg border text-xs font-medium transition-all flex items-center gap-2 ${expandedItems[item.name]
+                            ? "bg-gray-100 text-gray-900 border-gray-300"
+                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                            }`}
                     >
-                        Item Options{" "}
-                        {expandedItems[item.name] ? (
-                            <FaChevronUp className="w-4 h-4" />
-                        ) : (
-                            <FaChevronDown className="w-4 h-4" />
-                        )}
+                        More
+                        {expandedItems[item.name] ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
                     </button>
+
                 </div>
             </div>
 
+            {/* Expanded Details Form */}
             {expandedItems[item.name] && (
-                <ItemForm
-                    item={item}
-                    apiData={apiData}
-                    existingArticle={existingArticle}
-                    onAdd={(itemName, formData, isM) => {
-                        addArticleCallback(itemName, { ...formData, photo: currentCapturedImage?.file }, isM);
-                    }}
-                    onCancel={() => toggleExpandedItem(item.name)}
-                    capturedImage={currentCapturedImage}
-                />
+                <div className="bg-gray-50/50 border-t border-gray-100 p-4 animate-in slide-in-from-top-2 duration-200">
+                    <ItemForm
+                        item={item}
+                        apiData={apiData}
+                        existingArticle={existingArticle}
+                        onAdd={(itemName, formData, isM) => {
+                            addArticleCallback(itemName, { ...formData, photo: currentCapturedImage?.file }, isM);
+                        }}
+                        onCancel={() => toggleExpandedItem(item.name)}
+                        capturedImage={currentCapturedImage}
+                    />
+                </div>
             )}
 
             <Modal
