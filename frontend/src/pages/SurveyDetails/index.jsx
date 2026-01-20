@@ -18,6 +18,7 @@ import Article from "./components/Article";
 import AdditionalServicesTab from "./components/AdditionalServicesTab";
 import VehicleDetails from "./components/VehicleDetails";
 import PageHeader from "../../components/PageHeader";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 // --- STYLING CONSTANTS ---
 const CARD_CLASS = "bg-white rounded-2xl border border-gray-200 shadow-sm p-6 transition-all hover:shadow-md";
@@ -403,7 +404,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                     })}
                 </div>
 
-                {multipleAddresses && (
+                {multipleAddresses && hasPermission("surveys", "edit") && (
                     <button
                         type="button"
                         onClick={addAddress}
@@ -434,6 +435,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
 
 
 const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, isSignatureUploading, setIsSignatureModalOpen, isSignatureModalOpen, localSignatureFile }) => {
+    const { hasPermission } = usePermissions();
     const statusOptions = [
         { value: "pending", label: "Pending" },
         { value: "in_progress", label: "In Progress" },
@@ -500,17 +502,19 @@ const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, i
                             <p className="text-sm text-gray-600 leading-relaxed">
                                 The signature confirms the customer agrees with the surveyed items and volume.
                             </p>
-                            <button
-                                type="button"
-                                onClick={() => setIsSignatureModalOpen(true)}
-                                disabled={isSignatureUploading}
-                                className={`w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${(signatureUploaded || signatureImageUrl || localSignatureFile)
-                                    ? "bg-white border border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5"
-                                    : "bg-[#4c7085] text-white hover:shadow-lg hover:-translate-y-0.5"
-                                    }`}
-                            >
-                                {(signatureUploaded || signatureImageUrl || localSignatureFile) ? "Re-Capture Signature" : "Capture Signature Now"}
-                            </button>
+                            {hasPermission("surveys", "edit") && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSignatureModalOpen(true)}
+                                    disabled={isSignatureUploading}
+                                    className={`w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${(signatureUploaded || signatureImageUrl || localSignatureFile)
+                                        ? "bg-white border border-[#4c7085] text-[#4c7085] hover:bg-[#4c7085]/5"
+                                        : "bg-[#4c7085] text-white hover:shadow-lg hover:-translate-y-0.5"
+                                        }`}
+                                >
+                                    {(signatureUploaded || signatureImageUrl || localSignatureFile) ? "Re-Capture Signature" : "Capture Signature Now"}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -523,6 +527,7 @@ const SurveyDetails = () => {
     const { surveyId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { hasPermission } = usePermissions();
     const [activeTab, setActiveTab] = useState("customer");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -785,6 +790,7 @@ const SurveyDetails = () => {
     };
 
     const handleSignatureSave = async (file) => {
+        if (!hasPermission("surveys", "edit")) return alert("Permission denied");
         if (!file) return;
 
         if (!existingSurvey) {
@@ -827,6 +833,7 @@ const SurveyDetails = () => {
     };
 
     const saveSurveyData = async (data) => {
+        if (!hasPermission("surveys", "edit")) return alert("Permission denied");
         setIsLoading(true);
 
         const processedArticles = await Promise.all(data.articles.map(async (a) => {

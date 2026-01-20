@@ -21,6 +21,7 @@ import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 // Shared Input Component with Premium Styling
 const InputField = ({
@@ -84,8 +85,8 @@ const Enquiries = () => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [permissions, setPermissions] = useState([]);
+  const { hasPermission } = usePermissions();
+  // Removed manual permission state and isSuperadmin as they are handled by context
 
   // Modal States
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -140,13 +141,7 @@ const Enquiries = () => {
           apiClient.get("/auth/users/"),
         ]);
 
-        const user = profileRes.data;
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-
-        if (user.role?.id) {
-          const roleRes = await apiClient.get(`/auth/roles/${user.role.id}/`);
-          setPermissions(roleRes.data.permissions || []);
-        }
+        // Role fetching removed - handled by Context
 
         const sorted = enquiriesRes.data.sort(
           (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -164,12 +159,7 @@ const Enquiries = () => {
     };
     fetchData();
   }, []);
-
-  const hasPermission = (page, action) => {
-    if (isSuperadmin) return true;
-    const perm = permissions.find((p) => p.page === page);
-    return perm?.[`can_${action}`];
-  };
+  // Removed manual hasPermission function
 
   const applyFilters = (data, query = searchQuery) => {
     const filterData = filterForm.getValues();
@@ -225,6 +215,7 @@ const Enquiries = () => {
   };
 
   const onAddSubmit = async (data) => {
+    if (!hasPermission("enquiries", "add")) return alert("Permission denied");
     setIsSubmitting(true);
     try {
       const token = await getRecaptchaToken();
@@ -244,6 +235,7 @@ const Enquiries = () => {
   };
 
   const onEditSubmit = async (data) => {
+    if (!hasPermission("enquiries", "edit")) return alert("Permission denied");
     setIsSubmitting(true);
     try {
       const res = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry.id}/`, data);
@@ -261,6 +253,7 @@ const Enquiries = () => {
   };
 
   const onAssignSubmit = async (data) => {
+    if (!hasPermission("enquiries", "edit")) return alert("Permission denied");
     setIsSubmitting(true);
     try {
       const res = await apiClient.patch(`/contacts/enquiries/${selectedEnquiry.id}/`, {
@@ -281,6 +274,7 @@ const Enquiries = () => {
   };
 
   const onDelete = async () => {
+    if (!hasPermission("enquiries", "delete")) return alert("Permission denied");
     setIsSubmitting(true);
     try {
       await apiClient.delete(`/contacts/enquiries/${selectedEnquiry.id}/delete/`);
@@ -318,13 +312,15 @@ const Enquiries = () => {
         title="Enquiry Management"
         subtitle="Track and manage customer move requests"
         extra={
-          <button
-            onClick={() => setIsAddOpen(true)}
-            className="btn-primary"
-          >
-            <FiPlus className="w-5 h-5" />
-            <span className="text-sm tracking-wide">Add Enquiry</span>
-          </button>
+          hasPermission("enquiries", "add") && (
+            <button
+              onClick={() => setIsAddOpen(true)}
+              className="btn-primary"
+            >
+              <FiPlus className="w-5 h-5" />
+              <span className="text-sm tracking-wide">Add Enquiry</span>
+            </button>
+          )
         }
       />
 
@@ -465,15 +461,21 @@ const Enquiries = () => {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-3">
-                        <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all duration-200" title="Assign">
-                          <FiUserPlus className="w-4.5 h-4.5" />
-                        </button>
-                        <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all duration-200" title="Edit">
-                          <FiEdit3 className="w-4.5 h-4.5" />
-                        </button>
-                        <button onClick={() => { setSelectedEnquiry(item); setIsDeleteOpen(true); }} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-200" title="Delete">
-                          <FiTrash2 className="w-4.5 h-4.5" />
-                        </button>
+                        {hasPermission("enquiries", "edit") && (
+                          <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all duration-200" title="Assign">
+                            <FiUserPlus className="w-4.5 h-4.5" />
+                          </button>
+                        )}
+                        {hasPermission("enquiries", "edit") && (
+                          <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all duration-200" title="Edit">
+                            <FiEdit3 className="w-4.5 h-4.5" />
+                          </button>
+                        )}
+                        {hasPermission("enquiries", "delete") && (
+                          <button onClick={() => { setSelectedEnquiry(item); setIsDeleteOpen(true); }} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-200" title="Delete">
+                            <FiTrash2 className="w-4.5 h-4.5" />
+                          </button>
+                        )}
                         <button onClick={() => { setSelectedEnquiry(item); setIsPhoneModalOpen(true); }} className="w-9 h-9 flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all duration-200" title="Contact">
                           <IoLogoWhatsapp className="w-5 h-5" />
                         </button>
@@ -530,8 +532,12 @@ const Enquiries = () => {
                             <p className="text-xs text-gray-600 mt-1 italic font-medium">"{item.message}"</p>
                           </div>
                           <div className="flex gap-2 pt-2">
-                            <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm"><FiEdit3 /> Edit</button>
-                            <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm"><FiUserPlus /> Assign</button>
+                            {hasPermission("enquiries", "edit") && (
+                              <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm"><FiEdit3 /> Edit</button>
+                            )}
+                            {hasPermission("enquiries", "edit") && (
+                              <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm"><FiUserPlus /> Assign</button>
+                            )}
                             <button onClick={() => { setSelectedEnquiry(item); setIsPhoneModalOpen(true); }} className="w-[52px] bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-5 h-5" /></button>
                           </div>
                         </div>

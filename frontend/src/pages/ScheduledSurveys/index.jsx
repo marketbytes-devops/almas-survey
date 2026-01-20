@@ -24,6 +24,7 @@ import Loading from "../../components/Loading";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 // Shared Input Component with Premium Styling
 const InputField = ({
@@ -85,8 +86,7 @@ const ScheduledSurveys = () => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [permissions, setPermissions] = useState([]);
+  const { hasPermission } = usePermissions();
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [isRescheduleSurveyOpen, setIsRescheduleSurveyOpen] = useState(false);
   const [isRescheduleSurveyConfirmOpen, setIsRescheduleSurveyConfirmOpen] = useState(false);
@@ -162,19 +162,12 @@ const ScheduledSurveys = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const profileResponse = await apiClient.get("/auth/profile/");
-        const user = profileResponse.data;
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-        const roleId = user.role?.id;
-        if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
-        }
 
         const [enquiriesRes, surveysRes] = await Promise.all([
           apiClient.get("/contacts/enquiries/", { params: { has_survey: "true" } }),
           apiClient.get("/surveys/"),
         ]);
+
 
         const surveyMap = {};
         surveysRes.data.forEach((survey) => {
@@ -248,7 +241,7 @@ const ScheduledSurveys = () => {
     applyFiltersAndSearch(filterForm.getValues(), value);
   };
 
-  const hasPermission = (page, action) => isSuperadmin || permissions.some((p) => p.page === page && p[`can_${action}`]);
+
 
   const openRescheduleSurveyModal = (enquiry) => {
     setSelectedEnquiry(enquiry);
@@ -270,6 +263,7 @@ const ScheduledSurveys = () => {
   };
 
   const startSurvey = async (enquiry) => {
+    if (!hasPermission("surveys", "edit")) return alert("Permission denied");
     if (isSurveyFinished(enquiry)) return;
     setIsStartingSurvey(true);
     setStartingSurveyId(enquiry.id);
@@ -322,6 +316,7 @@ const ScheduledSurveys = () => {
   };
 
   const confirmReschedule = async () => {
+    if (!hasPermission("surveys", "edit")) return alert("Permission denied");
     setIsReschedulingSurvey(true);
     try {
       const res = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/schedule/`, {
@@ -346,6 +341,7 @@ const ScheduledSurveys = () => {
   };
 
   const confirmCancel = async () => {
+    if (!hasPermission("surveys", "edit")) return alert("Permission denied");
     setIsCancelingSurvey(true);
     try {
       const res = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/cancel-survey/`, { reason: cancelSurveyData.reason });
@@ -497,7 +493,7 @@ const ScheduledSurveys = () => {
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
-                          {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && (
+                          {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotations", "add") && (
                             <button
                               onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
                               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-medium rounded-xl shadow-sm transition-all"
@@ -505,7 +501,7 @@ const ScheduledSurveys = () => {
                               Create Quote
                             </button>
                           )}
-                          {!isSurveyFinished(enquiry) && (
+                          {!isSurveyFinished(enquiry) && hasPermission("surveys", "edit") && (
                             <>
                               <button
                                 onClick={() => startSurvey(enquiry)}
@@ -594,7 +590,7 @@ const ScheduledSurveys = () => {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-2 pt-2">
-                            {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && (
+                            {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotations", "add") && (
                               <button
                                 onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
                                 className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2.5 rounded-xl text-[11px] font-medium shadow-sm"
@@ -602,7 +598,7 @@ const ScheduledSurveys = () => {
                                 Create Quote
                               </button>
                             )}
-                            {!isSurveyFinished(enquiry) && (
+                            {!isSurveyFinished(enquiry) && hasPermission("surveys", "edit") && (
                               <>
                                 <button onClick={() => startSurvey(enquiry)} className={`flex-1 ${status === 'in_progress' ? 'bg-blue-500' : 'bg-green-500'} text-white py-2.5 rounded-xl text-[11px] font-medium shadow-sm transition-transform active:scale-95`}>
                                   {status === 'in_progress' ? 'Continue Survey' : 'Start Survey'}

@@ -158,6 +158,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user = CustomUser(**validated_data)
         user.set_password(random_password)
         user.save()
+        print(f"\n[DEBUG] Created user '{user.email}' with password: '{random_password}'\n")
 
         # Send welcome email with credentials
         subject = 'Your Account Credentials'

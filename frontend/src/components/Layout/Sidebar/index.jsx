@@ -30,15 +30,14 @@ import {
 import { BiBox, BiMoneyWithdraw } from "react-icons/bi";
 import { HiOutlineUserGroup } from "react-icons/hi2";
 import { FaChevronUp, FaChevronDown } from "react-icons/fa";
-// import logo from "../../../assets/images/logo.webp";
 import apiClient from "../../../api/apiClient";
 import fallbackProfile from "../../../assets/images/profile-icon.png";
-import Loading from "../../Loading/index"; // ← Already present
+import Loading from "../../Loading/index";
 
 const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [effectivePermissions, setEffectivePermissions] = useState({}); // Changed to object for effective perms
+  const [effectivePermissions, setEffectivePermissions] = useState({}); // Effective = role + overrides
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,7 +64,7 @@ const Sidebar = ({ toggleSidebar }) => {
 
         setIsSuperadmin(data.is_superuser === true || data.role?.name === "Superadmin");
 
-        // 2. Fetch effective permissions (role + overrides)
+        // 2. Fetch effective permissions (role + user overrides)
         const permsRes = await apiClient.get("/auth/effective-permissions/");
         setEffectivePermissions(permsRes.data || {});
 
@@ -82,16 +81,20 @@ const Sidebar = ({ toggleSidebar }) => {
     fetchProfileAndPermissions();
   }, []);
 
-  const hasPermission = (page, action) => {
+  const hasPermission = (page, action = "view") => {
+    // Superadmin sees everything
     if (isSuperadmin) return true;
-    if (isLoading) return false; // Prevent flicker during load
 
-    const pagePerm = effectivePermissions[page];
-    return pagePerm?.[`can_${action}`] === true;
+    // During loading → hide to avoid flicker
+    if (isLoading) return false;
+
+    // Strict check: only show if explicitly can_view = true
+    const pagePerm = effectivePermissions[page] || {};
+    return pagePerm[`can_${action}`] === true;
   };
 
   const handleToggle = (id) => {
-    setOpenDropdown(prev => prev === id ? null : id);
+    setOpenDropdown(prev => (prev === id ? null : id));
   };
 
   const handleLogout = () => {
@@ -178,6 +181,7 @@ const Sidebar = ({ toggleSidebar }) => {
   const renderMenuItem = (item) => {
     if (item.subItems) {
       const visibleSubItems = item.subItems.filter((sub) => hasPermission(sub.page, sub.action));
+      // Only show dropdown if main page or any sub-item is visible
       if (visibleSubItems.length === 0 && !hasPermission(item.page, item.action)) return null;
 
       const isActive = visibleSubItems.some((sub) => location.pathname.startsWith(sub.to.split("/")[1]));
@@ -230,6 +234,7 @@ const Sidebar = ({ toggleSidebar }) => {
       );
     }
 
+    // For single items: only show if explicitly allowed
     if (!hasPermission(item.page, item.action)) return null;
 
     return (

@@ -9,6 +9,7 @@ import Modal from "../../../components/Modal";
 import AddedArticlesSidebar from "./AddedArticlesSidebar";
 import ItemRow from "./ItemRow";
 import CameraCapture from "../../../components/CameraCapture";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const CARD_CLASS = "bg-white rounded-2xl border border-gray-200 shadow-sm transition-all hover:shadow-md";
 const BUTTON_PRIMARY = "bg-[#4c7085] text-white hover:shadow-lg active:scale-95 transition-all rounded-xl px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2";
@@ -17,6 +18,7 @@ const INPUT_SEARCH = "w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 b
 
 const Article = ({ apiData, setMessage, setError }) => {
     const { watch, setValue } = useFormContext();
+    const { hasPermission } = usePermissions();
     const articles = watch("articles") || [];
     const selectedRoomFromForm = watch("selectedRoom");
     const [selectedRoom, setSelectedRoom] = useState(selectedRoomFromForm || null);
@@ -194,6 +196,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const addArticle = (itemName, formData = {}, isMoving = true) => {
+        if (!hasPermission("surveys", "edit")) return setError("Permission denied");
         const length = formData[`length_${itemName}`] || "";
         const width = formData[`width_${itemName}`] || "";
         const height = formData[`height_${itemName}`] || "";
@@ -245,6 +248,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const addMultipleArticles = () => {
+        if (!hasPermission("surveys", "edit")) return setError("Permission denied");
         const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
         if (selectedItemNames.length === 0) return setError("Select at least one item");
 
@@ -346,6 +350,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const addManualItem = () => {
+        if (!hasPermission("surveys", "edit")) return setError("Permission denied");
         if (!manualFormData.itemName.trim()) {
             setError("Item name is required");
             return;
@@ -502,9 +507,11 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     </button>
                                 )}
                             </div>
-                            <button type="button" onClick={() => setShowManualAddForm(true)} className={`${BUTTON_SECONDARY} whitespace-nowrap`}>
-                                <FaPlus /> Custom Item
-                            </button>
+                            {hasPermission("surveys", "edit") && (
+                                <button type="button" onClick={() => setShowManualAddForm(true)} className={`${BUTTON_SECONDARY} whitespace-nowrap`}>
+                                    <FaPlus /> Custom Item
+                                </button>
+                            )}
                         </div>
 
                         {/* Bulk Add Action Bar */}
@@ -518,9 +525,11 @@ const Article = ({ apiData, setMessage, setError }) => {
                                         <span className="text-sm font-medium text-[#4c7085]">
                                             {Object.values(selectedItems).filter(Boolean).length} items selected
                                         </span>
-                                        <button type="button" onClick={addMultipleArticles} className={BUTTON_PRIMARY}>
-                                            Save Selected Items
-                                        </button>
+                                        {hasPermission("surveys", "edit") && (
+                                            <button type="button" onClick={addMultipleArticles} className={BUTTON_PRIMARY}>
+                                                Save Selected Items
+                                            </button>
+                                        )}
                                     </div>
                                 </motion.div>
                             )}
@@ -537,9 +546,11 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     <p className="text-gray-600 text-sm mt-1 max-w-xs mx-auto">
                                         We couldn't find matches for "{itemSearchQuery || 'this room'}". Try a different search or add a custom item.
                                     </p>
-                                    <button onClick={() => setShowManualAddForm(true)} className="mt-4 text-[#4c7085] text-sm font-medium hover:underline">
-                                        Add Custom Item
-                                    </button>
+                                    {hasPermission("surveys", "edit") && (
+                                        <button onClick={() => setShowManualAddForm(true)} className="mt-4 text-[#4c7085] text-sm font-medium hover:underline">
+                                            Add Custom Item
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 filteredItems.map(item => (

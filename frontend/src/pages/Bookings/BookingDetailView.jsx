@@ -8,9 +8,12 @@ import BookingConfirmation from "../../components/Templates/BookingConfirmation"
 import PageHeader from "../../components/PageHeader";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
+
 const BookingDetailView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
 
     const [booking, setBooking] = useState(null);
     const [quotation, setQuotation] = useState(null);
@@ -71,6 +74,10 @@ const BookingDetailView = () => {
     };
 
     const handleDeleteBooking = async () => {
+        if (!hasPermission("booking", "delete")) {
+            alert("Permission denied");
+            return;
+        }
         if (!window.confirm("Are you sure you want to delete this booking? Material stock will be restored.")) return;
         try {
             await apiClient.delete(`/bookings/${id}/`);
@@ -106,20 +113,24 @@ const BookingDetailView = () => {
                             <FiSend className="w-4 h-4" />
                             <span>Share to Supervisor</span>
                         </button>
-                        <button
-                            onClick={handleEdit}
-                            className="btn-secondary flex items-center gap-2"
-                        >
-                            <FiEdit3 className="w-4 h-4" />
-                            <span>Edit</span>
-                        </button>
-                        <button
-                            onClick={handleDeleteBooking}
-                            className="btn-primary flex items-center gap-2 bg-red-600 hover:bg-red-700"
-                        >
-                            <FiTrash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                        </button>
+                        {hasPermission("booking", "edit") && (
+                            <button
+                                onClick={handleEdit}
+                                className="btn-secondary flex items-center gap-2"
+                            >
+                                <FiEdit3 className="w-4 h-4" />
+                                <span>Edit</span>
+                            </button>
+                        )}
+                        {hasPermission("booking", "delete") && (
+                            <button
+                                onClick={handleDeleteBooking}
+                                className="btn-primary flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                            >
+                                <FiTrash2 className="w-4 h-4" />
+                                <span>Delete</span>
+                            </button>
+                        )}
                         <button
                             onClick={() => navigate(-1)}
                             className="btn-secondary flex items-center gap-2"
