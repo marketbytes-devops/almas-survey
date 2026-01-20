@@ -3,17 +3,20 @@ import React, { useState, useEffect } from "react";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import { FaCog, FaSpinner } from "react-icons/fa";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 const Permissions = () => {
-  const [roles, setRoles] = useState([]);
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [permissions, setPermissions] = useState({});
+  const { hasPermission, refreshPermissions } = usePermissions();
+
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userOverrides, setUserOverrides] = useState({});
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [effectivePermissions, setEffectivePermissions] = useState({}); // New: for global checks
   const [isLoading, setIsLoading] = useState(true);
+  const [isOverridesLoading, setIsOverridesLoading] = useState(false);
 
   const pageNameMap = {
     Dashboard: "Dashboard",
@@ -79,16 +82,12 @@ const Permissions = () => {
         const user = profileRes.data;
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
 
-        // 2. Fetch effective permissions (for hasPermission checks)
-        const permsRes = await apiClient.get("/auth/effective-permissions/");
-        setEffectivePermissions(permsRes.data || {});
-
-        // 3. Fetch all roles
-        const rolesRes = await apiClient.get("/auth/roles/");
-        setRoles(rolesRes.data);
+        // 2. Fetch all users
+        const usersRes = await apiClient.get("/auth/users/");
+        setUsers(usersRes.data);
       } catch (err) {
         console.error("Failed to load data:", err);
-        setError("Failed to load permissions data. Please try again.");
+        setError("Failed to load user permissions data. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -97,59 +96,32 @@ const Permissions = () => {
     fetchData();
   }, []);
 
-  const hasPermission = (page, action) => {
-    if (isSuperadmin) return true;
-    const perm = effectivePermissions[page];
-    return perm?.[`can_${action}`] === true;
-  };
-
-  const handleSelectAll = () => {
-    const allChecked = Object.values(permissions).every(
-      (p) => p.view && p.add && p.edit && p.delete
-    );
-
-    const newState = {};
-    Object.keys(permissions).forEach((key) => {
-      newState[key] = {
-        id: permissions[key]?.id,
-        view: !allChecked,
-        add: !allChecked,
-        edit: !allChecked,
-        delete: !allChecked,
-      };
-    });
-    setPermissions(newState);
-  };
-
-  const isAllSelected = () => {
-    return Object.values(permissions).every((p) => p.view && p.add && p.edit && p.delete);
-  };
-
-  const openPermissionsModal = async (role) => {
-    if (!hasPermission("permissions", "edit")) {
-      setError("You do not have permission to edit permissions.");
+  const openPermissionsModal = async (user) => {
+    if (!hasPermission("permissions", "edit") && !isSuperadmin) {
+      setError("You do not have permission to edit user permissions.");
       return;
     }
 
-    setSelectedRole(role);
+    setSelectedUser(user);
     setError("");
     setMessage("");
+    setIsOverridesLoading(true);
 
     try {
-      const response = await apiClient.get(`/auth/roles/${role.id}/`);
-      const rolePerms = response.data.permissions || [];
+      const response = await apiClient.get(`/auth/users/${user.id}/permissions/`);
+      const existingOverrides = response.data || [];
 
-      const permsMap = {};
+      const overridesMap = {};
+
+      // Initialize all pages with default false
       Object.keys(pageNameMap).forEach((key) => {
-        permsMap[key] = { id: null, view: false, add: false, edit: false, delete: false };
+        overridesMap[key] = { id: null, view: false, add: false, edit: false, delete: false };
       });
 
-      rolePerms.forEach((p) => {
-        const frontendKey = Object.keys(pageNameMap).find(
-          (k) => pageNameMap[k] === p.page
-        );
-        if (frontendKey) {
-          permsMap[frontendKey] = {
+      // Apply existing overrides
+      existingOverrides.forEach((p) => {
+        if (overridesMap[p.page]) {
+          overridesMap[p.page] = {
             id: p.id,
             view: p.can_view,
             add: p.can_add,
@@ -159,15 +131,17 @@ const Permissions = () => {
         }
       });
 
-      setPermissions(permsMap);
+      setUserOverrides(overridesMap);
     } catch (err) {
-      setError("Failed to load role permissions.");
+      setError("Failed to load user overrides.");
       console.error(err);
+    } finally {
+      setIsOverridesLoading(false);
     }
   };
 
-  const handlePermissionChange = (page, action) => {
-    setPermissions((prev) => ({
+  const handleOverrideChange = (page, action) => {
+    setUserOverrides((prev) => ({
       ...prev,
       [page]: {
         ...prev[page],
@@ -176,43 +150,71 @@ const Permissions = () => {
     }));
   };
 
-  const handleSavePermissions = async () => {
-    if (!hasPermission("permissions", "edit")) return;
+  const saveUserOverrides = async () => {
+    if (!hasPermission("permissions", "edit") && !isSuperadmin) return;
 
     setIsSaving(true);
     setError("");
     setMessage("");
 
     try {
-      const promises = Object.entries(permissions).map(async ([key, perm]) => {
-        const apiPage = pageNameMap[key];
-        if (!apiPage) return null;
-
+      const promises = Object.entries(userOverrides).map(async ([page, perm]) => {
         const payload = {
-          role: selectedRole.id,
-          page: apiPage,
-          can_view: perm.view,
-          can_add: perm.add,
-          can_edit: perm.edit,
-          can_delete: perm.delete,
+          page,
+          can_view: perm.view || false,
+          can_add: perm.add || false,
+          can_edit: perm.edit || false,
+          can_delete: perm.delete || false,
         };
 
         if (perm.id) {
-          return apiClient.put(`/auth/permissions/${perm.id}/`, payload);
+          // UPDATE existing override
+          return apiClient.put(
+            `/auth/users/${selectedUser.id}/permissions/${perm.id}/`,
+            payload
+          );
         } else if (perm.view || perm.add || perm.edit || perm.delete) {
-          return apiClient.post("/auth/permissions/", payload);
+          // TRY to CREATE new override
+          try {
+            return await apiClient.post(
+              `/auth/users/${selectedUser.id}/permissions/`,
+              payload
+            );
+          } catch (err) {
+            // If 400 due to unique constraint → find existing and UPDATE
+            if (err.response?.status === 400 && 
+                err.response?.data?.non_field_errors?.some(msg => msg.includes("unique set"))) {
+              console.log(`Duplicate override for ${page} — updating instead`);
+              
+              // Fetch current overrides to get existing ID
+              const existingRes = await apiClient.get(`/auth/users/${selectedUser.id}/permissions/`);
+              const match = existingRes.data.find(p => p.page === page);
+              
+              if (match?.id) {
+                return apiClient.put(
+                  `/auth/users/${selectedUser.id}/permissions/${match.id}/`,
+                  payload
+                );
+              }
+            }
+            throw err; // Other errors — show to user
+          }
         }
       }).filter(Boolean);
 
       await Promise.all(promises);
-      setMessage(`Permissions updated successfully for "${selectedRole.name}"`);
+
+      // Refresh global permissions
+      await refreshPermissions();
+
+      setMessage(`Permissions updated for ${selectedUser.name || selectedUser.email}`);
       setTimeout(() => {
-        setSelectedRole(null);
+        setSelectedUser(null);
         setMessage("");
       }, 2500);
     } catch (err) {
-      console.error("Save error:", err);
-      setError("Failed to save permissions. Please try again.");
+      console.error(err);
+      setError("Failed to save permissions: " + (err.response?.data?.detail || err.message || "Unknown error"));
     } finally {
       setIsSaving(false);
     }
@@ -230,9 +232,9 @@ const Permissions = () => {
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
-          <h1 className="text-xs sm:text-lg font-medium">Permissions Management</h1>
+          <h1 className="text-xs sm:text-lg font-medium">User Permissions Management</h1>
           <p className="text-sm sm:text-base text-gray-200 mt-1">
-            Fine-tune role-based access control for all modules
+            Manage individual user access overrides
           </p>
         </div>
 
@@ -249,41 +251,41 @@ const Permissions = () => {
             </div>
           )}
 
-          {/* Roles List */}
+          {/* Users List */}
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
               <h3 className="text-xs sm:text-lg font-medium">
-                Roles ({roles.length})
+                Users ({users.length})
               </h3>
             </div>
 
-            {roles.length > 0 ? (
+            {users.length > 0 ? (
               <>
                 {/* Desktop Table */}
                 <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-300">
                       <tr>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                          Role Name
-                        </th>
-                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">
-                          Actions
-                        </th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Email</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Name</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Role</th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {roles.map((role) => (
-                        <tr key={role.id} className="hover:bg-gray-50 transition">
-                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
-                            {role.name}
+                      {users.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{user.email}</td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-900">{user.name || "—"}</td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                            {user.role?.name || "—"}
                           </td>
                           <td className="px-4 sm:px-6 py-4 text-center">
                             <button
-                              onClick={() => openPermissionsModal(role)}
-                              disabled={!hasPermission("permissions", "edit")}
+                              onClick={() => openPermissionsModal(user)}
+                              disabled={!hasPermission("permissions", "edit") && !isSuperadmin}
                               className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 mx-auto ${
-                                !hasPermission("permissions", "edit")
+                                !hasPermission("permissions", "edit") && !isSuperadmin
                                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                                   : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
                               }`}
@@ -299,17 +301,23 @@ const Permissions = () => {
 
                 {/* Mobile Cards */}
                 <div className="sm:hidden space-y-3 p-4">
-                  {roles.map((role) => (
-                    <div key={role.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
-                      <div className="flex justify-center items-center mb-3">
-                        <h4 className="text-sm sm:text-lg font-medium">{role.name}</h4>
+                  {users.map((user) => (
+                    <div key={user.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-900">{user.name || "—"}</span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p><strong>Email:</strong> {user.email}</p>
+                          <p><strong>Role:</strong> {user.role?.name || "—"}</p>
+                        </div>
                       </div>
                       <div className="flex justify-center">
                         <button
-                          onClick={() => openPermissionsModal(role)}
-                          disabled={!hasPermission("permissions", "edit")}
+                          onClick={() => openPermissionsModal(user)}
+                          disabled={!hasPermission("permissions", "edit") && !isSuperadmin}
                           className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 ${
-                            !hasPermission("permissions", "edit")
+                            !hasPermission("permissions", "edit") && !isSuperadmin
                               ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                               : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
                           }`}
@@ -323,106 +331,107 @@ const Permissions = () => {
               </>
             ) : (
               <div className="text-center py-12 text-gray-500">
-                <p className="text-base sm:text-lg mb-2">No roles available yet.</p>
-                <p className="text-sm">Create your first role in the Roles section.</p>
+                <p className="text-base sm:text-lg mb-2">No users available yet.</p>
+                <p className="text-sm">Create users in the Users section.</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Permissions Edit Modal */}
-        {selectedRole && (
+        {/* Overrides Modal */}
+        {selectedUser && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 sm:p-8 max-w-6xl w-full my-8">
+            <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 sm:p-8 max-w-5xl w-full my-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
-                  Permissions for: {selectedRole.name}
+                  Permission Overrides for: {selectedUser.name || selectedUser.email}
                 </h3>
                 <button
-                  onClick={() => setSelectedRole(null)}
+                  onClick={() => setSelectedUser(null)}
                   className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
                 >
                   ×
                 </button>
               </div>
 
-              {/* Select All */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected()}
-                    onChange={handleSelectAll}
-                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                  />
-                  <span className="text-base font-medium text-gray-700">Select All Permissions</span>
-                </label>
-              </div>
-
-              {/* Permissions Table */}
-              <div className="overflow-x-auto max-h-[60vh] border border-gray-200 rounded-lg shadow-sm">
-                <table className="w-full min-w-max">
-                  <thead className="bg-gray-100 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Module</th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">View</th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Add</th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Edit</th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Delete</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {Object.keys(permissions)
-                      .sort()
-                      .map((key) => (
-                        <tr key={key} className="hover:bg-gray-50 transition">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {displayNames[key] || key}
-                          </td>
-                          {["view", "add", "edit", "delete"].map((action) => (
-                            <td key={action} className="px-4 py-4 text-center">
-                              <input
-                                type="checkbox"
-                                checked={permissions[key]?.[action] || false}
-                                onChange={() => handlePermissionChange(key, action)}
-                                disabled={isSaving}
-                                className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085] disabled:opacity-50 cursor-pointer"
-                              />
-                            </td>
-                          ))}
+              {isOverridesLoading ? (
+                <div className="flex justify-center py-10">
+                  <Loading />
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto max-h-[60vh] border border-gray-200 rounded-lg shadow-sm">
+                    <table className="w-full min-w-max">
+                      <thead className="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Module</th>
+                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">View</th>
+                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Add</th>
+                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Edit</th>
+                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Delete</th>
                         </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {Object.keys(userOverrides)
+                          .sort()
+                          .map((page) => (
+                            <tr key={page} className="hover:bg-gray-50 transition">
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                {displayNames[page] || page}
+                              </td>
+                              {["view", "add", "edit", "delete"].map((action) => (
+                                <td key={action} className="px-4 py-4 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={userOverrides[page]?.[action] || false}
+                                    onChange={() => {
+                                      setUserOverrides((prev) => ({
+                                        ...prev,
+                                        [page]: {
+                                          ...prev[page],
+                                          [action]: !prev[page]?.[action],
+                                        },
+                                      }));
+                                    }}
+                                    disabled={isSaving}
+                                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085] cursor-pointer"
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-              {/* Buttons */}
-              <div className="flex flex-col sm:flex-row justify-end gap-4 mt-8">
-                <button
-                  onClick={() => setSelectedRole(null)}
-                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSavePermissions}
-                  disabled={isSaving}
-                  className={`px-6 py-2.5 rounded-lg font-medium shadow transition flex items-center gap-2 min-w-[140px] justify-center ${
-                    isSaving
-                      ? "bg-gray-400 text-white cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:opacity-90"
-                  }`}
-                >
-                  {isSaving ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Permissions"
-                  )}
-                </button>
-              </div>
+                  <div className="flex flex-col sm:flex-row justify-end gap-4 mt-8">
+                    <button
+                      onClick={() => setSelectedUser(null)}
+                      className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveUserOverrides}
+                      disabled={isSaving}
+                      className={`px-6 py-2.5 rounded-lg font-medium shadow transition flex items-center gap-2 min-w-[140px] justify-center ${
+                        isSaving
+                          ? "bg-gray-400 text-white cursor-not-allowed"
+                          : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:opacity-90"
+                      }`}
+                    >
+                      {isSaving ? (
+                        <>
+                          <FaSpinner className="animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Permissions"
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

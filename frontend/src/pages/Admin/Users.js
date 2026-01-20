@@ -4,12 +4,9 @@ import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
-import { FaSearch, FaTrashAlt, FaEdit, FaCog } from "react-icons/fa";
-import { usePermissions } from "../../components/PermissionsContext/PermissionsContext"; // ← For refreshPermissions
+import { FaSearch, FaTrashAlt, FaEdit } from "react-icons/fa";
 
 const Users = () => {
-  const { refreshPermissions } = usePermissions(); // ← From context
-
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,12 +19,6 @@ const Users = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editUser, setEditUser] = useState(null);
-
-  // User Overrides Modal
-  const [selectedUserForOverrides, setSelectedUserForOverrides] = useState(null);
-  const [userOverrides, setUserOverrides] = useState({});
-  const [isOverridesLoading, setIsOverridesLoading] = useState(false);
-  const [isSavingOverride, setIsSavingOverride] = useState(false);
 
   const createForm = useForm({
     defaultValues: { email: "", name: "", role_id: "" },
@@ -188,159 +179,6 @@ const Users = () => {
     });
   };
 
-  // ── Manage User Permission Overrides ───────────────────────────────────────────
-
-  const openOverridesModal = async (user) => {
-    if (!hasPermission("users", "edit")) {
-      setError("You do not have permission to manage user permissions.");
-      return;
-    }
-
-    setSelectedUserForOverrides(user);
-    setError("");
-    setMessage("");
-    setIsOverridesLoading(true);
-
-    try {
-      const response = await apiClient.get(`/auth/users/${user.id}/permissions/`);
-      const existingOverrides = response.data || [];
-
-      const overridesMap = {};
-
-      // List of ALL known pages (so table always shows everything)
-      const allPages = [
-        "Dashboard", "Profile", "enquiries", "new_enquiries", "scheduled_surveys",
-        "survey_summary", "quotation", "booking", "inventory", "pricing",
-        "local_move", "international_move", "types", "units", "currency", "tax",
-        "handyman", "manpower", "room", "additional-services", "labours", "materials",
-        "users", "roles", "permissions"
-      ];
-
-      // Initialize all pages with default false
-      allPages.forEach((page) => {
-        overridesMap[page] = {
-          id: null,
-          view: false,
-          add: false,
-          edit: false,
-          delete: false,
-        };
-      });
-
-      // Apply existing overrides from backend
-      existingOverrides.forEach((p) => {
-        if (overridesMap[p.page]) {
-          overridesMap[p.page] = {
-            id: p.id,
-            view: p.can_view,
-            add: p.can_add,
-            edit: p.can_edit,
-            delete: p.can_delete,
-          };
-        }
-      });
-
-      setUserOverrides(overridesMap);
-    } catch (err) {
-      setError("Failed to load user overrides.");
-      console.error(err);
-    } finally {
-      setIsOverridesLoading(false);
-    }
-  };
-
-  const handleOverrideChange = (page, action) => {
-    setUserOverrides((prev) => ({
-      ...prev,
-      [page]: {
-        ...prev[page],
-        [action]: !prev[page]?.[action],
-      },
-    }));
-  };
-
-  const handleDeleteOverride = async (page) => {
-    if (!window.confirm(`Delete override for "${page}"?`)) return;
-
-    const override = userOverrides[page];
-    if (!override?.id) return; // No override to delete
-
-    try {
-      await apiClient.delete(
-        `/auth/users/${selectedUserForOverrides.id}/permissions/${override.id}/`
-      );
-
-      // Remove from local state
-      setUserOverrides((prev) => {
-        const updated = { ...prev };
-        updated[page] = {
-          id: null,
-          view: false,
-          add: false,
-          edit: false,
-          delete: false,
-        };
-        return updated;
-      });
-
-      setMessage(`Override deleted for ${page}`);
-      setTimeout(() => setMessage(""), 3000);
-    } catch (err) {
-      setError("Failed to delete override.");
-      console.error(err);
-    }
-  };
-
-  const saveUserOverrides = async () => {
-    if (!hasPermission("users", "edit")) return;
-
-    setIsSavingOverride(true);
-    setError("");
-    setMessage("");
-
-    try {
-      const promises = Object.entries(userOverrides).map(async ([page, perm]) => {
-        const payload = {
-          page,
-          can_view: perm.view || false,
-          can_add: perm.add || false,
-          can_edit: perm.edit || false,
-          can_delete: perm.delete || false,
-        };
-
-        if (perm.id) {
-          // Update existing
-          return apiClient.put(
-            `/auth/users/${selectedUserForOverrides.id}/permissions/${perm.id}/`,
-            payload
-          );
-        } else if (perm.view || perm.add || perm.edit || perm.delete) {
-          // Create new only if changed from default
-          return apiClient.post(
-            `/auth/users/${selectedUserForOverrides.id}/permissions/`,
-            payload
-          );
-        }
-      }).filter(Boolean);
-
-      await Promise.all(promises);
-
-      // Refresh global permissions → Sidebar updates immediately
-      await refreshPermissions();
-
-      setMessage(`Overrides updated for ${selectedUserForOverrides.name || selectedUserForOverrides.email}`);
-      setTimeout(() => {
-        setSelectedUserForOverrides(null);
-        setMessage("");
-      }, 2000);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to save overrides.");
-    } finally {
-      setIsSavingOverride(false);
-    }
-  };
-
   const filteredUsers = users.filter(
     (user) =>
       user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -493,17 +331,6 @@ const Users = () => {
                               <FaEdit className="inline mr-1" /> Edit
                             </button>
                             <button
-                              onClick={() => openOverridesModal(user)}
-                              disabled={!hasPermission("users", "edit")}
-                              className={`text-sm font-medium px-4 py-2 rounded-lg transition ${
-                                !hasPermission("users", "edit")
-                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                  : "bg-purple-600 text-white hover:bg-purple-700"
-                              }`}
-                            >
-                              <FaCog className="inline mr-1" /> Overrides
-                            </button>
-                            <button
                               onClick={() => handleDeleteUser(user.id)}
                               disabled={!hasPermission("users", "delete")}
                               className={`text-sm font-medium px-4 py-2 rounded-lg transition ${
@@ -545,17 +372,6 @@ const Users = () => {
                           }`}
                         >
                           <FaEdit className="inline mr-1" /> Edit
-                        </button>
-                        <button
-                          onClick={() => openOverridesModal(user)}
-                          disabled={!hasPermission("users", "edit")}
-                          className={`flex-1 text-sm font-medium px-4 py-2 rounded-lg transition ${
-                            !hasPermission("users", "edit")
-                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              : "bg-purple-600 text-white hover:bg-purple-700"
-                          }`}
-                        >
-                          <FaCog className="inline mr-1" /> Overrides
                         </button>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
@@ -651,103 +467,6 @@ const Users = () => {
                   </div>
                 </form>
               </FormProvider>
-            </div>
-          </div>
-        )}
-
-        {/* User Overrides Modal */}
-        {selectedUserForOverrides && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 sm:p-8 max-w-5xl w-full my-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
-                  Permission Overrides for: {selectedUserForOverrides.name || selectedUserForOverrides.email}
-                </h3>
-                <button
-                  onClick={() => setSelectedUserForOverrides(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-
-              {isOverridesLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loading />
-                </div>
-              ) : (
-                <>
-                  {/* Overrides Table */}
-                  <div className="overflow-x-auto max-h-[60vh] border border-gray-200 rounded-lg shadow-sm">
-                    <table className="w-full min-w-max">
-                      <thead className="bg-gray-100 sticky top-0 z-10">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Module</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">View</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Add</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Edit</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Delete</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {Object.keys(userOverrides)
-                          .sort()
-                          .map((page) => (
-                            <tr key={page} className="hover:bg-gray-50 transition">
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                {page.charAt(0).toUpperCase() + page.slice(1).replace("-", " ")}
-                              </td>
-                              {["view", "add", "edit", "delete"].map((action) => (
-                                <td key={action} className="px-4 py-4 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={userOverrides[page]?.[action] || false}
-                                    onChange={() => handleOverrideChange(page, action)}
-                                    disabled={isSavingOverride}
-                                    className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 cursor-pointer"
-                                  />
-                                </td>
-                              ))}
-                              <td className="px-4 py-4 text-center">
-                                {userOverrides[page]?.id && (
-                                  <button
-                                    onClick={() => handleDeleteOverride(page)}
-                                    disabled={isSavingOverride}
-                                    className="text-red-600 hover:text-red-800 transition"
-                                  >
-                                    <FaTrashAlt className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row justify-end gap-4 mt-8">
-                    <button
-                      onClick={() => setSelectedUserForOverrides(null)}
-                      className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={saveUserOverrides}
-                      disabled={isSavingOverride}
-                      className={`px-6 py-2.5 rounded-lg font-medium shadow transition flex items-center gap-2 ${
-                        isSavingOverride
-                          ? "bg-gray-400 text-white cursor-not-allowed"
-                          : "bg-gradient-to-r from-purple-600 to-purple-800 text-white hover:opacity-90"
-                      }`}
-                    >
-                      {isSavingOverride ? "Saving..." : "Save Overrides"}
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         )}
