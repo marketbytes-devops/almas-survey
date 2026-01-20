@@ -3,6 +3,7 @@ import { FaTimes, FaCheck, FaEdit, FaMinus, FaPlus, FaCamera, FaTrash } from "re
 import { useFormContext } from "react-hook-form";
 import Modal from "../../../components/Modal";
 import CameraCapture from "../../../components/CameraCapture";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const AddedArticlesSidebar = ({
     showArticlesSidebar,
@@ -10,6 +11,7 @@ const AddedArticlesSidebar = ({
     apiData
 }) => {
     const { watch, setValue } = useFormContext();
+    const { hasPermission } = usePermissions();
     const articles = watch("articles") || [];
     const [editingArticle, setEditingArticle] = useState(null);
     const [editFormData, setEditFormData] = useState({});
@@ -78,6 +80,7 @@ const AddedArticlesSidebar = ({
     };
 
     const updateArticle = (articleId) => {
+        if (!hasPermission("surveys", "edit")) return;
         const updatedArticles = articles.map(article => {
             if (article.id === articleId) {
                 return {
@@ -118,6 +121,7 @@ const AddedArticlesSidebar = ({
     };
 
     const removeArticleFromSidebar = (id) => {
+        if (!hasPermission("surveys", "edit")) return;
         setValue("articles", articles.filter(a => a.id !== id));
     };
 
@@ -163,7 +167,8 @@ const AddedArticlesSidebar = ({
                                                     type="button"
                                                     onMouseDown={(e) => e.preventDefault()}
                                                     onClick={() => updateArticle(article.id)}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 transition-colors"
+                                                    disabled={!hasPermission("surveys", "edit")}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 transition-colors disabled:opacity-50"
                                                     title="Save"
                                                 >
                                                     <FaCheck className="w-3 h-3" />
@@ -387,8 +392,9 @@ const AddedArticlesSidebar = ({
                                         <div className="flex flex-col gap-1">
                                             <button
                                                 type="button"
-                                                onClick={() => setEditingArticle(article.id)}
-                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-[#4c7085] hover:border-[#4c7085] transition-all"
+                                                onClick={() => hasPermission("surveys", "edit") && setEditingArticle(article.id)}
+                                                disabled={!hasPermission("surveys", "edit")}
+                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-[#4c7085] hover:border-[#4c7085] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Edit"
                                             >
                                                 <FaEdit className="w-3.5 h-3.5" />
@@ -396,7 +402,8 @@ const AddedArticlesSidebar = ({
                                             <button
                                                 type="button"
                                                 onClick={() => removeArticleFromSidebar(article.id)}
-                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-red-500 hover:border-red-200 transition-all"
+                                                disabled={!hasPermission("surveys", "edit")}
+                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-red-500 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Remove"
                                             >
                                                 <FaTrash className="w-3.5 h-3.5" />

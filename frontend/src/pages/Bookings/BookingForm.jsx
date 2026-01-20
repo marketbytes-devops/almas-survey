@@ -6,9 +6,12 @@ import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
+
 const BookingForm = () => {
     const { id, quotId } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
 
     const [booking, setBooking] = useState(null);
     const [quotation, setQuotation] = useState(null);
@@ -177,6 +180,12 @@ const BookingForm = () => {
     };
 
     const handleSave = async () => {
+        const requiredPerm = id ? "edit" : "add";
+        if (!hasPermission("booking", requiredPerm)) {
+            alert(`Permission denied: You cannot ${id ? "edit" : "create"} bookings.`);
+            return;
+        }
+
         try {
             setLoading(true);
 
@@ -249,13 +258,16 @@ const BookingForm = () => {
                 subtitle={id ? `Booking ID: ${booking?.booking_id || "—"}` : "Fill in the details to create a new booking"}
                 extra={
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={handleSave}
-                            className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                        >
-                            <FiSave className="w-4 h-4" />
-                            <span>{id ? "Save Changes" : "Create Booking"}</span>
-                        </button>
+                        {/* Check permission: 'edit' if ID exists, 'add' if new */}
+                        {hasPermission("booking", id ? "edit" : "add") && (
+                            <button
+                                onClick={handleSave}
+                                className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                            >
+                                <FiSave className="w-4 h-4" />
+                                <span>{id ? "Save Changes" : "Create Booking"}</span>
+                            </button>
+                        )}
                         <button
                             onClick={() => navigate(-1)}
                             className="btn-secondary flex items-center gap-2"

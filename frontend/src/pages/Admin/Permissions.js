@@ -112,13 +112,32 @@ const Permissions = () => {
       const existingOverrides = response.data || [];
 
       const overridesMap = {};
-
-      // Initialize all pages with default false
-      Object.keys(pageNameMap).forEach((key) => {
-        overridesMap[key] = { id: null, view: false, add: false, edit: false, delete: false };
+      
+      // 1. Get Role Permissions from the selected user object (fetched in users list)
+      const rolePermissions = user.role?.permissions || [];
+      const rolePermsMap = {};
+      rolePermissions.forEach(p => {
+        rolePermsMap[p.page] = {
+          view: p.can_view,
+          add: p.can_add,
+          edit: p.can_edit,
+          delete: p.can_delete
+        };
       });
 
-      // Apply existing overrides
+      // 2. Initialize all pages with Role permissions as default (or false)
+      Object.keys(pageNameMap).forEach((key) => {
+        const rp = rolePermsMap[key] || {};
+        overridesMap[key] = { 
+          id: null, 
+          view: rp.view || false, 
+          add: rp.add || false, 
+          edit: rp.edit || false, 
+          delete: rp.delete || false 
+        };
+      });
+
+      // 3. Apply existing overrides (these take precedence)
       existingOverrides.forEach((p) => {
         if (overridesMap[p.page]) {
           overridesMap[p.page] = {
@@ -173,8 +192,8 @@ const Permissions = () => {
             `/auth/users/${selectedUser.id}/permissions/${perm.id}/`,
             payload
           );
-        } else if (perm.view || perm.add || perm.edit || perm.delete) {
-          // TRY to CREATE new override
+        } else {
+          // CREATE new override (Always create if it doesn't exist, to ensure explicit False is saved)
           try {
             return await apiClient.post(
               `/auth/users/${selectedUser.id}/permissions/`,
@@ -197,7 +216,9 @@ const Permissions = () => {
                 );
               }
             }
-            throw err; // Other errors — show to user
+            // Ignore other errors or log them, but don't break the loop
+            console.error(`Failed to save override for ${page}:`, err);
+            return null;
           }
         }
       }).filter(Boolean);

@@ -7,8 +7,10 @@ import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 const BookingList = () => {
+    const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [filteredBookings, setFilteredBookings] = useState([]);
@@ -33,6 +35,10 @@ const BookingList = () => {
     }, []);
 
     const handleDelete = async (id) => {
+        if (!hasPermission("booking", "delete")) {
+            alert("Permission denied");
+            return;
+        }
         if (!window.confirm("Are you sure you want to delete this booking? This will restore material stock.")) return;
         try {
             await apiClient.delete(`/bookings/${id}/`);
@@ -172,20 +178,24 @@ const BookingList = () => {
                                                     >
                                                         <FiEye className="w-4.5 h-4.5" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => navigate(`/booking-form/${b.id}`)}
-                                                        className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0"
-                                                        title="Edit"
-                                                    >
-                                                        <FiEdit3 className="w-4.5 h-4.5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(b.id)}
-                                                        className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all flex-shrink-0"
-                                                        title="Delete"
-                                                    >
-                                                        <FiTrash2 className="w-4.5 h-4.5" />
-                                                    </button>
+                                                    {hasPermission("booking", "edit") && (
+                                                        <button
+                                                            onClick={() => navigate(`/booking-form/${b.id}`)}
+                                                            className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0"
+                                                            title="Edit"
+                                                        >
+                                                            <FiEdit3 className="w-4.5 h-4.5" />
+                                                        </button>
+                                                    )}
+                                                    {hasPermission("booking", "delete") && (
+                                                        <button
+                                                            onClick={() => handleDelete(b.id)}
+                                                            className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all flex-shrink-0"
+                                                            title="Delete"
+                                                        >
+                                                            <FiTrash2 className="w-4.5 h-4.5" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -249,18 +259,22 @@ const BookingList = () => {
                                     >
                                         <FiEye className="w-4 h-4" /> View
                                     </button>
-                                    <button
-                                        onClick={() => navigate(`/booking-form/${b.id}`)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors text-sm font-medium"
-                                    >
-                                        <FiEdit3 className="w-4 h-4" /> Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(b.id)}
-                                        className="flex items-center justify-center px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
-                                    >
-                                        <FiTrash2 className="w-4 h-4" />
-                                    </button>
+                                    {hasPermission("booking", "edit") && (
+                                        <button
+                                            onClick={() => navigate(`/booking-form/${b.id}`)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors text-sm font-medium"
+                                        >
+                                            <FiEdit3 className="w-4 h-4" /> Edit
+                                        </button>
+                                    )}
+                                    {hasPermission("booking", "delete") && (
+                                        <button
+                                            onClick={() => handleDelete(b.id)}
+                                            className="flex items-center justify-center px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
+                                        >
+                                            <FiTrash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))

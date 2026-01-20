@@ -23,54 +23,16 @@ class CustomUser(AbstractUser):
 
     def get_effective_permissions(self):
         """
-        Returns a dictionary of effective permissions for this user:
-        - Superuser → full access to all pages
-        - Role permissions (base) + User-specific overrides (overrides take priority)
-        Format: {'page_name': {'can_view': bool, 'can_add': bool, 'can_edit': bool, 'can_delete': bool}}
+        Returns dictionary of effective permissions: role base + user overrides.
+        No automatic full access here — superadmin bypass is only in has_effective_permission.
         """
-        # Superuser gets full access to everything
-        if self.is_superuser:
-            all_pages = [
-                "Dashboard",
-                "Profile",
-                "enquiries",
-                "new_enquiries",
-                "scheduled_surveys",
-                "survey_summary",
-                "quotation",
-                "booking",
-                "inventory",
-                "pricing",
-                "local_move",
-                "international_move",
-                "types",
-                "units",
-                "currency",
-                "tax",
-                "handyman",
-                "manpower",
-                "room",
-                "additional-services",
-                "labours",
-                "materials",
-                "users",
-                "roles",
-                "permissions",
-            ]
-            return {
-                page: {
-                    "can_view": True,
-                    "can_add": True,
-                    "can_edit": True,
-                    "can_delete": True,
-                }
-                for page in all_pages
-            }
-
         effective = {}
 
-        # 1. Role permissions (base/default)
+        # 1. Role permissions (base)
         if self.role:
+            print(
+                f"DEBUG: Loading {self.role.permissions.count()} role permissions for {self.email}"
+            )
             for perm in self.role.permissions.all():
                 effective[perm.page] = {
                     "can_view": perm.can_view,
@@ -79,8 +41,10 @@ class CustomUser(AbstractUser):
                     "can_delete": perm.can_delete,
                 }
 
-        # 2. Apply user-specific overrides (these override role permissions)
-        for uperm in self.user_permissions.all():  # ← Consistent related_name
+        # 2. User-specific overrides (override role)
+        overrides = self.permission_overrides.all()
+        print(f"DEBUG: Loading {overrides.count()} user overrides for {self.email}")
+        for uperm in overrides:
             effective[uperm.page] = {
                 "can_view": uperm.can_view,
                 "can_add": uperm.can_add,
@@ -88,19 +52,23 @@ class CustomUser(AbstractUser):
                 "can_delete": uperm.can_delete,
             }
 
+        print(f"DEBUG: Effective permissions for {self.email}: {effective}")
         return effective
 
     def has_effective_permission(self, page, action):
         """
-        Check if the user has permission for a specific page and action.
-        Usage: user.has_effective_permission('quotation', 'add')
+        Check if user has permission for page + action.
+        Superadmin always passes — regular users use effective permissions.
         """
         if self.is_superuser:
+            print(f"DEBUG: Superadmin {self.email} bypass — granted {action} on {page}")
             return True
 
         perms = self.get_effective_permissions()
         page_perm = perms.get(page, {})
-        return page_perm.get(f"can_{action}", False)
+        allowed = page_perm.get(f"can_{action}", False)
+        print(f"DEBUG: Permission check {self.email} - {page}.{action} = {allowed}")
+        return allowed
 
 
 class Role(models.Model):
@@ -131,7 +99,7 @@ class Permission(models.Model):
 class UserPermission(models.Model):
     user = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name="permission_overrides"
-    )  # ← Safe new name
+    )
     page = models.CharField(max_length=100)
     can_view = models.BooleanField(default=False)
     can_add = models.BooleanField(default=False)
@@ -145,41 +113,6 @@ class UserPermission(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.page}"
-
-
-# In CustomUser:
-def get_effective_permissions(self):
-    if self.is_superuser:
-        all_pages = [...]  # your list
-        return {
-            page: {
-                "can_view": True,
-                "can_add": True,
-                "can_edit": True,
-                "can_delete": True,
-            }
-            for page in all_pages
-        }
-
-    effective = {}
-    if self.role:
-        for perm in self.role.permissions.all():
-            effective[perm.page] = {
-                "can_view": perm.can_view,
-                "can_add": perm.can_add,
-                "can_edit": perm.can_edit,
-                "can_delete": perm.can_delete,
-            }
-
-    for uperm in self.permission_overrides.all():  # ← Matches new related_name
-        effective[uperm.page] = {
-            "can_view": uperm.can_view,
-            "can_add": uperm.can_add,
-            "can_edit": uperm.can_edit,
-            "can_delete": uperm.can_delete,
-        }
-
-    return effective
 
 
 # Signal to set default role permissions when a new role is created
@@ -231,7 +164,7 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": False,
                 "can_delete": False,
             },
-            # Quotation & Booking (core revenue modules)
+            # Quotation & Booking
             {
                 "page": "quotation",
                 "can_view": True,
@@ -246,7 +179,7 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": True,
                 "can_delete": False,
             },
-            # Inventory & Execution
+            # Inventory
             {
                 "page": "inventory",
                 "can_view": True,
@@ -254,7 +187,7 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": True,
                 "can_delete": True,
             },
-            # Pricing (rate cards - sensitive)
+            # Pricing
             {
                 "page": "pricing",
                 "can_view": True,
@@ -276,7 +209,7 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": True,
                 "can_delete": True,
             },
-            # Additional Settings (masters)
+            # Additional Settings
             {
                 "page": "types",
                 "can_view": True,
