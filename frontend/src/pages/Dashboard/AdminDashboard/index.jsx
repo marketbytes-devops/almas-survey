@@ -133,6 +133,10 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium text-gray-600 group-hover:text-[#4c7085]">Unassigned Enquiries</span>
               <span className="bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1 rounded-full">{stats.unassigned}</span>
             </NavLink>
+            <NavLink to="/processing-enquiries" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
+              <span className="text-sm font-medium text-gray-600 group-hover:text-[#4c7085]">Processing Enquiries</span>
+              <span className="bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">{stats.processing}</span>
+            </NavLink>
           </div>
         </div>
 
@@ -217,7 +221,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="p-6 flex-1 bg-gray-50/30 space-y-3">
-            <NavLink to="/quotations" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
+            <NavLink to="quotation-list" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
               <span className="text-sm font-medium text-gray-600 group-hover:text-[#4c7085]">All Quotations</span>
             </NavLink>
           </div>
