@@ -4,7 +4,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
-import { FaSearch, FaTrashAlt } from "react-icons/fa";
+import { FaSearch, FaTrashAlt, FaEdit } from "react-icons/fa";
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
@@ -16,12 +16,19 @@ const Roles = () => {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editRole, setEditRole] = useState(null);
 
   const createForm = useForm({
     defaultValues: { name: "", description: "" },
   });
 
-  const { handleSubmit, reset } = createForm;
+  const editForm = useForm({
+    defaultValues: { name: "", description: "" },
+  });
+
+  const { handleSubmit: handleCreate, reset: resetCreate } = createForm;
+  const { handleSubmit: handleEdit, reset: resetEdit } = editForm;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -79,17 +86,45 @@ const Roles = () => {
     try {
       const response = await apiClient.post("/auth/roles/", data);
       setRoles((prev) => [...prev, response.data]);
-      reset();
+      resetCreate();
       setMessage("Role created successfully");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       setError(
         error.response?.data?.detail ||
-        "Failed to create role. Please try again."
+          "Failed to create role. Please try again."
       );
       setTimeout(() => setError(""), 4000);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const onUpdateRole = async (data) => {
+    setError("");
+    setMessage("");
+    if (!hasPermission("roles", "edit")) {
+      setError("You do not have permission to edit a role.");
+      return;
+    }
+    setIsEditing(true);
+    try {
+      const response = await apiClient.put(`/auth/roles/${editRole.id}/`, data);
+      setRoles((prev) =>
+        prev.map((role) => (role.id === editRole.id ? response.data : role))
+      );
+      setMessage("Role updated successfully");
+      setEditRole(null);
+      resetEdit();
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setError(
+        error.response?.data?.detail ||
+          "Failed to update role. Please try again."
+      );
+      setTimeout(() => setError(""), 4000);
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -109,6 +144,18 @@ const Roles = () => {
       setError("Failed to delete role. Please try again.");
       setTimeout(() => setError(""), 4000);
     }
+  };
+
+  const openEditModal = (role) => {
+    if (!hasPermission("roles", "edit")) {
+      setError("You do not have permission to edit a role.");
+      return;
+    }
+    setEditRole(role);
+    editForm.reset({
+      name: role.name,
+      description: role.description || "",
+    });
   };
 
   const filteredRoles = roles.filter((role) =>
@@ -149,7 +196,7 @@ const Roles = () => {
           {/* Create Role Card */}
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
             <FormProvider {...createForm}>
-              <form onSubmit={handleSubmit(onCreateRole)} className="space-y-6">
+              <form onSubmit={handleCreate(onCreateRole)} className="space-y-6">
                 <Input
                   label="Role Name"
                   name="name"
@@ -171,10 +218,11 @@ const Roles = () => {
                 <button
                   type="submit"
                   disabled={isCreating || !hasPermission("roles", "add")}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${isCreating || !hasPermission("roles", "add")
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
-                    }`}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                    isCreating || !hasPermission("roles", "add")
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                  }`}
                 >
                   {isCreating ? "Creating..." : "Create Role"}
                 </button>
@@ -193,7 +241,7 @@ const Roles = () => {
             {/* Search Bar */}
             <div className="p-4 border-b border-gray-200">
               <div className="relative">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search roles by name..."
@@ -225,16 +273,28 @@ const Roles = () => {
                           <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
                             {role.description || "—"}
                           </td>
-                          <td className="px-4 sm:px-6 py-4 text-center">
+                          <td className="px-4 sm:px-6 py-4 text-center space-x-2">
+                            <button
+                              onClick={() => openEditModal(role)}
+                              disabled={!hasPermission("roles", "edit")}
+                              className={`text-sm font-medium px-4 py-2 rounded-lg transition ${
+                                !hasPermission("roles", "edit")
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                              }`}
+                            >
+                              <FaEdit className="inline mr-1" /> Edit
+                            </button>
                             <button
                               onClick={() => handleDeleteRole(role.id)}
                               disabled={!hasPermission("roles", "delete")}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("roles", "delete")
-                                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                : "bg-red-600 text-white hover:bg-red-700"
-                                }`}
+                              className={`text-sm font-medium px-4 py-2 rounded-lg transition ${
+                                !hasPermission("roles", "delete")
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-red-600 text-white hover:bg-red-700"
+                              }`}
                             >
-                              <FaTrashAlt className="inline mr-2" /> Delete
+                              <FaTrashAlt className="inline mr-1" /> Delete
                             </button>
                           </td>
                         </tr>
@@ -253,16 +313,28 @@ const Roles = () => {
                       <p className="text-sm text-gray-600 flex justify-center items-center mb-4">
                         {role.description || "No description"}
                       </p>
-                      <div className="flex justify-center items-center">
+                      <div className="flex justify-center items-center gap-2">
+                        <button
+                          onClick={() => openEditModal(role)}
+                          disabled={!hasPermission("roles", "edit")}
+                          className={`flex-1 text-sm font-medium px-4 py-2 rounded-lg transition ${
+                            !hasPermission("roles", "edit")
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                          }`}
+                        >
+                          <FaEdit className="inline mr-1" /> Edit
+                        </button>
                         <button
                           onClick={() => handleDeleteRole(role.id)}
                           disabled={!hasPermission("roles", "delete")}
-                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("roles", "delete")
-                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                            : "bg-red-600 text-white hover:bg-red-700"
-                            }`}
+                          className={`flex-1 text-sm font-medium px-4 py-2 rounded-lg transition ${
+                            !hasPermission("roles", "delete")
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
                         >
-                          <FaTrashAlt className="inline mr-2" /> Delete
+                          <FaTrashAlt className="inline mr-1" /> Delete
                         </button>
                       </div>
                     </div>
@@ -270,7 +342,7 @@ const Roles = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-600">
+              <div className="text-center py-12 text-gray-500">
                 <p className="text-base sm:text-lg mb-2">
                   {searchQuery ? "No matching roles found." : "No roles available."}
                 </p>
@@ -279,6 +351,58 @@ const Roles = () => {
             )}
           </div>
         </div>
+
+        {/* Edit Role Modal */}
+        {editRole && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sm:p-8 max-w-md w-full">
+              <h3 className="text-xs sm:text-lg font-medium mb-6">Edit Role</h3>
+
+              <FormProvider {...editForm}>
+                <form onSubmit={handleEdit(onUpdateRole)} className="space-y-6">
+                  <Input
+                    label="Role Name"
+                    name="name"
+                    type="text"
+                    placeholder="e.g. Sales Manager"
+                    rules={{ required: "Role name is required" }}
+                    disabled={isEditing}
+                  />
+
+                  <Input
+                    label="Description (optional)"
+                    name="description"
+                    type="textarea"
+                    rows={3}
+                    placeholder="Describe the purpose of this role..."
+                    disabled={isEditing}
+                  />
+
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setEditRole(null)}
+                      className="w-full sm:w-auto text-sm font-medium px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isEditing || !hasPermission("roles", "edit")}
+                      className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
+                        isEditing || !hasPermission("roles", "edit")
+                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                          : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                      }`}
+                    >
+                      {isEditing ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              </FormProvider>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
