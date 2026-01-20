@@ -33,12 +33,12 @@ import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 // import logo from "../../../assets/images/logo.webp";
 import apiClient from "../../../api/apiClient";
 import fallbackProfile from "../../../assets/images/profile-icon.png";
-import Loading from "../../Loading/index"; // ← This line fixes the ReferenceError
+import Loading from "../../Loading/index"; // ← Already present
 
 const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [permissions, setPermissions] = useState([]);
+  const [effectivePermissions, setEffectivePermissions] = useState({}); // Changed to object for effective perms
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,10 +51,11 @@ const Sidebar = ({ toggleSidebar }) => {
   const isMobile = () => window.innerWidth <= 767;
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndPermissions = async () => {
       try {
-        const response = await apiClient.get("/auth/profile/");
-        const data = response.data;
+        // 1. Fetch profile
+        const profileRes = await apiClient.get("/auth/profile/");
+        const data = profileRes.data;
 
         setUser({
           name: data.name || "User",
@@ -64,27 +65,29 @@ const Sidebar = ({ toggleSidebar }) => {
 
         setIsSuperadmin(data.is_superuser === true || data.role?.name === "Superadmin");
 
-        const roleId = data.role?.id;
-        if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
-        }
+        // 2. Fetch effective permissions (role + overrides)
+        const permsRes = await apiClient.get("/auth/effective-permissions/");
+        setEffectivePermissions(permsRes.data || {});
+
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
+        console.error("Failed to fetch profile/permissions:", err);
         setError("Failed to load user data");
         setUser(prev => ({ ...prev, image: fallbackProfile }));
+        setEffectivePermissions({});
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchProfileAndPermissions();
   }, []);
 
   const hasPermission = (page, action) => {
     if (isSuperadmin) return true;
-    const perm = permissions.find((p) => p.page === page);
-    return perm?.[`can_${action}`] === true;
+    if (isLoading) return false; // Prevent flicker during load
+
+    const pagePerm = effectivePermissions[page];
+    return pagePerm?.[`can_${action}`] === true;
   };
 
   const handleToggle = (id) => {

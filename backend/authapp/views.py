@@ -38,15 +38,12 @@ class EffectivePermissionMixin:
         return request.user.has_effective_permission(page, action)
 
 
-# ── Effective Permissions Endpoint (already correct) ─────────────────────────────
 class EffectivePermissionsView(APIView):
-    """
-    Returns the effective (combined role + user overrides) permissions for the current user
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        perms = request.user.get_effective_permissions()  # ← Uses the method we added in models.py
+        perms = request.user.get_effective_permissions()
+        print("Effective perms for", request.user.email, ":", perms)  # ← Add this log
         return Response(perms)
 
 
@@ -318,29 +315,36 @@ class UserDetailView(APIView, EffectivePermissionMixin):
 # ── User Permission Overrides ────────────────────────────────────────────────────
 
 class UserPermissionListCreateView(APIView, EffectivePermissionMixin):
-    def get(self, request, user_id):
-        if not self.check_permission(request, 'users', 'view'):
-            return Response({'error': 'Permission denied'}, status=403)
-        try:
-            user = CustomUser.objects.get(pk=user_id)
-            permissions = user.user_permissions.all()  # ← using override_permissions related_name
-            serializer = UserPermissionSerializer(permissions, many=True)
-            return Response(serializer.data)
-        except CustomUser.DoesNotExist:
-            return Response({'error': 'User not found'}, status=404)
-
     def post(self, request, user_id):
         if not self.check_permission(request, 'users', 'edit'):
             return Response({'error': 'Permission denied'}, status=403)
+        
         try:
             user = CustomUser.objects.get(pk=user_id)
-            data = request.data.copy()
-            data['user'] = user.id  # auto-set user
-            serializer = UserPermissionSerializer(data=data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            page = request.data.get('page')
+            if not page:
+                return Response({'page': 'This field is required.'}, status=400)
+
+            # Check if override already exists for this page + user
+            existing = UserPermission.objects.filter(user=user, page=page).first()
+            serializer_data = request.data.copy()
+            serializer_data['user'] = user.id  # Ensure user is set
+
+            if existing:
+                # Update existing record
+                serializer = UserPermissionSerializer(existing, data=serializer_data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)  # 200 for update
+                return Response(serializer.errors, status=400)
+            else:
+                # Create new
+                serializer = UserPermissionSerializer(data=serializer_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=201)
+                return Response(serializer.errors, status=400)
+
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
 
