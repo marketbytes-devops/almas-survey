@@ -9,15 +9,10 @@ import {
   FiBarChart2,
   FiFileText,
   FiPackage,
-  FiTruck,
-  FiBriefcase,
-  FiDollarSign,
   FiSettings,
   FiUsers,
   FiUser,
   FiLogOut,
-  FiChevronUp,
-  FiChevronDown,
   FiTag,
   FiLayers,
   FiPercent,
@@ -25,12 +20,13 @@ import {
   FiHome,
   FiGlobe,
   FiShield,
-  FiKey,
-  FiCheckSquare
+  FiKey
 } from "react-icons/fi";
-import { BiBox, BiMoneyWithdraw } from "react-icons/bi";
+import { BiMoneyWithdraw } from "react-icons/bi";
+import { MdOutlineInventory } from "react-icons/md";
+import { PiCheckSquare } from "react-icons/pi";
 import { HiOutlineUserGroup } from "react-icons/hi2";
-import { FaChevronUp, FaChevronDown } from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 import fallbackProfile from "../../../assets/images/profile-icon.png";
 import Loading from "../../Loading/index";
@@ -38,7 +34,7 @@ import Loading from "../../Loading/index";
 const Sidebar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [effectivePermissions, setEffectivePermissions] = useState({}); // Effective = role + overrides
+  const [effectivePermissions, setEffectivePermissions] = useState({});
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -110,8 +106,8 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <FiCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <FiBarChart2 className="w-5 h-5" />, page: "survey_summary", action: "view" },
     { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <FiFileText className="w-5 h-5" />, page: "quotation", action: "view" },
-    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <FiCheckSquare className="w-5 h-5" />, page: "booking", action: "view" },
-    { id: "inventory", to: "/inventory", label: "Inventory", icon: <BiBox className="w-5 h-5" />, page: "inventory", action: "view" },
+    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <PiCheckSquare className="w-5 h-5" />, page: "booking", action: "view" },
+    { id: "inventory", to: "/inventory", label: "Inventory", icon: <MdOutlineInventory className="w-5 h-5" />, page: "inventory", action: "view" },
     {
       id: "pricing",
       label: "Pricing",
