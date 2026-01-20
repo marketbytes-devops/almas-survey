@@ -1,63 +1,125 @@
-import { NavLink } from "react-router";
+import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import apiClient from "../../../api/apiClient";
+import { FiLoader } from "react-icons/fi";
+import PageHeader from "../../../components/PageHeader";
 
 const cardVariants = {
-  hover: { scale: 1.05, boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)" },
-  rest: { scale: 1, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)" },
+  hover: { scale: 1.02, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.05)" },
+  rest: { scale: 1, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.02)" },
 };
 
 const SalesDashboard = () => {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    new: 0,
+    processing: 0,
+    scheduled: 0,
+    followUps: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const res = await apiClient.get("/contacts/enquiries/");
+        const data = res.data || [];
+
+        setStats({
+          new: data.filter(e => !e.assigned_user).length,
+          processing: data.filter(e => e.assigned_user && !e.survey_date).length,
+          scheduled: data.filter(e => e.survey_date).length,
+          followUps: data.filter(e => !e.has_survey && e.assigned_user).length
+        });
+      } catch (err) {
+        console.error("Failed to fetch sales dashboard stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-[#4c7085]">
+        <FiLoader className="w-10 h-10 animate-spin mb-4" />
+        <p className="font-medium">Loading Dashboard...</p>
+      </div>
+    );
+  }
+
+  const cards = [
+    {
+      title: "New Enquiries",
+      description: "Leads waiting to be assigned or initially contacted.",
+      link: "/new-enquiries",
+      count: stats.new,
+      buttonText: `View ${stats.new} New`,
+      color: "bg-blue-500"
+    },
+    {
+      title: "Active Processing",
+      description: "Leads currently being handled by staff.",
+      link: "/processing-enquiries",
+      count: stats.processing,
+      buttonText: `View ${stats.processing} Processing`,
+      color: "bg-green-500"
+    },
+    {
+      title: "Scheduled Surveys",
+      description: "Confirmed survey appointments for move assessment.",
+      link: "/scheduled-surveys",
+      count: stats.scheduled,
+      buttonText: `View ${stats.scheduled} Scheduled`,
+      color: "bg-purple-500"
+    },
+    {
+      title: "Follow Ups",
+      description: "Leads requiring contact before a survey can be scheduled.",
+      link: "/follow-ups",
+      count: stats.followUps,
+      buttonText: `View ${stats.followUps} Follow-Ups`,
+      color: "bg-amber-500"
+    },
+  ];
+
   return (
-    <div className="container mx-auto">
-      <div className="mb-8">
-        <h2 className="text-xl sm:text-2xl font-medium text-[#2d4a5e] mb-4">Quick Access</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
-          {[
-            {
-              title: "New Enquiries",
-              description: "View all newly assigned or unattended enquiries.",
-              link: "/new-enquiries",
-              buttonText: "View 5 New Enquiries",
-            },
-            {
-              title: "Pending/Processing Enquiries",
-              description: "View all pending and processing enquiries.",
-              link: "/processing-enquiries",
-              buttonText: "View 8 Pending/Processing",
-            },
-            {
-              title: "Scheduled Surveys",
-              description: "View all scheduled surveys.",
-              link: "/scheduled-surveys",
-              buttonText: "View 6 Scheduled",
-            },
-            {
-              title: "Follow Ups",
-              description: "View all non-scheduled enquiries.",
-              link: "/follow-ups",
-              buttonText: "View 10 Follow Ups",
-            },
-          ].map((card, index) => (
-            <motion.div
-              key={index}
-              className="bg-white shadow rounded-lg p-4 sm:p-4"
-              variants={cardVariants}
-              initial="rest"
-              whileHover="hover"
-              transition={{ duration: 0.2 }}
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+      <PageHeader
+        title="Sales Dashboard"
+        subtitle="Manage your leads and schedules efficiently"
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+        {cards.map((card, index) => (
+          <motion.div
+            key={index}
+            className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col justify-between"
+            variants={cardVariants}
+            initial="rest"
+            whileHover="hover"
+            transition={{ duration: 0.2 }}
+          >
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-medium text-gray-800">{card.title}</h3>
+                <span className={`px-3 py-1 rounded-full text-white text-xs font-bold ${card.color}`}>
+                  {card.count}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed mb-6">{card.description}</p>
+            </div>
+            <NavLink
+              to={card.link}
+              className="w-full inline-block bg-[#4c7085] hover:bg-[#3d5a6b] text-white text-sm font-medium py-3.5 px-6 rounded-2xl text-center transition-all shadow-sm active:scale-[0.98]"
+              aria-label={`View ${card.title}`}
             >
-              <h3 className="text-lg sm:text-xl font-medium text-[#2d4a5e]">{card.title}</h3>
-              <p className="text-sm text-gray-600 mt-2">{card.description}</p>
-              <NavLink
-                to={card.link}
-                className="w-full mt-4 inline-block bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white text-sm font-medium py-2.5 px-4 rounded hover:bg-[#4c7085] text-center"
-                aria-label={`View ${card.title}`}
-              >
-                {card.buttonText}
-              </NavLink>
-            </motion.div>
-          ))}
-        </div>
+              {card.buttonText}
+            </NavLink>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
