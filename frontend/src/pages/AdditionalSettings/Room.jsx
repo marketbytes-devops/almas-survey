@@ -580,7 +580,7 @@ const Room = () => {
 
               <div className="max-h-screen overflow-y-auto">
                 {rooms.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500">
+                  <div className="text-center py-16 text-gray-600">
                     <p className="text-base sm:text-lg mb-2">No rooms yet.</p>
                     <p className="text-sm">Create your first room using the form on the left!</p>
                   </div>
@@ -683,7 +683,7 @@ const Room = () => {
                 </h3>
                 <button
                   onClick={() => setCopyModal(null)}
-                  className="text-gray-500 hover:text-gray-700 transition"
+                  className="text-gray-600 hover:text-gray-700 transition"
                 >
                   <FaTimes size={24} />
                 </button>

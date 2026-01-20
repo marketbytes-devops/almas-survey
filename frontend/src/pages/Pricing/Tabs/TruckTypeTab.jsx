@@ -7,26 +7,24 @@ import {
   FaToggleOn,
   FaToggleOff,
   FaTruck,
+  FaSave,
+  FaTimes
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
-import Input from "../../../components/Input";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
 const TruckTypeTab = () => {
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingTruck, setEditingTruck] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     capacity_cbm: "",
     capacity_kg: "",
     price_per_trip: "",
-    // length_meters: "",
-    // width_meters: "",
-    // height_meters: "",
     is_default: false,
     is_active: true,
     order: 0,
@@ -38,7 +36,7 @@ const TruckTypeTab = () => {
       const res = await apiClient.get(`${API_BASE}/truck-types/`);
       setTrucks(res.data);
     } catch (err) {
-      alert("Failed to load truck types");
+      console.error("Failed to load truck types");
     } finally {
       setLoading(false);
     }
@@ -48,66 +46,58 @@ const TruckTypeTab = () => {
     fetchTrucks();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!formData.name) return;
+
+    setSaving(true);
     try {
       const payload = {
         ...formData,
         capacity_cbm: parseFloat(formData.capacity_cbm) || 0,
         capacity_kg: parseInt(formData.capacity_kg) || 0,
         price_per_trip: parseFloat(formData.price_per_trip) || 0,
-        // length_meters: formData.length_meters ? parseFloat(formData.length_meters) : null,
-        // width_meters: formData.width_meters ? parseFloat(formData.width_meters) : null,
-        // height_meters: formData.height_meters ? parseFloat(formData.height_meters) : null,
       };
 
-      if (editingTruck) {
-        await apiClient.patch(`${API_BASE}/truck-types/${editingTruck.id}/`, payload);
+      if (editingId) {
+        await apiClient.patch(`${API_BASE}/truck-types/${editingId}/`, payload);
       } else {
         await apiClient.post(`${API_BASE}/truck-types/`, payload);
       }
 
-      setShowModal(false);
       resetForm();
       fetchTrucks();
-      alert("Truck saved!");
     } catch (err) {
       console.error(err);
       alert("Save failed");
+    } finally {
+      setSaving(false);
     }
   };
 
   const resetForm = () => {
-    setEditingTruck(null);
+    setEditingId(null);
     setFormData({
       name: "",
       capacity_cbm: "",
       capacity_kg: "",
       price_per_trip: "",
-      // length_meters: "",
-      // width_meters: "",
-      // height_meters: "",
       is_default: false,
       is_active: true,
       order: 0,
     });
   };
 
-  const openEdit = (truck) => {
-    setEditingTruck(truck);
+  const startEdit = (truck) => {
+    setEditingId(truck.id);
     setFormData({
       name: truck.name,
       capacity_cbm: truck.capacity_cbm,
       capacity_kg: truck.capacity_kg,
       price_per_trip: truck.price_per_trip,
-      // length_meters: truck.length_meters || "",
-      // width_meters: truck.width_meters || "",
-      // height_meters: truck.height_meters || "",
       is_default: truck.is_default,
       is_active: truck.is_active,
       order: truck.order,
     });
-    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
@@ -138,213 +128,231 @@ const TruckTypeTab = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-16 text-gray-600">
-        <div className="text-xl mb-2">Loading truck types...</div>
-        <div className="text-sm text-gray-500">Please wait</div>
-      </div>
-    );
-  }
+  const Label = ({ children, required }) => (
+    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
+      {children}
+      {required && <span className="text-red-500"> *</span>}
+    </label>
+  );
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl sm:text-2xl font-medium text-gray-800 flex items-center gap-3">
-            <FaTruck className="text-[#4c7085]" />
-            Truck Types
-          </h2>
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+      {/* Form Section */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
+        <h3 className="text-lg font-medium text-gray-800 mb-6 border-b border-gray-100 pb-4">Truck Configuration</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+          <div>
+            <Label required>Truck Name</Label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. 3 Ton Closed Body"
+              className="input-style w-full font-medium text-gray-700"
+              disabled={saving}
+            />
+          </div>
+
+          <div>
+            <Label required>Capacity (CBM)</Label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.capacity_cbm}
+              onChange={(e) => setFormData({ ...formData, capacity_cbm: e.target.value })}
+              placeholder="0.0"
+              className="input-style w-full font-medium text-gray-700"
+              disabled={saving}
+            />
+          </div>
+
+          <div>
+            <Label required>Capacity (KG)</Label>
+            <input
+              type="number"
+              value={formData.capacity_kg}
+              onChange={(e) => setFormData({ ...formData, capacity_kg: e.target.value })}
+              placeholder="0"
+              className="input-style w-full font-medium text-gray-700"
+              disabled={saving}
+            />
+          </div>
+
+          <div>
+            <Label required>Price per Trip (QAR)</Label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.price_per_trip}
+              onChange={(e) => setFormData({ ...formData, price_per_trip: e.target.value })}
+              placeholder="0.00"
+              className="input-style w-full font-medium text-gray-700"
+              disabled={saving}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row justify-end gap-3">
+          {editingId && (
+            <button
+              onClick={resetForm}
+              className="w-full sm:w-auto px-6 h-[46px] rounded-xl font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+            >
+              <FaTimes /> Cancel
+            </button>
+          )}
           <button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-            className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg transition shadow-lg flex items-center justify-center gap-2 font-medium text-sm"
+            onClick={handleSubmit}
+            disabled={saving || !formData.name}
+            className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaPlus size={16} className="sm:w-5 sm:h-5" />
-            Add Truck
+            {saving ? (
+              "Saving..."
+            ) : (
+              <>
+                {editingId ? <FaSave /> : <FaPlus />}
+                {editingId ? "Update Truck" : "Add Truck"}
+              </>
+            )}
           </button>
         </div>
+      </div>
 
-        {/* Truck Grid - Responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trucks.map((truck) => (
-            <div
-              key={truck.id}
-              className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 relative transition-all ${truck.is_active ? "border-gray-200" : "border-gray-300 opacity-75"
-                }`}
-            >
-              {truck.is_default && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-1 rounded-full font-medium">
-                  DEFAULT
-                </span>
-              )}
-
-              <div className="flex items-center gap-3 mb-4">
-                <FaTruck className="text-3xl sm:text-4xl text-[#4c7085]" />
-                <h3 className="text-lg sm:text-xl font-medium text-gray-800">{truck.name}</h3>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <p><strong>Capacity:</strong> {truck.capacity_cbm} CBM / {truck.capacity_kg} KG</p>
-                <p><strong>Price/Trip:</strong> QAR {Number(truck.price_per_trip).toLocaleString()}</p>
-                {/* {(truck.length_meters || truck.width_meters || truck.height_meters) && (
-                  <p>
-                    <strong>Size:</strong>{" "}
-                    {truck.length_meters || "-"} × {truck.width_meters || "-"} × {truck.height_meters || "-"} m
-                  </p>
-                )} */}
-              </div>
-
-              <div className="flex flex-wrap gap-2 mt-6">
-                <button
-                  onClick={() => openEdit(truck)}
-                  className="flex-1 py-2 bg-[#4c7085] text-white rounded-lg hover:bg-[#6b8ca3] transition text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <FaEdit /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(truck.id)}
-                  className="font-medium text-sm px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <FaTrash />
-                </button>
-                <button
-                  onClick={() => toggleActive(truck)}
-                  className="px-4 py-2 font-medium text-sm"
-                  title={truck.is_active ? "Deactivate" : "Activate"}
-                >
-                  {truck.is_active ? (
-                    <FaToggleOn className="text-3xl text-green-600" />
-                  ) : (
-                    <FaToggleOff className="text-3xl text-gray-400" />
-                  )}
-                </button>
-                {!truck.is_default && (
-                  <button
-                    onClick={() => setDefault(truck)}
-                    className="px-4 py-2 font-medium text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                    title="Set as Default"
-                  >
-                    <FaCheck />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+      {/* List Section */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">Available Truck Types</h3>
         </div>
 
-        {/* Modal - Add/Edit Truck */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sm:p-8 max-w-2xl w-full my-8">
-              <h3 className="text-xl sm:text-2xl font-medium text-gray-800 mb-6">
-                {editingTruck ? "Edit" : "Add"} Truck Type
-              </h3>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <Input
-                  label="Truck Name *"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Capacity (CBM) *"
-                    type="number"
-                    step="0.1"
-                    value={formData.capacity_cbm}
-                    onChange={(e) => setFormData({ ...formData, capacity_cbm: e.target.value })}
-                    required
-                  />
-
-                  <Input
-                    label="Capacity (KG) *"
-                    type="number"
-                    value={formData.capacity_kg}
-                    onChange={(e) => setFormData({ ...formData, capacity_kg: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <Input
-                  label="Price per Trip (QAR) *"
-                  type="number"
-                  step="0.01"
-                  value={formData.price_per_trip}
-                  onChange={(e) => setFormData({ ...formData, price_per_trip: e.target.value })}
-                  required
-                />
-
-                {/* <div className="grid grid-cols-3 gap-4">
-                  <Input
-                    label="Length (m)"
-                    type="number"
-                    step="0.01"
-                    value={formData.length_meters}
-                    onChange={(e) => setFormData({ ...formData, length_meters: e.target.value })}
-                  />
-
-                  <Input
-                    label="Width (m)"
-                    type="number"
-                    step="0.01"
-                    value={formData.width_meters}
-                    onChange={(e) => setFormData({ ...formData, width_meters: e.target.value })}
-                  />
-
-                  <Input
-                    label="Height (m)"
-                    type="number"
-                    step="0.01"
-                    value={formData.height_meters}
-                    onChange={(e) => setFormData({ ...formData, height_meters: e.target.value })}
-                  />
-                </div> */}
-
-                <div className="flex flex-wrap gap-6 text-sm">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_default}
-                      onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-                      className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                    />
-                    <span>Set as Default</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                    />
-                    <span>Active</span>
-                  </label>
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="w-full sm:w-auto px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto px-8 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg font-medium text-sm transition shadow-lg"
-                  >
-                    {editingTruck ? "Update Truck" : "Create Truck"}
-                  </button>
-                </div>
-              </form>
+        {loading ? (
+          <div className="text-center py-20 text-gray-600">Loading...</div>
+        ) : trucks.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaTruck className="text-gray-300 text-xl" />
             </div>
+            <p className="text-gray-600 font-medium">No truck types configured</p>
           </div>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50/50">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest pl-8">Truck Name</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Capacity</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Price/Trip</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Active</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Default</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right pr-8">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {trucks.map((truck) => (
+                    <tr key={truck.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 pl-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#4c7085]/10 text-[#4c7085] flex items-center justify-center">
+                            <FaTruck size={14} />
+                          </div>
+                          <span className="font-medium text-gray-800">{truck.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 font-medium text-sm">
+                        {truck.capacity_cbm} CBM / {truck.capacity_kg} KG
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 font-medium text-sm">
+                        QAR {Number(truck.price_per_trip).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button onClick={() => toggleActive(truck)} className="focus:outline-none">
+                          {truck.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {!truck.is_default ? (
+                          <button onClick={() => setDefault(truck)} className="text-gray-300 hover:text-yellow-500 transition-colors" title="Set Default">
+                            <FaCheck />
+                          </button>
+                        ) : (
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-medium">Default</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right pr-8">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => startEdit(truck)}
+                            className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
+                          >
+                            <FaEdit size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(truck.id)}
+                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
+                          >
+                            <FaTrash size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {trucks.map((truck) => (
+                <div key={truck.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#4c7085]/10 text-[#4c7085] flex items-center justify-center">
+                        <FaTruck size={18} />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-800">{truck.name}</h4>
+                        {truck.is_default && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-bold">DEFAULT</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => toggleActive(truck)} className="focus:outline-none">
+                        {truck.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
+                      </button>
+                      <button
+                        onClick={() => startEdit(truck)}
+                        className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg"
+                      >
+                        <FaEdit size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(truck.id)}
+                        className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg"
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-xl text-sm">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Capacity</p>
+                      <p className="font-medium text-gray-700">{truck.capacity_cbm} CBM</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Weight</p>
+                      <p className="font-medium text-gray-700">{truck.capacity_kg} KG</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Price</p>
+                      <p className="font-medium text-gray-700">QAR {Number(truck.price_per_trip).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -54,11 +54,11 @@ const StockInHand = () => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50/50">
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Material Name</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Stock Level</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Unit</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Initial/Last Price</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Status</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Material Name</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Stock Level</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Unit</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Initial/Last Price</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -81,8 +81,8 @@ const StockInHand = () => {
                                         <td className="px-6 py-4 text-base font-medium text-gray-800">
                                             {m.stock_in_hand}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{m.unit || "—"}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{m.purchase_price ? `${m.purchase_price} QAR` : "—"}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">{m.unit || "—"}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">{m.purchase_price ? `${m.purchase_price} QAR` : "—"}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
                                                 {statusText}
@@ -93,7 +93,7 @@ const StockInHand = () => {
                             })}
                             {materials.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-600">
                                         No materials found.
                                     </td>
                                 </tr>

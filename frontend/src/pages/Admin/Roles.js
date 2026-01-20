@@ -85,7 +85,7 @@ const Roles = () => {
     } catch (error) {
       setError(
         error.response?.data?.detail ||
-          "Failed to create role. Please try again."
+        "Failed to create role. Please try again."
       );
       setTimeout(() => setError(""), 4000);
     } finally {
@@ -171,11 +171,10 @@ const Roles = () => {
                 <button
                   type="submit"
                   disabled={isCreating || !hasPermission("roles", "add")}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                    isCreating || !hasPermission("roles", "add")
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
-                  }`}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${isCreating || !hasPermission("roles", "add")
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                    }`}
                 >
                   {isCreating ? "Creating..." : "Create Role"}
                 </button>
@@ -194,7 +193,7 @@ const Roles = () => {
             {/* Search Bar */}
             <div className="p-4 border-b border-gray-200">
               <div className="relative">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search roles by name..."
@@ -230,11 +229,10 @@ const Roles = () => {
                             <button
                               onClick={() => handleDeleteRole(role.id)}
                               disabled={!hasPermission("roles", "delete")}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
-                                !hasPermission("roles", "delete")
-                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                  : "bg-red-600 text-white hover:bg-red-700"
-                              }`}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("roles", "delete")
+                                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                : "bg-red-600 text-white hover:bg-red-700"
+                                }`}
                             >
                               <FaTrashAlt className="inline mr-2" /> Delete
                             </button>
@@ -259,11 +257,10 @@ const Roles = () => {
                         <button
                           onClick={() => handleDeleteRole(role.id)}
                           disabled={!hasPermission("roles", "delete")}
-                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
-                            !hasPermission("roles", "delete")
-                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              : "bg-red-600 text-white hover:bg-red-700"
-                          }`}
+                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("roles", "delete")
+                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                            : "bg-red-600 text-white hover:bg-red-700"
+                            }`}
                         >
                           <FaTrashAlt className="inline mr-2" /> Delete
                         </button>
@@ -273,7 +270,7 @@ const Roles = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-600">
                 <p className="text-base sm:text-lg mb-2">
                   {searchQuery ? "No matching roles found." : "No roles available."}
                 </p>

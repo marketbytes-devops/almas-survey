@@ -386,7 +386,7 @@ export default function QuotationEdit() {
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-medium text-gray-800">Digital Signature</h3>
-                <button onClick={() => setIsSignatureViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+                <button onClick={() => setIsSignatureViewModalOpen(false)} className="text-gray-600 hover:text-gray-600 text-3xl leading-none">&times;</button>
               </div>
               <img src={currentSignature} alt="Signature" className="w-full rounded-2xl border border-gray-200" />
               <button
@@ -444,7 +444,7 @@ export default function QuotationEdit() {
           <h3 className="text-lg font-medium text-gray-800 mb-4">Pricing Location</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Destination City</label>
+              <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Destination City</label>
               <input
                 type="text"
                 value={destinationCity || "Not specified"}
@@ -453,7 +453,7 @@ export default function QuotationEdit() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Country</label>
+              <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Country</label>
               <input
                 type="text"
                 value="Qatar"
@@ -466,7 +466,7 @@ export default function QuotationEdit() {
 
         {/* Quotation Date */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-          <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Quotation Date</label>
+          <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Quotation Date</label>
           <input
             type="date"
             value={form.date}
@@ -480,7 +480,7 @@ export default function QuotationEdit() {
           <h3 className="text-lg font-medium text-gray-800 mb-4">Client Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Client Name</label>
+              <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Client Name</label>
               <input
                 type="text"
                 value={form.client}
@@ -489,7 +489,7 @@ export default function QuotationEdit() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Mobile</label>
+              <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Mobile</label>
               <input
                 type="text"
                 value={form.mobile}
@@ -498,7 +498,7 @@ export default function QuotationEdit() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Email</label>
+              <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Email</label>
               <input
                 type="text"
                 value={form.email}
@@ -531,7 +531,7 @@ export default function QuotationEdit() {
                   >
                     <div className="flex-1">
                       <div className="font-medium text-gray-800">{charge.service_name}</div>
-                      <div className="text-sm text-gray-500 mt-1">
+                      <div className="text-sm text-gray-600 mt-1">
                         {charge.price_per_unit} {charge.currency} × {quantity} unit(s)
                       </div>
                     </div>
@@ -652,7 +652,7 @@ export default function QuotationEdit() {
             {/* Advance & Discount */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Advance
                 </label>
                 <input
@@ -665,7 +665,7 @@ export default function QuotationEdit() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Discount
                 </label>
                 <input
@@ -682,7 +682,7 @@ export default function QuotationEdit() {
             {/* Total Amount & Balance */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2">
                   Total Amount
                 </label>
                 <p className="text-2xl font-medium text-[#4c7085]">
@@ -691,7 +691,7 @@ export default function QuotationEdit() {
               </div>
 
               <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2">
                   Balance
                 </label>
                 <p className="text-2xl font-medium text-indigo-600">
@@ -728,8 +728,8 @@ export default function QuotationEdit() {
                 onClick={() => setIsSignatureModalOpen(true)}
                 disabled={isSignatureUploading}
                 className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${isSignatureUploading
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
                   }`}
               >
                 {isSignatureUploading ? "Uploading..." : "Change"}
@@ -744,8 +744,8 @@ export default function QuotationEdit() {
             onClick={handleUpdate}
             disabled={!computedValues.amount || !computedValues.finalAmount || priceError}
             className={`w-full md:w-auto px-8 py-3 text-sm font-medium rounded-xl transition-all ${!computedValues.amount || !computedValues.finalAmount || priceError
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#4c7085] text-white hover:bg-[#6b8ca3] shadow-sm"
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-[#4c7085] text-white hover:bg-[#6b8ca3] shadow-sm"
               }`}
           >
             Update Quotation

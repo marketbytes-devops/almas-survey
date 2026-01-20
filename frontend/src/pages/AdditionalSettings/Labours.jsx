@@ -118,8 +118,8 @@ const Labours = () => {
                                     type="submit"
                                     disabled={saving || !watch("name")?.trim()}
                                     className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${saving || !watch("name")?.trim()
-                                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                            : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
+                                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                        : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
                                         }`}
                                 >
                                     {saving ? "Saving..." : "Save New Labour"}
@@ -183,7 +183,7 @@ const Labours = () => {
                                 </div>
                             </>
                         ) : (
-                            <div className="text-center py-12 text-gray-500">
+                            <div className="text-center py-12 text-gray-600">
                                 <p className="text-base sm:text-lg mb-2">No labours found.</p>
                             </div>
                         )}

@@ -128,12 +128,12 @@ const AddedArticlesSidebar = ({
                 <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
                     <div>
                         <h3 className="text-lg font-medium text-gray-800">Added Articles</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">{articles.length} items in survey</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{articles.length} items in survey</p>
                     </div>
                     <button
                         type="button"
                         onClick={() => setShowArticlesSidebar(false)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        className="p-2 text-gray-600 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <FaTimes className="w-5 h-5" />
                     </button>
@@ -147,7 +147,7 @@ const AddedArticlesSidebar = ({
                                 <FaEdit className="w-6 h-6 text-gray-300" />
                             </div>
                             <h4 className="text-gray-900 font-medium mb-1">No articles added yet</h4>
-                            <p className="text-gray-500 text-sm">Items you select will appear here.</p>
+                            <p className="text-gray-600 text-sm">Items you select will appear here.</p>
                         </div>
                     ) : (
                         articles.map(article => (
@@ -172,7 +172,7 @@ const AddedArticlesSidebar = ({
                                                     type="button"
                                                     onMouseDown={(e) => e.preventDefault()}
                                                     onClick={cancelEdit}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 transition-colors"
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 transition-colors"
                                                     title="Cancel"
                                                 >
                                                     <FaTimes className="w-3 h-3" />
@@ -204,7 +204,7 @@ const AddedArticlesSidebar = ({
                                                         <button
                                                             type="button"
                                                             onClick={() => setIsCameraOpen(true)}
-                                                            className="w-16 h-16 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 border border-gray-200 border-dashed transition-colors"
+                                                            className="w-16 h-16 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 border border-gray-200 border-dashed transition-colors"
                                                         >
                                                             <FaCamera className="w-5 h-5" />
                                                         </button>
@@ -212,13 +212,13 @@ const AddedArticlesSidebar = ({
                                                 </div>
 
                                                 <div className="flex-1">
-                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Quantity</label>
+                                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Quantity</label>
                                                     <div className="flex items-center border border-gray-200 rounded-lg h-9 bg-white shadow-sm overflow-hidden w-fit">
                                                         <button
                                                             type="button"
                                                             onMouseDown={(e) => e.preventDefault()}
                                                             onClick={() => handleEditInputChange('quantity', Math.max(1, (editFormData.quantity || 1) - 1))}
-                                                            className="w-9 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100"
+                                                            className="w-9 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100"
                                                         >
                                                             <FaMinus className="w-2.5 h-2.5" />
                                                         </button>
@@ -233,7 +233,7 @@ const AddedArticlesSidebar = ({
                                                             type="button"
                                                             onMouseDown={(e) => e.preventDefault()}
                                                             onClick={() => handleEditInputChange('quantity', (editFormData.quantity || 1) + 1)}
-                                                            className="w-9 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100"
+                                                            className="w-9 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100"
                                                         >
                                                             <FaPlus className="w-2.5 h-2.5" />
                                                         </button>
@@ -270,20 +270,20 @@ const AddedArticlesSidebar = ({
 
                                             {/* Dimensions */}
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Dimensions (cm)</label>
+                                                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Dimensions (cm)</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     <div className="relative">
-                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">L</span>
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-600">L</span>
                                                         <input type="number" step="0.01" value={editFormData.length || ""} onChange={(e) => handleEditInputChange('length', e.target.value)}
                                                             className="w-full pl-6 pr-2 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-[#4c7085] outline-none" placeholder="0" />
                                                     </div>
                                                     <div className="relative">
-                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">W</span>
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-600">W</span>
                                                         <input type="number" step="0.01" value={editFormData.width || ""} onChange={(e) => handleEditInputChange('width', e.target.value)}
                                                             className="w-full pl-6 pr-2 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-[#4c7085] outline-none" placeholder="0" />
                                                     </div>
                                                     <div className="relative">
-                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">H</span>
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-600">H</span>
                                                         <input type="number" step="0.01" value={editFormData.height || ""} onChange={(e) => handleEditInputChange('height', e.target.value)}
                                                             className="w-full pl-6 pr-2 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-[#4c7085] outline-none" placeholder="0" />
                                                     </div>
@@ -293,7 +293,7 @@ const AddedArticlesSidebar = ({
                                             {/* Advanced Selects */}
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-xs font-medium text-gray-500 mb-1">Handyman</label>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Handyman</label>
                                                     <select
                                                         value={editFormData.handyman || ""}
                                                         onChange={(e) => handleEditInputChange('handyman', e.target.value)}
@@ -306,7 +306,7 @@ const AddedArticlesSidebar = ({
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-medium text-gray-500 mb-1">Packing</label>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Packing</label>
                                                     <select
                                                         value={editFormData.packingOption || ""}
                                                         onChange={(e) => handleEditInputChange('packingOption', e.target.value)}
@@ -329,7 +329,7 @@ const AddedArticlesSidebar = ({
                                                 <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">x{article.quantity}</span>
                                             </div>
 
-                                            <div className="text-xs text-gray-500 space-y-0.5">
+                                            <div className="text-xs text-gray-600 space-y-0.5">
                                                 <p className="flex items-center gap-2">
                                                     <span>Room: <span className="text-gray-700 font-medium">{apiData.rooms.find(r => r.value === article.room)?.label || article.room || "General"}</span></span>
                                                     {(article.volume > 0) && (
@@ -337,7 +337,7 @@ const AddedArticlesSidebar = ({
                                                     )}
                                                 </p>
                                                 {article.addedAt && (
-                                                    <p className="text-xs text-gray-500">
+                                                    <p className="text-xs text-gray-600">
                                                         Added: {new Date(article.addedAt).toLocaleString('en-US', {
                                                             month: 'short',
                                                             day: 'numeric',
@@ -348,13 +348,13 @@ const AddedArticlesSidebar = ({
                                                 )}
 
                                                 {article.description && (
-                                                    <p className="text-xs text-gray-400 italic mt-0.5">
+                                                    <p className="text-xs text-gray-600 italic mt-0.5">
                                                         "{article.description}"
                                                     </p>
                                                 )}
 
                                                 {(article.length || article.width || article.height) && (
-                                                    <p className="text-xs text-gray-500 mt-1">
+                                                    <p className="text-xs text-gray-600 mt-1">
                                                         Dim: {article.length || '-'} x {article.width || '-'} x {article.height || '-'} cm
                                                     </p>
                                                 )}
@@ -388,7 +388,7 @@ const AddedArticlesSidebar = ({
                                             <button
                                                 type="button"
                                                 onClick={() => setEditingArticle(article.id)}
-                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-400 hover:text-[#4c7085] hover:border-[#4c7085] transition-all"
+                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-[#4c7085] hover:border-[#4c7085] transition-all"
                                                 title="Edit"
                                             >
                                                 <FaEdit className="w-3.5 h-3.5" />
@@ -396,7 +396,7 @@ const AddedArticlesSidebar = ({
                                             <button
                                                 type="button"
                                                 onClick={() => removeArticleFromSidebar(article.id)}
-                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-400 hover:text-red-500 hover:border-red-200 transition-all"
+                                                className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-red-500 hover:border-red-200 transition-all"
                                                 title="Remove"
                                             >
                                                 <FaTrash className="w-3.5 h-3.5" />

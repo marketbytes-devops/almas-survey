@@ -44,7 +44,7 @@ const InputField = ({
   return (
     <div className="flex flex-col">
       {label && (
-        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+        <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
           {label}
           {rules.required && <span className="text-red-500"> *</span>}
         </label>
@@ -153,7 +153,7 @@ const ScheduledSurveys = () => {
       completed: "text-green-500 bg-green-50 border-green-100",
       cancelled: "text-red-500 bg-red-50 border-red-100",
     };
-    return styles[status] || "text-gray-500 bg-gray-50 border-gray-100";
+    return styles[status] || "text-gray-600 bg-gray-50 border-gray-100";
   };
 
   const isSurveyFinished = (enquiry) => ["completed", "cancelled"].includes(enquiry.survey_status);
@@ -393,7 +393,7 @@ const ScheduledSurveys = () => {
 
       <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
         <div className="relative flex-1">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 z-10 pointer-events-none">
             <FiSearch className="w-5 h-5" />
           </div>
           <input
@@ -438,7 +438,7 @@ const ScheduledSurveys = () => {
             <FiCalendar className="text-gray-300 w-8 h-8" />
           </div>
           <h3 className="text-lg font-medium text-gray-800">No scheduled surveys found</h3>
-          <p className="text-gray-500 text-sm mt-1">Refine your dates or search query</p>
+          <p className="text-gray-600 text-sm mt-1">Refine your dates or search query</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -446,12 +446,12 @@ const ScheduledSurveys = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Survey Info</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Survey Info</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -465,8 +465,8 @@ const ScheduledSurveys = () => {
                             <FiCalendar className="w-4 h-4 text-[#4c7085]" />
                             {new Date(enquiry.survey_date).toLocaleDateString()}
                           </p>
-                          <p className="text-xs text-gray-500 flex items-center gap-2">
-                            <FiClock className="w-4 h-4 text-gray-400" />
+                          <p className="text-xs text-gray-600 flex items-center gap-2">
+                            <FiClock className="w-4 h-4 text-gray-600" />
                             {new Date(enquiry.survey_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
@@ -478,7 +478,7 @@ const ScheduledSurveys = () => {
                           </div>
                           <div>
                             <p className="font-medium text-gray-800">{enquiry.fullName}</p>
-                            <p className="text-xs text-gray-500">{enquiry.phoneNumber}</p>
+                            <p className="text-xs text-gray-600">{enquiry.phoneNumber}</p>
                           </div>
                         </div>
                       </td>
@@ -531,7 +531,7 @@ const ScheduledSurveys = () => {
                             </>
                           )}
                           {isSurveyFinished(enquiry) && (
-                            <div className="flex items-center gap-2 text-xs text-gray-400 font-medium bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+                            <div className="flex items-center gap-2 text-xs text-gray-600 font-medium bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
                               <FiCheckCircle className="text-gray-300" />
                               Task Finished
                             </div>
@@ -549,7 +549,7 @@ const ScheduledSurveys = () => {
 
             {/* Pagination Desktop */}
             <div className="flex items-center justify-between p-6 border-t border-gray-50">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredEnquiries.length)}</span> of <span className="font-medium text-gray-800">{filteredEnquiries.length}</span> surveys
               </p>
               <div className="flex gap-2">
@@ -573,10 +573,10 @@ const ScheduledSurveys = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800 text-sm">{enquiry.fullName}</h4>
-                        <p className="text-[10px] text-gray-500 font-medium">{new Date(enquiry.survey_date).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-gray-600 font-medium">{new Date(enquiry.survey_date).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                    {isOpen ? <FiChevronUp className="text-gray-600" /> : <FiChevronDown className="text-gray-600" />}
                   </div>
 
                   <AnimatePresence>
@@ -585,11 +585,11 @@ const ScheduledSurveys = () => {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Service</p>
                               <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === enquiry.serviceType)?.label || enquiry.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Status</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Status</p>
                               <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-medium border mt-1 ${getStatusStyles(status)}`}>{getSurveyStatusDisplay(enquiry)}</span>
                             </div>
                           </div>
@@ -640,7 +640,7 @@ const ScheduledSurveys = () => {
           <FormProvider {...rescheduleSurveyForm}>
             <form id="reschedule-form" onSubmit={rescheduleSurveyForm.handleSubmit(onRescheduleSubmit)} className="space-y-4">
               <div className="flex flex-col">
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">New Date and Time <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">New Date and Time <span className="text-red-500">*</span></label>
                 <DatePicker
                   selected={rescheduleSurveyForm.watch("surveyDate")}
                   onChange={(date) => rescheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
@@ -715,7 +715,7 @@ const ScheduledSurveys = () => {
               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-medium text-lg">{selectedEnquiry?.fullName?.charAt(0)}</div>
               <div>
                 <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
-                <p className="text-sm text-gray-500 font-medium">{selectedEnquiry?.phoneNumber}</p>
+                <p className="text-sm text-gray-600 font-medium">{selectedEnquiry?.phoneNumber}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

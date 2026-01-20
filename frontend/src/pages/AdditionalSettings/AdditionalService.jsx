@@ -79,8 +79,8 @@ const AdditionalServices = () => {
       setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       console.error("Delete error:", err);
-      const errorMsg = err.response?.status === 404 
-        ? "Service not found." 
+      const errorMsg = err.response?.status === 404
+        ? "Service not found."
         : "Failed to delete service. It might be in use or server error.";
       setError(errorMsg);
       setTimeout(() => setError(null), 5000);
@@ -138,11 +138,10 @@ const AdditionalServices = () => {
                 <button
                   type="submit"
                   disabled={!watchedName?.trim() || saving}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                    !watchedName?.trim() || saving
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${!watchedName?.trim() || saving
                       ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                       : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                  }`}
+                    }`}
                 >
                   {saving ? "Saving..." : "Add Service"}
                 </button>
@@ -183,11 +182,10 @@ const AdditionalServices = () => {
                             <button
                               onClick={() => handleDelete(service.id, service.name)}
                               disabled={deletingId === service.id}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
-                                deletingId === service.id
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${deletingId === service.id
                                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                                   : "bg-red-600 text-white hover:bg-red-700"
-                              }`}
+                                }`}
                             >
                               {deletingId === service.id ? "Deleting..." : "Delete"}
                             </button>
@@ -212,11 +210,10 @@ const AdditionalServices = () => {
                         <button
                           onClick={() => handleDelete(service.id, service.name)}
                           disabled={deletingId === service.id}
-                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
-                            deletingId === service.id
+                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${deletingId === service.id
                               ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                               : "bg-red-600 text-white hover:bg-red-700"
-                          }`}
+                            }`}
                         >
                           {deletingId === service.id ? "Deleting..." : "Delete"}
                         </button>
@@ -226,7 +223,7 @@ const AdditionalServices = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-600">
                 <p className="text-base sm:text-lg mb-2">No additional services yet.</p>
                 <p className="text-sm">Add one using the form above!</p>
               </div>

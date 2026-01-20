@@ -131,7 +131,7 @@ const Topbar = ({ toggleSidebar, sidebarOpen, user, setIsAuthenticated }) => {
             {user && (
               <div className="hidden md:flex flex-col text-right leading-tight">
                 <span className="text-xs font-medium text-gray-700">{user.name}</span>
-                <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">{user.role}</span>
+                <span className="text-[10px] text-gray-600 mt-1 uppercase tracking-wider">{user.role}</span>
               </div>
             )}
             <div className="relative group">

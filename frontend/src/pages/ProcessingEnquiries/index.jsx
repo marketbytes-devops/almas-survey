@@ -123,7 +123,7 @@ const ProcessingEnquiries = () => {
 
       {/* Search Bar */}
       <div className="relative group">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 z-10 pointer-events-none">
           <FiSearch className="w-5 h-5" />
         </div>
         <input
@@ -141,7 +141,7 @@ const ProcessingEnquiries = () => {
             <FiClipboard className="text-gray-300 w-8 h-8" />
           </div>
           <h3 className="text-lg font-medium text-gray-800">No processing enquiries</h3>
-          <p className="text-gray-500 text-sm mt-1">Refine your search or check back later</p>
+          <p className="text-gray-600 text-sm mt-1">Refine your search or check back later</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -150,12 +150,12 @@ const ProcessingEnquiries = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Contact</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Received Date</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Action</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Received Date</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -168,14 +168,14 @@ const ProcessingEnquiries = () => {
                         </div>
                         <div>
                           <p className="font-medium text-gray-800">{item.fullName}</p>
-                          <p className="text-xs text-gray-500">#{item.id}</p>
+                          <p className="text-xs text-gray-600">#{item.id}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700">{item.phoneNumber}</p>
-                        <p className="text-xs text-gray-500">{item.email}</p>
+                        <p className="text-xs text-gray-600">{item.email}</p>
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -190,7 +190,7 @@ const ProcessingEnquiries = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <span className="text-sm text-gray-500">{new Date(item.created_at).toLocaleDateString()}</span>
+                      <span className="text-sm text-gray-600">{new Date(item.created_at).toLocaleDateString()}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
                       <button
@@ -217,10 +217,10 @@ const ProcessingEnquiries = () => {
                       <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium">{item.fullName?.charAt(0) || "C"}</div>
                       <div>
                         <h4 className="font-medium text-gray-800 text-sm">{item.fullName}</h4>
-                        <p className="text-[10px] text-gray-500 font-medium">{item.assigned_user_email}</p>
+                        <p className="text-[10px] text-gray-600 font-medium">{item.assigned_user_email}</p>
                       </div>
                     </div>
-                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                    {isOpen ? <FiChevronUp className="text-gray-600" /> : <FiChevronDown className="text-gray-600" />}
                   </div>
 
                   <AnimatePresence>
@@ -229,16 +229,16 @@ const ProcessingEnquiries = () => {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Service</p>
                               <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Date</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Date</p>
                               <p className="text-xs font-medium text-gray-600 mt-0.5">{new Date(item.created_at).toLocaleDateString()}</p>
                             </div>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Contact</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Contact</p>
                             <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {item.phoneNumber}</p>
                             <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {item.email}</p>
                           </div>
@@ -274,7 +274,7 @@ const ProcessingEnquiries = () => {
               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-medium text-lg">{selectedEnquiry?.fullName?.charAt(0)}</div>
               <div>
                 <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
-                <p className="text-sm text-gray-500">{selectedEnquiry?.phoneNumber}</p>
+                <p className="text-sm text-gray-600">{selectedEnquiry?.phoneNumber}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

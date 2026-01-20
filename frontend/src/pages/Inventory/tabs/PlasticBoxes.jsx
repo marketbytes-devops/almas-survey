@@ -52,20 +52,20 @@ const PlasticBoxes = () => {
                                     {m.stock_in_hand} {m.unit || "Pcs"}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-500 mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
                                 {m.description || "No description provided."}
                             </p>
 
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm py-3 border-t border-gray-100 text-gray-600">
-                                    <span className="font-medium text-gray-500">Stock in Hand</span>
+                                    <span className="font-medium text-gray-600">Stock in Hand</span>
                                     <span className="font-bold text-gray-800">{m.stock_in_hand}</span>
                                 </div>
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                    <div className="col-span-full py-12 text-center text-gray-600 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
                         <div className="flex flex-col items-center">
                             <FiAlertCircle className="w-8 h-8 mb-3 opacity-50" />
                             <p>No plastic boxes found in materials list.</p>

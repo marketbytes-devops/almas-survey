@@ -94,7 +94,7 @@ const AdminDashboard = () => {
             <div className={`w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center text-lg mb-3`}>
               {stat.icon}
             </div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">{stat.label}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase tracking-widest">{stat.label}</p>
             <p className="text-2xl font-medium text-[#4c7085] mt-1">{stat.value}</p>
           </div>
         ))}
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
               </div>
               <h3 className="font-medium text-gray-800 text-lg">Enquiry Management</h3>
             </div>
-            <p className="text-sm text-gray-500 leading-relaxed">Manage and monitor all incoming move enquiries.</p>
+            <p className="text-sm text-gray-600 leading-relaxed">Manage and monitor all incoming move enquiries.</p>
           </div>
 
           <div className="p-6 flex-1 bg-gray-50/30 space-y-3">
@@ -135,7 +135,7 @@ const AdminDashboard = () => {
               </div>
               <h3 className="font-medium text-gray-800 text-lg">System Governance</h3>
             </div>
-            <p className="text-sm text-gray-500 leading-relaxed">Administer users, roles, and access controls.</p>
+            <p className="text-sm text-gray-600 leading-relaxed">Administer users, roles, and access controls.</p>
           </div>
 
           <div className="p-6 flex-1 bg-gray-50/30 space-y-3">

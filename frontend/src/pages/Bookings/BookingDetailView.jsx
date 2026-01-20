@@ -163,21 +163,21 @@ const BookingDetailView = () => {
                         <h2 className="text-lg font-medium text-gray-800 mb-4">Basic Information</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Move Date</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Move Date</label>
                                 <p className="text-base font-medium text-gray-800">{booking.move_date || "Not specified"}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Start Time</label>
+                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Start Time</label>
                                     <p className="text-base font-medium text-gray-800">{booking.start_time?.slice(0, 5) || "Not specified"}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">End Time</label>
+                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">End Time</label>
                                     <p className="text-base font-medium text-gray-800">{booking.estimated_end_time?.slice(0, 5) || "Not specified"}</p>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Supervisor</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Supervisor</label>
                                 <p className="text-base font-medium text-gray-800">{booking.supervisor_name || "Not assigned"}</p>
                             </div>
                         </div>
@@ -189,16 +189,16 @@ const BookingDetailView = () => {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl">
                                 <div>
-                                    <span className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Client Name</span>
+                                    <span className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-1">Client Name</span>
                                     <p className="text-sm font-medium text-gray-800">{booking.client_name || quotation?.full_name || "N/A"}</p>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Move Type</span>
+                                    <span className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-1">Move Type</span>
                                     <p className="text-sm font-medium text-indigo-600">{booking.move_type || quotation?.service_type || "N/A"}</p>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Internal Notes</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Internal Notes</label>
                                 <p className="text-sm font-medium text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-2xl border border-gray-200 min-h-[100px]">
                                     {booking.notes || "No notes added"}
                                 </p>
@@ -222,14 +222,14 @@ const BookingDetailView = () => {
                                     {(booking.assigned_staff || booking.labours || []).map((staff, idx) => (
                                         <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                             <p className="font-medium text-gray-800">{staff.name || staff.staff_member_name || "Unnamed Staff"}</p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-sm text-gray-600 mt-1">
                                                 {staff.employer || "Almas"} • {staff.category || "General"}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-gray-500 bg-gray-50 p-4 rounded-2xl text-center">No staff assigned yet</p>
+                                <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-2xl text-center">No staff assigned yet</p>
                             )}
                         </div>
 
@@ -244,14 +244,14 @@ const BookingDetailView = () => {
                                     {booking.trucks.map((truck, idx) => (
                                         <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                             <p className="font-medium text-gray-800">{truck.truck_type_name || truck.truck_type || "Unknown Truck"}</p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-sm text-gray-600 mt-1">
                                                 Quantity: {truck.quantity || 1}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-gray-500 bg-gray-50 p-4 rounded-2xl text-center">No trucks assigned</p>
+                                <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-2xl text-center">No trucks assigned</p>
                             )}
                         </div>
 
@@ -266,14 +266,14 @@ const BookingDetailView = () => {
                                     {booking.materials.map((material, idx) => (
                                         <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                             <p className="font-medium text-gray-800">{material.material_name || material.material || "Unknown Material"}</p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-sm text-gray-600 mt-1">
                                                 Quantity: {material.quantity || 1}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-gray-500 bg-gray-50 p-4 rounded-2xl text-center">No materials assigned</p>
+                                <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-2xl text-center">No materials assigned</p>
                             )}
                         </div>
                     </div>

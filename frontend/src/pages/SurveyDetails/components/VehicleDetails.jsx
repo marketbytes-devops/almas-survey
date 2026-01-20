@@ -39,7 +39,7 @@ const VehicleDetails = () => {
                     </div>
                     <div>
                         <h2 className="text-lg font-medium text-gray-900">Vehicle Details</h2>
-                        <p className="text-xs text-gray-500">Add any vehicles involved in the move</p>
+                        <p className="text-xs text-gray-600">Add any vehicles involved in the move</p>
                     </div>
                 </div>
             </div>
@@ -47,10 +47,10 @@ const VehicleDetails = () => {
             {vehicles.length === 0 ? (
                 <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 flex flex-col items-center justify-center mb-6">
                     <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                        <FaCar className="text-gray-400 w-5 h-5" />
+                        <FaCar className="text-gray-600 w-5 h-5" />
                     </div>
                     <p className="text-gray-900 font-medium mb-1">No vehicles added</p>
-                    <p className="text-gray-500 text-sm">Click the button below to add vehicle details.</p>
+                    <p className="text-gray-600 text-sm">Click the button below to add vehicle details.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6 mb-6">
@@ -62,7 +62,7 @@ const VehicleDetails = () => {
                             <button
                                 type="button"
                                 onClick={() => removeVehicle(vehicle.id)}
-                                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                className="absolute top-4 right-4 p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                 title="Remove Vehicle"
                             >
                                 <FaTimes />

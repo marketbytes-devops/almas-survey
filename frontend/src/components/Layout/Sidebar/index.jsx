@@ -209,7 +209,7 @@ const Sidebar = ({ toggleSidebar }) => {
                       className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all ${isActive
                           ? "bg-[#6b8ca3]/10 text-[#4c7085] font-medium"
-                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`
                       }
                       onClick={() => isMobile() && toggleSidebar()}
@@ -283,7 +283,7 @@ const Sidebar = ({ toggleSidebar }) => {
               <span className="font-light text-[#6b8ca3]">Cloud</span>
             </h1>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mt-2 font-medium">Logistics Management</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 mt-2 font-medium">Logistics Management</p>
         </div>
       )}
       <nav className="flex-1 overflow-y-auto px-4 py-6">

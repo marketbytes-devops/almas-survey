@@ -78,7 +78,7 @@ const Purchase = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Material</label>
+                            <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Material</label>
                             <select
                                 name="material"
                                 value={formData.material}
@@ -97,7 +97,7 @@ const Purchase = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Quantity</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Quantity</label>
                                 <input
                                     type="number"
                                     name="quantity"
@@ -110,7 +110,7 @@ const Purchase = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Unit Price</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Unit Price</label>
                                 <input
                                     type="number"
                                     name="unit_price"
@@ -125,7 +125,7 @@ const Purchase = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Supplier</label>
+                            <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Supplier</label>
                             <input
                                 type="text"
                                 name="supplier"
@@ -137,7 +137,7 @@ const Purchase = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Notes</label>
+                            <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Notes</label>
                             <textarea
                                 name="notes"
                                 value={formData.notes}
@@ -170,11 +170,11 @@ const Purchase = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-gray-50/30 border-b border-gray-100">
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Date</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Material</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-right">Qty</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-right">Unit Price</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-right">Total</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Date</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Material</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right">Qty</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right">Unit Price</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right">Total</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -190,7 +190,7 @@ const Purchase = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                                        <td colSpan="5" className="px-6 py-10 text-center text-gray-600">
                                             No purchase records found.
                                         </td>
                                     </tr>

@@ -275,11 +275,10 @@ const Permissions = () => {
                             <button
                               onClick={() => openPermissionsModal(role)}
                               disabled={!hasPermission("permissions", "edit")}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 mx-auto ${
-                                !hasPermission("permissions", "edit")
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 mx-auto ${!hasPermission("permissions", "edit")
                                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                                   : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
-                              }`}
+                                }`}
                             >
                               <FaCog /> Permissions
                             </button>
@@ -301,11 +300,10 @@ const Permissions = () => {
                         <button
                           onClick={() => openPermissionsModal(role)}
                           disabled={!hasPermission("permissions", "edit")}
-                          className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 ${
-                            !hasPermission("permissions", "edit")
+                          className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 ${!hasPermission("permissions", "edit")
                               ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                               : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
-                          }`}
+                            }`}
                         >
                           <FaCog /> Permissions
                         </button>
@@ -315,7 +313,7 @@ const Permissions = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-600">
                 <p className="text-base sm:text-lg mb-2">No roles available.</p>
                 <p className="text-sm">Create roles in the Roles section first.</p>
               </div>
@@ -333,7 +331,7 @@ const Permissions = () => {
                 </h3>
                 <button
                   onClick={() => setSelectedRole(null)}
-                  className="text-gray-500 hover:text-gray-700 transition text-2xl"
+                  className="text-gray-600 hover:text-gray-700 transition text-2xl"
                 >
                   ×
                 </button>
@@ -398,11 +396,10 @@ const Permissions = () => {
                 <button
                   onClick={handleSavePermissions}
                   disabled={isSaving || !hasPermission("permissions", "edit")}
-                  className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                    isSaving || !hasPermission("permissions", "edit")
+                  className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${isSaving || !hasPermission("permissions", "edit")
                       ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                       : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
-                  }`}
+                    }`}
                 >
                   {isSaving ? "Saving..." : "Save Permissions"}
                 </button>

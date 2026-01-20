@@ -84,7 +84,7 @@ const BookingList = () => {
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
                 {/* Search */}
                 <div className="relative mb-6">
-                    <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                     <input
                         type="text"
                         placeholder="Search by booking ID, client, move type, contact, or location..."
@@ -100,15 +100,15 @@ const BookingList = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-gray-50/50">
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Booking ID</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Move Date</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Client</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Move Type</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Contact</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Location</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Supervisor</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Staff</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Actions</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Booking ID</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Move Date</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Client</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Move Type</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Contact</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Location</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Supervisor</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center whitespace-nowrap">Staff</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center whitespace-nowrap">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -174,7 +174,7 @@ const BookingList = () => {
                                                     </button>
                                                     <button
                                                         onClick={() => navigate(`/booking-form/${b.id}`)}
-                                                        className="w-9 h-9 flex items-center justify-center text-gray-400 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0"
+                                                        className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0"
                                                         title="Edit"
                                                     >
                                                         <FiEdit3 className="w-4.5 h-4.5" />
@@ -192,7 +192,7 @@ const BookingList = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="9" className="px-6 py-10 text-center text-gray-400">
+                                        <td colSpan="9" className="px-6 py-10 text-center text-gray-600">
                                             No bookings found.
                                         </td>
                                     </tr>
@@ -210,7 +210,7 @@ const BookingList = () => {
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
                                         <div className="font-medium text-gray-800 text-base">{b.booking_id}</div>
-                                        <div className="text-sm text-gray-500 mt-1">{b.move_date || "—"}</div>
+                                        <div className="text-sm text-gray-600 mt-1">{b.move_date || "—"}</div>
                                     </div>
                                     <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
                                         {b.move_type}
@@ -219,25 +219,25 @@ const BookingList = () => {
 
                                 <div className="space-y-2 mb-4">
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-500 min-w-[80px]">Client:</span>
+                                        <span className="text-gray-600 min-w-[80px]">Client:</span>
                                         <span className="text-gray-800 font-medium">{b.client_name}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-500 min-w-[80px]">Contact:</span>
+                                        <span className="text-gray-600 min-w-[80px]">Contact:</span>
                                         <span className="text-gray-800">{b.contact_number}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-500 min-w-[80px]">Location:</span>
+                                        <span className="text-gray-600 min-w-[80px]">Location:</span>
                                         <span className="text-gray-800">
                                             {b.origin_location} {b.destination_location ? `→ ${b.destination_location}` : ""}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-500 min-w-[80px]">Supervisor:</span>
+                                        <span className="text-gray-600 min-w-[80px]">Supervisor:</span>
                                         <span className="text-gray-800">{b.supervisor_name || "Unassigned"}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-500 min-w-[80px]">Staff:</span>
+                                        <span className="text-gray-600 min-w-[80px]">Staff:</span>
                                         <span className="text-gray-800">{b.labours?.length || 0} assigned</span>
                                     </div>
                                 </div>
@@ -265,7 +265,7 @@ const BookingList = () => {
                             </div>
                         ))
                     ) : (
-                        <div className="text-center py-10 text-gray-400">
+                        <div className="text-center py-10 text-gray-600">
                             No bookings found.
                         </div>
                     )}
@@ -305,7 +305,7 @@ const BookingList = () => {
                                     ))}
                                 </ul>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-4 text-gray-400">
+                                <div className="flex flex-col items-center justify-center py-4 text-gray-600">
                                     <FiUsers className="w-6 h-6 mb-2 opacity-20" />
                                     <p className="text-xs italic">No staff assigned</p>
                                 </div>

@@ -88,7 +88,7 @@ const RichTextEditor = ({ value, onChange, placeholder, rows = 6 }) => {
                     • List
                 </button>
                 <div className="flex-1"></div>
-                <span className="text-xs text-gray-500 self-center">HTML Editor</span>
+                <span className="text-xs text-gray-600 self-center">HTML Editor</span>
             </div>
             <textarea
                 ref={textareaRef}
@@ -103,7 +103,7 @@ const RichTextEditor = ({ value, onChange, placeholder, rows = 6 }) => {
                 <div className="text-xs font-semibold text-gray-600 mb-2">Preview:</div>
                 <div
                     className="text-sm text-gray-700"
-                    dangerouslySetInnerHTML={{ __html: value || '<span class="text-gray-400">Preview will appear here...</span>' }}
+                    dangerouslySetInnerHTML={{ __html: value || '<span class="text-gray-600">Preview will appear here...</span>' }}
                 />
             </div>
         </div>

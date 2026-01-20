@@ -41,11 +41,11 @@ const UsageTracking = () => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Date & Time</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Material</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Quantity Used</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Booking ID</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Notes</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Date & Time</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Material</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Quantity Used</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Booking ID</th>
+                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Notes</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -64,12 +64,12 @@ const UsageTracking = () => {
                                                 {log.reference_id}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 italic">{log.notes || "—"}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-600 italic">{log.notes || "—"}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-600">
                                         No usage records found.
                                     </td>
                                 </tr>

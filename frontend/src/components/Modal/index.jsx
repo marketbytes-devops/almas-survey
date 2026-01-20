@@ -41,7 +41,7 @@ const Modal = ({ isOpen, title, children, footer, className, onClose }) => {
             {onClose && (
               <button
                 onClick={onClose}
-                className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200"
+                className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-500 transition-all duration-200"
               >
                 <FiX className="w-5 h-5" />
               </button>

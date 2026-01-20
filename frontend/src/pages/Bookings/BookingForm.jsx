@@ -299,7 +299,7 @@ const BookingForm = () => {
                         <h2 className="text-lg font-medium text-gray-800 mb-4">Basic Information</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Move Date</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Move Date</label>
                                 <input
                                     type="date"
                                     className="input-style w-full"
@@ -309,7 +309,7 @@ const BookingForm = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Start Time</label>
+                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Start Time</label>
                                     <input
                                         type="time"
                                         className="input-style w-full"
@@ -318,7 +318,7 @@ const BookingForm = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">End Time</label>
+                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">End Time</label>
                                     <input
                                         type="time"
                                         className="input-style w-full"
@@ -328,7 +328,7 @@ const BookingForm = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Supervisor</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Supervisor</label>
                                 <select
                                     className="input-style w-full"
                                     value={String(formData.supervisor || "")}
@@ -349,20 +349,20 @@ const BookingForm = () => {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl">
                                 <div>
-                                    <span className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Client Name</span>
+                                    <span className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-1">Client Name</span>
                                     <p className="text-sm font-medium text-gray-800">
                                         {booking?.client_name || quotation?.full_name || "N/A"}
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Move Type</span>
+                                    <span className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-1">Move Type</span>
                                     <p className="text-sm font-medium text-indigo-600">
                                         {booking?.move_type || quotation?.service_type || "N/A"}
                                     </p>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Internal Notes</label>
+                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Internal Notes</label>
                                 <textarea
                                     className="input-style w-full h-32 resize-none"
                                     value={formData.notes}
@@ -390,7 +390,7 @@ const BookingForm = () => {
                         {assignedLabours.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                 <div className="flex-1">
-                                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Assigned Staff</label>
+                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Assigned Staff</label>
                                     <select
                                         className="input-style w-full"
                                         value={String(item.staff_member || "")}
@@ -414,7 +414,7 @@ const BookingForm = () => {
                             </div>
                         ))}
                         {assignedLabours.length === 0 && (
-                            <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-2xl">No labour assigned yet. Click "Add Labour" to assign staff.</p>
+                            <p className="text-sm text-gray-600 text-center py-6 bg-gray-50 rounded-2xl">No labour assigned yet. Click "Add Labour" to assign staff.</p>
                         )}
                     </div>
                 </div>
@@ -436,7 +436,7 @@ const BookingForm = () => {
                             {assignedTrucks.map((item, idx) => (
                                 <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Truck Type</label>
+                                        <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Truck Type</label>
                                         <select
                                             className="input-style w-full"
                                             value={item.truck_type}
@@ -448,7 +448,7 @@ const BookingForm = () => {
                                     </div>
 
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Quantity</label>
+                                        <label className="text-xs font-medium text-gray-600 uppercase tracking-widest">Quantity</label>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 type="button"
@@ -489,7 +489,7 @@ const BookingForm = () => {
                                 </div>
                             ))}
                             {assignedTrucks.length === 0 && (
-                                <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-2xl">No trucks assigned</p>
+                                <p className="text-sm text-gray-600 text-center py-6 bg-gray-50 rounded-2xl">No trucks assigned</p>
                             )}
                         </div>
                     </div>
@@ -545,7 +545,7 @@ const BookingForm = () => {
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-2xl">No materials available</p>
+                                <p className="text-sm text-gray-600 text-center py-6 bg-gray-50 rounded-2xl">No materials available</p>
                             )}
                         </div>
                     </div>

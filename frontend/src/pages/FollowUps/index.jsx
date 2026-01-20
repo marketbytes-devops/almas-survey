@@ -36,7 +36,7 @@ const InputField = ({
   return (
     <div className="flex flex-col">
       {label && (
-        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+        <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
           {label}
           {rules.required && <span className="text-red-500"> *</span>}
         </label>
@@ -208,7 +208,7 @@ const FollowUps = () => {
 
       <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
         <div className="relative flex-1">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 z-10 pointer-events-none">
             <FiSearch className="w-5 h-5" />
           </div>
           <input
@@ -236,7 +236,7 @@ const FollowUps = () => {
                 <InputField label="Created From" name="fromDate" type="date" />
                 <InputField label="Created To" name="toDate" type="date" />
                 <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => { filterForm.reset(); applyFiltersAndSearch(filterForm.getValues()); setIsFilterVisible(false); }} className="btn-secondary !bg-transparent !border-none !shadow-none font-medium text-gray-400 hover:!text-gray-900">Reset</button>
+                  <button type="button" onClick={() => { filterForm.reset(); applyFiltersAndSearch(filterForm.getValues()); setIsFilterVisible(false); }} className="btn-secondary !bg-transparent !border-none !shadow-none font-medium text-gray-600 hover:!text-gray-900">Reset</button>
                   <button type="submit" className="btn-primary">Apply Filters</button>
                 </div>
               </form>
@@ -251,7 +251,7 @@ const FollowUps = () => {
             <FiSearch className="w-10 h-10 text-slate-200" />
           </div>
           <h3 className="text-xl font-medium text-gray-800">No matching enquiries found</h3>
-          <p className="text-gray-400 mt-2">Try adjusting your filters or search terms</p>
+          <p className="text-gray-600 mt-2">Try adjusting your filters or search terms</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -259,12 +259,12 @@ const FollowUps = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Enquiry Date</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Contact Status</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Contact</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Enquiry Date</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact Status</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Contact</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -272,7 +272,7 @@ const FollowUps = () => {
                   <tr key={enquiry.id} className="hover:bg-gray-50/30 transition-colors group">
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                        <FiClock className="text-gray-400 w-4 h-4" />
+                        <FiClock className="text-gray-600 w-4 h-4" />
                         {new Date(enquiry.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                       </div>
                     </td>
@@ -283,7 +283,7 @@ const FollowUps = () => {
                         </div>
                         <div>
                           <p className="font-medium text-gray-800">{enquiry.fullName || "N/A"}</p>
-                          <p className="text-xs text-gray-500 font-medium">{enquiry.phoneNumber || enquiry.email}</p>
+                          <p className="text-xs text-gray-600 font-medium">{enquiry.phoneNumber || enquiry.email}</p>
                         </div>
                       </div>
                     </td>
@@ -314,7 +314,7 @@ const FollowUps = () => {
 
             {/* Pagination Desktop */}
             <div className="flex items-center justify-between p-6 border-t border-gray-50">
-              <p className="text-sm text-gray-400 font-medium tracking-tight">
+              <p className="text-sm text-gray-600 font-medium tracking-tight">
                 Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredEnquiries.length)}</span> of <span className="font-medium text-gray-800">{filteredEnquiries.length}</span> leads
               </p>
               <div className="flex gap-2">
@@ -337,10 +337,10 @@ const FollowUps = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800 text-sm tracking-tight">{enquiry.fullName || "N/A"}</h4>
-                        <p className="text-[11px] text-gray-400 font-medium">{new Date(enquiry.created_at).toLocaleDateString()}</p>
+                        <p className="text-[11px] text-gray-600 font-medium">{new Date(enquiry.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                    {isOpen ? <FiChevronUp className="text-gray-600" /> : <FiChevronDown className="text-gray-600" />}
                   </div>
 
                   <AnimatePresence>
@@ -349,20 +349,20 @@ const FollowUps = () => {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Service</p>
                               <p className="text-[11px] font-medium text-blue-600 mt-1">{serviceOptions.find(o => o.value === enquiry.serviceType)?.label || enquiry.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Status</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Status</p>
                               <p className={`text-[11px] font-medium mt-1 ${enquiry.contact_status === 'Attended' ? 'text-green-500' : 'text-amber-500'}`}>{enquiry.contact_status || 'Pending'}</p>
                             </div>
                             <div className="col-span-2">
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Assigned To</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Assigned To</p>
                               <p className="text-xs font-medium text-gray-700 mt-1">{enquiry.assigned_user_email || "Unassigned"}</p>
                             </div>
                           </div>
                           <div className="bg-white p-4 rounded-xl border border-gray-100">
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-1">Message</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-1">Message</p>
                             <p className="text-xs text-gray-600 leading-relaxed font-normal">{enquiry.message || "No specific message provided"}</p>
                           </div>
                           <button onClick={() => openPhoneModal(enquiry)} className="w-full bg-green-500 text-white flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium shadow-sm transition-transform active:scale-95">
@@ -395,7 +395,7 @@ const FollowUps = () => {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-gray-800">{selectedEnquiry?.fullName}</h3>
-                <p className="text-sm text-gray-500 font-medium">{selectedEnquiry?.phoneNumber}</p>
+                <p className="text-sm text-gray-600 font-medium">{selectedEnquiry?.phoneNumber}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

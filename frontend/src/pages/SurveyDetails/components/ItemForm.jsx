@@ -82,10 +82,10 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
                         onClick={() => setFormData(prev => ({ ...prev, crateRequired: !prev.crateRequired }))}
                         className={`h-9 px-3 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all ${formData.crateRequired
                             ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                             }`}
                     >
-                        <FaBox className={`w-3 h-3 ${formData.crateRequired ? "text-amber-600" : "text-gray-400"}`} />
+                        <FaBox className={`w-3 h-3 ${formData.crateRequired ? "text-amber-600" : "text-gray-600"}`} />
                         {formData.crateRequired ? "Crate Required" : "No Crate"}
                     </button>
                 </div>
@@ -108,7 +108,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
 
                 {/* Dimensions Section */}
                 <div className="space-y-4">
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Dimensions</h4>
+                    <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wider">Dimensions</h4>
                     <div className="grid grid-cols-3 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">L (cm)</label>
@@ -147,7 +147,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
                                 Volume <span className="text-[10px]">(m³)</span>
                             </label>
                             <div className="flex">
@@ -160,7 +160,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
                                 <select
                                     value={formData[`volumeUnit_${item.name}`]}
                                     onChange={(e) => setFormData(prev => ({ ...prev, [`volumeUnit_${item.name}`]: e.target.value }))}
-                                    className="px-2 py-2 bg-gray-50 border-y border-r border-gray-200 rounded-r-lg text-xs text-gray-500 outline-none hover:bg-gray-100"
+                                    className="px-2 py-2 bg-gray-50 border-y border-r border-gray-200 rounded-r-lg text-xs text-gray-600 outline-none hover:bg-gray-100"
                                 >
                                     {apiData.volumeUnits.map(unit => (
                                         <option key={unit.value} value={unit.value}>{unit.label}</option>
@@ -169,7 +169,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
                                 Weight <span className="text-[10px]">(kg)</span>
                             </label>
                             <div className="flex">
@@ -182,7 +182,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
                                 <select
                                     value={formData[`weightUnit_${item.name}`]}
                                     onChange={(e) => setFormData(prev => ({ ...prev, [`weightUnit_${item.name}`]: e.target.value }))}
-                                    className="px-2 py-2 bg-gray-50 border-y border-r border-gray-200 rounded-r-lg text-xs text-gray-500 outline-none hover:bg-gray-100"
+                                    className="px-2 py-2 bg-gray-50 border-y border-r border-gray-200 rounded-r-lg text-xs text-gray-600 outline-none hover:bg-gray-100"
                                 >
                                     {apiData.weightUnits.map(unit => (
                                         <option key={unit.value} value={unit.value}>{unit.label}</option>
@@ -195,7 +195,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
 
                 {/* Services Section */}
                 <div className="space-y-4">
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Services</h4>
+                    <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wider">Services</h4>
                     <div className="space-y-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Handyman Services</label>

@@ -206,7 +206,7 @@ const ManpowerManagement = () => {
                     {/* Table */}
                     <div className="lg:col-span-2">
                         <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
-                            <table className="w-full text-sm text-left text-gray-500">
+                            <table className="w-full text-sm text-left text-gray-600">
                                 <thead className="bg-gray-50 text-xs text-gray-700 uppercase">
                                     <tr>
                                         <th className="px-6 py-4">Name</th>
@@ -222,7 +222,7 @@ const ManpowerManagement = () => {
                                             <tr key={s.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4">
                                                     <div className="font-bold text-gray-900">{s.name}</div>
-                                                    <div className="text-xs text-gray-400">{s.phone_number}</div>
+                                                    <div className="text-xs text-gray-600">{s.phone_number}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
@@ -259,7 +259,7 @@ const ManpowerManagement = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                                            <td colSpan="5" className="px-6 py-10 text-center text-gray-600">
                                                 No staff records found.
                                             </td>
                                         </tr>

@@ -383,7 +383,7 @@ export default function QuotationView() {
                 <h3 className="text-xl font-medium text-gray-800">Digital Signature</h3>
                 <button
                   onClick={() => setIsSignatureModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 text-3xl leading-none"
+                  className="text-gray-600 hover:text-gray-600 text-3xl leading-none"
                 >
                   &times;
                 </button>
@@ -443,7 +443,7 @@ export default function QuotationView() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Quotation ID
                 </label>
                 <input
@@ -454,7 +454,7 @@ export default function QuotationView() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Date
                 </label>
                 <input
@@ -472,7 +472,7 @@ export default function QuotationView() {
             <h3 className="text-lg font-medium text-gray-800 mb-4">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Client Name
                 </label>
                 <input
@@ -483,7 +483,7 @@ export default function QuotationView() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Mobile
                 </label>
                 <input
@@ -494,7 +494,7 @@ export default function QuotationView() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                   Email
                 </label>
                 <input
@@ -518,7 +518,7 @@ export default function QuotationView() {
                 { label: "Date of Move", value: moveDate },
               ].map((item) => (
                 <div key={item.label}>
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
                     {item.label}
                   </label>
                   <input
@@ -553,7 +553,7 @@ export default function QuotationView() {
                         <div className="font-medium text-gray-800">
                           {charge.service_name || "Additional Service"}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-sm text-gray-600 mt-1">
                           {charge.price_per_unit} QAR × {quantity} unit(s)
                         </div>
                       </div>
@@ -589,7 +589,7 @@ export default function QuotationView() {
                   </div>
                 ))
               ) : (
-                <p className="text-center text-gray-500 py-6">
+                <p className="text-center text-gray-600 py-6">
                   No additional services selected
                 </p>
               )}
@@ -598,7 +598,7 @@ export default function QuotationView() {
             <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2">
                     Advance
                   </label>
                   <p className="text-2xl font-medium text-[#4c7085]">
@@ -606,7 +606,7 @@ export default function QuotationView() {
                   </p>
                 </div>
                 <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2">
                     Discount
                   </label>
                   <p className="text-2xl font-medium text-[#4c7085]">
@@ -617,7 +617,7 @@ export default function QuotationView() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2">
                     Total Amount
                   </label>
                   <p className="text-2xl font-medium text-[#4c7085]">
@@ -626,7 +626,7 @@ export default function QuotationView() {
                 </div>
 
                 <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2">
                     Balance
                   </label>
                   <p className="text-2xl font-medium text-indigo-600">
@@ -656,7 +656,7 @@ export default function QuotationView() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No services included</p>
+                  <p className="text-gray-600 text-sm">No services included</p>
                 )}
               </div>
 
@@ -669,7 +669,7 @@ export default function QuotationView() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No services excluded</p>
+                  <p className="text-gray-600 text-sm">No services excluded</p>
                 )}
               </div>
             </div>
@@ -700,7 +700,7 @@ export default function QuotationView() {
                 </>
               ) : (
                 <div className="text-center w-full">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-600">
                     No signature uploaded yet
                   </p>
                 </div>

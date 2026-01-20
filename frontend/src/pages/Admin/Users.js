@@ -106,7 +106,7 @@ const Users = () => {
     } catch (error) {
       setError(
         error.response?.data?.detail ||
-          "Failed to create user. Please check the details."
+        "Failed to create user. Please check the details."
       );
       setTimeout(() => setError(""), 4000);
     } finally {
@@ -137,7 +137,7 @@ const Users = () => {
     } catch (error) {
       setError(
         error.response?.data?.detail ||
-          "Failed to update user. Please try again."
+        "Failed to update user. Please try again."
       );
       setTimeout(() => setError(""), 4000);
     } finally {
@@ -259,11 +259,10 @@ const Users = () => {
                 <button
                   type="submit"
                   disabled={isCreating || !hasPermission("users", "add")}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                    isCreating || !hasPermission("users", "add")
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
-                  }`}
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${isCreating || !hasPermission("users", "add")
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                    }`}
                 >
                   {isCreating ? "Creating..." : "Create User"}
                 </button>
@@ -282,7 +281,7 @@ const Users = () => {
             {/* Search Bar */}
             <div className="p-4 border-b border-gray-200">
               <div className="relative">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search by name or email..."
@@ -318,22 +317,20 @@ const Users = () => {
                             <button
                               onClick={() => openEditModal(user)}
                               disabled={!hasPermission("users", "edit")}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
-                                !hasPermission("users", "edit")
-                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                  : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
-                              }`}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("users", "edit")
+                                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                                }`}
                             >
                               <FaEdit className="inline mr-2" /> Edit
                             </button>
                             <button
                               onClick={() => handleDeleteUser(user.id)}
                               disabled={!hasPermission("users", "delete")}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${
-                                !hasPermission("users", "delete")
-                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                  : "bg-red-600 text-white hover:bg-red-700"
-                              }`}
+                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("users", "delete")
+                                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                : "bg-red-600 text-white hover:bg-red-700"
+                                }`}
                             >
                               <FaTrashAlt className="inline mr-2" /> Delete
                             </button>
@@ -361,22 +358,20 @@ const Users = () => {
                         <button
                           onClick={() => openEditModal(user)}
                           disabled={!hasPermission("users", "edit")}
-                          className={`flex-1 text-sm font-medium px-6 py-2 rounded-lg transition ${
-                            !hasPermission("users", "edit")
-                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
-                          }`}
+                          className={`flex-1 text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("users", "edit")
+                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                            : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
+                            }`}
                         >
                           <FaEdit className="inline mr-2" /> Edit
                         </button>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           disabled={!hasPermission("users", "delete")}
-                          className={`flex-1 text-sm font-medium px-6 py-2 rounded-lg transition ${
-                            !hasPermission("users", "delete")
-                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              : "bg-red-600 text-white hover:bg-red-700"
-                          }`}
+                          className={`flex-1 text-sm font-medium px-6 py-2 rounded-lg transition ${!hasPermission("users", "delete")
+                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                            : "bg-red-600 text-white hover:bg-red-700"
+                            }`}
                         >
                           <FaTrashAlt className="inline mr-2" /> Delete
                         </button>
@@ -386,7 +381,7 @@ const Users = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-600">
                 <p className="text-base sm:text-lg mb-2">
                   {searchQuery ? "No users match your search." : "No users found."}
                 </p>
@@ -452,11 +447,10 @@ const Users = () => {
                     <button
                       type="submit"
                       disabled={isEditing || !hasPermission("users", "edit")}
-                      className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                        isEditing || !hasPermission("users", "edit")
-                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                          : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
-                      }`}
+                      className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${isEditing || !hasPermission("users", "edit")
+                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                        : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white cursor-pointer"
+                        }`}
                     >
                       {isEditing ? "Saving..." : "Save Changes"}
                     </button>

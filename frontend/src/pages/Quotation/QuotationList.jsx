@@ -217,7 +217,7 @@ export default function QuotationList() {
       {/* Search */}
       <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
         <div className="relative flex-1">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 z-10 pointer-events-none">
             <FiSearch className="w-5 h-5" />
           </div>
           <input
@@ -237,7 +237,7 @@ export default function QuotationList() {
             <FaSignature className="text-gray-300 w-8 h-8" />
           </div>
           <h3 className="text-lg font-medium text-gray-800">No surveys found</h3>
-          <p className="text-gray-500 text-sm mt-1">Try adjusting your search query</p>
+          <p className="text-gray-600 text-sm mt-1">Try adjusting your search query</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -247,13 +247,13 @@ export default function QuotationList() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-gray-50/50">
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Survey ID</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Customer</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Contact</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Service</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Quotation</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest whitespace-nowrap">Created</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Actions</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Survey ID</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Customer</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Contact</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Service</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Quotation</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Created</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -272,7 +272,7 @@ export default function QuotationList() {
                             </div>
                             <div>
                               <p className="font-medium text-gray-800">{s.survey_id}</p>
-                              <p className="text-xs text-gray-500">Survey</p>
+                              <p className="text-xs text-gray-600">Survey</p>
                             </div>
                           </div>
                         </td>
@@ -282,10 +282,10 @@ export default function QuotationList() {
                         <td className="px-6 py-5 whitespace-nowrap">
                           <div className="space-y-1">
                             <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <FiPhone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" /> {phone}
+                              <FiPhone className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" /> {phone}
                             </p>
-                            <p className="text-xs text-gray-500 flex items-center gap-2">
-                              <FiMail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" /> {email}
+                            <p className="text-xs text-gray-600 flex items-center gap-2">
+                              <FiMail className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" /> {email}
                             </p>
                           </div>
                         </td>
@@ -313,7 +313,7 @@ export default function QuotationList() {
                           )}
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-600">
                             <p>{s.quotation_created_at ? new Date(s.quotation_created_at).toLocaleDateString() : "—"}</p>
                             {s.quotation_created_at && (
                               <p className="text-xs opacity-60">{new Date(s.quotation_created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -327,7 +327,7 @@ export default function QuotationList() {
                                 <Link to={`/quotation-view/${s.quotation_id}`} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all flex-shrink-0" title="View">
                                   <FiEye className="w-4.5 h-4.5" />
                                 </Link>
-                                <Link to={`/quotation-edit/${s.survey_id}`} className="w-9 h-9 flex items-center justify-center text-gray-400 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0" title="Edit">
+                                <Link to={`/quotation-edit/${s.survey_id}`} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0" title="Edit">
                                   <FiEdit3 className="w-4.5 h-4.5" />
                                 </Link>
                                 {s.quotation_signature_uploaded && (
@@ -375,10 +375,10 @@ export default function QuotationList() {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800 text-sm">{name}</h4>
-                        <p className="text-[10px] text-gray-500 font-medium">{s.survey_id}</p>
+                        <p className="text-[10px] text-gray-600 font-medium">{s.survey_id}</p>
                       </div>
                     </div>
-                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                    {isOpen ? <FiChevronUp className="text-gray-600" /> : <FiChevronDown className="text-gray-600" />}
                   </div>
 
                   <AnimatePresence>
@@ -387,18 +387,18 @@ export default function QuotationList() {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Service</p>
                               <p className="text-xs font-medium text-blue-600 mt-0.5">{service}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Status</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Status</p>
                               <p className={`text-xs font-medium mt-0.5 ${s.hasQuotation ? 'text-green-600' : 'text-amber-500'}`}>
                                 {s.hasQuotation ? `Quotation: ${s.quotation_id}` : "Not Created"}
                               </p>
                             </div>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Contact Info</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Contact Info</p>
                             <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {phone}</p>
                             <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {email}</p>
                           </div>
@@ -432,7 +432,7 @@ export default function QuotationList() {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-6">
-            <p className="text-sm text-gray-500 hidden sm:block">
+            <p className="text-sm text-gray-600 hidden sm:block">
               Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredSurveys.length)}</span> of <span className="font-medium text-gray-800">{filteredSurveys.length}</span> surveys
             </p>
             <div className="flex gap-2 w-full sm:w-auto">
@@ -470,7 +470,7 @@ export default function QuotationList() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">{selectedSurvey?.full_name || selectedSurvey?.enquiry?.fullName}</p>
-                  <p className="text-sm text-gray-500 font-medium">{selectedSurvey?.phone_number || selectedSurvey?.enquiry?.phoneNumber}</p>
+                  <p className="text-sm text-gray-600 font-medium">{selectedSurvey?.phone_number || selectedSurvey?.enquiry?.phoneNumber}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

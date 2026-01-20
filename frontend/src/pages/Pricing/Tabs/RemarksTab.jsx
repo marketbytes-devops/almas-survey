@@ -6,32 +6,24 @@ import {
   FaToggleOn,
   FaToggleOff,
   FaCommentDots,
+  FaSave,
+  FaTimes
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
-import Input from "../../../components/Input";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
 const RemarksTab = () => {
   const [remarks, setRemarks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingRemark, setEditingRemark] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     description: "",
     is_active: true,
     order: 0,
   });
-
-  const categories = [
-    { value: "access", label: "Access Issues" },
-    { value: "packing", label: "Packing Related" },
-    { value: "items", label: "Special Items" },
-    { value: "building", label: "Building / Elevator" },
-    { value: "timing", label: "Timing / Scheduling" },
-    { value: "other", label: "Other" },
-  ];
 
   const fetchRemarks = async () => {
     try {
@@ -49,25 +41,27 @@ const RemarksTab = () => {
     fetchRemarks();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!formData.description) return;
+
+    setSaving(true);
     try {
-      if (editingRemark) {
-        await apiClient.patch(`${API_BASE}/survey-remarks/${editingRemark.id}/`, formData);
+      if (editingId) {
+        await apiClient.patch(`${API_BASE}/survey-remarks/${editingId}/`, formData);
       } else {
         await apiClient.post(`${API_BASE}/survey-remarks/`, formData);
       }
-      setShowModal(false);
       resetForm();
       fetchRemarks();
-      alert("Remark saved!");
     } catch (err) {
       alert("Save failed");
+    } finally {
+      setSaving(false);
     }
   };
 
   const resetForm = () => {
-    setEditingRemark(null);
+    setEditingId(null);
     setFormData({
       description: "",
       is_active: true,
@@ -75,14 +69,13 @@ const RemarksTab = () => {
     });
   };
 
-  const openEdit = (remark) => {
-    setEditingRemark(remark);
+  const startEdit = (remark) => {
+    setEditingId(remark.id);
     setFormData({
       description: remark.description || "",
       is_active: remark.is_active,
       order: remark.order,
     });
-    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
@@ -104,140 +97,159 @@ const RemarksTab = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-16 text-gray-600">
-        <div className="text-xl mb-2">Loading remarks...</div>
-        <div className="text-sm text-gray-500">Please wait</div>
-      </div>
-    );
-  }
+  const Label = ({ children, required }) => (
+    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
+      {children}
+      {required && <span className="text-red-500"> *</span>}
+    </label>
+  );
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl sm:text-2xl font-medium text-gray-800 flex items-center gap-3">
-            <FaCommentDots className="text-[#4c7085]" />
-            Survey Remarks
-          </h2>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-            className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg transition shadow-lg flex items-center justify-center gap-2 font-medium text-sm"
-          >
-            <FaPlus size={16} className="sm:w-5 sm:h-5" />
-            Add Remark
-          </button>
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
+        <h3 className="text-lg font-medium text-gray-800 mb-6 border-b border-gray-100 pb-4">Remark Configuration</h3>
+
+        <div className="grid grid-cols-1 gap-6 mb-6">
+          <div>
+            <Label required>Description / Remark content</Label>
+            <textarea
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="e.g. Long carry > 20 meters, elevator not available..."
+              className="input-style w-full font-medium text-gray-700 min-h-[100px] py-3 resize-none"
+              disabled={saving}
+            />
+          </div>
         </div>
 
-        {/* Remarks List - Responsive */}
-        <div className="space-y-4">
-          {remarks.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-base sm:text-lg mb-2">No remarks added yet.</p>
-              <p className="text-sm">Create your first remark using the button above.</p>
+        <div className="flex flex-col sm:flex-row justify-end gap-3">
+          {editingId && (
+            <button
+              onClick={resetForm}
+              className="w-full sm:w-auto px-6 h-[46px] rounded-xl font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+            >
+              <FaTimes /> Cancel
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={saving || !formData.description}
+            className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              "Saving..."
+            ) : (
+              <>
+                {editingId ? <FaSave /> : <FaPlus />}
+                {editingId ? "Update Remark" : "Add Remark"}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">Available Remarks</h3>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-20 text-gray-600">Loading...</div>
+        ) : remarks.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaCommentDots className="text-gray-300 text-xl" />
             </div>
-          ) : (
-            remarks.map((remark) => (
-              <div
-                key={remark.id}
-                className={`bg-white rounded-xl shadow-md border-2 p-5 sm:p-6 transition-all hover:shadow-lg ${!remark.is_active ? "opacity-75 border-gray-300" : "border-gray-200"
-                  }`}
-              >
-                <div className="flex flex-col sm:flex-row justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-gray-700 text-sm sm:text-base whitespace-pre-wrap mt-2">
-                      {remark.description}
-                    </p>
+            <p className="text-gray-600 font-medium">No remarks available</p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50/50">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest pl-8 w-3/4">Description</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Active</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right pr-8">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {remarks.map((remark) => (
+                    <tr key={remark.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 pl-8">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#4c7085]/10 text-[#4c7085] flex-shrink-0 flex items-center justify-center mt-0.5">
+                            <FaCommentDots size={14} />
+                          </div>
+                          <span className="font-medium text-gray-800 whitespace-pre-wrap">{remark.description}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center align-top pt-5">
+                        <button onClick={() => toggleActive(remark)} className="focus:outline-none">
+                          {remark.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-right pr-8 align-top pt-5">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => startEdit(remark)}
+                            className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
+                          >
+                            <FaEdit size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(remark.id)}
+                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
+                          >
+                            <FaTrash size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {remarks.map((remark) => (
+                <div key={remark.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1 min-w-0 pr-4">
+                      <div className="w-8 h-8 rounded-lg bg-[#4c7085]/10 text-[#4c7085] flex-shrink-0 flex items-center justify-center mt-0.5">
+                        <FaCommentDots size={14} />
+                      </div>
+                      <p className="font-medium text-gray-800 text-sm whitespace-pre-wrap">{remark.description}</p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <button onClick={() => toggleActive(remark)} className="focus:outline-none">
+                        {remark.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex justify-end gap-2 pt-1 border-t border-gray-50">
                     <button
-                      onClick={() => openEdit(remark)}
-                      className="text-sm font-medium text-[#4c7085] hover:text-[#6b8ca3] transition"
-                      title="Edit"
+                      onClick={() => startEdit(remark)}
+                      className="flex-1 sm:flex-none py-2 px-4 bg-gray-100 text-[#4c7085] rounded-lg text-sm font-medium flex items-center justify-center gap-2"
                     >
-                      <FaEdit size={18} className="sm:w-5 sm:h-5" />
+                      <FaEdit /> Edit
                     </button>
                     <button
                       onClick={() => handleDelete(remark.id)}
-                      className="text-sm font-medium text-red-600 hover:text-red-800 transition"
-                      title="Delete"
+                      className="flex-1 sm:flex-none py-2 px-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
                     >
-                      <FaTrash size={18} className="sm:w-5 sm:h-5" />
-                    </button>
-                    <button
-                      onClick={() => toggleActive(remark)}
-                      className="transition text-sm font-medium"
-                      title={remark.is_active ? "Deactivate" : "Activate"}
-                    >
-                      {remark.is_active ? (
-                        <FaToggleOn className="text-2xl sm:text-3xl text-green-600" />
-                      ) : (
-                        <FaToggleOff className="text-2xl sm:text-3xl text-gray-400" />
-                      )}
+                      <FaTrash /> Delete
                     </button>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Modal - Add/Edit Remark */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sm:p-8 max-w-2xl w-full my-8">
-            <h3 className="text-xl sm:text-2xl font-medium text-gray-800 mb-6">
-              {editingRemark ? "Edit" : "Add"} Remark
-            </h3>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <Input
-                label="Description *"
-                type="textarea"
-                rows={6}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="e.g. Long carry > 20 meters, elevator not available..."
-                required
-              />
-
-              <div className="flex items-center gap-6 text-sm">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085]"
-                  />
-                  <span>Active</span>
-                </label>
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="w-full sm:w-auto px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-8 py-2 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white rounded-lg text-sm font-medium transition shadow-lg"
-                >
-                  {editingRemark ? "Update Remark" : "Create Remark"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

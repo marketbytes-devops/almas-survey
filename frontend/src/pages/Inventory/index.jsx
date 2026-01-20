@@ -30,8 +30,8 @@ const Inventory = () => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`py-4 px-6 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${activeTab === tab.id
-                                    ? "border-[#4c7085] text-[#4c7085]"
-                                    : "border-transparent text-gray-500 hover:text-[#4c7085] hover:border-[#4c7085]/30"
+                                ? "border-[#4c7085] text-[#4c7085]"
+                                : "border-transparent text-gray-600 hover:text-[#4c7085] hover:border-[#4c7085]/30"
                                 }`}
                         >
                             {tab.label}

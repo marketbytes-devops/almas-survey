@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import PageHeader from "../../components/PageHeader";
 import Tab from "../../components/Tab/Tab";
 import TabPanel from "../../components/Tab/TabPanel";
 import PricingTab from "./Tabs/Pricing";
@@ -114,6 +115,8 @@ const LocalMove = () => {
     fetchDropdowns();
   }, [hasAutoSelectedCity]);
 
+  console.log("Rendering LocalMove Component");
+
   const sharedProps = {
     selectedHub: selectedCity,
     setSelectedHub: setSelectedCity,
@@ -133,43 +136,51 @@ const LocalMove = () => {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-[600px]">
         <Loading />
       </div>
     );
   if (error)
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-600 text-2xl">
+      <div className="min-h-[600px] flex items-center justify-center text-red-500 font-medium">
         {error}
       </div>
     );
 
   return (
-    <FormProvider {...methods}>
-      <div className="bg-gray-50 min-h-screen">
-        <div className="w-full">
+    <div className="animate-in fade-in duration-500 space-y-8 pb-10">
+      <PageHeader
+        title="Move Pricing Configuration"
+        subtitle="Manage rates, services, and terms for local moves"
+      />
+
+      <FormProvider {...methods}>
+        <div className="space-y-6">
           <Tab
             tabs={TAB_LIST}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           />
-          {TAB_LIST.map((tab) => (
-            <TabPanel key={tab.id} activeTab={activeTab} tabId={tab.id}>
-              {tab.component ? (
-                <tab.component {...sharedProps} />
-              ) : (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
-                  <p className="text-3xl font-medium text-gray-700 mb-4">
-                    {tab.label}
-                  </p>
-                  <p className="text-lg text-gray-500">Coming Soon...</p>
-                </div>
-              )}
-            </TabPanel>
-          ))}
+
+          <div className="min-h-[500px]">
+            {TAB_LIST.map((tab) => (
+              <TabPanel key={tab.id} activeTab={activeTab} tabId={tab.id}>
+                {tab.component ? (
+                  <tab.component {...sharedProps} />
+                ) : (
+                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-20 text-center">
+                    <h3 className="text-xl font-medium text-gray-800 mb-2">
+                      {tab.label} Module
+                    </h3>
+                    <p className="text-gray-600 max-w-sm mx-auto">This configuration module is currently under development. Please check back later.</p>
+                  </div>
+                )}
+              </TabPanel>
+            ))}
+          </div>
         </div>
-      </div>
-    </FormProvider>
+      </FormProvider>
+    </div>
   );
 };
 

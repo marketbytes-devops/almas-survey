@@ -405,7 +405,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                             </div>
                             Room
                         </h3>
-                        <p className="text-xs text-gray-500 mt-1 ml-10">Select a room to begin adding items</p>
+                        <p className="text-xs text-gray-600 mt-1 ml-10">Select a room to begin adding items</p>
                     </div>
 
                     <button type="button" onClick={() => setShowArticlesSidebar(true)} className={`${BUTTON_SECONDARY} ml-auto`}>
@@ -421,13 +421,13 @@ const Article = ({ apiData, setMessage, setError }) => {
                             setShowRoomDropdown(prev => !prev);
                             if (!showRoomDropdown) setRoomSearchQuery("");
                         }}
-                        className={`w-full py-3 px-4 text-left text-sm font-medium rounded-xl border transition-all flex justify-between items-center ${selectedRoom ? "bg-white border-[#4c7085] ring-1 ring-[#4c7085]" : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300"
+                        className={`w-full py-3 px-4 text-left text-sm font-medium rounded-xl border transition-all flex justify-between items-center ${selectedRoom ? "bg-white border-[#4c7085] ring-1 ring-[#4c7085]" : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300"
                             }`}
                     >
-                        <span className={selectedRoom ? "text-gray-900" : "text-gray-400"}>
+                        <span className={selectedRoom ? "text-gray-900" : "text-gray-600"}>
                             {selectedRoom ? selectedRoom.label : "Select a room..."}
                         </span>
-                        <FaChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showRoomDropdown ? "rotate-180" : ""}`} />
+                        <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showRoomDropdown ? "rotate-180" : ""}`} />
                     </button>
 
                     <AnimatePresence>
@@ -438,7 +438,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                             >
                                 <div className="p-3 border-b border-gray-100 bg-gray-50/50 sticky top-0">
                                     <div className="relative">
-                                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-3.5 h-3.5" />
                                         <input
                                             type="text"
                                             value={roomSearchQuery}
@@ -448,7 +448,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                             autoFocus
                                         />
                                         {roomSearchQuery && (
-                                            <button onClick={() => setRoomSearchQuery("")} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                            <button onClick={() => setRoomSearchQuery("")} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-600">
                                                 <FaTimes className="w-3 h-3" />
                                             </button>
                                         )}
@@ -456,7 +456,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                 </div>
                                 <div className="overflow-y-auto flex-1">
                                     {filteredRooms.length === 0 ? (
-                                        <div className="p-8 text-center text-gray-500 text-sm">No rooms found</div>
+                                        <div className="p-8 text-center text-gray-600 text-sm">No rooms found</div>
                                     ) : (
                                         filteredRooms.map(room => (
                                             <button
@@ -488,7 +488,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                         {/* Search & Actions Bar */}
                         <div className="flex flex-col md:flex-row gap-3">
                             <div className="relative flex-1">
-                                <FaSearch className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <FaSearch className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
                                 <input
                                     type="text"
                                     value={itemSearchQuery}
@@ -497,7 +497,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     className={INPUT_SEARCH}
                                 />
                                 {itemSearchQuery && (
-                                    <button onClick={() => setItemSearchQuery("")} className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <button onClick={() => setItemSearchQuery("")} className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-600">
                                         <FaTimes className="w-4 h-4" />
                                     </button>
                                 )}
@@ -530,11 +530,11 @@ const Article = ({ apiData, setMessage, setError }) => {
                         <div className="border border-gray-100 rounded-xl divide-y divide-gray-100 bg-gray-50/30 max-h-[600px] overflow-y-auto">
                             {filteredItems.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-600">
                                         <FaSearch className="w-6 h-6" />
                                     </div>
                                     <p className="text-gray-900 font-medium">No items found</p>
-                                    <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">
+                                    <p className="text-gray-600 text-sm mt-1 max-w-xs mx-auto">
                                         We couldn't find matches for "{itemSearchQuery || 'this room'}". Try a different search or add a custom item.
                                     </p>
                                     <button onClick={() => setShowManualAddForm(true)} className="mt-4 text-[#4c7085] text-sm font-medium hover:underline">
@@ -589,7 +589,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                 <button
                                     type="button"
                                     onClick={() => setManualFormData(prev => ({ ...prev, quantity: Math.max(1, (prev.quantity || 1) - 1) }))}
-                                    className="w-10 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100"
+                                    className="w-10 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100"
                                 >
                                     <FaMinus className="w-2.5 h-2.5" />
                                 </button>
@@ -603,7 +603,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                 <button
                                     type="button"
                                     onClick={() => setManualFormData(prev => ({ ...prev, quantity: (prev.quantity || 1) + 1 }))}
-                                    className="w-10 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100"
+                                    className="w-10 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100"
                                 >
                                     <FaPlus className="w-2.5 h-2.5" />
                                 </button>
@@ -617,7 +617,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                 onClick={() => setIsManualCameraOpen(true)}
                                 className={`w-full h-10 flex items-center justify-center rounded-lg border transition-all ${manualItemPhoto
                                     ? "bg-indigo-50 border-indigo-200 text-indigo-600"
-                                    : "bg-white border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+                                    : "bg-white border-gray-200 text-gray-600 hover:text-gray-600 hover:border-gray-300"
                                     }`}
                             >
                                 <FaCamera className="w-4 h-4 mr-2" />
@@ -645,10 +645,10 @@ const Article = ({ apiData, setMessage, setError }) => {
                             onClick={() => setManualFormData(prev => ({ ...prev, crateRequired: !prev.crateRequired }))}
                             className={`h-10 px-3 rounded-lg text-xs font-medium border flex items-center justify-center gap-2 transition-all ${manualFormData.crateRequired
                                 ? "bg-amber-50 border-amber-200 text-amber-700"
-                                : "bg-white border-gray-200 text-gray-500"
+                                : "bg-white border-gray-200 text-gray-600"
                                 }`}
                         >
-                            <FaBox className={`w-3 h-3 ${manualFormData.crateRequired ? "text-amber-600" : "text-gray-400"}`} />
+                            <FaBox className={`w-3 h-3 ${manualFormData.crateRequired ? "text-amber-600" : "text-gray-600"}`} />
                             {manualFormData.crateRequired ? "Crate Required" : "No Crate"}
                         </button>
                     </div>
@@ -664,12 +664,12 @@ const Article = ({ apiData, setMessage, setError }) => {
 
                     <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <div>
-                            <span className="block text-xs text-gray-500 mb-1">Volume</span>
-                            <div className="font-mono text-lg text-gray-800">{manualVolume.toFixed(4)} <span className="text-xs text-gray-400">m³</span></div>
+                            <span className="block text-xs text-gray-600 mb-1">Volume</span>
+                            <div className="font-mono text-lg text-gray-800">{manualVolume.toFixed(4)} <span className="text-xs text-gray-600">m³</span></div>
                         </div>
                         <div>
-                            <span className="block text-xs text-gray-500 mb-1">Est. Weight</span>
-                            <div className="font-mono text-lg text-gray-800">{manualWeight.toFixed(2)} <span className="text-xs text-gray-400">kg</span></div>
+                            <span className="block text-xs text-gray-600 mb-1">Est. Weight</span>
+                            <div className="font-mono text-lg text-gray-800">{manualWeight.toFixed(2)} <span className="text-xs text-gray-600">kg</span></div>
                         </div>
                     </div>
 

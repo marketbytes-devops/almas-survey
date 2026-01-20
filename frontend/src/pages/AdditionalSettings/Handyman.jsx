@@ -120,11 +120,10 @@ const Handyman = () => {
                 <button
                   type="submit"
                   disabled={saving || !watch("type_name")?.trim()}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                    saving || !watch("type_name")?.trim()
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${saving || !watch("type_name")?.trim()
                       ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                       : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                  }`}
+                    }`}
                 >
                   {saving ? "Saving..." : "Save New Handyman"}
                 </button>
@@ -196,7 +195,7 @@ const Handyman = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-600">
                 <p className="text-base sm:text-lg mb-2">No handymen found.</p>
                 <p className="text-sm">Add one using the form above!</p>
               </div>

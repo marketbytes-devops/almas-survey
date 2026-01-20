@@ -41,7 +41,7 @@ const InputField = ({
   return (
     <div className="flex flex-col">
       {label && (
-        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+        <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
           {label}
           {rules.required && <span className="text-red-500"> *</span>}
         </label>
@@ -347,7 +347,7 @@ const Enquiries = () => {
       {/* Search and Filters */}
       <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
         <div className="relative flex-1">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 z-10 pointer-events-none">
             <FiSearch className="w-5 h-5" />
           </div>
           <input
@@ -399,7 +399,7 @@ const Enquiries = () => {
             <FiSearch className="text-gray-300 w-8 h-8" />
           </div>
           <h3 className="text-lg font-medium text-gray-800">No enquiries found</h3>
-          <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or search query</p>
+          <p className="text-gray-600 text-sm mt-1">Try adjusting your filters or search query</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -408,12 +408,12 @@ const Enquiries = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Contact</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Assigned To</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Created</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Assigned To</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Created</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -426,17 +426,17 @@ const Enquiries = () => {
                         </div>
                         <div>
                           <p className="font-medium text-gray-800">{item.fullName}</p>
-                          <p className="text-xs text-gray-500">ID: #{item.id}</p>
+                          <p className="text-xs text-gray-600">ID: #{item.id}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <FiPhone className="w-3.5 h-3.5 text-gray-400" /> {item.phoneNumber}
+                          <FiPhone className="w-3.5 h-3.5 text-gray-600" /> {item.phoneNumber}
                         </p>
-                        <p className="text-xs text-gray-500 flex items-center gap-2">
-                          <FiMail className="w-3.5 h-3.5 text-gray-400" /> {item.email}
+                        <p className="text-xs text-gray-600 flex items-center gap-2">
+                          <FiMail className="w-3.5 h-3.5 text-gray-600" /> {item.email}
                         </p>
                       </div>
                     </td>
@@ -458,7 +458,7 @@ const Enquiries = () => {
                       )}
                     </td>
                     <td className="px-6 py-5">
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-600">
                         <p>{new Date(item.created_at).toLocaleDateString()}</p>
                         <p className="text-xs opacity-60">{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
@@ -468,7 +468,7 @@ const Enquiries = () => {
                         <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all duration-200" title="Assign">
                           <FiUserPlus className="w-4.5 h-4.5" />
                         </button>
-                        <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="w-9 h-9 flex items-center justify-center text-gray-400 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all duration-200" title="Edit">
+                        <button onClick={() => { setSelectedEnquiry(item); editForm.reset(item); setIsEditOpen(true); }} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all duration-200" title="Edit">
                           <FiEdit3 className="w-4.5 h-4.5" />
                         </button>
                         <button onClick={() => { setSelectedEnquiry(item); setIsDeleteOpen(true); }} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-200" title="Delete">
@@ -498,10 +498,10 @@ const Enquiries = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800 text-sm">{item.fullName}</h4>
-                        <p className="text-[10px] text-gray-500 font-medium">{new Date(item.created_at).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-gray-600 font-medium">{new Date(item.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                    {isOpen ? <FiChevronUp className="text-gray-600" /> : <FiChevronDown className="text-gray-600" />}
                   </div>
 
                   <AnimatePresence>
@@ -510,23 +510,23 @@ const Enquiries = () => {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Service</p>
                               <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Assigned To</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Assigned To</p>
                               <p className={`text-xs font-medium mt-0.5 ${item.assigned_user_email ? 'text-gray-700' : 'text-amber-500 italic'}`}>
                                 {item.assigned_user_email || "Not Assigned"}
                               </p>
                             </div>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Contact Info</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Contact Info</p>
                             <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiPhone className="text-gray-300" /> {item.phoneNumber}</p>
                             <p className="text-xs text-gray-700 mt-1 flex items-center gap-2"><FiMail className="text-gray-300" /> {item.email}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Message</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Message</p>
                             <p className="text-xs text-gray-600 mt-1 italic font-medium">"{item.message}"</p>
                           </div>
                           <div className="flex gap-2 pt-2">
@@ -545,7 +545,7 @@ const Enquiries = () => {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-6">
-            <p className="text-sm text-gray-500 hidden sm:block">
+            <p className="text-sm text-gray-600 hidden sm:block">
               Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredEnquiries.length)}</span> of <span className="font-medium text-gray-800">{filteredEnquiries.length}</span> enquiries
             </p>
             <div className="flex gap-2 w-full sm:w-auto">
@@ -651,9 +651,9 @@ const Enquiries = () => {
                 <FiTrash2 className="w-8 h-8" />
               </div>
               <p className="text-gray-800 font-medium">Delete this enquiry?</p>
-              <p className="text-xs text-gray-500 mt-1 font-medium">This action cannot be undone and will remove all associated notes.</p>
+              <p className="text-xs text-gray-600 mt-1 font-medium">This action cannot be undone and will remove all associated notes.</p>
               <div className="flex gap-3 mt-8">
-                <button onClick={() => setIsDeleteOpen(false)} className="flex-1 py-3 text-xs font-medium text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100">Cancel</button>
+                <button onClick={() => setIsDeleteOpen(false)} className="flex-1 py-3 text-xs font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100">Cancel</button>
                 <button onClick={onDelete} disabled={isSubmitting} className="flex-1 py-3 text-xs font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-sm shadow-red-100">
                   {isSubmitting ? "Deleting..." : "Delete Perpetually"}
                 </button>
@@ -672,7 +672,7 @@ const Enquiries = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
-                  <p className="text-sm text-gray-500 font-medium">{selectedEnquiry?.phoneNumber}</p>
+                  <p className="text-sm text-gray-600 font-medium">{selectedEnquiry?.phoneNumber}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

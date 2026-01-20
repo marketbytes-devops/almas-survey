@@ -35,7 +35,7 @@ import SurveyPrint from "../SurveyPrint";
 // Reusable styling constants
 const CARD_CLASS = "bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md";
 const INPUT_CLASS = "w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4c7085] focus:ring-0 transition-all outline-none text-sm text-gray-700 placeholder-gray-400";
-const LABEL_CLASS = "block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1";
+const LABEL_CLASS = "block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1";
 const BUTTON_BASE = "px-4 py-2 rounded-xl text-xs font-medium transition-all active:scale-95 flex items-center justify-center gap-2";
 
 const SurveySummary = () => {
@@ -347,20 +347,20 @@ const SurveySummary = () => {
             </h4>
             <div className="space-y-3">
               <div>
-                <span className="text-xs text-gray-400 block mb-1">Address</span>
+                <span className="text-xs text-gray-600 block mb-1">Address</span>
                 <p className="text-sm text-gray-700">{survey.origin_address || "Not filled"}</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <span className="text-xs text-gray-400 block mb-1">City</span>
+                  <span className="text-xs text-gray-600 block mb-1">City</span>
                   <p className="text-sm text-gray-700">{getCityName(survey.origin_country, survey.origin_state, survey.origin_city)}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-400 block mb-1">State</span>
+                  <span className="text-xs text-gray-600 block mb-1">State</span>
                   <p className="text-sm text-gray-700">{getStateName(survey.origin_country, survey.origin_state)}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-400 block mb-1">Country</span>
+                  <span className="text-xs text-gray-600 block mb-1">Country</span>
                   <p className="text-sm text-gray-700">{getCountryName(survey.origin_country)}</p>
                 </div>
               </div>
@@ -380,20 +380,20 @@ const SurveySummary = () => {
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-xs text-gray-400 block mb-1">Address</span>
+                    <span className="text-xs text-gray-600 block mb-1">Address</span>
                     <p className="text-sm text-gray-700">{a.address || "Not filled"}</p>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <span className="text-xs text-gray-400 block mb-1">City</span>
+                      <span className="text-xs text-gray-600 block mb-1">City</span>
                       <p className="text-sm text-gray-700">{getCityName(a.country, a.state, a.city)}</p>
                     </div>
                     <div>
-                      <span className="text-xs text-gray-400 block mb-1">State</span>
+                      <span className="text-xs text-gray-600 block mb-1">State</span>
                       <p className="text-sm text-gray-700">{getStateName(a.country, a.state)}</p>
                     </div>
                     <div>
-                      <span className="text-xs text-gray-400 block mb-1">Country</span>
+                      <span className="text-xs text-gray-600 block mb-1">Country</span>
                       <p className="text-sm text-gray-700">{getCountryName(a.country)}</p>
                     </div>
                   </div>
@@ -402,7 +402,7 @@ const SurveySummary = () => {
             ))}
             {(!survey.destination_addresses || survey.destination_addresses.length === 0) && (
               <div className="bg-white rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center p-8 h-full min-h-[150px]">
-                <p className="text-gray-400 text-sm">No destination address recorded</p>
+                <p className="text-gray-600 text-sm">No destination address recorded</p>
               </div>
             )}
           </div>
@@ -420,7 +420,7 @@ const SurveySummary = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
+                <thead className="bg-gray-50/50 text-gray-600 font-medium border-b border-gray-100">
                   <tr>
                     <th className="px-6 py-3 font-normal">Room</th>
                     <th className="px-6 py-3 font-normal">Item</th>
@@ -442,7 +442,7 @@ const SurveySummary = () => {
                         {a.crate_required ? (
                           <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase font-semibold">Yes</span>
                         ) : (
-                          <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 uppercase font-semibold">No</span>
+                          <span className="text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 uppercase font-semibold">No</span>
                         )}
                       </td>
                       <td className="px-6 py-3">
@@ -488,7 +488,7 @@ const SurveySummary = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
+                <thead className="bg-gray-50/50 text-gray-600 font-medium border-b border-gray-100">
                   <tr>
                     <th className="px-6 py-3 font-normal">Type</th>
                     <th className="px-6 py-3 font-normal">Make</th>
@@ -506,7 +506,7 @@ const SurveySummary = () => {
                         {v.insurance ? (
                           <span className="text-xs text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-100">Yes</span>
                         ) : (
-                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">No</span>
+                          <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">No</span>
                         )}
                       </td>
                     </tr>
@@ -528,7 +528,7 @@ const SurveySummary = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
+                <thead className="bg-gray-50/50 text-gray-600 font-medium border-b border-gray-100">
                   <tr>
                     <th className="px-6 py-3 font-normal">Service</th>
                     <th className="px-6 py-3 font-normal">Qty</th>
@@ -540,7 +540,7 @@ const SurveySummary = () => {
                     <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-3 font-medium text-gray-800">{service.name || "Unknown Service"}</td>
                       <td className="px-6 py-3 text-gray-600">{service.quantity || 1}</td>
-                      <td className="px-6 py-3 text-gray-500 italic">{service.remarks || "-"}</td>
+                      <td className="px-6 py-3 text-gray-600 italic">{service.remarks || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -583,7 +583,7 @@ const SurveySummary = () => {
       {/* Filter and Search */}
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -591,7 +591,7 @@ const SurveySummary = () => {
             className={`${INPUT_CLASS} pl-11`}
           />
         </div>
-        <div className="text-sm text-gray-500 font-medium px-2">
+        <div className="text-sm text-gray-600 font-medium px-2">
           {filteredSurveys.length} Records
         </div>
       </div>
@@ -603,12 +603,12 @@ const SurveySummary = () => {
             <FiSearch className="text-gray-300 w-8 h-8" />
           </div>
           <h3 className="text-lg font-medium text-gray-800">No surveys found</h3>
-          <p className="text-gray-400 text-sm mt-1">Try adjusting your search criteria</p>
+          <p className="text-gray-600 text-sm mt-1">Try adjusting your search criteria</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Desktop Table Header (Only Visible on LG) */}
-          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/50 rounded-xl border border-gray-100 text-xs font-medium text-gray-400 uppercase tracking-widest">
+          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/50 rounded-xl border border-gray-100 text-xs font-medium text-gray-600 uppercase tracking-widest">
             <div className="col-span-3">Survey & Client</div>
             <div className="col-span-2">Contact</div>
             <div className="col-span-2">Service</div>
@@ -632,13 +632,13 @@ const SurveySummary = () => {
                     {/* Survey & Client */}
                     <div className="col-span-3 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{survey.survey_id}</span>
+                        <span className="text-xs font-mono font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{survey.survey_id}</span>
                         {survey.quotation_id && (
                           <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Quote sent</span>
                         )}
                       </div>
                       <h3 className="font-medium text-gray-800 text-base">{survey.full_name || survey.enquiry?.fullName || "Unknown Client"}</h3>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
                         <FiCalendar /> {formatDate(survey.survey_date)}
                       </div>
                     </div>
@@ -708,7 +708,7 @@ const SurveySummary = () => {
                   {/* Expand Toggle */}
                   <button
                     onClick={() => toggleSectionExpansion(survey.survey_id)}
-                    className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-gray-400 hover:text-[#4c7085] hover:bg-gray-50 rounded-lg transition-colors"
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-gray-600 hover:text-[#4c7085] hover:bg-gray-50 rounded-lg transition-colors"
                   >
                     {isExpanded ? (
                       <>Hide Details <FiChevronUp /></>
@@ -759,7 +759,7 @@ const SurveySummary = () => {
           }
         >
           <div className="space-y-4 py-2">
-            <p className="text-sm text-gray-500">Change the current status of the survey.</p>
+            <p className="text-sm text-gray-600">Change the current status of the survey.</p>
             <div className="space-y-2">
               {statusOptions.map((opt) => (
                 <label key={opt.value} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${statusModal?.newStatus === opt.value ? 'bg-[#4c7085]/5 border-[#4c7085] shadow-sm' : 'bg-white border-gray-100 hover:bg-gray-50'}`}>
@@ -806,7 +806,7 @@ const SurveySummary = () => {
           }
         >
           <div className="p-1">
-            <p className="text-xs text-gray-500 mb-3 flex items-center gap-1"><FiMapPin /> {selectedArticlePhoto?.room}</p>
+            <p className="text-xs text-gray-600 mb-3 flex items-center gap-1"><FiMapPin /> {selectedArticlePhoto?.room}</p>
             <div className="flex items-center justify-center bg-black/5 rounded-xl overflow-hidden min-h-[300px]">
               <img src={selectedArticlePhoto?.url} alt="Item" className="max-w-full max-h-[60vh] object-contain" />
             </div>

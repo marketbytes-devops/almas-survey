@@ -80,7 +80,7 @@ const AdditionalServicesTab = () => {
 
             <div className="space-y-3 mb-8">
                 {additionalServices.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <div className="text-center py-8 text-gray-600 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                         No additional services available. Please add services in the settings first.
                     </div>
                 ) : (
@@ -127,7 +127,7 @@ const AdditionalServicesTab = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h5 className="font-medium text-gray-900 text-sm sm:text-base leading-tight">{service.name}</h5>
-                                            <p className="text-xs text-gray-500 mt-1">Configure details below</p>
+                                            <p className="text-xs text-gray-600 mt-1">Configure details below</p>
                                         </div>
                                     </div>
 
@@ -139,7 +139,7 @@ const AdditionalServicesTab = () => {
                                                     const newQty = Math.max(1, (service.quantity || 1) - 1);
                                                     updateServiceDetails(service.id, "quantity", newQty);
                                                 }}
-                                                className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100 transition-colors"
+                                                className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100 transition-colors"
                                             >
                                                 -
                                             </button>
@@ -152,7 +152,7 @@ const AdditionalServicesTab = () => {
                                                     const newQty = (service.quantity || 1) + 1;
                                                     updateServiceDetails(service.id, "quantity", newQty);
                                                 }}
-                                                className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100 transition-colors"
+                                                className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100 transition-colors"
                                             >
                                                 +
                                             </button>
@@ -171,8 +171,8 @@ const AdditionalServicesTab = () => {
 
                                 <div className="mt-4 pt-4 border-t border-gray-50">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <FaPen className="w-3 h-3 text-gray-400" />
-                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Remarks</label>
+                                        <FaPen className="w-3 h-3 text-gray-600" />
+                                        <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Remarks</label>
                                     </div>
                                     <textarea
                                         value={service.remarks || ""}

@@ -88,10 +88,10 @@ const BottomNav = () => {
                 className="flex flex-col items-center min-w-[60px] py-2 relative"
               >
                 <div className={`transition-all duration-300 ${active ? "scale-110" : "scale-100"}`}>
-                  <Icon className={`w-6 h-6 ${active ? "text-[#4c7085]" : "text-gray-500"}`} />
+                  <Icon className={`w-6 h-6 ${active ? "text-[#4c7085]" : "text-gray-600"}`} />
                 </div>
                 <span
-                  className={`text-[10px] mt-1 font-medium transition-colors ${active ? "text-[#4c7085]" : "text-gray-500"
+                  className={`text-[10px] mt-1 font-medium transition-colors ${active ? "text-[#4c7085]" : "text-gray-600"
                     }`}
                 >
                   {item.label}

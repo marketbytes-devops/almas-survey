@@ -96,7 +96,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-600 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <FaTimes className="w-5 h-5" />
           </button>
@@ -128,7 +128,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, customerName }) => {
             />
           </div>
 
-          <p className="text-xs text-gray-500 mt-3 text-center">
+          <p className="text-xs text-gray-600 mt-3 text-center">
             Use your mouse or finger to sign within the box.
           </p>
         </div>

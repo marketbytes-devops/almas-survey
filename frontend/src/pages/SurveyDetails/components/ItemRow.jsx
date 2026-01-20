@@ -106,7 +106,7 @@ const ItemRow = ({
                             {item.name}
                         </div>
                         {item.description && (
-                            <div className="text-xs text-gray-500 mt-0.5 max-w-md">
+                            <div className="text-xs text-gray-600 mt-0.5 max-w-md">
                                 {item.description}
                             </div>
                         )}
@@ -123,7 +123,7 @@ const ItemRow = ({
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty - 1)}
                             disabled={qty <= 0}
-                            className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-gray-100"
+                            className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-gray-100"
                         >
                             <FaMinus className="w-2.5 h-2.5" />
                         </button>
@@ -137,7 +137,7 @@ const ItemRow = ({
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty + 1)}
-                            className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-[#4c7085] transition-colors border-l border-gray-100"
+                            className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-[#4c7085] transition-colors border-l border-gray-100"
                         >
                             <FaPlus className="w-2.5 h-2.5" />
                         </button>
@@ -162,11 +162,11 @@ const ItemRow = ({
                         onClick={() => handleCrateChange(isCrateRequired ? 'no' : 'yes')}
                         className={`h-9 px-3 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all ${isCrateRequired
                             ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-                            : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                             }`}
                         title="Toggle Crate Requirement"
                     >
-                        <FaBox className={`w-3 h-3 ${isCrateRequired ? "text-amber-600" : "text-gray-400"}`} />
+                        <FaBox className={`w-3 h-3 ${isCrateRequired ? "text-amber-600" : "text-gray-600"}`} />
                         {isCrateRequired ? "Crate" : "No Crate"}
                     </button>
 
@@ -176,7 +176,7 @@ const ItemRow = ({
                         onClick={handleCameraClick}
                         className={`h-9 w-9 flex items-center justify-center rounded-lg border transition-all ${hasPhoto
                             ? "bg-indigo-50 border-indigo-200 text-indigo-600 shadow-inner"
-                            : "bg-white border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+                            : "bg-white border-gray-200 text-gray-600 hover:text-gray-600 hover:border-gray-300"
                             }`}
                         title={hasPhoto ? "Photo Added" : "Add Photo"}
                     >

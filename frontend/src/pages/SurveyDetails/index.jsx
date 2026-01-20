@@ -65,7 +65,7 @@ const InputField = ({ label, name, type = "text", options = [], rules = {}, plac
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-600">
                         <FaChevronDown className="w-3 h-3" />
                     </div>
                 </div>
@@ -116,7 +116,7 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
                     placeholderText={isTimeOnly ? "Select time" : "Select date"}
                     wrapperClassName="w-full"
                 />
-                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-600">
                     {isTimeOnly ? <FaClock className="w-4 h-4" /> : <FaCalendar className="w-4 h-4" />}
                 </div>
             </div>
@@ -335,7 +335,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                             onClick={handleGetLocation}
                             disabled={isLocating}
                             className={`absolute right-2 top-[28px] p-2 rounded-lg transition-colors ${isLocating
-                                ? 'text-gray-400 cursor-not-allowed'
+                                ? 'text-gray-600 cursor-not-allowed'
                                 : watch("originGps")
                                     ? 'text-green-600 hover:bg-green-50'
                                     : 'text-[#4c7085] hover:bg-[#4c7085]/10'
@@ -383,7 +383,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
 
                         return (
                             <div key={addr.id || i} className="bg-gray-50 rounded-xl p-6 border border-gray-100 relative group">
-                                <h4 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-4">Destination {i + 1}</h4>
+                                <h4 className="text-xs uppercase tracking-widest text-gray-600 font-medium mb-4">Destination {i + 1}</h4>
                                 {multipleAddresses && destinationAddresses.length > 1 && (
                                     <button type="button" onClick={() => removeAddress(i)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
                                         <FaTimes />
@@ -489,7 +489,7 @@ const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, i
                                     </div>
                                 </>
                             ) : (
-                                <div className="text-center text-gray-400">
+                                <div className="text-center text-gray-600">
                                     <FaSignature className="w-8 h-8 mx-auto mb-2 opacity-30" />
                                     <p className="text-xs">No signature captured</p>
                                 </div>
@@ -497,7 +497,7 @@ const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, i
                         </div>
 
                         <div className="space-y-4">
-                            <p className="text-sm text-gray-500 leading-relaxed">
+                            <p className="text-sm text-gray-600 leading-relaxed">
                                 The signature confirms the customer agrees with the surveyed items and volume.
                             </p>
                             <button
@@ -1023,7 +1023,7 @@ const SurveyDetails = () => {
                                 onClick={() => handleTabChange(tab.id)}
                                 className={`whitespace-nowrap flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
                                     ? "bg-[#4c7085] text-white shadow-md"
-                                    : "text-gray-500 hover:bg-gray-50"
+                                    : "text-gray-600 hover:bg-gray-50"
                                     }`}
                             >
                                 {tab.label}

@@ -154,11 +154,10 @@ const SurveyTypes = () => {
           {/* Toast Message */}
           {msg.text && (
             <div
-              className={`p-4 rounded-lg text-center font-medium ${
-                msg.type === "error"
+              className={`p-4 rounded-lg text-center font-medium ${msg.type === "error"
                   ? "bg-red-100 text-red-700 border border-red-400"
                   : "bg-green-100 text-green-700 border border-green-400"
-              }`}
+                }`}
             >
               {msg.text}
             </div>
@@ -211,11 +210,10 @@ const SurveyTypes = () => {
                 <button
                   type="submit"
                   disabled={saving || !watch("name")?.trim()}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${
-                    saving || !watch("name")?.trim()
+                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${saving || !watch("name")?.trim()
                       ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                       : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                  }`}
+                    }`}
                 >
                   {saving ? "Saving..." : "Save Type"}
                 </button>
@@ -287,7 +285,7 @@ const SurveyTypes = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-600">
                 <p className="text-base sm:text-lg mb-2">
                   No {CATEGORY_LABEL[selectedCategory].toLowerCase()} found.
                 </p>

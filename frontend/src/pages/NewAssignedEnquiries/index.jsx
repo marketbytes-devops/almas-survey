@@ -40,7 +40,7 @@ const InputField = ({
   return (
     <div className="flex flex-col">
       {label && (
-        <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">
+        <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">
           {label}
           {rules.required && <span className="text-red-500"> *</span>}
         </label>
@@ -389,7 +389,7 @@ const NewAssignedEnquiries = () => {
 
       <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
         <div className="relative flex-1">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 z-10 pointer-events-none">
             <FiSearch className="w-5 h-5" />
           </div>
           <input
@@ -440,7 +440,7 @@ const NewAssignedEnquiries = () => {
             <FiClipboard className="text-gray-300 w-8 h-8" />
           </div>
           <h3 className="text-lg font-medium text-gray-800">No new enquiries found</h3>
-          <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or search query</p>
+          <p className="text-gray-600 text-sm mt-1">Try adjusting your filters or search query</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -449,12 +449,12 @@ const NewAssignedEnquiries = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Contact</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Service</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Created</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Created</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -467,17 +467,17 @@ const NewAssignedEnquiries = () => {
                         </div>
                         <div>
                           <p className="font-medium text-gray-800">{item.fullName}</p>
-                          <p className="text-xs text-gray-500">#{item.id}</p>
+                          <p className="text-xs text-gray-600">#{item.id}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <FiPhone className="w-3.5 h-3.5 text-gray-400" /> {item.phoneNumber}
+                          <FiPhone className="w-3.5 h-3.5 text-gray-600" /> {item.phoneNumber}
                         </p>
-                        <p className="text-xs text-gray-500 flex items-center gap-2">
-                          <FiMail className="w-3.5 h-3.5 text-gray-400" /> {item.email}
+                        <p className="text-xs text-gray-600 flex items-center gap-2">
+                          <FiMail className="w-3.5 h-3.5 text-gray-600" /> {item.email}
                         </p>
                       </div>
                     </td>
@@ -497,12 +497,12 @@ const NewAssignedEnquiries = () => {
                             <FiCalendar /> {new Date(item.survey_date).toLocaleDateString()}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-gray-400 italic">Not Scheduled</span>
+                          <span className="text-[10px] text-gray-600 italic">Not Scheduled</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-600">
                         <p>{new Date(item.created_at).toLocaleDateString()}</p>
                       </div>
                     </td>
@@ -534,7 +534,7 @@ const NewAssignedEnquiries = () => {
 
             {/* Pagination Desktop */}
             <div className="flex items-center justify-between p-6 border-t border-gray-50">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 Showing <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> to <span className="font-medium text-gray-800">{Math.min(indexOfLastItem, filteredEnquiries.length)}</span> of <span className="font-medium text-gray-800">{filteredEnquiries.length}</span> enquiries
               </p>
               <div className="flex gap-2">
@@ -572,10 +572,10 @@ const NewAssignedEnquiries = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800 text-sm">{item.fullName}</h4>
-                        <p className="text-[10px] text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-gray-600">{new Date(item.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    {isOpen ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+                    {isOpen ? <FiChevronUp className="text-gray-600" /> : <FiChevronDown className="text-gray-600" />}
                   </div>
 
                   <AnimatePresence>
@@ -584,11 +584,11 @@ const NewAssignedEnquiries = () => {
                         <div className="p-4 space-y-4 border-t border-gray-100">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Service</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Service</p>
                               <p className="text-xs font-medium text-blue-600 mt-0.5">{serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Status</p>
+                              <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Status</p>
                               <p className="text-xs font-medium text-amber-600 mt-0.5">{item.contact_status || "Pending"}</p>
                             </div>
                           </div>
@@ -609,7 +609,7 @@ const NewAssignedEnquiries = () => {
             {filteredEnquiries.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Show:</span>
+                  <span className="text-xs text-gray-600">Show:</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => {
@@ -676,7 +676,7 @@ const NewAssignedEnquiries = () => {
               <InputField label="Contact Status Note (Optional)" name="contactStatusNote" type="textarea" placeholder="Enter status update details..." />
               {contactStatusForm.watch("status") === "Not Attended" && (
                 <div className="p-4 bg-gray-50 rounded-2xl space-y-3">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium mb-2">Communication Attempts</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-2">Communication Attempts</p>
                   <label className="flex items-center text-gray-700 text-sm font-medium gap-3 cursor-pointer">
                     <input type="checkbox" {...contactStatusForm.register("reachedOutWhatsApp")} className="w-5 h-5 accent-[#4c7085]" />
                     Reached out via WhatsApp
@@ -723,7 +723,7 @@ const NewAssignedEnquiries = () => {
           <FormProvider {...scheduleSurveyForm}>
             <form id="schedule-survey-form" onSubmit={scheduleSurveyForm.handleSubmit(onScheduleSurveySubmit)} className="space-y-4">
               <div className="flex flex-col">
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Survey Date and Time <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Survey Date and Time <span className="text-red-500">*</span></label>
                 <DatePicker
                   selected={scheduleSurveyForm.watch("surveyDate")}
                   onChange={(date) => scheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
@@ -773,7 +773,7 @@ const NewAssignedEnquiries = () => {
               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#4c7085] font-medium text-lg">{selectedEnquiry?.fullName?.charAt(0)}</div>
               <div>
                 <p className="font-medium text-gray-800">{selectedEnquiry?.fullName}</p>
-                <p className="text-sm text-gray-500">{selectedEnquiry?.phoneNumber}</p>
+                <p className="text-sm text-gray-600">{selectedEnquiry?.phoneNumber}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
