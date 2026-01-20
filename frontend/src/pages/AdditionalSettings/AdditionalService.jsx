@@ -1,47 +1,50 @@
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
+import PageHeader from "../../components/PageHeader";
+import Modal from "../../components/Modal";
 
 const AdditionalServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Feedback states
+  const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // New state for modal
 
   const methods = useForm({
-    defaultValues: {
-      name: "",
-    },
+    defaultValues: { name: "" },
   });
 
-  const { handleSubmit, reset, watch } = methods;
-  const watchedName = watch("name");
+  const { handleSubmit, reset, setError: setFormError } = methods;
 
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await apiClient.get("/survey-additional-services/");
-        setServices(response.data);
-      } catch (err) {
-        setError("Failed to load additional services. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchServices();
   }, []);
+
+  const fetchServices = async () => {
+    try {
+      const response = await apiClient.get("/survey-additional-services/");
+      setServices(response.data);
+    } catch (err) {
+      setError("Failed to load additional services. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onSubmit = async (data) => {
     if (!data.name.trim()) return;
 
-    setSaving(true);
+    setIsSubmitting(true);
     setError(null);
-    setSuccess(null);
 
     try {
       const payload = { name: data.name.trim() };
@@ -54,225 +57,187 @@ const AdditionalServices = () => {
       });
 
       reset();
-      setSuccess("Additional service added successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      setIsAddOpen(false);
+      setMessage("Service added successfully!");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      const msg = err.response?.data?.name?.[0] || "Failed to save service.";
-      setError(msg);
-      setTimeout(() => setError(null), 4000);
+      const fieldErrors = err.response?.data;
+      if (fieldErrors?.name) {
+        setFormError("name", { type: "server", message: Array.isArray(fieldErrors.name) ? fieldErrors.name[0] : fieldErrors.name });
+      } else {
+        setError("Failed to save service. Please try again.");
+        setTimeout(() => setError(null), 3000);
+      }
     } finally {
-      setSaving(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
-
-    setDeletingId(id);
-    setError(null);
-    setSuccess(null);
+    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
       await apiClient.delete(`/survey-additional-services/${id}/`);
       setServices((prev) => prev.filter((s) => s.id !== id));
-      setSuccess(`"${name}" has been deleted successfully!`);
-      setTimeout(() => setSuccess(null), 5000);
+      setMessage("Service deleted successfully!");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      console.error("Delete error:", err);
-      const errorMsg = err.response?.status === 404
-        ? "Service not found."
-        : "Failed to delete service. It might be in use or server error.";
-      setError(errorMsg);
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      setDeletingId(null);
+      setError("Failed to delete service. It may be in use.");
+      setTimeout(() => setError(null), 3000);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
+  const filteredServices = services.filter(service =>
+    service.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
-          <h1 className="text-xs sm:text-lg font-medium">Additional Services Management</h1>
-        </div>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <PageHeader
+        title="Additional Services"
+        subtitle="Manage extra services like Piano Moving or Handyman"
+      />
 
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-          {/* Success/Error Messages */}
-          <div className="fixed top-4 right-4 z-50 w-80 max-w-full">
-            {success && (
-              <div className="p-4 mb-2 bg-green-100 border-l-4 border-green-500 text-green-700 rounded shadow-lg">
-                <p className="font-medium">{success}</p>
-              </div>
-            )}
-            {error && (
-              <div className="p-4 mb-2 bg-red-100 border-l-4 border-red-500 text-red-700 rounded shadow-lg">
-                <p className="font-medium">{error}</p>
-              </div>
-            )}
+      {/* Alerts */}
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+              <FiX className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+        {message && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{message}</span>
+            <button onClick={() => setMessage(null)} className="text-green-400 hover:text-green-600">
+              <FiX className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <FiSearch className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search services..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-style w-full !pl-12 h-[52px] rounded-2xl border-gray-100 shadow-sm"
+        />
+      </div>
+
+      <button
+        onClick={() => setIsAddOpen(true)}
+        className="w-full btn-primary"
+      >
+        <FiPlus className="w-5 h-5" />
+        <span className="text-sm tracking-wide">Add New Service</span>
+      </button>
+
+      {/* Content Area */}
+      {filteredServices.length === 0 ? (
+        <div className="bg-white rounded-3xl p-16 text-center border border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiInfo className="text-gray-300 w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-800">No services found</h3>
+          <p className="text-gray-600 text-sm mt-1">
+            {searchQuery ? "Try adjusting your search query" : "Get started by adding a new service"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {/* Desktop Headers */}
+          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/50 rounded-xl border border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-widest">
+            <div className="col-span-11">Service Name</div>
+            <div className="col-span-1 text-center">Action</div>
           </div>
 
-          {/* Add New Service Card */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
+          {/* List Items */}
+          <div className="space-y-3">
+            {filteredServices.map((service) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                key={service.id}
+                className="group bg-white p-4 md:px-6 md:py-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  <div className="col-span-11">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] text-xs font-medium shrink-0">
+                        {service.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-gray-800">{service.name}</span>
+                    </div>
+                  </div>
+                  <div className="col-span-1 flex justify-end md:justify-center">
+                    <button
+                      onClick={() => handleDelete(service.id, service.name)}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add Modal */}
+      <AnimatePresence>
+        {isAddOpen && (
+          <Modal
+            isOpen={isAddOpen}
+            onClose={() => setIsAddOpen(false)}
+            title="Add New Service"
+          >
             <FormProvider {...methods}>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <Input
                   label="Service Name"
                   name="name"
-                  type="text"
-                  placeholder="e.g. Piano Moving, Storage in Transit..."
+                  placeholder="e.g. Piano Moving"
                   rules={{
                     required: "Service name is required",
-                    minLength: { value: 2, message: "Minimum 2 characters" },
+                    minLength: { value: 2, message: "Minimum 2 characters" }
                   }}
-                  disabled={saving}
                 />
 
-                <button
-                  type="submit"
-                  disabled={!watchedName?.trim() || saving}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${!watchedName?.trim() || saving
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                    }`}
-                >
-                  {saving ? "Saving..." : "Add Service"}
-                </button>
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddOpen(false)}
+                    className="btn-secondary !bg-transparent !border-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary px-8"
+                  >
+                    {isSubmitting ? <Loading size="sm" color="white" /> : "Save Service"}
+                  </button>
+                </div>
               </form>
             </FormProvider>
-          </div>
-
-          {/* Services List Card */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
-              <h3 className="text-xs sm:text-lg font-medium">
-                Survey Additional Services ({services.length})
-              </h3>
-            </div>
-
-            {services.length > 0 ? (
-              <>
-                {/* Desktop Table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-300">
-                      <tr>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                          Name
-                        </th>
-                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {services.map((service) => (
-                        <tr key={service.id} className="hover:bg-gray-50 transition">
-                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
-                            {service.name}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 text-center">
-                            <button
-                              onClick={() => handleDelete(service.id, service.name)}
-                              disabled={deletingId === service.id}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition ${deletingId === service.id
-                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                  : "bg-red-600 text-white hover:bg-red-700"
-                                }`}
-                            >
-                              {deletingId === service.id ? "Deleting..." : "Delete"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards */}
-                <div className="sm:hidden space-y-3 p-4">
-                  {services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="bg-gray-50 rounded-lg border border-gray-300 p-4"
-                    >
-                      <div className="flex justify-center items-center mb-2">
-                        <h4 className="font-medium text-gray-900">{service.name}</h4>
-                      </div>
-                      <div className="flex justify-center items-center">
-                        <button
-                          onClick={() => handleDelete(service.id, service.name)}
-                          disabled={deletingId === service.id}
-                          className={`text-sm font-medium px-6 py-2 rounded-lg transition ${deletingId === service.id
-                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              : "bg-red-600 text-white hover:bg-red-700"
-                            }`}
-                        >
-                          {deletingId === service.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12 text-gray-600">
-                <p className="text-base sm:text-lg mb-2">No additional services yet.</p>
-                <p className="text-sm">Add one using the form above!</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Optional Custom Confirmation Modal */}
-        {confirmDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-              <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
-              <p className="mb-6">
-                Are you sure you want to delete <strong>"{confirmDelete.name}"</strong>?<br />
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    const { id, name } = confirmDelete;
-                    setConfirmDelete(null);
-                    setDeletingId(id);
-                    try {
-                      await apiClient.delete(`/survey-additional-services/${id}/`);
-                      setServices((prev) => prev.filter((s) => s.id !== id));
-                      setSuccess(`"${name}" deleted successfully!`);
-                      setTimeout(() => setSuccess(null), 5000);
-                    } catch (err) {
-                      setError("Failed to delete service.");
-                      setTimeout(() => setError(null), 5000);
-                    } finally {
-                      setDeletingId(null);
-                    }
-                  }}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
+          </Modal>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 };

@@ -172,7 +172,7 @@ const AdditionalServicesTab = () => {
                                 <div className="mt-4 pt-4 border-t border-gray-50">
                                     <div className="flex items-center gap-2 mb-2">
                                         <FaPen className="w-3 h-3 text-gray-600" />
-                                        <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Remarks</label>
+                                        <label className="text-xs font-medium text-gray-600 uppercase tracking-wider">Remarks</label>
                                     </div>
                                     <textarea
                                         value={service.remarks || ""}

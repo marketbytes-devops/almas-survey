@@ -153,7 +153,7 @@ const SurveyPrint = ({ survey }) => {
 
           .section h4 {
             font-size: 11pt;
-            color: #333;
+            color: #757575;
             margin: 12px 0 8px 0;
             font-weight: 600;
           }

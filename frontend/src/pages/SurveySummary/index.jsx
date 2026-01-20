@@ -588,7 +588,7 @@ const SurveySummary = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search surveys by ID, client name, email..."
-            className={`${INPUT_CLASS} pl-11`}
+            className="input-style w-full !pl-12 h-[56px] rounded-2xl border-gray-100 shadow-sm"
           />
         </div>
         <div className="text-sm text-gray-600 font-medium px-2">

@@ -1,16 +1,16 @@
+/* src/pages/AdditionalSettings/Profile.jsx */
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { motion } from 'framer-motion';
-import { FaCamera} from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaCamera } from 'react-icons/fa';
 import { RiChatAiFill } from "react-icons/ri";
+import { FiSave, FiLock, FiUser, FiInfo } from "react-icons/fi";
 import apiClient from '../../api/apiClient';
 import { FormProvider, useForm } from 'react-hook-form';
-import InputField from '../../components/Input';
-import Button from '../../components/Button';
-import fallbackProfile from '../../assets/images/profile-icon.png'; 
+import Input from '../../components/Input';
+import PageHeader from '../../components/PageHeader';
+import fallbackProfile from '../../assets/images/profile-icon.png';
 
 const Profile = () => {
-  const navigate = useNavigate();
   const profileForm = useForm({
     defaultValues: {
       email: '',
@@ -20,16 +20,21 @@ const Profile = () => {
       phone_number: '',
     },
   });
+
   const passwordForm = useForm({
     defaultValues: {
       newPassword: '',
       confirmPassword: '',
     },
   });
+
   const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(fallbackProfile); 
+  const [imagePreview, setImagePreview] = useState(fallbackProfile);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     apiClient
@@ -49,11 +54,12 @@ const Profile = () => {
         } else {
           setImagePreview(fallbackProfile);
         }
+        setLoading(false);
       })
-      .catch((error) => {
+      .catch((err) => {
         setError('Failed to fetch profile data');
-        console.error(error);
-        setImagePreview(fallbackProfile); 
+        setImagePreview(fallbackProfile);
+        setLoading(false);
       });
   }, [profileForm]);
 
@@ -68,7 +74,8 @@ const Profile = () => {
 
   const onProfileUpdate = async (data) => {
     setError('');
-    setMessage('');
+    setSuccess('');
+    setSavingProfile(true);
 
     const formData = new FormData();
     Object.keys(data).forEach((key) => {
@@ -82,29 +89,34 @@ const Profile = () => {
 
     try {
       const response = await apiClient.put('/auth/profile/', formData);
-      profileForm.reset(response.data || {});
-      
+      // Update form with refined data from backend if needed
+      // profileForm.reset(response.data || {}); 
+
       if (response.data.image) {
         setImagePreview(response.data.image);
-      } else {
-        setImagePreview(fallbackProfile);
       }
 
       setImage(null);
-      setMessage('Profile updated successfully');
-    } catch (error) {
-      setError(error.response?.data?.detail || 'Failed to update profile');
+      setSuccess('Profile updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update profile');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setSavingProfile(false);
     }
   };
 
   const onPasswordChange = async (data) => {
     setError('');
-    setMessage('');
+    setSuccess('');
 
     if (data.newPassword !== data.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+
+    setSavingPassword(true);
 
     const formData = new FormData();
     formData.append('new_password', data.newPassword);
@@ -112,204 +124,152 @@ const Profile = () => {
 
     try {
       await apiClient.put('/auth/profile/', formData);
-      setMessage('Password changed successfully');
+      setSuccess('Password changed successfully');
       passwordForm.reset();
-    } catch (error) {
-      setError(error.response?.data?.detail || 'Failed to change password');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to change password');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setSavingPassword(false);
     }
   };
 
-  const ProfileImage = ({ src, alt = "Profile", className = "" }) => (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={(e) => {
-        e.target.src = fallbackProfile;
-      }}
-    />
-  );
+  if (loading) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
+  }
 
   return (
-    <motion.div
-      className="min-h-screen bg-gray-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-    >
-      <div className="mx-auto">
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-lg sm:text-xl font-medium text-gray-900 mb-4 text-center sm:text-left">
-            Profile Settings
-          </h1>
-        </motion.div>
+    <div className="mx-auto space-y-6 min-h-screen bg-slate-50">
+      <PageHeader title="Profile Settings" subtitle="Manage your account information" />
+
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-200 flex items-center shadow-sm"
+          >
+            <FiInfo className="mr-2" /> {success}
+          </motion.div>
+        )}
         {error && (
           <motion.div
-            className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm"
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 flex items-center shadow-sm"
           >
-            <p className="text-red-600 text-sm font-medium">{error}</p>
+            <FiInfo className="mr-2" /> {error}
           </motion.div>
         )}
-        {message && (
-          <motion.div
-            className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="text-green-600 text-sm font-medium">{message}</p>
-          </motion.div>
-        )}
-        <motion.div
-          className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8"
-          initial={{ scale: 0.98, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-            <div className="relative">
-              <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 border-4 border-indigo-100 shadow-md">
-                <ProfileImage
+      </AnimatePresence>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Profile Card */}
+        <div className="col-span-1">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center text-center h-full">
+            <div className="relative mb-6 group">
+              <div className="w-40 h-40 rounded-full p-1 border-2 border-slate-200 bg-white">
+                <img
                   src={imagePreview}
                   alt="Profile"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => { e.target.src = fallbackProfile; }}
                 />
               </div>
-              <label className="absolute bottom-0 right-0 bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] rounded-full p-3 cursor-pointer transition-all shadow-lg">
-                <FaCamera className="w-5 h-5 text-white" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
+              <label className="absolute bottom-1 right-2 bg-[#4c7085] hover:bg-[#3a5d72] text-white p-3 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-105">
+                <FaCamera size={18} />
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
               </label>
             </div>
-            <div className="text-center sm:text-left flex-1">
-              <h2 className="text-xl font-medium text-gray-900">
-                {profileForm.watch('name') || 'Your Name'}
-              </h2>
-              <p className="text-gray-600 text-sm flex items-center justify-center sm:justify-start mt-2">
-                <RiChatAiFill className="w-4 h-4 mr-2 text-[#4c7085]" />
-                {profileForm.watch('username') || 'No username added'}
-              </p>
+
+            <h2 className="text-xl font-bold text-slate-800">{profileForm.watch('name') || 'User'}</h2>
+            <p className="text-slate-500 text-sm mt-1">{profileForm.watch('email') || 'email@example.com'}</p>
+
+            <div className="w-full mt-8 border-t border-slate-100 pt-6">
+              <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+                <span className="flex items-center"><RiChatAiFill className="mr-2 text-[#4c7085]" /> Username</span>
+                <span className="font-medium">{profileForm.watch('username') || '-'}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-slate-600">
+                <span className="flex items-center"><FiUser className="mr-2 text-[#4c7085]" /> Role</span>
+                <span className="font-medium capitalize">Admin</span>
+              </div>
             </div>
           </div>
-        </motion.div>
-        <motion.div
-          className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8 mb-8"
-          initial={{ scale: 0.98, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <h3 className="text-xl font-medium text-gray-900 mb-8">User Information</h3>
-          <FormProvider {...profileForm}>
-            <form onSubmit={profileForm.handleSubmit(onProfileUpdate)} className="space-y-6">
-              <div className="flex flex-col items-center mb-6">
-                <ProfileImage
-                  src={imagePreview}
-                  alt="Profile Preview"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-indigo-100 shadow-lg mb-4"
-                />
-                <label className="block text-sm font-medium text-gray-700 mb-2">Update Profile Image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="w-full max-w-sm p-3 border-2 border-dashed border-indigo-300 rounded-xl focus:outline-none focus:border-indigo-500 transition bg-indigo-50 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-[#4c7085] file:to-[#6b8ca3] file:text-white hover:file:from-[#3a586d] hover:file:to-[#54738a]"
-                />
-              </div>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InputField
-                  label="Email Address"
-                  name="email"
-                  type="email"
-                  readOnly
-                />
-                <InputField
-                  label="Full Name"
-                  name="name"
-                  type="text"
-                  rules={{ required: "Name is required" }}
-                />
-                <InputField
-                  label="Username"
-                  name="username"
-                  type="text"
-                  rules={{ required: "Username is required" }}
-                />
-                <InputField
-                  label="Phone Number"
-                  name="phone_number"
-                  type="tel"
-                  placeholder="+974 1234 5678"
-                  rules={{
-                    pattern: {
-                      value: /^\+?[\d\s-]{7,15}$/,
-                      message: "Enter a valid phone number",
-                    },
-                  }}
-                />
-                <div className="md:col-span-2">
-                  <InputField
-                    label="Address"
-                    name="address"
-                    type="text"
-                    placeholder="Your full address"
+        {/* Right Column: Forms */}
+        <div className="col-span-1 lg:col-span-2 space-y-6">
+
+          {/* Edit Profile Form */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
+            <h3 className="text-lg font-medium text-slate-800 mb-6 flex items-center">
+              <FiUser className="mr-2 text-[#4c7085]" /> User Information
+            </h3>
+            <FormProvider {...profileForm}>
+              <form onSubmit={profileForm.handleSubmit(onProfileUpdate)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input label="Full Name" name="name" rules={{ required: "Name is required" }} />
+                  <Input label="Username" name="username" rules={{ required: "Username is required" }} />
+                  <Input label="Phone Number" name="phone_number" placeholder="+974 1234 5678" />
+                  <Input label="Email Address" name="email" readOnly disabled={true} />
+                  <div className="md:col-span-2">
+                    <Input label="Address" name="address" placeholder="Full address" />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="px-6 py-2.5 bg-[#4c7085] hover:bg-[#3a5d72] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {savingProfile ? 'Saving...' : <><FiSave className="mr-2" /> Update Profile</>}
+                  </button>
+                </div>
+              </form>
+            </FormProvider>
+          </div>
+
+          {/* Change Password Form */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
+            <h3 className="text-lg font-medium text-slate-800 mb-6 flex items-center">
+              <FiLock className="mr-2 text-[#4c7085]" /> Change Password
+            </h3>
+            <FormProvider {...passwordForm}>
+              <form onSubmit={passwordForm.handleSubmit(onPasswordChange)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    label="New Password"
+                    name="newPassword"
+                    type="password"
+                    rules={{ required: "Required", minLength: { value: 6, message: "Min 6 chars" } }}
+                  />
+                  <Input
+                    label="Confirm Password"
+                    name="confirmPassword"
+                    type="password"
+                    rules={{ required: "Required" }}
                   />
                 </div>
-              </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="btn-secondary active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {savingPassword ? 'Updating...' : <><FiLock className="mr-2" /> Change Password</>}
+                  </button>
+                </div>
+              </form>
+            </FormProvider>
+          </div>
 
-              <Button
-                type="submit"
-                className="w-full py-3 text-sm font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white rounded-lg transition transform"
-              >
-                Update Profile
-              </Button>
-            </form>
-          </FormProvider>
-        </motion.div>
-        <motion.div
-          className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8"
-          initial={{ scale: 0.98, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h3 className="text-xl font-medium text-gray-900 mb-8">Change Password</h3>
-          <FormProvider {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(onPasswordChange)} className="space-y-6">
-              <InputField
-                label="New Password"
-                name="newPassword"
-                type="password"
-                rules={{ 
-                  required: "New password is required",
-                  minLength: { value: 6, message: "Password must be at least 6 characters" }
-                }}
-              />
-              <InputField
-                label="Confirm New Password"
-                name="confirmPassword"
-                type="password"
-                rules={{ required: "Please confirm your password" }}
-              />
-              <Button
-                type="submit"
-                className="w-full py-3 text-sm font-medium bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] hover:from-[#3a586d] hover:to-[#54738a] text-white rounded-lg transition transform"
-              >
-                Change Password
-              </Button>
-            </form>
-          </FormProvider>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

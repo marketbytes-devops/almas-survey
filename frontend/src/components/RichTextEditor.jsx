@@ -100,7 +100,7 @@ const RichTextEditor = ({ value, onChange, placeholder, rows = 6 }) => {
                 style={{ fontFamily: 'monospace' }}
             />
             <div className="mt-2 p-3 bg-gray-50 border border-gray-300 rounded-lg">
-                <div className="text-xs font-semibold text-gray-600 mb-2">Preview:</div>
+                <div className="text-xs font-medium text-gray-600 mb-2">Preview:</div>
                 <div
                     className="text-sm text-gray-700"
                     dangerouslySetInnerHTML={{ __html: value || '<span class="text-gray-600">Preview will appear here...</span>' }}

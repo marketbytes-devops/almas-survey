@@ -88,7 +88,7 @@ const BookingList = () => {
                     <input
                         type="text"
                         placeholder="Search by booking ID, client, move type, contact, or location..."
-                        className="input-style pl-12 w-full"
+                        className="input-style w-full !pl-12 h-[56px] rounded-2xl border-gray-100 shadow-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />

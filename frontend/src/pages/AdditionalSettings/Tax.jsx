@@ -1,208 +1,254 @@
-/* src/pages/AdditionalSettings/Tax.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
+import PageHeader from "../../components/PageHeader";
+import Modal from "../../components/Modal";
 
 const Tax = () => {
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Feedback states
+  const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   const methods = useForm({
     defaultValues: { tax_name: "", description: "" },
   });
 
-  const { handleSubmit, reset, watch } = methods;
+  const { handleSubmit, reset, setError: setFormError } = methods;
 
   useEffect(() => {
-    const fetchTaxes = async () => {
-      try {
-        const response = await apiClient.get("/taxes/");
-        setTaxes(response.data);
-      } catch (err) {
-        setError("Failed to fetch taxes. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTaxes();
   }, []);
 
+  const fetchTaxes = async () => {
+    try {
+      const response = await apiClient.get("/taxes/");
+      setTaxes(response.data);
+    } catch (err) {
+      setError("Failed to fetch taxes. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onSubmit = async (data) => {
     if (!data.tax_name.trim()) return;
-    setSaving(true);
+
+    setIsSubmitting(true);
     setError(null);
+
     try {
-      const payload = { tax_name: data.tax_name.trim(), description: data.description?.trim() || "" };
+      const payload = {
+        tax_name: data.tax_name.trim(),
+        description: data.description?.trim() || ""
+      };
+
       const response = await apiClient.post("/taxes/", payload);
       setTaxes([...taxes, response.data]);
+
       reset();
-      setSuccess("Tax saved successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      setIsAddOpen(false);
+      setMessage("Tax saved successfully!");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError("Failed to save tax. Please try again.");
-      setTimeout(() => setError(null), 3000);
+      const fieldErrors = err.response?.data;
+      if (fieldErrors?.tax_name) {
+        setFormError("tax_name", { type: "server", message: Array.isArray(fieldErrors.tax_name) ? fieldErrors.tax_name[0] : fieldErrors.tax_name });
+      } else {
+        setError("Failed to save tax. Please try again.");
+        setTimeout(() => setError(null), 3000);
+      }
     } finally {
-      setSaving(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteTax = async (id) => {
     if (!window.confirm("Are you sure you want to delete this tax?")) return;
-    setError(null);
+
     try {
       await apiClient.delete(`/taxes/${id}/`);
       setTaxes(taxes.filter((t) => t.id !== id));
-      setSuccess("Tax deleted successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      setMessage("Tax deleted successfully!");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError("Failed to delete tax. Please try again.");
+      setError("Failed to delete tax. It may be in use.");
       setTimeout(() => setError(null), 3000);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
+  const filteredTaxes = taxes.filter(tax =>
+    tax.tax_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tax.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
-          <h1 className="text-lg sm:text-2xl font-medium">Tax Management</h1>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <PageHeader
+        title="Tax Management"
+        subtitle="Configure tax rates and descriptions"
+      />
+
+      {/* Alerts */}
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+              <FiX className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+        {message && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl flex items-center justify-between">
+            <span className="text-sm font-medium">{message}</span>
+            <button onClick={() => setMessage(null)} className="text-green-400 hover:text-green-600">
+              <FiX className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <FiSearch className="w-5 h-5" />
         </div>
+        <input
+          type="text"
+          placeholder="Search taxes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-style w-full !pl-12 h-[52px] rounded-2xl border-gray-100 shadow-sm"
+        />
+      </div>
 
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-          {/* Success/Error Messages */}
-          {success && (
-            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
-              {success}
-            </div>
-          )}
-          {error && (
-            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
-              {error}
-            </div>
-          )}
+      <button
+        onClick={() => setIsAddOpen(true)}
+        className="w-full btn-primary"
+      >
+        <FiPlus className="w-5 h-5" />
+        <span className="text-sm tracking-wide">Add New Tax</span>
+      </button>
 
-          {/* Add New Tax Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+      {/* Content Area */}
+      {filteredTaxes.length === 0 ? (
+        <div className="bg-white rounded-3xl p-16 text-center border border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiInfo className="text-gray-300 w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-800">No taxes found</h3>
+          <p className="text-gray-600 text-sm mt-1">
+            {searchQuery ? "Try adjusting your search query" : "Get started by adding a new tax"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {/* Desktop Headers */}
+          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/50 rounded-xl border border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-widest">
+            <div className="col-span-4">Tax Name</div>
+            <div className="col-span-7">Description</div>
+            <div className="col-span-1 text-center">Action</div>
+          </div>
+
+          {/* List Items */}
+          <div className="space-y-3">
+            {filteredTaxes.map((tax) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                key={tax.id}
+                className="group bg-white p-4 md:px-6 md:py-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  <div className="col-span-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] text-xs font-medium shrink-0">
+                        {tax.tax_name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-gray-800">{tax.tax_name}</span>
+                    </div>
+                  </div>
+                  <div className="col-span-7">
+                    <p className="text-sm text-gray-600 line-clamp-1 md:line-clamp-2">
+                      {tax.description || <span className="text-gray-400 italic">No description provided</span>}
+                    </p>
+                  </div>
+                  <div className="col-span-1 flex justify-end md:justify-center">
+                    <button
+                      onClick={() => handleDeleteTax(tax.id)}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add Modal */}
+      <AnimatePresence>
+        {isAddOpen && (
+          <Modal
+            isOpen={isAddOpen}
+            onClose={() => setIsAddOpen(false)}
+            title="Add New Tax"
+          >
             <FormProvider {...methods}>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <Input
-                    label="Tax Name"
-                    name="tax_name"
-                    type="text"
-                    placeholder="e.g. VAT 5%, Service Tax"
-                    rules={{ required: "Tax Name is required" }}
-                    disabled={saving}
-                  />
+                <Input
+                  label="Tax Name"
+                  name="tax_name"
+                  placeholder="e.g. VAT 5%, Service Tax"
+                  rules={{ required: "Tax name is required" }}
+                />
 
-                  <Input
-                    label="Description (optional)"
-                    name="description"
-                    type="textarea"
-                    rows={3}
-                    placeholder="Optional description for this tax"
-                    disabled={saving}
-                  />
+                <Input
+                  label="Description"
+                  name="description"
+                  type="textarea"
+                  placeholder="Optional details..."
+                  rows={3}
+                />
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddOpen(false)}
+                    className="btn-secondary !bg-transparent !border-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary px-8"
+                  >
+                    {isSubmitting ? <Loading size="sm" color="white" /> : "Save Tax"}
+                  </button>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={saving || !watch("tax_name")?.trim()}
-                  className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${saving || !watch("tax_name")?.trim()
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                    }`}
-                >
-                  {saving ? "Saving..." : "Save New Tax"}
-                </button>
               </form>
             </FormProvider>
-          </div>
-
-          {/* Taxes List Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
-              <h3 className="text-base sm:text-lg font-medium">
-                Taxes ({taxes.length})
-              </h3>
-            </div>
-
-            {taxes.length > 0 ? (
-              <>
-                {/* Desktop Table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-300">
-                      <tr>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Tax Name</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Description</th>
-                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {taxes.map((tax) => (
-                        <tr key={tax.id} className="hover:bg-gray-50 transition">
-                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{tax.tax_name}</td>
-                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
-                            {tax.description || "—"}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 text-center">
-                            <button
-                              onClick={() => handleDeleteTax(tax.id)}
-                              className="text-sm font-medium px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards */}
-                <div className="sm:hidden space-y-3 p-4">
-                  {taxes.map((tax) => (
-                    <div key={tax.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
-                      <div className="flex justify-center items-center mb-2">
-                        <h4 className="font-medium text-gray-900">{tax.tax_name}</h4>
-                      </div>
-                      <p className="flex justify-center items-center text-sm text-gray-600 mb-4">
-                        {tax.description || "No description"}
-                      </p>
-                      <div className="flex justify-center items-center">
-                        <button
-                          onClick={() => handleDeleteTax(tax.id)}
-                          className="text-sm font-medium px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12 text-gray-600">
-                <p className="text-base sm:text-lg mb-2">No taxes found.</p>
-                <p className="text-sm">Add one using the form above!</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

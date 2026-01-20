@@ -324,7 +324,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     @page { size: A4; margin: 0; }
     body { 
         font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-        color: #333; background: #fff; margin: 0; padding: 0; 
+        color: #757575; background: #fff; margin: 0; padding: 0; 
         -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     
@@ -350,7 +350,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .doc-title { font-size: 24pt; color: #003087; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; text-align: right; }
     .meta-table { float: right; font-size: 10pt; }
     .meta-table th { text-align: right; padding-right: 10px; color: #666; font-weight: 600; }
-    .meta-table td { text-align: right; font-weight: bold; color: #333; }
+    .meta-table td { text-align: right; font-weight: bold; color: #757575; }
 
     .info-section { display: flex; gap: 20px; margin-bottom: 30px; page-break-inside: avoid; }
     .info-box { flex: 1; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #003087; padding: 12px 15px; page-break-inside: avoid; }
@@ -360,10 +360,10 @@ const QuotationLocalMove = forwardRef((props, ref) => {
 
     .rate-section { margin-bottom: 25px; page-break-inside: avoid; }
     .rate-box { padding: 15px 25px !important; }
-    .rate-display { font-size: 16pt; color: #333; margin: 0; text-align: center; font-weight: bold; }
+    .rate-display { font-size: 16pt; color: #757575; margin: 0; text-align: center; font-weight: bold; }
     
     .welcome-section { margin-bottom: 25px; page-break-inside: avoid; }
-    .welcome-content { font-size: 11pt; color: #333; line-height: 1.5; }
+    .welcome-content { font-size: 11pt; color: #757575; line-height: 1.5; }
     .welcome-content p { margin-bottom: 8px; }
     .welcome-content strong { font-size: 12pt; color: #000; display: block; margin-bottom: 5px; }
 
@@ -372,7 +372,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 10px; }
     .summary-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
     .summary-table td { padding: 4px 0; }
-    .summary-table .label { text-align: left; color: #333; }
+    .summary-table .label { text-align: left; color: #757575; }
     .summary-table .value { text-align: right; font-weight: bold; }
     .total-row .label, .total-row .value { font-weight: bold; color: #000; font-size: 11pt; padding-top: 10px; }
     .text-red { color: #d32f2f; }
@@ -405,7 +405,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .sign-box { width: 45%; }
     .sign-area { height: 60px; display: flex; align-items: flex-end; justify-content: center; }
     .signature-img { max-height: 50px; }
-    .sign-line { border-bottom: 1px solid #333; margin: 5px 0; }
+    .sign-line { border-bottom: 1px solid #757575; margin: 5px 0; }
     .sign-name, .sign-date { font-size: 9pt; color: #555; }
     .footer-bottom { text-align: center; font-size: 8pt; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
   `;

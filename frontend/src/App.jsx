@@ -19,7 +19,7 @@ import Units from "./pages/AdditionalSettings/Units";
 import Currency from "./pages/AdditionalSettings/Currency";
 import Tax from "./pages/AdditionalSettings/Tax";
 import Handyman from "./pages/AdditionalSettings/Handyman";
-import ManpowerManagement from "./pages/Admin/ManpowerManagement";
+import Manpower from "./pages/AdditionalSettings/Manpower";
 import Room from "./pages/AdditionalSettings/Room";
 import SurveySummary from "./pages/SurveySummary";
 import SurveyDetails from "./pages/SurveyDetails";
@@ -131,7 +131,7 @@ function App() {
         { path: "/additional-settings/currency", element: <ProtectedRoute requiredPage="currency"><Currency /></ProtectedRoute> },
         { path: "/additional-settings/tax", element: <ProtectedRoute requiredPage="tax"><Tax /></ProtectedRoute> },
         { path: "/additional-settings/handyman", element: <ProtectedRoute requiredPage="handyman"><Handyman /></ProtectedRoute> },
-        { path: "/additional-settings/manpower", element: <ProtectedRoute requiredPage="manpower"><ManpowerManagement /></ProtectedRoute> },
+        { path: "/additional-settings/manpower", element: <ProtectedRoute requiredPage="manpower"><Manpower /></ProtectedRoute> },
         { path: "/additional-settings/room", element: <ProtectedRoute requiredPage="room"><Room /></ProtectedRoute> },
         { path: "/additional-settings/additional-services", element: <ProtectedRoute requiredPage="additional-services"><AdditionalServices /></ProtectedRoute> },
         { path: "/additional-settings/labours", element: <ProtectedRoute requiredPage="labours"><Labours /></ProtectedRoute> },

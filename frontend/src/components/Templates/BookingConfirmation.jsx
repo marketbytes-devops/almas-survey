@@ -46,7 +46,7 @@ const BookingConfirmation = forwardRef(
           background: "white",
           padding: "40px",
           fontFamily: "Arial, sans-serif",
-          color: "#333",
+          color: "#757575",
           width: "794px", // A4 width in pixels
         }}
       >

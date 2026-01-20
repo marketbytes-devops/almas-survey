@@ -212,7 +212,7 @@ const AddedArticlesSidebar = ({
                                                 </div>
 
                                                 <div className="flex-1">
-                                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Quantity</label>
+                                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5">Quantity</label>
                                                     <div className="flex items-center border border-gray-200 rounded-lg h-9 bg-white shadow-sm overflow-hidden w-fit">
                                                         <button
                                                             type="button"
@@ -270,7 +270,7 @@ const AddedArticlesSidebar = ({
 
                                             {/* Dimensions */}
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Dimensions (cm)</label>
+                                                <label className="block text-xs font-medium text-gray-600 uppercase tracking-wider mb-2">Dimensions (cm)</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     <div className="relative">
                                                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-600">L</span>
@@ -325,7 +325,7 @@ const AddedArticlesSidebar = ({
                                     <div className="flex justify-between items-start gap-3">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold text-gray-800 text-sm truncate">{article.itemName}</h4>
+                                                <h4 className="font-medium text-gray-800 text-sm truncate">{article.itemName}</h4>
                                                 <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">x{article.quantity}</span>
                                             </div>
 

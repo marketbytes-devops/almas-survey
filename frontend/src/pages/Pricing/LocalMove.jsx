@@ -1,3 +1,4 @@
+/* src/pages/Pricing/LocalMove.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import apiClient from "../../api/apiClient";
@@ -5,8 +6,8 @@ import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
 import Tab from "../../components/Tab/Tab";
 import TabPanel from "../../components/Tab/TabPanel";
-import PricingTab from "./Tabs/Pricing";
-import AdditionalChargesTab from "./Tabs/AdditionalCharges";
+import PricingTab from "./Tabs/PricingTab";
+import AdditionalChargesTab from "./Tabs/AdditionalChargesTab";
 import IncludesTab from "./Tabs/Includes";
 import ExcludesTab from "./Tabs/Exclude";
 import InsuranceTab from "./Tabs/InsuranceTab";
@@ -18,11 +19,7 @@ import ServicesTab from "./Tabs/ServicesTab";
 
 const TAB_LIST = [
   { id: "pricing", label: "PRICING", component: PricingTab },
-  {
-    id: "additional-charges",
-    label: "ADDITIONAL CHARGES",
-    component: AdditionalChargesTab,
-  },
+  { id: "additional-charges", label: "ADDITIONAL CHARGES", component: AdditionalChargesTab },
   { id: "includes", label: "INCLUDES", component: IncludesTab },
   { id: "excludes", label: "EXCLUDES", component: ExcludesTab },
   { id: "insurance", label: "INSURANCE", component: InsuranceTab },
@@ -34,16 +31,8 @@ const TAB_LIST = [
 ];
 
 const QATAR_CITIES = [
-  "Doha",
-  "Al Rayyan",
-  "Al Wakrah",
-  "Al Khor",
-  "Umm Salal",
-  "Al Daayen",
-  "Al Shamal",
-  "Mesaieed",
-  "Lusail",
-  "Pearl-Qatar",
+  "Doha", "Al Rayyan", "Al Wakrah", "Al Khor", "Umm Salal",
+  "Al Daayen", "Al Shamal", "Mesaieed", "Lusail", "Pearl-Qatar",
 ];
 
 const LocalMove = () => {
@@ -71,26 +60,19 @@ const LocalMove = () => {
     const fetchDropdowns = async () => {
       try {
         setLoading(true);
-
         const endpoints = [
-          `${API_BASE_URL}/move-types/`,
-          `${API_BASE_URL}/tariff-types/`,
-          `${API_BASE_URL}/currencies/`,
-          `${API_BASE_URL}/volume-units/`,
-          `${API_BASE_URL}/weight-units/`,
+          `/move-types/`,
+          `/tariff-types/`,
+          `/currencies/`,
+          `/volume-units/`,
+          `/weight-units/`,
         ];
 
         const responses = await Promise.all(
           endpoints.map((url) => apiClient.get(url))
         );
 
-        const [
-          moveTypesRes,
-          tariffTypesRes,
-          currenciesRes,
-          volumeUnitsRes,
-          weightUnitsRes,
-        ] = responses;
+        const [moveTypesRes, tariffTypesRes, currenciesRes, volumeUnitsRes, weightUnitsRes] = responses;
 
         setDropdownData({
           moveTypes: moveTypesRes.data.results || moveTypesRes.data,
@@ -105,7 +87,6 @@ const LocalMove = () => {
           setHasAutoSelectedCity(true);
         }
       } catch (err) {
-        console.error("Failed to load dropdown data:", err);
         setError("Failed to load required data. Please refresh.");
       } finally {
         setLoading(false);
@@ -114,8 +95,6 @@ const LocalMove = () => {
 
     fetchDropdowns();
   }, [hasAutoSelectedCity]);
-
-  console.log("Rendering LocalMove Component");
 
   const sharedProps = {
     selectedHub: selectedCity,
@@ -134,26 +113,24 @@ const LocalMove = () => {
     },
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-[600px]">
-        <Loading />
+  if (loading) return <div className="flex justify-center items-center min-h-screen bg-slate-50"><Loading /></div>;
+
+  if (error) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center text-red-500 font-medium p-6">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 text-center max-w-md">
+        <FiInfo className="mx-auto text-4xl mb-4" />
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-[#4c7085] text-white rounded-xl">Retry</button>
       </div>
-    );
-  if (error)
-    return (
-      <div className="min-h-[600px] flex items-center justify-center text-red-500 font-medium">
-        {error}
-      </div>
-    );
+    </div>
+  );
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-8 pb-10">
+    <div className="mx-auto space-y-6 min-h-screen bg-slate-50">
       <PageHeader
         title="Move Pricing Configuration"
         subtitle="Manage rates, services, and terms for local moves"
       />
-
       <FormProvider {...methods}>
         <div className="space-y-6">
           <Tab
@@ -168,11 +145,11 @@ const LocalMove = () => {
                 {tab.component ? (
                   <tab.component {...sharedProps} />
                 ) : (
-                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-20 text-center">
-                    <h3 className="text-xl font-medium text-gray-800 mb-2">
+                  <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-20 text-center">
+                    <h3 className="text-xl font-medium text-slate-800 mb-2">
                       {tab.label} Module
                     </h3>
-                    <p className="text-gray-600 max-w-sm mx-auto">This configuration module is currently under development. Please check back later.</p>
+                    <p className="text-slate-500 max-w-sm mx-auto">This configuration module is currently under development.</p>
                   </div>
                 )}
               </TabPanel>

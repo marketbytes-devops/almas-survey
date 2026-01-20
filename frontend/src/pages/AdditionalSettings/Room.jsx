@@ -1,87 +1,80 @@
+/* src/pages/AdditionalSettings/Room.jsx */
 import React, { useState, useEffect, useRef } from "react";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  FiPlus, FiTrash2, FiEdit2, FiSearch, FiX, FiInfo,
+  FiEye, FiEyeOff, FiCopy, FiChevronDown, FiChevronUp
+} from "react-icons/fi";
 import apiClient from "../../api/apiClient";
+import PageHeader from "../../components/PageHeader";
+import Modal from "../../components/Modal";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
-import {
-  FaPlus,
-  FaTrash,
-  FaEdit,
-  FaEye,
-  FaEyeSlash,
-  FaTimes,
-  FaClone,
-} from "react-icons/fa";
 
 const Room = () => {
   const [rooms, setRooms] = useState([]);
   const [items, setItems] = useState({});
-  const [selectedRoomForItem, setSelectedRoomForItem] = useState(null);
-  const [expandedRooms, setExpandedRooms] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const [savingRoom, setSavingRoom] = useState(false);
-  const [savingItems, setSavingItems] = useState(false);
-  const [editingRoomId, setEditingRoomId] = useState(null);
-  const [editingItemId, setEditingItemId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedRooms, setExpandedRooms] = useState(new Set());
+
+  // Modals
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [copyModal, setCopyModal] = useState(null); // { type: 'room'|'item', sourceId, sourceName }
+
+  // State for editing
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-
-  const [itemRows, setItemRows] = useState([
-    {
-      id: Date.now(),
-      name: "",
-      description: "",
-      length: "",
-      width: "",
-      height: "",
-      volume: "",
-      weight: "",
-    },
-  ]);
-
-  const [roomForm, setRoomForm] = useState({ name: "", description: "" });
-  const [copyModal, setCopyModal] = useState(null);
   const [targetRoomId, setTargetRoomId] = useState("");
 
-  const roomNameInputRef = useRef(null);
-  const itemNameInputRef = useRef(null);
+  const roomMethods = useForm({
+    defaultValues: { name: "", description: "" },
+  });
+
+  const itemMethods = useForm({
+    defaultValues: {
+      room: "",
+      items: [{ name: "", description: "", length: "", width: "", height: "", volume: "", weight: "" }]
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: itemMethods.control,
+    name: "items"
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [roomsRes, itemsRes] = await Promise.all([
-          apiClient.get("/rooms/"),
-          apiClient.get("/items/"),
-        ]);
-
-        setRooms(roomsRes.data);
-
-        const itemsByRoom = {};
-        itemsRes.data.forEach((item) => {
-          if (!itemsByRoom[item.room]) itemsByRoom[item.room] = [];
-          itemsByRoom[item.room].push(item);
-        });
-        setItems(itemsByRoom);
-      } catch {
-        setError("Failed to load data.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (editingRoomId && roomNameInputRef.current) {
-      roomNameInputRef.current.focus();
-    }
-  }, [editingRoomId]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [roomsRes, itemsRes] = await Promise.all([
+        apiClient.get("/rooms/"),
+        apiClient.get("/items/"),
+      ]);
 
-  useEffect(() => {
-    if (editingItemId && itemNameInputRef.current) {
-      itemNameInputRef.current.focus();
+      setRooms(roomsRes.data);
+
+      const itemsByRoom = {};
+      itemsRes.data.forEach((item) => {
+        if (!itemsByRoom[item.room]) itemsByRoom[item.room] = [];
+        itemsByRoom[item.room].push(item);
+      });
+      setItems(itemsByRoom);
+    } catch (err) {
+      setError("Failed to load data.");
+    } finally {
+      setLoading(false);
     }
-  }, [editingItemId]);
+  };
 
   const toggleRoomExpansion = (id) => {
     setExpandedRooms((prev) => {
@@ -91,239 +84,36 @@ const Room = () => {
     });
   };
 
-  const handleEditRoom = (room) => {
-    setEditingRoomId(room.id);
-    setRoomForm({ name: room.name, description: room.description || "" });
-  };
-
-  const cancelEditRoom = () => {
-    setEditingRoomId(null);
-    setRoomForm({ name: "", description: "" });
-  };
-
-  const saveRoom = async () => {
-    if (!roomForm.name.trim()) return;
-    setSavingRoom(true);
+  // ROOM ACTIONS
+  const onRoomSubmit = async (data) => {
+    setSaving(true);
+    setError(null);
     try {
-      if (editingRoomId) {
-        const res = await apiClient.put(`/rooms/${editingRoomId}/`, roomForm);
-        setRooms((prev) => prev.map((r) => (r.id === editingRoomId ? res.data : r)));
+      if (editingRoom) {
+        const res = await apiClient.put(`/rooms/${editingRoom.id}/`, data);
+        setRooms(rooms.map(r => r.id === editingRoom.id ? res.data : r));
+        setSuccess("Room updated!");
       } else {
-        const res = await apiClient.post("/rooms/", roomForm);
-        setRooms((prev) => [...prev, res.data]);
+        const res = await apiClient.post("/rooms/", data);
+        setRooms([...rooms, res.data]);
+        setSuccess("Room created!");
       }
-      setSuccess(editingRoomId ? "Room updated!" : "Room created!");
-      cancelEditRoom();
+      setIsRoomModalOpen(false);
+      roomMethods.reset();
+      setEditingRoom(null);
+      setTimeout(() => setSuccess(null), 3000);
     } catch {
       setError("Failed to save room.");
     } finally {
-      setSavingRoom(false);
-      setTimeout(() => setSuccess(null), 3000);
+      setSaving(false);
     }
   };
 
-  const handleEditItem = (item) => {
-    setItemRows([
-      {
-        id: item.id,
-        name: item.name || "",
-        description: item.description || "",
-        length: item.length || "",
-        width: item.width || "",
-        height: item.height || "",
-        volume: item.volume || "",
-        weight: item.weight || "",
-      },
-    ]);
-    setEditingItemId(item.id);
-    setSelectedRoomForItem(item.room);
-  };
-
-  const cancelEditItem = () => {
-    setEditingItemId(null);
-    setSelectedRoomForItem(null);
-    setItemRows([
-      {
-        id: Date.now(),
-        name: "",
-        description: "",
-        length: "",
-        width: "",
-        height: "",
-        volume: "",
-        weight: "",
-      },
-    ]);
-  };
-
-  const updateRow = (id, field, value) => {
-    setItemRows((prev) =>
-      prev.map((row) => {
-        if (row.id !== id) return row;
-        const updated = { ...row, [field]: value };
-        if (["length", "width", "height"].includes(field)) {
-          const l = parseFloat(updated.length) || 0;
-          const w = parseFloat(updated.width) || 0;
-          const h = parseFloat(updated.height) || 0;
-          if (l > 0 && w > 0 && h > 0) {
-            updated.volume = ((l * w * h) / 1000000).toFixed(4);
-            updated.weight = (updated.volume * 110).toFixed(2);
-          } else {
-            updated.volume = "";
-            updated.weight = "";
-          }
-        }
-        return updated;
-      })
-    );
-  };
-
-  const addItemRow = () => {
-    setItemRows((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "",
-        description: "",
-        length: "",
-        width: "",
-        height: "",
-        volume: "",
-        weight: "",
-      },
-    ]);
-  };
-
-  const saveAllItems = async () => {
-    if (!selectedRoomForItem) return setError("Please select a room");
-    const valid = itemRows.filter((r) => r.name.trim());
-    if (valid.length === 0) return setError("Add at least one item");
-
-    setSavingItems(true);
-    try {
-      const requests = valid.map((row) => {
-        const payload = {
-          name: row.name,
-          description: row.description || "",
-          room: selectedRoomForItem,
-          length: row.length ? parseFloat(row.length) : null,
-          width: row.width ? parseFloat(row.width) : null,
-          height: row.height ? parseFloat(row.height) : null,
-          volume: row.volume ? parseFloat(row.volume) : null,
-          weight: row.weight ? parseFloat(row.weight) : null,
-        };
-        return editingItemId && row.id === editingItemId
-          ? apiClient.put(`/items/${editingItemId}/`, payload)
-          : apiClient.post("/items/", payload);
-      });
-
-      const res = await Promise.all(requests);
-      const newItems = res.map((r) => r.data);
-
-      setItems((prev) => ({
-        ...prev,
-        [selectedRoomForItem]: [
-          ...(prev[selectedRoomForItem] || []).filter((i) => i.id !== editingItemId),
-          ...newItems,
-        ],
-      }));
-
-      setSuccess(editingItemId ? "Item updated!" : "Items added!");
-      setItemRows([
-        {
-          id: Date.now(),
-          name: "",
-          description: "",
-          length: "",
-          width: "",
-          height: "",
-          volume: "",
-          weight: "",
-        },
-      ]);
-      setEditingItemId(null);
-    } catch {
-      setError("Failed to save items.");
-    } finally {
-      setSavingItems(false);
-    }
-  };
-
-  const openCopyModal = (type, sourceId, sourceName) => {
-    setCopyModal({ type, sourceId, sourceName });
-    setTargetRoomId("");
-  };
-
-  const performCopy = async () => {
-    if (!targetRoomId || targetRoomId === copyModal.sourceId) {
-      setError("Please select a different room");
-      return;
-    }
-
-    try {
-      if (copyModal.type === "item") {
-        const allItems = Object.values(items).flat();
-        const item = allItems.find((i) => i.id === copyModal.sourceId);
-        if (!item) return setError("Item not found");
-
-        const res = await apiClient.post("/items/", {
-          name: item.name,
-          description: item.description || "",
-          room: targetRoomId,
-          length: item.length,
-          width: item.width,
-          height: item.height,
-          volume: item.volume,
-          weight: item.weight,
-        });
-
-        setItems((prev) => ({
-          ...prev,
-          [targetRoomId]: [...(prev[targetRoomId] || []), res.data],
-        }));
-        setSuccess(`Copied "${item.name}" successfully!`);
-      }
-
-      if (copyModal.type === "room") {
-        const roomItems = items[copyModal.sourceId] || [];
-        if (roomItems.length === 0) return setError("No items to copy");
-
-        const requests = roomItems.map((item) =>
-          apiClient.post("/items/", {
-            name: item.name,
-            description: item.description || "",
-            room: targetRoomId,
-            length: item.length,
-            width: item.width,
-            height: item.height,
-            volume: item.volume,
-            weight: item.weight,
-          })
-        );
-
-        const responses = await Promise.all(requests);
-        const newItems = responses.map((r) => r.data);
-
-        setItems((prev) => ({
-          ...prev,
-          [targetRoomId]: [...(prev[targetRoomId] || []), ...newItems],
-        }));
-        setSuccess(`Copied ${newItems.length} items from "${copyModal.sourceName}"`);
-      }
-
-      setCopyModal(null);
-      setTimeout(() => setSuccess(null), 3000);
-    } catch {
-      setError("Copy failed");
-      setTimeout(() => setError(null), 3000);
-    }
-  };
-
-  const deleteRoom = async (id) => {
+  const handleDeleteRoom = async (id) => {
     if (!window.confirm("Delete room and all items?")) return;
     try {
       await apiClient.delete(`/rooms/${id}/`);
-      setRooms((prev) => prev.filter((r) => r.id !== id));
+      setRooms(rooms.filter((r) => r.id !== id));
       setItems((prev) => {
         const c = { ...prev };
         delete c[id];
@@ -336,7 +126,53 @@ const Room = () => {
     }
   };
 
-  const deleteItem = async (id, roomId) => {
+  // ITEM ACTIONS
+  const onItemSubmit = async (data) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const roomId = parseInt(data.room);
+      const requests = data.items.map(item => {
+        const payload = {
+          ...item,
+          room: roomId,
+          length: item.length ? parseFloat(item.length) : null,
+          width: item.width ? parseFloat(item.width) : null,
+          height: item.height ? parseFloat(item.height) : null,
+          volume: item.volume ? parseFloat(item.volume) : null,
+          weight: item.weight ? parseFloat(item.weight) : null,
+        };
+
+        if (editingItem && item.id === editingItem.id) {
+          return apiClient.put(`/items/${editingItem.id}/`, payload);
+        }
+        return apiClient.post("/items/", payload);
+      });
+
+      const responses = await Promise.all(requests);
+      const newItemsData = responses.map(r => r.data);
+
+      setItems(prev => ({
+        ...prev,
+        [roomId]: [
+          ...(prev[roomId] || []).filter(i => !newItemsData.find(ni => ni.id === i.id)),
+          ...newItemsData
+        ]
+      }));
+
+      setSuccess(editingItem ? "Item updated!" : "Items added!");
+      setIsItemModalOpen(false);
+      itemMethods.reset();
+      setEditingItem(null);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError("Failed to save items.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteItem = async (id, roomId) => {
     if (!window.confirm("Delete item?")) return;
     try {
       await apiClient.delete(`/items/${id}/`);
@@ -351,396 +187,265 @@ const Room = () => {
     }
   };
 
-  const formatDimensions = (item) => {
-    const parts = [];
-    if (item.length) parts.push(`L:${item.length}cm`);
-    if (item.width) parts.push(`W:${item.width}cm`);
-    if (item.height) parts.push(`H:${item.height}cm`);
-    if (item.volume) parts.push(`Vol:${item.volume}m³`);
-    if (item.weight) parts.push(`Wt:${item.weight}kg`);
-    return parts.length ? parts.join(" × ") : "No dimensions";
+  // COPY LOGIC
+  const openCopyModal = (type, sourceId, sourceName) => {
+    setCopyModal({ type, sourceId, sourceName });
+    setTargetRoomId("");
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loading />
-      </div>
-    );
-  }
+  const performCopy = async () => {
+    if (!targetRoomId || targetRoomId === copyModal.sourceId) {
+      setError("Select a valid destination room");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (copyModal.type === "item") {
+        const allItems = Object.values(items).flat();
+        const item = allItems.find((i) => i.id === copyModal.sourceId);
+        const res = await apiClient.post("/items/", { ...item, room: targetRoomId, id: undefined });
+        setItems(prev => ({ ...prev, [targetRoomId]: [...(prev[targetRoomId] || []), res.data] }));
+      } else {
+        const roomItems = items[copyModal.sourceId] || [];
+        const requests = roomItems.map(item => apiClient.post("/items/", { ...item, room: targetRoomId, id: undefined }));
+        const responses = await Promise.all(requests);
+        const newItems = responses.map(r => r.data);
+        setItems(prev => ({ ...prev, [targetRoomId]: [...(prev[targetRoomId] || []), ...newItems] }));
+      }
+      setSuccess("Copied successfully!");
+      setCopyModal(null);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch {
+      setError("Copy failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const calculateVolumeWeight = (index, field, value) => {
+    const values = itemMethods.getValues(`items.${index}`);
+    let { length, width, height } = values;
+
+    if (field === 'length') length = value;
+    if (field === 'width') width = value;
+    if (field === 'height') height = value;
+
+    const l = parseFloat(length) || 0;
+    const w = parseFloat(width) || 0;
+    const h = parseFloat(height) || 0;
+
+    if (l > 0 && w > 0 && h > 0) {
+      const volume = ((l * w * h) / 1000000).toFixed(4);
+      const weight = (volume * 110).toFixed(2);
+      itemMethods.setValue(`items.${index}.volume`, volume);
+      itemMethods.setValue(`items.${index}.weight`, weight);
+    } else {
+      itemMethods.setValue(`items.${index}.volume`, "");
+      itemMethods.setValue(`items.${index}.weight`, "");
+    }
+  };
+
+  const filteredRooms = rooms.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loading /></div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
-          <h1 className="text-xs sm:text-lg font-medium">Manage Rooms & Items</h1>
-        </div>
+    <div className="mx-auto space-y-6 min-h-screen bg-slate-50">
+      <PageHeader title="Rooms & Items" subtitle="Manage rooms and items with dimensions" />
 
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+      <div className="space-y-6 pb-12">
+        <AnimatePresence>
           {success && (
-            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
-              {success}
-            </div>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-200 flex items-center shadow-sm">
+              <FiInfo className="mr-2" /> {success}
+            </motion.div>
           )}
           {error && (
-            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
-              {error}
-            </div>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 flex items-center shadow-sm">
+              <FiInfo className="mr-2" /> {error}
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          <div className="grid lg:grid-cols-1 gap-8">
-            <div className="space-y-8">
-              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-xs sm:text-lg font-medium mb-6">
-                  {editingRoomId ? "Edit Room" : "Add New Room"}
-                </h2>
-                <div className="space-y-4">
-                  <Input
-                    label="Room Name"
-                    type="text"
-                    placeholder="e.g. Living Room"
-                    value={roomForm.name}
-                    onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
-                    disabled={savingRoom}
-                    inputRef={roomNameInputRef}
-                  />
-                  <Input
-                    label="Description (optional)"
-                    type="textarea"
-                    rows={3}
-                    placeholder="e.g. Main living area with sofa..."
-                    value={roomForm.description}
-                    onChange={(e) => setRoomForm({ ...roomForm, description: e.target.value })}
-                    disabled={savingRoom}
-                  />
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                  <button
-                    onClick={saveRoom}
-                    disabled={savingRoom || !roomForm.name.trim()}
-                    className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${savingRoom || !roomForm.name.trim()
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                      }`}
-                  >
-                    {savingRoom ? "Saving..." : editingRoomId ? "Update Room" : "Create Room"}
-                  </button>
-                  {editingRoomId && (
-                    <button
-                      onClick={cancelEditRoom}
-                      className="w-full text-sm font-medium px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#4c7085] transition-all duration-200">
+            <FiSearch className="absolute left-8 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search rooms..."
+              className="input-style w-full !pl-12 h-[56px] rounded-2xl border-gray-100 shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-xs sm:text-lg font-medium mb-6">
-                  {editingItemId ? "Edit Item" : "Add Items"}
-                </h2>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Room *</label>
-                  <select
-                    value={selectedRoomForItem || ""}
-                    onChange={(e) => setSelectedRoomForItem(e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none transition"
-                  >
-                    <option value="">Select Room</option>
-                    {rooms.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedRoomForItem && (
-                  <>
-                    {itemRows.map((row, idx) => (
-                      <div key={row.id} className="p-5 mb-5 bg-gray-50 rounded-xl border border-gray-300">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-medium text-gray-800">Item {idx + 1}</h4>
-                          {itemRows.length > 1 && (
-                            <button
-                              onClick={() => setItemRows((prev) => prev.filter((r) => r.id !== row.id))}
-                              className="text-red-600 hover:text-red-800 transition"
-                            >
-                              <FaTrash size={18} />
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4">
-                          <Input
-                            label="Item Name"
-                            type="text"
-                            placeholder="e.g. Sofa"
-                            value={row.name}
-                            onChange={(e) => updateRow(row.id, "name", e.target.value)}
-                            inputRef={idx === 0 ? itemNameInputRef : null}
-                          />
-                          <Input
-                            label="Description"
-                            type="textarea"
-                            rows={2}
-                            placeholder="Optional description"
-                            value={row.description}
-                            onChange={(e) => updateRow(row.id, "description", e.target.value)}
-                          />
-
-                          <div className="grid grid-cols-3 gap-4">
-                            <Input
-                              label="Length (cm)"
-                              type="number"
-                              placeholder="0"
-                              value={row.length}
-                              onChange={(e) => updateRow(row.id, "length", e.target.value)}
-                            />
-                            <Input
-                              label="Width (cm)"
-                              type="number"
-                              placeholder="0"
-                              value={row.width}
-                              onChange={(e) => updateRow(row.id, "width", e.target.value)}
-                            />
-                            <Input
-                              label="Height (cm)"
-                              type="number"
-                              placeholder="0"
-                              value={row.height}
-                              onChange={(e) => updateRow(row.id, "height", e.target.value)}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Volume (m³)</label>
-                              <input
-                                type="text"
-                                readOnly
-                                value={row.volume || ""}
-                                className="w-full px-4 py-3 bg-gray-100 rounded-lg text-gray-700"
-                                placeholder="Auto-calculated"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Weight (kg)</label>
-                              <input
-                                type="text"
-                                readOnly
-                                value={row.weight || ""}
-                                className="w-full px-4 py-3 bg-gray-100 rounded-lg text-gray-700"
-                                placeholder="Auto-calculated"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={addItemRow}
-                      className="w-full text-sm font-medium px-6 py-2 bg-[#4c7085] text-white rounded-lg hover:bg-[#6b8ca3] transition flex items-center justify-center gap-2"
-                    >
-                      <FaPlus /> Add Another Item
-                    </button>
-                    <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                      <button
-                        onClick={saveAllItems}
-                        disabled={savingItems}
-                        className={`w-full text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${savingItems
-                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                          : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                          }`}
-                      >
-                        {savingItems ? "Saving..." : editingItemId ? "Update Item" : "Save All Items"}
-                      </button>
-                      {editingItemId && (
-                        <button
-                          onClick={cancelEditItem}
-                          className="w-full text-sm font-medium px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
-                <h3 className="text-xs sm:text-lg font-medium">
-                  Rooms & Items ({rooms.length})
-                </h3>
-              </div>
-
-              <div className="max-h-screen overflow-y-auto">
-                {rooms.length === 0 ? (
-                  <div className="text-center py-16 text-gray-600">
-                    <p className="text-base sm:text-lg mb-2">No rooms yet.</p>
-                    <p className="text-sm">Create your first room using the form on the left!</p>
-                  </div>
-                ) : (
-                  rooms.map((room) => (
-                    <div key={room.id} className="border-b border-gray-200 last:border-0">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 hover:bg-gray-50 transition">
-                        <div className="flex-1">
-                          <div className="font-medium text-lg text-gray-800">{room.name}</div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {items[room.id]?.length || 0} item{items[room.id]?.length !== 1 ? "s" : ""}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 mt-3 sm:mt-0">
-                          <button
-                            onClick={() => handleEditRoom(room)}
-                            className="text-[#4c7085] hover:text-[#6b8ca3] transition"
-                            title="Edit Room"
-                          >
-                            <FaEdit size={18} />
-                          </button>
-                          <button
-                            onClick={() => openCopyModal("room", room.id, room.name)}
-                            className="text-green-600 hover:text-green-700 transition"
-                            title="Copy Room + All Items"
-                          >
-                            <FaClone size={18} />
-                          </button>
-                          <button
-                            onClick={() => deleteRoom(room.id)}
-                            className="text-red-600 hover:text-red-800 transition"
-                            title="Delete Room"
-                          >
-                            <FaTrash size={18} />
-                          </button>
-                          <button
-                            onClick={() => toggleRoomExpansion(room.id)}
-                            className="text-gray-600 hover:text-gray-800 transition"
-                            title={expandedRooms.has(room.id) ? "Hide items" : "Show items"}
-                          >
-                            {expandedRooms.has(room.id) ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {expandedRooms.has(room.id) && items[room.id]?.length > 0 && (
-                        <div className="px-4 pb-4 space-y-3">
-                          {items[room.id].map((item) => (
-                            <div
-                              key={item.id}
-                              className="bg-gray-50 border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900">{item.name}</div>
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {formatDimensions(item)}
-                                </div>
-                              </div>
-                              <div className="flex gap-3">
-                                <button
-                                  onClick={() => handleEditItem(item)}
-                                  className="text-[#4c7085] hover:text-[#6b8ca3] transition"
-                                  title="Edit"
-                                >
-                                  <FaEdit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => openCopyModal("item", item.id, item.name)}
-                                  className="text-green-600 hover:text-green-700 transition"
-                                  title="Copy Item"
-                                >
-                                  <FaClone size={16} />
-                                </button>
-                                <button
-                                  onClick={() => deleteItem(item.id, room.id)}
-                                  className="text-red-600 hover:text-red-800 transition"
-                                  title="Delete"
-                                >
-                                  <FaTrash size={16} />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <button
+              onClick={() => { setEditingRoom(null); roomMethods.reset(); setIsRoomModalOpen(true); }}
+              className="bg-[#4c7085] hover:bg-[#3a5d72] text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all font-medium shadow-sm hover:shadow active:scale-[0.99]"
+            >
+              <FiPlus /> Add Room
+            </button>
+            <button
+              onClick={() => { setEditingItem(null); itemMethods.reset({ items: [{ name: "", description: "", length: "", width: "", height: "", volume: "", weight: "" }] }); setIsItemModalOpen(true); }}
+              className="btn-secondary"
+            >
+              <FiPlus /> Add Item
+            </button>
           </div>
         </div>
 
-        {copyModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sm:p-8 max-w-md w-full">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl sm:text-2xl font-medium text-gray-800">
-                  Copy {copyModal.type === "item" ? "Item" : "Room"}
-                </h3>
-                <button
-                  onClick={() => setCopyModal(null)}
-                  className="text-gray-600 hover:text-gray-700 transition"
-                >
-                  <FaTimes size={24} />
-                </button>
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Copy from</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={copyModal.sourceName}
-                    className="w-full px-4 py-3 bg-gray-100 rounded-lg text-gray-700"
-                  />
+        <div className="space-y-4">
+          {filteredRooms.length > 0 ? (
+            filteredRooms.map((room) => (
+              <div key={room.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50/50 transition-colors duration-150">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-slate-800">{room.name}</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">{room.description || "No description"}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-lg">
+                        {items[room.id]?.length || 0} Items
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setEditingRoom(room); roomMethods.reset(room); setIsRoomModalOpen(true); }} className="p-2 text-slate-400 hover:text-[#4c7085] hover:bg-slate-100 rounded-lg transition-all" title="Edit Room"><FiEdit2 /></button>
+                    <button onClick={() => openCopyModal('room', room.id, room.name)} className="p-2 text-slate-400 hover:text-green-600 hover:bg-slate-100 rounded-lg transition-all" title="Copy Room"><FiCopy /></button>
+                    <button onClick={() => handleDeleteRoom(room.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Room"><FiTrash2 /></button>
+                    <button onClick={() => toggleRoomExpansion(room.id)} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all">
+                      {expandedRooms.has(room.id) ? <FiChevronUp /> : <FiChevronDown />}
+                    </button>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Copy to</label>
-                  <select
-                    value={targetRoomId}
-                    onChange={(e) => setTargetRoomId(Number(e.target.value))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-[#4c7085] focus:ring-4 focus:ring-[#4c7085]/20 outline-none transition"
-                  >
-                    <option value="">Select destination room</option>
-                    {rooms
-                      .filter((r) => r.id !== copyModal.sourceId)
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+                <AnimatePresence>
+                  {expandedRooms.has(room.id) && (
+                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden border-t border-slate-100 bg-slate-50/30">
+                      <div className="p-4 space-y-3">
+                        {items[room.id]?.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {items[room.id].map((item) => (
+                              <div key={item.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm group">
+                                <div className="flex justify-between items-start mb-2">
+                                  <h4 className="font-medium text-slate-800">{item.name}</h4>
+                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => { setEditingItem(item); itemMethods.reset({ room: room.id, items: [item] }); setIsItemModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-[#4c7085]"><FiEdit2 size={14} /></button>
+                                    <button onClick={() => openCopyModal('item', item.id, item.name)} className="p-1.5 text-slate-400 hover:text-green-600"><FiCopy size={14} /></button>
+                                    <button onClick={() => handleDeleteItem(item.id, room.id)} className="p-1.5 text-slate-400 hover:text-red-500"><FiTrash2 size={14} /></button>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-y-2 text-xs text-slate-500">
+                                  <div className="col-span-2">{item.description}</div>
+                                  <div>L: {item.length}cm</div>
+                                  <div>W: {item.width}cm</div>
+                                  <div>H: {item.height}cm</div>
+                                  <div className="font-medium text-slate-700">Vol: {item.volume}m³</div>
+                                  <div className="font-medium text-slate-700">Wt: {item.weight}kg</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-slate-400 text-sm">No items in this room.</div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-
-              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8">
-                <button
-                  onClick={() => setCopyModal(null)}
-                  className="w-full sm:w-auto text-sm font-medium px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={performCopy}
-                  disabled={!targetRoomId}
-                  className={`w-full sm:w-auto text-sm font-medium px-6 py-2 rounded-lg transition shadow-lg flex items-center justify-center gap-2 ${!targetRoomId
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:scale-105"
-                    }`}
-                >
-                  Copy Now
-                </button>
+            ))
+          ) : (
+            <div className="bg-white rounded-2xl p-12 text-center text-slate-500 border border-slate-100">
+              <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiSearch size={24} className="text-slate-300" />
               </div>
+              <p>No rooms found. Start by adding one!</p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* ROOM MODAL */}
+      <Modal isOpen={isRoomModalOpen} onClose={() => setIsRoomModalOpen(false)} title={editingRoom ? "Edit Room" : "Add New Room"}>
+        <FormProvider {...roomMethods}>
+          <form onSubmit={roomMethods.handleSubmit(onRoomSubmit)} className="space-y-4">
+            <Input label="Room Name" name="name" rules={{ required: "Required" }} placeholder="e.g. Living Room" />
+            <Input label="Description" name="description" type="textarea" placeholder="Optional details..." />
+            <div className="flex gap-3 pt-4">
+              <button type="button" onClick={() => setIsRoomModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-medium">Cancel</button>
+              <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-[#4c7085] text-white rounded-xl font-medium shadow-sm">{saving ? "Saving..." : "Save Room"}</button>
+            </div>
+          </form>
+        </FormProvider>
+      </Modal>
+
+      {/* ITEM MODAL */}
+      <Modal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} title={editingItem ? "Edit Item" : "Add New Item"} className="max-w-2xl">
+        <FormProvider {...itemMethods}>
+          <form onSubmit={itemMethods.handleSubmit(onItemSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Target Room</label>
+                <select {...itemMethods.register("room", { required: "Select a room" })} className="input-style w-full">
+                  <option value="">Select Room</option>
+                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-6">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 relative">
+                    {fields.length > 1 && !editingItem && (
+                      <button type="button" onClick={() => remove(index)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500"><FiTrash2 /></button>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input label="Item Name" name={`items.${index}.name`} rules={{ required: "Required" }} />
+                      <Input label="Description" name={`items.${index}.description`} />
+                      <div className="grid grid-cols-3 gap-2 sm:col-span-2">
+                        <Input label="L (cm)" name={`items.${index}.length`} type="number" onChange={(e) => calculateVolumeWeight(index, 'length', e.target.value)} />
+                        <Input label="W (cm)" name={`items.${index}.width`} type="number" onChange={(e) => calculateVolumeWeight(index, 'width', e.target.value)} />
+                        <Input label="H (cm)" name={`items.${index}.height`} type="number" onChange={(e) => calculateVolumeWeight(index, 'height', e.target.value)} />
+                      </div>
+                      <Input label="Volume (m³)" name={`items.${index}.volume`} readOnly disabled />
+                      <Input label="Weight (kg)" name={`items.${index}.weight`} readOnly disabled />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {!editingItem && (
+                <button type="button" onClick={() => append({ name: "", description: "", length: "", width: "", height: "", volume: "", weight: "" })} className="w-full py-2 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl hover:border-[#4c7085] hover:text-[#4c7085] transition-all flex items-center justify-center gap-2 font-medium">
+                  <FiPlus /> Add Multiple Items
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setIsItemModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-medium">Cancel</button>
+              <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-[#4c7085] text-white rounded-xl font-medium shadow-sm">{saving ? "Saving..." : "Save Items"}</button>
+            </div>
+          </form>
+        </FormProvider>
+      </Modal>
+
+      {/* COPY MODAL */}
+      <Modal isOpen={!!copyModal} onClose={() => setCopyModal(null)} title={`Copy ${copyModal?.type === 'item' ? 'Item' : 'Room Content'}`}>
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">Copying: <span className="font-medium text-slate-800">{copyModal?.sourceName}</span></p>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Destination Room</label>
+            <select value={targetRoomId} onChange={(e) => setTargetRoomId(e.target.value)} className="input-style w-full">
+              <option value="">Select Target Room</option>
+              {rooms.filter(r => r.id !== copyModal?.sourceId).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button onClick={() => setCopyModal(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-medium">Cancel</button>
+            <button onClick={performCopy} disabled={saving || !targetRoomId} className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium shadow-sm disabled:opacity-50">{saving ? "Copying..." : "Perform Copy"}</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
