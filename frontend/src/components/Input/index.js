@@ -14,9 +14,7 @@ const Input = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const context = useFormContext();
-
   const error = context?.formState?.errors?.[name];
-  const isControlled = controlledValue !== undefined || onChange;
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -25,8 +23,8 @@ const Input = ({
   const bgColor = readOnly ? "!bg-gray-50 cursor-not-allowed" : "bg-white";
 
   if (readOnly && type !== "checkbox") {
-    const { watch } = useFormContext();
-    const value = watch?.(name) || controlledValue || props.defaultValue || "-";
+    const value = context?.watch(name) || controlledValue || props.defaultValue || "";
+    const registered = (context && name) ? context.register(name) : {};
 
     return (
       <div className="flex flex-col">
@@ -36,17 +34,34 @@ const Input = ({
             {rules.required && <span className="text-red-500"> *</span>}
           </label>
         )}
-        <div className={`input-style !bg-gray-50 flex items-center ${error ? "!border-red-500" : ""}`}>
-          <span className="truncate">{value}</span>
+        <div className="relative">
+          <input
+            type="text"
+            {...registered}
+            readOnly
+            value={value === "-" ? "" : value}
+            className={`${baseInputClasses} !bg-gray-50 cursor-not-allowed ${borderColor} w-full`}
+            tabIndex={-1}
+          />
+          {value === "-" && (
+            <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-gray-400">
+              -
+            </div>
+          )}
         </div>
         {error && <p className="mt-1 text-xs text-red-500">{error.message}</p>}
       </div>
     );
   }
 
-  if (context && name && !isControlled) {
+  if (context && name && controlledValue === undefined) {
     const { register } = context;
-    const registered = register(name, rules);
+    const { onChange: formOnChange, ...registered } = register(name, rules);
+
+    const handleChange = (e) => {
+      formOnChange(e);
+      if (onChange) onChange(e);
+    };
 
     return (
       <div className="flex flex-col">
@@ -60,6 +75,7 @@ const Input = ({
         {type === "select" ? (
           <select
             {...registered}
+            onChange={handleChange}
             className={`${baseInputClasses} ${borderColor} ${bgColor} !border-gray-300`}
             disabled={readOnly}
           >
@@ -71,6 +87,7 @@ const Input = ({
         ) : type === "textarea" ? (
           <textarea
             {...registered}
+            onChange={handleChange}
             rows={4}
             className={`${baseInputClasses} ${borderColor} ${bgColor} resize-none`}
             disabled={readOnly}
@@ -80,6 +97,7 @@ const Input = ({
             <input
               type="checkbox"
               {...registered}
+              onChange={handleChange}
               className="w-4 h-4 text-[#4c7085] border-gray-300 rounded focus:ring-[#4c7085] focus:ring-1 disabled:bg-gray-100"
               disabled={readOnly}
             />
@@ -93,8 +111,10 @@ const Input = ({
             <input
               type={type === "password" ? (showPassword ? "text" : "password") : type}
               {...registered}
+              onChange={handleChange}
               className={`${baseInputClasses} ${borderColor} ${bgColor} ${type === "password" ? "pr-10" : ""}`}
               disabled={readOnly}
+              {...props}
             />
             {type === "password" && !readOnly && (
               <button

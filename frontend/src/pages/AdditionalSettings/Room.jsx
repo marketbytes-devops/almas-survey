@@ -4,7 +4,7 @@ import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FiPlus, FiTrash2, FiEdit2, FiSearch, FiX, FiInfo,
-  FiEye, FiEyeOff, FiCopy, FiChevronDown, FiChevronUp
+  FiEye, FiEyeOff, FiCopy, FiChevronDown, FiChevronUp, FiClipboard
 } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import PageHeader from "../../components/PageHeader";
@@ -19,19 +19,18 @@ const Room = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedRooms, setExpandedRooms] = useState(new Set());
 
-  // Modals
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
-  const [copyModal, setCopyModal] = useState(null); // { type: 'room'|'item', sourceId, sourceName }
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
 
-  // State for editing
   const [editingRoom, setEditingRoom] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+
+  const [clipboard, setClipboard] = useState(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [targetRoomId, setTargetRoomId] = useState("");
 
   const roomMethods = useForm({
     defaultValues: { name: "", description: "" },
@@ -84,7 +83,6 @@ const Room = () => {
     });
   };
 
-  // ROOM ACTIONS
   const onRoomSubmit = async (data) => {
     setSaving(true);
     setError(null);
@@ -126,7 +124,6 @@ const Room = () => {
     }
   };
 
-  // ITEM ACTIONS
   const onItemSubmit = async (data) => {
     setSaving(true);
     setError(null);
@@ -187,40 +184,101 @@ const Room = () => {
     }
   };
 
-  // COPY LOGIC
-  const openCopyModal = (type, sourceId, sourceName) => {
-    setCopyModal({ type, sourceId, sourceName });
-    setTargetRoomId("");
+  const handleCopy = (type, id, name) => {
+    const cleanItem = (item) => {
+      const { id, room, room_name, ...rest } = item;
+      const cleanValue = (val) => (val === "" || val === undefined) ? null : val;
+      return {
+        ...rest,
+        length: cleanValue(rest.length),
+        width: cleanValue(rest.width),
+        height: cleanValue(rest.height),
+        volume: cleanValue(rest.volume),
+        weight: cleanValue(rest.weight),
+      };
+    };
+
+    if (type === 'room') {
+      const room = rooms.find(r => r.id === id);
+      const roomItems = items[id] || [];
+      setClipboard({
+        type: 'room',
+        sourceId: id,
+        sourceName: name,
+        data: {
+          items: roomItems.map(cleanItem)
+        }
+      });
+      setSuccess(`Copied items from Room: ${name}`);
+    } else {
+      const allItems = Object.values(items).flat();
+      const item = allItems.find(i => i.id === id);
+      setClipboard({
+        type: 'item',
+        sourceId: item.room,
+        sourceName: name,
+        data: cleanItem(item)
+      });
+      setSuccess(`Copied Item: ${name}`);
+    }
+    setTimeout(() => setSuccess(null), 3000);
   };
 
-  const performCopy = async () => {
-    if (!targetRoomId || targetRoomId === copyModal.sourceId) {
-      setError("Select a valid destination room");
-      return;
-    }
+  const handlePaste = async (targetRoomId = null) => {
+    if (!clipboard) return;
     setSaving(true);
+    setError(null);
+
     try {
-      if (copyModal.type === "item") {
-        const allItems = Object.values(items).flat();
-        const item = allItems.find((i) => i.id === copyModal.sourceId);
-        const res = await apiClient.post("/items/", { ...item, room: targetRoomId, id: undefined });
-        setItems(prev => ({ ...prev, [targetRoomId]: [...(prev[targetRoomId] || []), res.data] }));
-      } else {
-        const roomItems = items[copyModal.sourceId] || [];
-        const requests = roomItems.map(item => apiClient.post("/items/", { ...item, room: targetRoomId, id: undefined }));
+      const targetRoom = rooms.find(r => r.id === targetRoomId);
+      if (!targetRoom) {
+        setError("Target room not found.");
+        return;
+      }
+
+      if (clipboard.type === 'item') {
+        const res = await apiClient.post("/items/", { ...clipboard.data, room: targetRoomId });
+        setItems(prev => ({
+          ...prev,
+          [targetRoomId]: [...(prev[targetRoomId] || []), res.data]
+        }));
+        setSuccess(`Pasted "${clipboard.data.name}" into ${targetRoom.name}`);
+      } else if (clipboard.type === 'room') {
+        const requests = clipboard.data.items.map(item =>
+          apiClient.post("/items/", { ...item, room: targetRoomId })
+        );
+
         const responses = await Promise.all(requests);
         const newItems = responses.map(r => r.data);
-        setItems(prev => ({ ...prev, [targetRoomId]: [...(prev[targetRoomId] || []), ...newItems] }));
+        setItems(prev => ({
+          ...prev,
+          [targetRoomId]: [...(prev[targetRoomId] || []), ...newItems]
+        }));
+        setSuccess(`Pasted ${newItems.length} items into ${targetRoom.name}`);
       }
-      setSuccess("Copied successfully!");
-      setCopyModal(null);
+      setIsPasteModalOpen(false);
       setTimeout(() => setSuccess(null), 3000);
-    } catch {
-      setError("Copy failed");
+    } catch (err) {
+      console.error("Paste error:", err.response?.data);
+      const backendError = err.response?.data;
+      let errorMsg = "Paste failed.";
+
+      if (backendError) {
+        if (backendError.non_field_errors) {
+          errorMsg = backendError.non_field_errors[0];
+        } else if (backendError.name) {
+          errorMsg = `Name error: ${backendError.name[0]}`;
+        } else {
+          errorMsg = Object.values(backendError).flat()[0] || "Check for duplicate names.";
+        }
+      }
+      setError(errorMsg);
     } finally {
       setSaving(false);
     }
   };
+
+  // No legacy copy modal logic needed anymore
 
   const calculateVolumeWeight = (index, field, value) => {
     const values = itemMethods.getValues(`items.${index}`);
@@ -279,7 +337,7 @@ const Room = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
             <button
               onClick={() => { setEditingRoom(null); roomMethods.reset(); setIsRoomModalOpen(true); }}
               className="bg-[#4c7085] hover:bg-[#3a5d72] text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all font-medium shadow-sm hover:shadow active:scale-[0.99]"
@@ -292,7 +350,23 @@ const Room = () => {
             >
               <FiPlus /> Add Item
             </button>
+            {clipboard && (
+              <button
+                onClick={() => setIsPasteModalOpen(true)}
+                disabled={saving}
+                className="bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all font-medium shadow-sm hover:shadow active:scale-[0.99]"
+                title={clipboard.type === 'room' ? `Paste items from "${clipboard.sourceName}"` : `Paste "${clipboard.sourceName}"`}
+              >
+                <FiClipboard /> {clipboard.type === 'room' ? "Paste Room Items" : "Paste Item"}
+              </button>
+            )}
           </div>
+          {clipboard && (
+            <div className="mt-3 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs flex justify-between items-center border border-blue-100 italic">
+              <span>Ready to paste {clipboard.type}: <strong>{clipboard.sourceName}</strong></span>
+              <button onClick={() => setClipboard(null)} className="hover:text-blue-900 font-bold">Clear</button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -311,7 +385,10 @@ const Room = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => { setEditingRoom(room); roomMethods.reset(room); setIsRoomModalOpen(true); }} className="p-2 text-slate-400 hover:text-[#4c7085] hover:bg-slate-100 rounded-lg transition-all" title="Edit Room"><FiEdit2 /></button>
-                    <button onClick={() => openCopyModal('room', room.id, room.name)} className="p-2 text-slate-400 hover:text-green-600 hover:bg-slate-100 rounded-lg transition-all" title="Copy Room"><FiCopy /></button>
+                    <button onClick={() => handleCopy('room', room.id, room.name)} className="p-2 text-slate-400 hover:text-green-600 hover:bg-slate-100 rounded-lg transition-all" title="Copy Room & Items"><FiCopy /></button>
+                    {clipboard && (
+                      <button onClick={() => handlePaste(room.id)} disabled={saving} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all" title={`Paste ${clipboard.type} into this room`}><FiClipboard /></button>
+                    )}
                     <button onClick={() => handleDeleteRoom(room.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Room"><FiTrash2 /></button>
                     <button onClick={() => toggleRoomExpansion(room.id)} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all">
                       {expandedRooms.has(room.id) ? <FiChevronUp /> : <FiChevronDown />}
@@ -330,9 +407,9 @@ const Room = () => {
                                 <div className="flex justify-between items-start mb-2">
                                   <h4 className="font-medium text-slate-800">{item.name}</h4>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => { setEditingItem(item); itemMethods.reset({ room: room.id, items: [item] }); setIsItemModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-[#4c7085]"><FiEdit2 size={14} /></button>
-                                    <button onClick={() => openCopyModal('item', item.id, item.name)} className="p-1.5 text-slate-400 hover:text-green-600"><FiCopy size={14} /></button>
-                                    <button onClick={() => handleDeleteItem(item.id, room.id)} className="p-1.5 text-slate-400 hover:text-red-500"><FiTrash2 size={14} /></button>
+                                    <button onClick={() => { setEditingItem(item); itemMethods.reset({ room: room.id, items: [item] }); setIsItemModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-[#4c7085] transition-colors" title="Edit Item"><FiEdit2 size={14} /></button>
+                                    <button onClick={() => handleCopy('item', item.id, item.name)} className="p-1.5 text-slate-400 hover:text-green-600 transition-colors" title="Copy Item"><FiCopy size={14} /></button>
+                                    <button onClick={() => handleDeleteItem(item.id, room.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors" title="Delete Item"><FiTrash2 size={14} /></button>
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-y-2 text-xs text-slate-500">
@@ -429,23 +506,35 @@ const Room = () => {
         </FormProvider>
       </Modal>
 
-      {/* COPY MODAL */}
-      <Modal isOpen={!!copyModal} onClose={() => setCopyModal(null)} title={`Copy ${copyModal?.type === 'item' ? 'Item' : 'Room Content'}`}>
+      {/* PASTE SELECTION MODAL */}
+      <Modal isOpen={isPasteModalOpen} onClose={() => setIsPasteModalOpen(false)} title={`Select Destination for ${clipboard?.type === 'room' ? 'Room Items' : 'Item'}`}>
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">Copying: <span className="font-medium text-slate-800">{copyModal?.sourceName}</span></p>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Destination Room</label>
-            <select value={targetRoomId} onChange={(e) => setTargetRoomId(e.target.value)} className="input-style w-full">
-              <option value="">Select Target Room</option>
-              {rooms.filter(r => r.id !== copyModal?.sourceId).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
+          <p className="text-sm text-slate-600">Pasting: <span className="font-medium text-slate-800">{clipboard?.sourceName}</span></p>
+          <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+            {rooms.length > 0 ? (
+              rooms
+                .filter(room => room.id !== clipboard?.sourceId)
+                .map((room) => (
+                  <button
+                    key={room.id}
+                    onClick={() => handlePaste(room.id)}
+                    disabled={saving}
+                    className="w-full p-3 text-left bg-slate-50 hover:bg-blue-50 hover:text-blue-700 rounded-xl border border-slate-200 hover:border-blue-200 transition-all text-sm font-medium flex justify-between items-center group"
+                  >
+                    <span>{room.name}</span>
+                    <span className="text-xs text-slate-400 group-hover:text-blue-400">Select Room</span>
+                  </button>
+                ))
+            ) : (
+              <div className="text-center py-4 text-slate-500 text-sm">No rooms available.</div>
+            )}
           </div>
-          <div className="flex gap-3 pt-4">
-            <button onClick={() => setCopyModal(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-medium">Cancel</button>
-            <button onClick={performCopy} disabled={saving || !targetRoomId} className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium shadow-sm disabled:opacity-50">{saving ? "Copying..." : "Perform Copy"}</button>
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <button type="button" onClick={() => setIsPasteModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-medium">Cancel</button>
           </div>
         </div>
       </Modal>
+
     </div>
   );
 };

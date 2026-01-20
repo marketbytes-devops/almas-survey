@@ -87,8 +87,8 @@ class Item(models.Model):
     volume = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, help_text="in m³ (auto-calculated)")
     weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="in kg (estimated)")
 
-    class Meta:
-        unique_together = ('name', 'room')
+    # Removed unique_together as requested to allow same names in a room
+    pass
 
     def __str__(self):
         return f"{self.name} ({self.room.name if self.room else 'No Room'})"

@@ -5,7 +5,6 @@ import {
   FiEye,
   FiPrinter,
   FiDownload,
-  FiSend,
   FiCheckCircle,
 } from "react-icons/fi";
 import { IoLogoWhatsapp } from "react-icons/io";
@@ -420,7 +419,6 @@ export default function QuotationView() {
                 onClick={handleSendQuotation}
                 className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700"
               >
-                <IoLogoWhatsapp className="w-4 h-4" />
                 <span className="whitespace-nowrap">Share via WhatsApp</span>
               </button>
               <button
