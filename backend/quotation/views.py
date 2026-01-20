@@ -13,8 +13,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import serializers
 
 from survey.models import Survey
-from .models import Quotation
-from .serializers import QuotationSerializer
+from .models import Quotation, QuotationRemark
+from .serializers import QuotationSerializer, QuotationRemarkSerializer
 from .pdf_generator import generate_quotation_pdf
 
 logger = logging.getLogger(__name__)
@@ -308,3 +308,11 @@ Thank you for choosing Almas Movers!
         except Exception as e:
             logger.error(f"WhatsApp action failed: {str(e)}", exc_info=True)
             return Response({"error": "Unexpected error occurred"}, status=500)
+
+
+class QuotationRemarkViewSet(viewsets.ModelViewSet):
+    queryset = QuotationRemark.objects.all()
+    serializer_class = QuotationRemarkSerializer
+
+    def get_queryset(self):
+        return QuotationRemark.objects.all().order_by("-created_at")

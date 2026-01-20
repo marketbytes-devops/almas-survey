@@ -8,7 +8,6 @@ from .models import (
     PaymentTerm,
     QuoteNote,
     TruckType,
-    SurveyRemark,
     Service,
 )
 from survey.models import SurveyAdditionalService
@@ -166,19 +165,6 @@ class TruckTypeSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-
-class SurveyRemarkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SurveyRemark
-        fields = [
-            "id",
-            "description",
-            "is_active",
-            "order",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["created_at", "updated_at"]
 
 
 class ServiceSerializer(serializers.ModelSerializer):

@@ -1,0 +1,114 @@
+﻿.\venv\Scripts\python.exe : 
+Traceback (most recent call last):
+At line:1 char:1
++ .\venv\Scripts\python.exe 
+manage.py makemigrations 2>&1 | 
+out-file -e ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpe 
+   cified: (Traceback (most recent   
+  call last)::String) [], RemoteEx   
+ ception
+    + FullyQualifiedErrorId : Native 
+   CommandError
+ 
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\manage.py", line 
+22, in <module>
+    main()
+    ~~~~^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\manage.py", line 
+18, in main
+    
+execute_from_command_line(sys.argv)
+    
+~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\core\management\__init__.py
+", line 442, in 
+execute_from_command_line
+    utility.execute()
+    ~~~~~~~~~~~~~~~^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\core\management\__init__.py
+", line 416, in execute
+    django.setup()
+    ~~~~~~~~~~~~^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\__init__.py", line 24, in 
+setup
+    apps.populate(settings.INSTALLED_
+APPS)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+^^^^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\apps\registry.py", line 
+124, in populate
+    app_config.ready()
+    ~~~~~~~~~~~~~~~~^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\contrib\admin\apps.py", 
+line 27, in ready
+    self.module.autodiscover()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\contrib\admin\__init__.py",
+ line 52, in autodiscover
+    autodiscover_modules("admin", 
+register_to=site)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\venv\Lib\site-packag
+es\django\utils\module_loading.py", 
+line 58, in autodiscover_modules
+    import_module("%s.%s" % 
+(app_config.name, module_to_search))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\
+PythonSoftwareFoundation.Python.3.13_
+3.13.2544.0_x64__qbz5n2kfra8p0\Lib\im
+portlib\__init__.py", line 88, in 
+import_module
+    return 
+_bootstrap._gcd_import(name[level:], 
+package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen 
+importlib._bootstrap>", line 1387, 
+in _gcd_import
+  File "<frozen 
+importlib._bootstrap>", line 1360, 
+in _find_and_load
+  File "<frozen 
+importlib._bootstrap>", line 1331, 
+in _find_and_load_unlocked
+  File "<frozen 
+importlib._bootstrap>", line 935, in 
+_load_unlocked
+  File "<frozen 
+importlib._bootstrap_external>", 
+line 1027, in exec_module
+  File "<frozen 
+importlib._bootstrap>", line 488, in 
+_call_with_frames_removed
+  File "D:\MarketBytes\web-works\alma
+s-survey\backend\pricing\admin.py", 
+line 2, in <module>
+    from .models import (
+    ...<9 lines>...
+    )
+ImportError: cannot import name 
+'SurveyRemark' from 'pricing.models' 
+(D:\MarketBytes\web-works\almas-surve
+y\backend\pricing\models.py)

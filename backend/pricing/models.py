@@ -346,24 +346,6 @@ class TruckType(models.Model):
         super().save(*args, **kwargs)
 
 
-class SurveyRemark(models.Model):
-    description = models.TextField(
-        help_text="Optional longer explanation", blank=True, null=True
-    )
-    is_active = models.BooleanField(default=True, blank=True, null=True)
-    order = models.PositiveIntegerField(default=0, blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
-
-    class Meta:
-        ordering = ["order"]
-        verbose_name = "Survey Remark"
-        verbose_name_plural = "Survey Remarks"
-
-    def __str__(self):
-        return self.description[:50] if self.description else "Survey Remark"
-
 
 class Service(models.Model):
     name = models.CharField(

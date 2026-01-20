@@ -121,7 +121,6 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         const surveyRemarksHTML = surveyRemarks.length > 0
             ? surveyRemarks
                 .filter(r => r.is_active)
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map(r => `<div class="remark-item">${r.description}</div>`)
                 .join("")
             : "";

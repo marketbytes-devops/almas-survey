@@ -14,7 +14,6 @@ import InsuranceTab from "./Tabs/InsuranceTab";
 import PaymentTermsTab from "./Tabs/PaymentTermsTab";
 import NoteTab from "./Tabs/NoteTab";
 import TruckTypeTab from "./Tabs/TruckTypeTab";
-import RemarksTab from "./Tabs/RemarksTab";
 import ServicesTab from "./Tabs/ServicesTab";
 
 const TAB_LIST = [
@@ -26,7 +25,6 @@ const TAB_LIST = [
   { id: "payment-terms", label: "PAYMENT TERMS", component: PaymentTermsTab },
   { id: "note", label: "NOTE", component: NoteTab },
   { id: "truck-type", label: "TRUCK TYPE", component: TruckTypeTab },
-  { id: "remarks", label: "REMARKS", component: RemarksTab },
   { id: "services", label: "SERVICES", component: ServicesTab },
 ];
 

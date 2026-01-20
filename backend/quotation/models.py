@@ -5,6 +5,22 @@ from additional_settings.models import Currency
 from django.core.validators import MinValueValidator
 
 
+class QuotationRemark(models.Model):
+    description = models.TextField(
+        help_text="Optional longer explanation", blank=True, null=True
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Quotation Remark"
+        verbose_name_plural = "Quotation Remarks"
+
+    def __str__(self):
+        return self.description[:50] if self.description else "Quotation Remark"
+
+
 class Quotation(models.Model):
     survey = models.OneToOneField(
         Survey,
@@ -88,6 +104,12 @@ class Quotation(models.Model):
         blank=True,
         help_text="Detailed additional charges with price and quantity"
     )
+    remarks = models.JSONField(
+        default=list,
+        null=True,
+        blank=True,
+        help_text="List of selected SurveyRemark IDs"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
@@ -131,5 +153,7 @@ class Quotation(models.Model):
             self.excluded_services = []
         if not isinstance(self.additional_charges, list):
             self.additional_charges = []
+        if not isinstance(self.remarks, list):
+            self.remarks = []
 
         super().save(*args, **kwargs)

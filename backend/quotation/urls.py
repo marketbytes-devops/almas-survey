@@ -3,8 +3,9 @@ from rest_framework.routers import DefaultRouter
 from . import views
  
 router = DefaultRouter()
-router.register(r'', views.QuotationViewSet, basename='quotation')
- 
+router.register(r'quotation-remarks', views.QuotationRemarkViewSet, basename='quotation-remark')
+router.register(r'quotation-create', views.QuotationViewSet, basename='quotation')
+
 urlpatterns = [
-    path('quotation-create/', include(router.urls)),  
+    path('', include(router.urls)),
 ]

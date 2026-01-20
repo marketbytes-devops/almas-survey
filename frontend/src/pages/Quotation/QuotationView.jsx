@@ -48,7 +48,7 @@ export default function QuotationView() {
   const [quoteNotes, setQuoteNotes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [insurancePlans, setInsurancePlans] = useState([]);
-  const [surveyRemarks, setSurveyRemarks] = useState([]);
+  const [quotationRemarks, setQuotationRemarks] = useState([]);
 
   const printRef = useRef();
 
@@ -242,22 +242,28 @@ export default function QuotationView() {
   useEffect(() => {
     const fetchPrintData = async () => {
       try {
-        const [notesRes, termsRes, insRes, remarksRes] = await Promise.all([
+        const [notesRes, termsRes, insRes, remRes] = await Promise.all([
           apiClient.get("/quote-notes/"),
           apiClient.get("/payment-terms/"),
           apiClient.get("/insurance-plans/"),
-          apiClient.get("/survey-remarks/"),
+          apiClient.get("/quotation-remarks/"),
         ]);
         setQuoteNotes(notesRes.data.filter((n) => n.is_active));
         setPaymentTerms(termsRes.data.filter((t) => t.is_active));
         setInsurancePlans(insRes.data.filter((i) => i.is_active));
-        setSurveyRemarks(remarksRes.data.filter((r) => r.is_active));
+
+        const allRemarks = remRes.data.results || remRes.data;
+        if (quotation?.remarks) {
+          setQuotationRemarks(allRemarks.filter(r => quotation.remarks.includes(r.id)));
+        } else {
+          setQuotationRemarks([]);
+        }
       } catch (err) {
         console.error("Failed to load print data");
       }
     };
     fetchPrintData();
-  }, []);
+  }, [quotation]);
 
   const viewSignature = async () => {
     if (!quotation) return;
@@ -409,24 +415,24 @@ export default function QuotationView() {
           title="Quotation Details"
           subtitle={`Quotation ID: ${quotation?.quotation_id || "—"} • Survey ID: ${survey?.survey_id || "—"}`}
           extra={
-            <div className="flex items-center gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <button
                 onClick={handleSendQuotation}
                 className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700"
               >
                 <IoLogoWhatsapp className="w-4 h-4" />
-                <span>Share via WhatsApp</span>
+                <span className="whitespace-nowrap">Share via WhatsApp</span>
               </button>
               <button
                 onClick={triggerPrint}
-                className="btn-secondary flex items-center gap-2"
+                className="btn-secondary flex items-center justify-center gap-2"
               >
                 <FiPrinter className="w-4 h-4" />
                 <span>Print</span>
               </button>
               <button
                 onClick={() => navigate(-1)}
-                className="btn-secondary flex items-center gap-2"
+                className="btn-secondary flex items-center justify-center gap-2"
               >
                 <FiArrowLeft className="w-4 h-4" />
                 <span>Back</span>
@@ -437,7 +443,7 @@ export default function QuotationView() {
 
         <div className="space-y-6">
           {/* Quotation Information */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
             <h3 className="text-lg font-medium text-gray-800 mb-4">
               Quotation Information
             </h3>
@@ -468,7 +474,7 @@ export default function QuotationView() {
           </div>
 
           {/* Client Details */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
             <h3 className="text-lg font-medium text-gray-800 mb-4">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
@@ -508,7 +514,7 @@ export default function QuotationView() {
           </div>
 
           {/* Move Details */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
             <h3 className="text-lg font-medium text-gray-800 mb-4">Move Details</h3>
             <div className="space-y-6">
               {[
@@ -534,7 +540,7 @@ export default function QuotationView() {
 
           {/* Additional Services */}
           {additionalCharges.length > 0 && (
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
               <h3 className="text-lg font-medium text-gray-800 mb-4">
                 Additional Services
               </h3>
@@ -553,9 +559,6 @@ export default function QuotationView() {
                         <div className="font-medium text-gray-800">
                           {charge.service_name || "Additional Service"}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {charge.price_per_unit} QAR × {quantity} unit(s)
-                        </div>
                       </div>
                       <div className="text-right text-lg font-medium text-[#4c7085]">
                         {subtotal.toFixed(2)} QAR
@@ -567,34 +570,50 @@ export default function QuotationView() {
             </div>
           )}
 
+          {/* Quotation Remarks */}
+          {quotationRemarks.length > 0 && (
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
+              <h3 className="text-lg font-medium text-gray-800 mb-4">Quotation Remarks</h3>
+              <div className="space-y-3">
+                {quotationRemarks.map((remark) => (
+                  <div key={remark.id} className="flex items-start gap-3 bg-gray-50 p-4 rounded-2xl">
+                    <FiCheckCircle className="text-[#4c7085] mt-1 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">{remark.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Your Rate Section */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
             <h3 className="text-xl font-medium text-center text-gray-800 mb-6">
               Your Rate
             </h3>
-
-            <div className="space-y-3 mb-6">
-              {selectedServices.length > 0 ? (
-                selectedServices.map((serviceName, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between"
-                  >
-                    <div className="text-base font-medium text-gray-800">
-                      {serviceName}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6">
+              <h4 className="text-lg font-medium text-gray-800 mb-6 text-center md:text-left">Services Include</h4>
+              <div className="space-y-3 mb-6">
+                {selectedServices.length > 0 ? (
+                  selectedServices.map((serviceName, index) => (
+                    <div
+                      key={index}
+                      className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between"
+                    >
+                      <div className="text-base font-medium text-gray-800">
+                        {serviceName}
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-[#4c7085] border-2 border-[#4c7085] flex items-center justify-center">
+                        <FiCheckCircle className="w-5 h-5 text-white" />
+                      </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-[#4c7085] border-2 border-[#4c7085] flex items-center justify-center">
-                      <FiCheckCircle className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-gray-600 py-6">
-                  No additional services selected
-                </p>
-              )}
+                  ))
+                ) : (
+                  <p className="text-center text-gray-600 py-6">
+                    No additional services selected
+                  </p>
+                )}
+              </div>
             </div>
-
             <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
@@ -676,7 +695,7 @@ export default function QuotationView() {
           </div>
 
           {/* Digital Signature */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
             <h3 className="text-lg font-medium text-gray-800 mb-4">
               Digital Signature
             </h3>
@@ -707,7 +726,6 @@ export default function QuotationView() {
               )}
             </div>
           </div>
-
           {/* Action Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
             <button
@@ -772,7 +790,7 @@ export default function QuotationView() {
           generalTerms={quoteNotes}
           paymentTerms={paymentTerms}
           quoteNotes={quoteNotes}
-          surveyRemarks={surveyRemarks}
+          surveyRemarks={quotationRemarks}
           currentSignature={currentSignature}
           surveySignature={surveySignature}
           booking={booking}

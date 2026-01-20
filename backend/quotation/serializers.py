@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Quotation
+from .models import Quotation, QuotationRemark
 from survey.models import Survey
 from additional_settings.models import Currency
 
@@ -52,6 +52,12 @@ class QuotationSerializer(serializers.ModelSerializer):
         allow_empty=True,
         default=list
     )
+    remarks = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        default=list
+    )
 
     class Meta:
         model = Quotation
@@ -62,7 +68,7 @@ class QuotationSerializer(serializers.ModelSerializer):
             "full_name", "service_type",
             "date", "amount", "discount", "final_amount", "advance", "balance",
             "currency", "currency_code", "notes",
-            "included_services", "excluded_services", "selected_services", "additional_charges",
+            "included_services", "excluded_services", "selected_services", "additional_charges", "remarks",
             "created_at", "updated_at",
             "signature", "signature_uploaded", "signature_url",
         ]
@@ -126,7 +132,7 @@ class QuotationSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        for field in ["included_services", "excluded_services", "selected_services", "additional_charges"]:
+        for field in ["included_services", "excluded_services", "selected_services", "additional_charges", "remarks"]:
             ret[field] = ret[field] or []
         return ret
 
@@ -134,3 +140,9 @@ class QuotationSerializer(serializers.ModelSerializer):
         if "date" not in validated_data:
             validated_data["date"] = timezone.now().date()
         return super().create(validated_data)
+
+class QuotationRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuotationRemark
+        fields = ["id", "description", "is_active", "created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at"]

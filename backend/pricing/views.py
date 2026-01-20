@@ -10,7 +10,6 @@ from .models import (
     PaymentTerm,
     QuoteNote,
     TruckType,
-    SurveyRemark,
     Service,
 )
 from django.shortcuts import get_object_or_404
@@ -24,7 +23,6 @@ from .serializers import (
     PaymentTermSerializer,
     QuoteNoteSerializer,
     TruckTypeSerializer,
-    SurveyRemarkSerializer,
     ServiceSerializer,
 )
 from django.db import transaction
@@ -339,17 +337,6 @@ class TruckTypeViewSet(viewsets.ModelViewSet):
         truck.save()
         return Response({"status": "default set"})
 
-
-class SurveyRemarkViewSet(viewsets.ModelViewSet):
-    queryset = SurveyRemark.objects.all()
-    serializer_class = SurveyRemarkSerializer
-
-    @action(detail=True, methods=["post"])
-    def toggle_active(self, request, pk=None):
-        remark = self.get_object()
-        remark.is_active = not remark.is_active
-        remark.save()
-        return Response({"is_active": remark.is_active})
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
