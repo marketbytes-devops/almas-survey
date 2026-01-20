@@ -7,7 +7,6 @@ import {
   FiPlusSquare,
   FiCalendar,
   FiBarChart2,
-  FiFileText,
   FiPackage,
   FiSettings,
   FiUsers,
@@ -22,9 +21,10 @@ import {
   FiShield,
   FiKey
 } from "react-icons/fi";
-import { BiMoneyWithdraw } from "react-icons/bi";
-import { MdOutlineInventory } from "react-icons/md";
-import { PiCheckSquare } from "react-icons/pi";
+import { MdOutlineMoney } from "react-icons/md";
+import { FaRegWindowRestore } from "react-icons/fa";
+import { RiBillLine } from "react-icons/ri";
+import { IoMdCheckboxOutline } from "react-icons/io";
 import { HiOutlineUserGroup } from "react-icons/hi2";
 import { FaChevronDown } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
@@ -105,13 +105,13 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "new-enquiries", to: "/new-enquiries", label: "New Assigned", icon: <FiPlusSquare className="w-5 h-5" />, page: "new_enquiries", action: "view" },
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <FiCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <FiBarChart2 className="w-5 h-5" />, page: "survey_summary", action: "view" },
-    { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <FiFileText className="w-5 h-5" />, page: "quotation", action: "view" },
-    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <PiCheckSquare className="w-5 h-5" />, page: "booking", action: "view" },
-    { id: "inventory", to: "/inventory", label: "Inventory", icon: <MdOutlineInventory className="w-5 h-5" />, page: "inventory", action: "view" },
+    { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <RiBillLine className="w-5 h-5" />, page: "quotation", action: "view" },
+    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <IoMdCheckboxOutline className="w-5 h-5" />, page: "booking", action: "view" },
+    { id: "inventory", to: "/inventory", label: "Inventory", icon: <FaRegWindowRestore className="w-5 h-5" />, page: "inventory", action: "view" },
     {
       id: "pricing",
       label: "Pricing",
-      icon: <BiMoneyWithdraw className="w-5 h-5" />,
+      icon: <MdOutlineMoney className="w-5 h-5" />,
       isOpen: openDropdown === "pricing",
       toggle: () => handleToggle("pricing"),
       page: "pricing",
@@ -132,7 +132,7 @@ const Sidebar = ({ toggleSidebar }) => {
       subItems: [
         { to: "/additional-settings/types", label: "Types", icon: <FiTag className="w-4 h-4" />, page: "types", action: "view" },
         { to: "/additional-settings/units", label: "Units", icon: <FiLayers className="w-4 h-4" />, page: "units", action: "view" },
-        { to: "/additional-settings/currency", label: "Currency", icon: <BiMoneyWithdraw className="w-4 h-4" />, page: "currency", action: "view" },
+        { to: "/additional-settings/currency", label: "Currency", icon: <MdOutlineMoney className="w-4 h-4" />, page: "currency", action: "view" },
         { to: "/additional-settings/tax", label: "Tax", icon: <FiPercent className="w-4 h-4" />, page: "tax", action: "view" },
         { to: "/additional-settings/handyman", label: "Handyman", icon: <FiTool className="w-4 h-4" />, page: "handyman", action: "view" },
         { to: "/additional-settings/manpower", label: "Manpower", icon: <HiOutlineUserGroup className="w-4 h-4" />, page: "manpower", action: "view" },
