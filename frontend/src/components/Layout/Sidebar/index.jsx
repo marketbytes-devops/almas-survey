@@ -25,7 +25,8 @@ import {
   FiHome,
   FiGlobe,
   FiShield,
-  FiKey
+  FiKey,
+  FiCheckSquare
 } from "react-icons/fi";
 import { BiBox, BiMoneyWithdraw } from "react-icons/bi";
 import { HiOutlineUserGroup } from "react-icons/hi2";
@@ -109,12 +110,12 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <FiCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <FiBarChart2 className="w-5 h-5" />, page: "survey_summary", action: "view" },
     { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <FiFileText className="w-5 h-5" />, page: "quotation", action: "view" },
-    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <FiBriefcase className="w-5 h-5" />, page: "booking", action: "view" },
+    { id: "booking", to: "/booking-list", label: "Booked Moves", icon: <FiCheckSquare className="w-5 h-5" />, page: "booking", action: "view" },
     { id: "inventory", to: "/inventory", label: "Inventory", icon: <BiBox className="w-5 h-5" />, page: "inventory", action: "view" },
     {
       id: "pricing",
       label: "Pricing",
-      icon: <FiDollarSign className="w-5 h-5" />,
+      icon: <BiMoneyWithdraw className="w-5 h-5" />,
       isOpen: openDropdown === "pricing",
       toggle: () => handleToggle("pricing"),
       page: "pricing",
@@ -181,7 +182,6 @@ const Sidebar = ({ toggleSidebar }) => {
   const renderMenuItem = (item) => {
     if (item.subItems) {
       const visibleSubItems = item.subItems.filter((sub) => hasPermission(sub.page, sub.action));
-      // Only show dropdown if main page or any sub-item is visible
       if (visibleSubItems.length === 0 && !hasPermission(item.page, item.action)) return null;
 
       const isActive = visibleSubItems.some((sub) => location.pathname.startsWith(sub.to.split("/")[1]));
@@ -190,8 +190,8 @@ const Sidebar = ({ toggleSidebar }) => {
         <div key={item.id}>
           <button
             onClick={item.toggle}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${item.isOpen || isActive
-              ? "bg-[#4c7085] text-white shadow-md shadow-[#4c7085]/10"
+            className={`w-full flex items-center justify-between px-4 py-3 transition-all sidebar-dropdown-parent ${item.isOpen ? "is-open" : "rounded-2xl"} ${isActive && !item.isOpen
+              ? "bg-[#4c7085] text-white shadow-md shadow-[#4c7085]/10 rounded-2xl"
               : "text-gray-600 hover:bg-gray-50/80"
               }`}
           >
@@ -199,42 +199,43 @@ const Sidebar = ({ toggleSidebar }) => {
               {item.icon}
               <span className="font-medium">{item.label}</span>
             </span>
-            {item.isOpen ? <FaChevronUp className="w-4 h-4" /> : <FaChevronDown className="w-4 h-4" />}
+            <motion.div
+              animate={{ rotate: item.isOpen ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <FaChevronDown className="w-3.5 h-3.5" />
+            </motion.div>
           </button>
 
           <AnimatePresence>
             {item.isOpen && visibleSubItems.length > 0 && (
-              <motion.ul
+              <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="ml-8 mt-2 space-y-1"
+                className="sidebar-submenu-container"
               >
-                {visibleSubItems.map((sub) => (
-                  <li key={sub.to}>
+                <div className="py-2">
+                  {visibleSubItems.map((sub) => (
                     <NavLink
+                      key={sub.to}
                       to={sub.to}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all ${isActive
-                          ? "bg-[#6b8ca3]/10 text-[#4c7085] font-medium"
-                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                        }`
+                        `sidebar-submenu-item ${isActive ? "active" : ""}`
                       }
                       onClick={() => isMobile() && toggleSidebar()}
                     >
                       {sub.icon}
                       <span>{sub.label}</span>
                     </NavLink>
-                  </li>
-                ))}
-              </motion.ul>
+                  ))}
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
       );
     }
-
-    // For single items: only show if explicitly allowed
     if (!hasPermission(item.page, item.action)) return null;
 
     return (

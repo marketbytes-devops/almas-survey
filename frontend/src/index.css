@@ -134,7 +134,6 @@ textarea {
   box-shadow: 0 20px 25px -5px rgba(76, 112, 133, 0.15);
 }
 
-.btn-primary:active {}
 
 .btn-primary:disabled {
   opacity: 0.6;
@@ -175,4 +174,53 @@ textarea {
 
 .grecaptcha-badge {
   visibility: hidden;
+}
+
+/* Sidebar Curved Dropdown Styles */
+.sidebar-dropdown-parent {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-dropdown-parent.is-open {
+  border-top-left-radius: 1.25rem !important;
+  border-top-right-radius: 1.25rem !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  background-color: var(--primary) !important;
+  color: white !important;
+}
+
+.sidebar-submenu-container {
+  background-color: #f8fafc;
+  border-bottom-left-radius: 1.25rem;
+  border-bottom-right-radius: 1.25rem;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  border: 1px solid #f1f5f9;
+  border-top: none;
+}
+
+.sidebar-submenu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0.5rem;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  color: #64748b;
+  text-decoration: none;
+}
+
+.sidebar-submenu-item:hover {
+  background-color: rgba(76, 112, 133, 0.05);
+  color: var(--primary);
+}
+
+.sidebar-submenu-item.active {
+  background-color: white;
+  color: var(--primary);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }

@@ -1,8 +1,23 @@
-/* src/pages/AdditionalSettings/Permissions.jsx */
+/* src/pages/Admin/Permissions.js */
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiSettings,
+  FiCheckCircle,
+  FiXCircle,
+  FiShield,
+  FiUser,
+  FiMail,
+  FiSearch,
+  FiChevronRight,
+  FiLock,
+  FiUnlock,
+  FiSave
+} from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
-import { FaCog, FaSpinner } from "react-icons/fa";
+import PageHeader from "../../components/PageHeader";
+import Modal from "../../components/Modal";
 import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 const Permissions = () => {
@@ -17,6 +32,7 @@ const Permissions = () => {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isOverridesLoading, setIsOverridesLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const pageNameMap = {
     Dashboard: "Dashboard",
@@ -77,17 +93,15 @@ const Permissions = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch profile & superadmin status
         const profileRes = await apiClient.get("/auth/profile/");
         const user = profileRes.data;
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
 
-        // 2. Fetch all users
         const usersRes = await apiClient.get("/auth/users/");
         setUsers(usersRes.data);
       } catch (err) {
         console.error("Failed to load data:", err);
-        setError("Failed to load user permissions data. Please try again.");
+        setError("Failed to load user permissions data.");
       } finally {
         setIsLoading(false);
       }
@@ -112,8 +126,6 @@ const Permissions = () => {
       const existingOverrides = response.data || [];
 
       const overridesMap = {};
-      
-      // 1. Get Role Permissions from the selected user object (fetched in users list)
       const rolePermissions = user.role?.permissions || [];
       const rolePermsMap = {};
       rolePermissions.forEach(p => {
@@ -125,19 +137,17 @@ const Permissions = () => {
         };
       });
 
-      // 2. Initialize all pages with Role permissions as default (or false)
       Object.keys(pageNameMap).forEach((key) => {
         const rp = rolePermsMap[key] || {};
-        overridesMap[key] = { 
-          id: null, 
-          view: rp.view || false, 
-          add: rp.add || false, 
-          edit: rp.edit || false, 
-          delete: rp.delete || false 
+        overridesMap[key] = {
+          id: null,
+          view: rp.view || false,
+          add: rp.add || false,
+          edit: rp.edit || false,
+          delete: rp.delete || false
         };
       });
 
-      // 3. Apply existing overrides (these take precedence)
       existingOverrides.forEach((p) => {
         if (overridesMap[p.page]) {
           overridesMap[p.page] = {
@@ -187,28 +197,21 @@ const Permissions = () => {
         };
 
         if (perm.id) {
-          // UPDATE existing override
           return apiClient.put(
             `/auth/users/${selectedUser.id}/permissions/${perm.id}/`,
             payload
           );
         } else {
-          // CREATE new override (Always create if it doesn't exist, to ensure explicit False is saved)
           try {
             return await apiClient.post(
               `/auth/users/${selectedUser.id}/permissions/`,
               payload
             );
           } catch (err) {
-            // If 400 due to unique constraint → find existing and UPDATE
-            if (err.response?.status === 400 && 
-                err.response?.data?.non_field_errors?.some(msg => msg.includes("unique set"))) {
-              console.log(`Duplicate override for ${page} — updating instead`);
-              
-              // Fetch current overrides to get existing ID
+            if (err.response?.status === 400 &&
+              err.response?.data?.non_field_errors?.some(msg => msg.includes("unique set"))) {
               const existingRes = await apiClient.get(`/auth/users/${selectedUser.id}/permissions/`);
               const match = existingRes.data.find(p => p.page === page);
-              
               if (match?.id) {
                 return apiClient.put(
                   `/auth/users/${selectedUser.id}/permissions/${match.id}/`,
@@ -216,16 +219,12 @@ const Permissions = () => {
                 );
               }
             }
-            // Ignore other errors or log them, but don't break the loop
-            console.error(`Failed to save override for ${page}:`, err);
             return null;
           }
         }
       }).filter(Boolean);
 
       await Promise.all(promises);
-
-      // Refresh global permissions
       await refreshPermissions();
 
       setMessage(`Permissions updated for ${selectedUser.name || selectedUser.email}`);
@@ -235,228 +234,194 @@ const Permissions = () => {
       }, 2500);
     } catch (err) {
       console.error(err);
-      setError("Failed to save permissions: " + (err.response?.data?.detail || err.message || "Unknown error"));
+      setError("Failed to save permissions.");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const filteredUsers = users.filter(user =>
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-[400px]">
         <Loading />
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-full mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white py-4 px-6">
-          <h1 className="text-xs sm:text-lg font-medium">User Permissions Management</h1>
-          <p className="text-sm sm:text-base text-gray-200 mt-1">
-            Manage individual user access overrides
-          </p>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      <PageHeader
+        title="Permissions Management"
+        subtitle="Manage individual user access overrides and permissions"
+        extra={
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-50">
+            <FiLock className="text-[#4c7085]" />
+            {users.length} Total Users
+          </div>
+        }
+      />
+
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <FiXCircle />
+              <span className="text-sm font-medium">{error}</span>
+            </div>
+            <button onClick={() => setError("")} className="text-red-400 hover:text-red-600">×</button>
+          </motion.div>
+        )}
+        {message && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <FiCheckCircle />
+              <span className="text-sm font-medium">{message}</span>
+            </div>
+            <button onClick={() => setMessage("")} className="text-green-400 hover:text-green-600">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <FiSearch className="w-5 h-5" />
         </div>
+        <input
+          type="text"
+          placeholder="Search users to manage permissions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-[#4c7085]/10 focus:border-[#4c7085] transition-all outline-none"
+        />
+      </div>
 
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-          {/* Messages */}
-          {message && (
-            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center font-medium border border-green-400">
-              {message}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredUsers.map((user) => (
+          <motion.div
+            key={user.id}
+            whileHover={{ y: -4 }}
+            className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+            onClick={() => openPermissionsModal(user)}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-lg">
+                {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+              </div>
+              <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-medium uppercase tracking-wider">
+                {user.role?.name || "No Role"}
+              </div>
             </div>
-          )}
-          {error && (
-            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-medium border border-red-400">
-              {error}
+            <h3 className="font-medium text-gray-800 mb-1">{user.name || "Unnamed User"}</h3>
+            <p className="text-sm text-gray-500 flex items-center gap-2 mb-6">
+              <FiMail className="w-3.5 h-3.5" /> {user.email}
+            </p>
+            <div className="flex items-center justify-between pt-4 border-t border-gray-50 group-hover:border-gray-100 transition-colors">
+              <span className="text-xs font-medium text-gray-400">Access Control</span>
+              <div className="flex items-center gap-1 text-[#4c7085] font-medium text-sm">
+                Manage <FiChevronRight />
+              </div>
             </div>
-          )}
+          </motion.div>
+        ))}
+      </div>
 
-          {/* Users List */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white px-4 sm:px-6 py-3">
-              <h3 className="text-xs sm:text-lg font-medium">
-                Users ({users.length})
-              </h3>
+      <Modal
+        isOpen={!!selectedUser}
+        onClose={() => setSelectedUser(null)}
+        title={`Permissions Overrides: ${selectedUser?.name || selectedUser?.email}`}
+        maxWidth="max-w-5xl"
+      >
+        {isOverridesLoading ? (
+          <div className="flex justify-center py-20">
+            <Loading />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3 items-start">
+              <FiUnlock className="text-amber-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Individual Overrides</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  These settings will override the default permissions assigned to the user's role.
+                </p>
+              </div>
             </div>
 
-            {users.length > 0 ? (
-              <>
-                {/* Desktop Table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-300">
-                      <tr>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Email</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Name</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">Role</th>
-                        <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-medium text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {users.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50 transition">
-                          <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{user.email}</td>
-                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-900">{user.name || "—"}</td>
-                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
-                            {user.role?.name || "—"}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+              <div className="overflow-x-auto max-h-[60vh]">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 z-20 bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Module / Page</th>
+                      <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">View</th>
+                      <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Add</th>
+                      <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Edit</th>
+                      <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 bg-white">
+                    {Object.keys(userOverrides)
+                      .sort()
+                      .map((page) => (
+                        <tr key={page} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-medium text-gray-800">{displayNames[page] || page}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">/{page}</p>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 text-center">
-                            <button
-                              onClick={() => openPermissionsModal(user)}
-                              disabled={!hasPermission("permissions", "edit") && !isSuperadmin}
-                              className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 mx-auto ${
-                                !hasPermission("permissions", "edit") && !isSuperadmin
-                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                  : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
-                              }`}
-                            >
-                              <FaCog /> Manage Permissions
-                            </button>
-                          </td>
+                          {["view", "add", "edit", "delete"].map((action) => (
+                            <td key={action} className="px-4 py-4 text-center">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={userOverrides[page]?.[action] || false}
+                                  onChange={() => handleOverrideChange(page, action)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#4c7085]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4c7085]"></div>
+                              </label>
+                            </td>
+                          ))}
                         </tr>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards */}
-                <div className="sm:hidden space-y-3 p-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="font-medium text-gray-900">{user.name || "—"}</span>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p><strong>Email:</strong> {user.email}</p>
-                          <p><strong>Role:</strong> {user.role?.name || "—"}</p>
-                        </div>
-                      </div>
-                      <div className="flex justify-center">
-                        <button
-                          onClick={() => openPermissionsModal(user)}
-                          disabled={!hasPermission("permissions", "edit") && !isSuperadmin}
-                          className={`text-sm font-medium px-6 py-2 rounded-lg transition flex items-center gap-2 ${
-                            !hasPermission("permissions", "edit") && !isSuperadmin
-                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              : "bg-[#4c7085] text-white hover:bg-[#6b8ca3]"
-                          }`}
-                        >
-                          <FaCog /> Manage Permissions
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <p className="text-base sm:text-lg mb-2">No users available yet.</p>
-                <p className="text-sm">Create users in the Users section.</p>
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Overrides Modal */}
-        {selectedUser && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 sm:p-8 max-w-5xl w-full my-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
-                  Permission Overrides for: {selectedUser.name || selectedUser.email}
-                </h3>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-
-              {isOverridesLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loading />
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto max-h-[60vh] border border-gray-200 rounded-lg shadow-sm">
-                    <table className="w-full min-w-max">
-                      <thead className="bg-gray-100 sticky top-0 z-10">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Module</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">View</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Add</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Edit</th>
-                          <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">Delete</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {Object.keys(userOverrides)
-                          .sort()
-                          .map((page) => (
-                            <tr key={page} className="hover:bg-gray-50 transition">
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                {displayNames[page] || page}
-                              </td>
-                              {["view", "add", "edit", "delete"].map((action) => (
-                                <td key={action} className="px-4 py-4 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={userOverrides[page]?.[action] || false}
-                                    onChange={() => {
-                                      setUserOverrides((prev) => ({
-                                        ...prev,
-                                        [page]: {
-                                          ...prev[page],
-                                          [action]: !prev[page]?.[action],
-                                        },
-                                      }));
-                                    }}
-                                    disabled={isSaving}
-                                    className="w-5 h-5 text-[#4c7085] rounded focus:ring-[#4c7085] cursor-pointer"
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-end gap-4 mt-8">
-                    <button
-                      onClick={() => setSelectedUser(null)}
-                      className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={saveUserOverrides}
-                      disabled={isSaving}
-                      className={`px-6 py-2.5 rounded-lg font-medium shadow transition flex items-center gap-2 min-w-[140px] justify-center ${
-                        isSaving
-                          ? "bg-gray-400 text-white cursor-not-allowed"
-                          : "bg-gradient-to-r from-[#4c7085] to-[#6b8ca3] text-white hover:opacity-90"
-                      }`}
-                    >
-                      {isSaving ? (
-                        <>
-                          <FaSpinner className="animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Permissions"
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
+            <div className="flex gap-3 pt-4 border-t border-gray-50">
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveUserOverrides}
+                className="flex-1 bg-[#4c7085] text-white py-3 rounded-xl text-sm font-medium hover:bg-[#6b8ca3] transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : <><FiSave /> Save Changes</>}
+              </button>
             </div>
           </div>
         )}
-      </div>
+      </Modal>
     </div>
   );
 };
