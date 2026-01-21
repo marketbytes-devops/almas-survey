@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import { FiArrowLeft, FiCheckCircle, FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from "react-icons/fi";
@@ -39,9 +39,6 @@ export default function QuotationCreate() {
   const [loadingServices, setLoadingServices] = useState(true);
 
   const [additionalCharges, setAdditionalCharges] = useState([]);
-
-  const [allServices, setAllServices] = useState([]);
-  const [serviceSelections, setServiceSelections] = useState({});
 
   const [form, setForm] = useState({
     date: today,
@@ -139,30 +136,48 @@ export default function QuotationCreate() {
 
   useEffect(() => {
     const fetchLivePricing = async () => {
-      if (!destinationCity) {
+      const city = destinationCity || survey?.destination_addresses?.[0]?.city || survey?.origin_city || "";
+      if (!city) {
         setPricingRanges([]);
         return;
       }
+
+      const cleanCity = city.split(',')[0].trim();
+
       try {
-        const params = new URLSearchParams();
-        params.append("pricing_city", destinationCity);
-        params.append("move_type", "1");
-        const res = await apiClient.get(`/price/active/?${params}`);
-        const liveRates = res.data.map((item) => ({
+        const [moveTypesRes, pricesRes] = await Promise.all([
+          apiClient.get("/move-types/"),
+          apiClient.get("/price/active/", {
+            params: { pricing_city: cleanCity }
+          })
+        ]);
+
+        const moveTypes = moveTypesRes.data.results || moveTypesRes.data;
+        const currentService = survey?.service_type || "localMove";
+        const serviceNameMap = { localMove: "Local Move", internationalMove: "International Move" };
+        const targetName = serviceNameMap[currentService] || "Local Move";
+
+        const moveTypeObj = moveTypes.find(m => m.name === targetName);
+        const moveTypeId = moveTypeObj ? moveTypeObj.id : "1";
+
+        const filteredPrices = pricesRes.data.filter(p => String(p.move_type) === String(moveTypeId));
+
+        const liveRates = filteredPrices.map((item) => ({
           min: parseFloat(item.min_volume),
           max: parseFloat(item.max_volume),
           rate: parseFloat(item.rate),
           rateType: item.rate_type,
         }));
+
         setPricingRanges(liveRates);
         setPriceError("");
       } catch (err) {
-        setPriceError(`No pricing found for ${destinationCity}. Please contact administrator.`);
+        console.error("Pricing fetch error:", err);
         setPricingRanges([]);
       }
     };
     fetchLivePricing();
-  }, [destinationCity]);
+  }, [destinationCity, survey?.service_type]);
 
   useEffect(() => {
     const fetchIncludesExcludes = async () => {
@@ -211,25 +226,12 @@ export default function QuotationCreate() {
     }));
   }, [dynamicIncludes, dynamicExcludes]);
 
-  useEffect(() => {
-    const fetchAllServices = async () => {
-      try {
-        const res = await apiClient.get("/services/");
-        const services = Array.isArray(res.data.results)
-          ? res.data.results
-          : res.data;
-        setAllServices(services);
-      } catch (err) {
-        console.error("Failed to fetch services:", err);
-      }
-    };
-    fetchAllServices();
-  }, []);
-
-  const totalVolume =
-    survey?.articles
-      ?.reduce((sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0), 0)
-      ?.toFixed(2) || "0.00";
+  const totalVolume = useMemo(() => {
+    if (survey?.total_volume_cbm) return parseFloat(survey.total_volume_cbm).toFixed(2);
+    return (survey?.articles || [])
+      .reduce((sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0), 0)
+      .toFixed(2);
+  }, [survey]);
 
   useEffect(() => {
     if (!totalVolume || totalVolume <= 0 || pricingRanges.length === 0) {
@@ -322,16 +324,19 @@ export default function QuotationCreate() {
       excluded_services: Object.keys(form.excludedServices).filter(
         (k) => form.excludedServices[k]
       ),
-      additional_charges: additionalCharges.map((charge) => ({
-        service_id: charge.service.id,
-        service_name: charge.service.name,
-        quantity: charge.surveyQuantity || 1,
-        price_per_unit: charge.price_per_unit,
-        total: (charge.price_per_unit / (charge.per_unit_quantity || 1)) * (charge.surveyQuantity || 1),
-      })),
-      selected_services: Object.keys(serviceSelections)
-        .filter((key) => serviceSelections[key])
-        .map((key) => parseInt(key)),
+      additional_charges: additionalCharges.map((charge) => {
+        const qty = charge.surveyQuantity || 1;
+        const perUnitBase = charge.per_unit_quantity || 1;
+        const total = (charge.price_per_unit / perUnitBase) * qty;
+        return {
+          service_id: charge.service.id,
+          service_name: charge.service.name,
+          quantity: qty,
+          price_per_unit: charge.price_per_unit,
+          per_unit_quantity: perUnitBase,
+          total: parseFloat(total.toFixed(2)),
+        };
+      }),
       remarks: selectedRemarks,
     };
 
@@ -669,41 +674,6 @@ export default function QuotationCreate() {
           {/* Your Rate Section */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6">
             <h3 className="text-xl font-medium text-center md:text-left text-gray-800 mb-6">Your Rate</h3>
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6 text-center md:text-left">
-              {/* Service Selections */}
-              <h4 className="text-lg font-medium text-gray-800 mb-6">Services Include</h4>
-              <div className="space-y-3 mb-6">
-                {allServices.map((service) => {
-                  const isSelected = serviceSelections[service.id] === true;
-                  return (
-                    <div
-                      key={service.id}
-                      className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="text-base font-medium text-gray-800">{service.name}</div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setServiceSelections((prev) => ({
-                            ...prev,
-                            [service.id]: !prev[service.id],
-                          }))
-                        }
-                        className="focus:outline-none"
-                      >
-                        <div
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-300"
-                            }`}
-                        >
-                          {isSelected && <FiCheckCircle className="w-5 h-5 text-white" />}
-                        </div>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Pricing Details */}
             <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
               {/* Advance & Discount */}

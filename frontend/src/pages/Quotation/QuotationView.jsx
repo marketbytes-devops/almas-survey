@@ -46,7 +46,6 @@ export default function QuotationView() {
   const [destinationCity, setDestinationCity] = useState("");
   const [includedServices, setIncludedServices] = useState([]);
   const [excludedServices, setExcludedServices] = useState([]);
-  const [selectedServices, setSelectedServices] = useState([]);
   const [quoteNotes, setQuoteNotes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [insurancePlans, setInsurancePlans] = useState([]);
@@ -118,13 +117,30 @@ export default function QuotationView() {
 
   useEffect(() => {
     const fetchLivePricing = async () => {
-      if (!destinationCity) return;
+      const city = destinationCity || survey?.destination_addresses?.[0]?.city || survey?.origin_city || "";
+      if (!city) return;
+
+      const cleanCity = city.split(',')[0].trim();
+
       try {
-        const params = new URLSearchParams();
-        params.append("pricing_city", destinationCity);
-        params.append("move_type", "1");
-        const res = await apiClient.get(`/price/active/?${params}`);
-        const liveRates = res.data.map((item) => ({
+        const [moveTypesRes, pricesRes] = await Promise.all([
+          apiClient.get("/move-types/"),
+          apiClient.get("/price/active/", {
+            params: { pricing_city: cleanCity }
+          })
+        ]);
+
+        const moveTypes = moveTypesRes.data.results || moveTypesRes.data;
+        const currentService = survey?.service_type || "localMove";
+        const serviceNameMap = { localMove: "Local Move", internationalMove: "International Move" };
+        const targetName = serviceNameMap[currentService] || "Local Move";
+
+        const moveTypeObj = moveTypes.find(m => m.name === targetName);
+        const moveTypeId = moveTypeObj ? moveTypeObj.id : "1";
+
+        const filteredPrices = pricesRes.data.filter(p => String(p.move_type) === String(moveTypeId));
+
+        const liveRates = filteredPrices.map((item) => ({
           min: parseFloat(item.min_volume),
           max: parseFloat(item.max_volume),
           rate: parseFloat(item.rate),
@@ -136,15 +152,16 @@ export default function QuotationView() {
       }
     };
     fetchLivePricing();
-  }, [destinationCity]);
+  }, [destinationCity, survey?.service_type]);
 
   useEffect(() => {
     if (!survey || !pricingRanges.length) return;
-    const totalVolume =
-      survey.articles?.reduce(
+    const totalVolume = survey.total_volume_cbm
+      ? parseFloat(survey.total_volume_cbm)
+      : (survey.articles?.reduce(
         (sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0),
         0
-      ) || 0;
+      ) || 0);
 
     if (totalVolume <= 0) {
       setBaseAmount(0);
@@ -220,31 +237,6 @@ export default function QuotationView() {
     };
     fetchData();
   }, [id]);
-
-  useEffect(() => {
-    const fetchSelectedServices = async () => {
-      if (
-        !quotation?.selected_services ||
-        quotation.selected_services.length === 0
-      ) {
-        setSelectedServices([]);
-        return;
-      }
-      try {
-        const promises = quotation.selected_services.map((id) =>
-          apiClient
-            .get(`/services/${id}/`)
-            .then((r) => r.data)
-            .catch(() => null)
-        );
-        const results = await Promise.all(promises);
-        setSelectedServices(results.filter((s) => s?.name).map((s) => s.name));
-      } catch (err) {
-        setSelectedServices([]);
-      }
-    };
-    fetchSelectedServices();
-  }, [quotation]);
 
   useEffect(() => {
     const fetchPrintData = async () => {
@@ -590,9 +582,10 @@ export default function QuotationView() {
               <div className="space-y-3">
                 {additionalCharges.map((charge, index) => {
                   const quantity = charge.quantity || 1;
-                  const subtotal = safeParse(
-                    charge.total || charge.price_per_unit * quantity
-                  );
+                  const perUnitBase = parseFloat(charge.per_unit_quantity) || 1;
+                  const price = parseFloat(charge.price_per_unit || 0);
+                  const subtotal = (price / perUnitBase) * quantity;
+
                   return (
                     <div
                       key={index}
@@ -603,7 +596,7 @@ export default function QuotationView() {
                           {charge.service_name || charge.service?.name || "Additional Service"} x {quantity}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {Number(charge.price_per_unit || (subtotal / quantity)).toFixed(2)} QAR per unit
+                          {price.toFixed(2)} QAR per {perUnitBase > 1 ? `${perUnitBase} units` : 'unit'}
                         </div>
                       </div>
                       <div className="text-right text-lg font-medium text-[#4c7085] min-w-[100px]">
@@ -636,30 +629,6 @@ export default function QuotationView() {
             <h3 className="text-xl font-medium text-center text-gray-800 mb-6">
               Your Rate
             </h3>
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6">
-              <h4 className="text-lg font-medium text-gray-800 mb-6 text-center md:text-left">Services Include</h4>
-              <div className="space-y-3 mb-6">
-                {selectedServices.length > 0 ? (
-                  selectedServices.map((serviceName, index) => (
-                    <div
-                      key={index}
-                      className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between"
-                    >
-                      <div className="text-base font-medium text-gray-800">
-                        {serviceName}
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-[#4c7085] border-2 border-[#4c7085] flex items-center justify-center">
-                        <FiCheckCircle className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-gray-600 py-6">
-                    No additional services selected
-                  </p>
-                )}
-              </div>
-            </div>
             <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-4 text-center border border-gray-200">
@@ -848,7 +817,6 @@ export default function QuotationView() {
           currentSignature={currentSignature}
           surveySignature={surveySignature}
           booking={booking}
-          selectedServices={selectedServices}
         />
       </div>
     </>

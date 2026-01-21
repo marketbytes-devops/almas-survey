@@ -16,7 +16,6 @@ import InsuranceTab from "./Tabs/InsuranceTab";
 import PaymentTermsTab from "./Tabs/PaymentTermsTab";
 import NoteTab from "./Tabs/NoteTab";
 import TruckTypeTab from "./Tabs/TruckTypeTab";
-import ServicesTab from "./Tabs/ServicesTab";
 
 const TAB_LIST = [
   { id: "pricing", label: "PRICING", component: PricingTab },
@@ -27,7 +26,6 @@ const TAB_LIST = [
   { id: "payment-terms", label: "PAYMENT TERMS", component: PaymentTermsTab },
   { id: "note", label: "NOTE", component: NoteTab },
   { id: "truck-type", label: "TRUCK TYPE", component: TruckTypeTab },
-  { id: "services", label: "SERVICES", component: ServicesTab },
 ];
 
 const QATAR_CITIES = [
@@ -56,7 +54,7 @@ const LocalMove = () => {
     weightUnits: [],
   });
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+  const API_BASE_URL = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
   useEffect(() => {
     if (!permissionsLoading && !hasPermission("local_move", "view")) {

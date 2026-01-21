@@ -39,9 +39,6 @@ export default function QuotationEdit() {
   const [dynamicIncludes, setDynamicIncludes] = useState([]);
   const [dynamicExcludes, setDynamicExcludes] = useState([]);
 
-  const [allServices, setAllServices] = useState([]);
-  const [serviceSelections, setServiceSelections] = useState({});
-
   const [additionalChargesBreakdown, setAdditionalChargesBreakdown] = useState([]);
   const [chargeQuantities, setChargeQuantities] = useState({});
 
@@ -87,19 +84,6 @@ export default function QuotationEdit() {
       }
     };
     fetchIncludesExcludes();
-  }, []);
-
-  useEffect(() => {
-    const fetchAllServices = async () => {
-      try {
-        const res = await apiClient.get("/services/");
-        const services = Array.isArray(res.data.results) ? res.data.results : res.data;
-        setAllServices(services);
-      } catch (err) {
-        console.error("Failed to fetch services:", err);
-      }
-    };
-    fetchAllServices();
   }, []);
 
   useEffect(() => {
@@ -154,20 +138,22 @@ export default function QuotationEdit() {
             const savedCharge = savedCharges.find(c => String(c.service_id) === String(sId));
             const pricePerUnit = parseFloat(pricing.price_per_unit) || 0;
 
-            let quantity;
+            let quantity = 1;
             if (savedCharge) {
               quantity = savedCharge.quantity;
             } else {
-              quantity = pricing.rate_type === "FIX" ? 1 : (parseInt(service.quantity) || parseInt(pricing.per_unit_quantity) || 1);
+              quantity = parseInt(service.quantity) || 1;
             }
 
-            const total = pricing.rate_type === "FIX" ? pricePerUnit : pricePerUnit * quantity;
+            const perUnitBase = parseFloat(pricing.per_unit_quantity) || 1;
+            const total = (pricePerUnit / perUnitBase) * quantity;
 
             return {
               id: pricing.id,
               service_name: savedCharge?.service_name || pricing.service?.name || service.name,
               price_per_unit: pricePerUnit,
               quantity: quantity,
+              per_unit_quantity: perUnitBase,
               rate_type: pricing.rate_type,
               total: parseFloat(total.toFixed(2)),
               currency: pricing.currency_name || "QAR",
@@ -196,14 +182,6 @@ export default function QuotationEdit() {
             excludedServices[service.id] = q.excluded_services?.includes(service.id) || false;
           });
         }
-
-        const serviceSelectionsInit = {};
-        if (q.selected_services) {
-          q.selected_services.forEach((serviceId) => {
-            serviceSelectionsInit[serviceId] = true;
-          });
-        }
-        setServiceSelections(serviceSelectionsInit);
 
         setForm((prev) => ({
           ...prev,
@@ -243,32 +221,57 @@ export default function QuotationEdit() {
 
   useEffect(() => {
     const fetchLivePricing = async () => {
-      if (!destinationCity) return;
+      // Use survey.destination_addresses[0].city or fall back to survey.origin_city
+      const city = destinationCity || survey?.destination_addresses?.[0]?.city || survey?.origin_city || "";
+      if (!city) return;
+
+      // Extract base city name (e.g., "Doha" from "Doha, Qatar")
+      const cleanCity = city.split(',')[0].trim();
+
       try {
-        const params = new URLSearchParams();
-        params.append("pricing_city", destinationCity);
-        params.append("move_type", "1");
-        const res = await apiClient.get(`/price/active/?${params}`);
-        const liveRates = res.data.map((item) => ({
+        // Fetch move types and pricing in parallel
+        const [moveTypesRes, pricesRes] = await Promise.all([
+          apiClient.get("/move-types/"),
+          apiClient.get("/price/active/", {
+            params: { pricing_city: cleanCity }
+          })
+        ]);
+
+        const moveTypes = moveTypesRes.data.results || moveTypesRes.data;
+        const currentService = survey?.service_type || "localMove";
+        // Map localMove string to Local Move name
+        const serviceNameMap = { localMove: "Local Move", internationalMove: "International Move" };
+        const targetName = serviceNameMap[currentService] || "Local Move";
+
+        const moveTypeObj = moveTypes.find(m => m.name === targetName);
+        const moveTypeId = moveTypeObj ? moveTypeObj.id : "1";
+
+        // Filter prices by move type in frontend to be safe
+        const filteredPrices = pricesRes.data.filter(p => String(p.move_type) === String(moveTypeId));
+
+        const liveRates = filteredPrices.map((item) => ({
           min: parseFloat(item.min_volume),
           max: parseFloat(item.max_volume),
           rate: parseFloat(item.rate),
           rateType: item.rate_type,
         }));
+
         setPricingRanges(liveRates);
         setPriceError("");
       } catch (err) {
-        setPriceError(`No pricing found for ${destinationCity}.`);
+        console.error("Pricing fetch error:", err);
         setPricingRanges([]);
       }
     };
     fetchLivePricing();
-  }, [destinationCity]);
+  }, [destinationCity, survey?.service_type]);
 
-  const totalVolume =
-    survey?.articles
-      ?.reduce((sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0), 0)
-      ?.toFixed(2) || "0.00";
+  const totalVolume = useMemo(() => {
+    if (survey?.total_volume_cbm) return parseFloat(survey.total_volume_cbm).toFixed(2);
+    return (survey?.articles || [])
+      .reduce((sum, a) => sum + parseFloat(a.volume || 0) * (a.quantity || 0), 0)
+      .toFixed(2);
+  }, [survey]);
 
   useEffect(() => {
     if (!totalVolume || totalVolume <= 0 || pricingRanges.length === 0) {
@@ -290,21 +293,22 @@ export default function QuotationEdit() {
     setPriceError("");
   }, [totalVolume, pricingRanges]);
 
-  useEffect(() => {
-    const recalculated = additionalChargesBreakdown.map((item) => {
+  const recalculatedAdditionalCharges = useMemo(() => {
+    return additionalChargesBreakdown.map((item) => {
       const qty = chargeQuantities[item.id] !== undefined ? chargeQuantities[item.id] : item.quantity;
-      const total = item.rate_type === "FIX" ? item.price_per_unit : item.price_per_unit * qty;
+      const perUnitBase = parseFloat(item.per_unit_quantity) || 1;
+      const total = (item.price_per_unit / perUnitBase) * qty;
       return { ...item, quantity: qty, total: parseFloat(total.toFixed(2)) };
     });
+  }, [chargeQuantities, additionalChargesBreakdown]);
 
-    const totalAdditional = recalculated.reduce((sum, item) => sum + item.total, 0);
-    setAdditionalChargesBreakdown(recalculated);
-    setForm((prev) => ({ ...prev, additionalChargesTotal: totalAdditional }));
-  }, [chargeQuantities]);
+  const additionalChargesTotalDisplay = useMemo(() => {
+    return recalculatedAdditionalCharges.reduce((sum, item) => sum + item.total, 0).toFixed(2);
+  }, [recalculatedAdditionalCharges]);
 
   const computedValues = useMemo(() => {
     const base = safeParse(form.baseAmount);
-    const additional = safeParse(form.additionalChargesTotal);
+    const additional = safeParse(additionalChargesTotalDisplay);
     const totalBeforeDiscount = base + additional;
 
     const discount = safeParse(form.discount);
@@ -318,7 +322,7 @@ export default function QuotationEdit() {
       finalAmount: final.toFixed(2),
       balance: balance.toFixed(2),
     };
-  }, [form.baseAmount, form.additionalChargesTotal, form.discount, form.advance]);
+  }, [form.baseAmount, additionalChargesTotalDisplay, form.discount, form.advance]);
 
   const handleQuantityChange = (chargeId, value) => {
     const qty = Math.max(0, parseInt(value) || 0);
@@ -338,15 +342,14 @@ export default function QuotationEdit() {
       advance: safeParse(form.advance),
       included_services: Object.keys(form.includedServices).filter((k) => form.includedServices[k]),
       excluded_services: Object.keys(form.excludedServices).filter((k) => form.excludedServices[k]),
-      additional_charges: additionalChargesBreakdown.map((c) => ({
-        service_id: c.id,
+      additional_charges: recalculatedAdditionalCharges.map((c) => ({
+        service_id: c.service_id || c.id,
         service_name: c.service_name,
-        quantity: chargeQuantities[c.id] !== undefined ? chargeQuantities[c.id] : c.quantity,
+        quantity: c.quantity,
+        price_per_unit: c.price_per_unit,
+        per_unit_quantity: c.per_unit_quantity,
         total: c.total,
       })),
-      selected_services: Object.keys(serviceSelections)
-        .filter((key) => serviceSelections[key])
-        .map((key) => parseInt(key)),
       remarks: selectedRemarks,
     };
 
@@ -598,20 +601,13 @@ export default function QuotationEdit() {
             </div>
           </div>
 
-          {/* Additional Services */}
-          {additionalChargesBreakdown.length > 0 && (
+          {recalculatedAdditionalCharges.length > 0 && (
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center md:text-left">
               <h3 className="text-lg font-medium text-gray-800 mb-4">Additional Services</h3>
               <div className="space-y-3">
-                {additionalChargesBreakdown.map((charge) => {
-                  const quantity =
-                    chargeQuantities[charge.id] !== undefined
-                      ? chargeQuantities[charge.id]
-                      : charge.quantity;
-                  const subtotal =
-                    charge.rate_type === "FIX"
-                      ? charge.price_per_unit
-                      : charge.price_per_unit * quantity;
+                {recalculatedAdditionalCharges.map((charge) => {
+                  const quantity = charge.quantity;
+                  const subtotal = charge.total;
 
                   return (
                     <div
@@ -623,7 +619,7 @@ export default function QuotationEdit() {
                           {charge.service_name || "Additional Service"} x {quantity}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {charge.price_per_unit} {charge.currency} per unit
+                          {charge.price_per_unit} {charge.currency} per {charge.per_unit_quantity > 1 ? `${charge.per_unit_quantity} units` : 'unit'}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -774,41 +770,6 @@ export default function QuotationEdit() {
           {/* Your Rate Section */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6">
             <h3 className="text-xl font-medium text-center md:text-left text-gray-800 mb-6">Your Rate</h3>
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6 text-center md:text-left">
-              {/* Service Selections */}
-              <h4 className="text-lg font-medium text-gray-800 mb-6">Services Include</h4>
-              <div className="space-y-3 mb-6">
-                {allServices.map((service) => {
-                  const isSelected = serviceSelections[service.id] === true;
-                  return (
-                    <div
-                      key={service.id}
-                      className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="text-base font-medium text-gray-800">{service.name}</div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setServiceSelections((prev) => ({
-                            ...prev,
-                            [service.id]: !prev[service.id],
-                          }))
-                        }
-                        className="focus:outline-none"
-                      >
-                        <div
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "bg-[#4c7085] border-[#4c7085]" : "bg-white border-gray-300"
-                            }`}
-                        >
-                          {isSelected && <FiCheckCircle className="w-5 h-5 text-white" />}
-                        </div>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Pricing Details */}
             <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
               {/* Advance & Discount */}

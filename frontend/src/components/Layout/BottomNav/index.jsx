@@ -52,7 +52,6 @@ const BottomNav = () => {
     { to: "/", label: "Home", icon: FiGrid, page: "Dashboard" },
     { to: "/enquiries", label: "Enquiries", icon: FiSearch, page: "enquiries" },
     { to: "/new-enquiries", label: "New", icon: FiPlusSquare, page: "new_enquiries" },
-    { to: "/follow-ups", label: "FollowUps", icon: FiClock, page: "follow_ups" },
     { to: "/scheduled-surveys", label: "Surveys", icon: FiCalendar, page: "scheduled_surveys" },
     { to: "/survey/survey-summary", label: "Summary", icon: FiBarChart2, page: "survey_summary" },
     { to: "/quotation-list", label: "Quotes", icon: FiFileText, page: "quotation" },

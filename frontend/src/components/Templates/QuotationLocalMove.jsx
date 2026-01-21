@@ -94,7 +94,9 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             breakdownRows += additionalCharges
                 .map((charge) => {
                     const qty = charge.quantity || 1;
-                    const total = Number(charge.price_per_unit * qty);
+                    const perUnitBase = parseFloat(charge.per_unit_quantity) || 1;
+                    const price = parseFloat(charge.price_per_unit || 0);
+                    const total = (price / perUnitBase) * qty;
                     return `
             <tr>
               <td class="label">${charge.service_name || "Additional Service"} x ${qty}:</td>
@@ -139,27 +141,6 @@ const QuotationLocalMove = forwardRef((props, ref) => {
 
         // Selected Services HTML
         let selectedServicesSection = "";
-        if (Array.isArray(selectedServices) && selectedServices.length > 0) {
-            const servicesListHTML = selectedServices.map(service =>
-                `<li><span class="check-icon">✓</span> ${service}</li>`
-            ).join("");
-
-            selectedServicesSection = `
-        <section class="selected-services-section">
-            <div class="scope-container">
-                <div class="scope-header">
-                    <div class="header-col include-header" style="width: 100%;">Services</div>
-                </div>
-                <div class="scope-body">
-                    <div class="body-col include-body" style="width: 100%;">
-                        <ul class="scope-list">
-                            ${servicesListHTML}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>`;
-        }
 
         const certLogosHTML = CERTIFICATION_LOGOS.map(logo => `<img src="${logo}" class="footer-cert-logo" />`).join("");
 
@@ -265,9 +246,6 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                             <div class="text-content">${surveyRemarksHTML}</div>
                         </div>
                     </section>` : ''}
-
-                    <!-- SELECTED SERVICES -->
-                    ${selectedServicesSection}
 
                     <!-- SERVICE SCOPE (INCLUDES / EXCLUDES) -->
                     <section class="service-scope-section">
