@@ -172,7 +172,7 @@ const ItemRow = ({
                         title="Toggle Crate Requirement"
                     >
                         <FaBox className={`w-3 h-3 ${isCrateRequired ? "text-amber-600" : "text-gray-600"}`} />
-                        {isCrateRequired ? "Crate" : "No Crate"}
+                        {isCrateRequired ? "Crate Required" : "No Crate"}
                     </button>
 
                     {/* Photo Button */}
