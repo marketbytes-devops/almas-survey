@@ -36,8 +36,8 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
     const currentHeight = formData[`height_${item.name}`];
 
     const volume = currentLength && currentWidth && currentHeight
-        ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(4)
-        : (formData[`volume_${item.name}`] || "0.0000");
+        ? calculateVolume(currentLength, currentWidth, currentHeight).toFixed(2)
+        : (parseFloat(formData[`volume_${item.name}`]) || 0).toFixed(2);
 
     const weight = volume
         ? calculateWeight(parseFloat(volume)).toFixed(2)
@@ -53,7 +53,7 @@ const ItemForm = ({ item, onAdd, onCancel, apiData, existingArticle, capturedIma
             const wt = calculateWeight(vol);
             setFormData(prev => ({
                 ...prev,
-                [`volume_${item.name}`]: vol.toFixed(4),
+                [`volume_${item.name}`]: vol.toFixed(2),
                 [`weight_${item.name}`]: wt.toFixed(2),
             }));
         }

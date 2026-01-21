@@ -71,7 +71,7 @@ const AddedArticlesSidebar = ({
                 if (l && w && h) {
                     const vol = calculateVolume(l, w, h);
                     const wt = calculateWeight(vol);
-                    newData.volume = vol.toFixed(4);
+                    newData.volume = vol.toFixed(2);
                     newData.weight = wt.toFixed(2);
                 }
             }
@@ -161,7 +161,7 @@ const AddedArticlesSidebar = ({
 
                                         {/* Edit Header */}
                                         <div className="flex justify-between items-start pb-3 border-b border-gray-100">
-                                            <h4 className="font-bold text-sm text-gray-900">{article.itemName}</h4>
+                                            <h4 className="font-medium text-sm text-gray-900">{article.itemName}</h4>
                                             <div className="flex gap-2">
                                                 <button
                                                     type="button"
@@ -295,6 +295,18 @@ const AddedArticlesSidebar = ({
                                                 </div>
                                             </div>
 
+                                            {/* Auto-calculated Volume & Weight */}
+                                            <div className="grid grid-cols-2 gap-4 bg-[#4c7085]/5 p-3 rounded-lg border border-[#4c7085]/10 mt-2">
+                                                <div>
+                                                    <span className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Vol (m³)</span>
+                                                    <div className="text-sm font-medium text-[#4c7085]">{parseFloat(editFormData.volume || 0).toFixed(2)}</div>
+                                                </div>
+                                                <div>
+                                                    <span className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Weight (kg)</span>
+                                                    <div className="text-sm font-medium text-[#4c7085]">{parseFloat(editFormData.weight || 0).toFixed(2)}</div>
+                                                </div>
+                                            </div>
+
                                             {/* Advanced Selects */}
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
@@ -337,8 +349,8 @@ const AddedArticlesSidebar = ({
                                             <div className="text-xs text-gray-600 space-y-0.5">
                                                 <p className="flex items-center gap-2">
                                                     <span>Room: <span className="text-gray-700 font-medium">{apiData.rooms.find(r => r.value === article.room)?.label || article.room || "General"}</span></span>
-                                                    {(article.volume > 0) && (
-                                                        <span>• {article.volume} m³</span>
+                                                    {(parseFloat(article.volume) > 0) && (
+                                                        <span>• {parseFloat(article.volume).toFixed(2)} m³</span>
                                                     )}
                                                 </p>
                                                 {article.addedAt && (
@@ -359,20 +371,34 @@ const AddedArticlesSidebar = ({
                                                 )}
 
                                                 {(article.length || article.width || article.height) && (
-                                                    <p className="text-xs text-gray-600 mt-1">
-                                                        Dim: {article.length || '-'} x {article.width || '-'} x {article.height || '-'} cm
-                                                    </p>
+                                                    <div className="mt-2 flex flex-col gap-1.5 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                                                        <p className="text-[11px] text-gray-600 uppercase tracking-wider font-medium">Dimensions & Load</p>
+                                                        <div className="grid grid-cols-1 gap-2">
+                                                            <div className="text-xs text-gray-700">
+                                                                <span className="text-gray-500 mr-1">Vol:</span>
+                                                                <span className="text-[#4c7085] font-medium">{parseFloat(article.volume || 0).toFixed(2)} m³</span>
+                                                            </div>
+                                                            <div className="text-xs text-gray-700">
+                                                                <span className="text-gray-500 mr-1">Weight:</span>
+                                                                <span className="text-[#4c7085] font-medium">{parseFloat(article.weight || 0).toFixed(2)} kg</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 )}
 
                                                 <div className="flex flex-wrap gap-2 mt-2">
-                                                    {(article.moveStatus === 'not_moving') && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded border border-red-100">Not Moving</span>
+                                                    {(article.moveStatus === 'not_moving') ? (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded border border-red-100 uppercase tracking-tighter font-medium">Not Moving</span>
+                                                    ) : (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded border border-green-100 uppercase tracking-tighter font-medium">Moving</span>
                                                     )}
-                                                    {article.crateRequired && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-100">Crate</span>
+                                                    {article.crateRequired ? (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-100 uppercase tracking-tighter font-medium">Crate Required</span>
+                                                    ) : (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded border border-gray-200 uppercase tracking-tighter font-medium">No Crate Needed</span>
                                                     )}
                                                     {article.handyman && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded border border-orange-100">Handyman</span>
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded border border-orange-100 uppercase tracking-tighter font-medium">Handyman</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -421,7 +447,7 @@ const AddedArticlesSidebar = ({
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Total Volume:</span>
                                 <span className="font-medium text-gray-900">
-                                    {articles.reduce((sum, a) => sum + (parseFloat(a.volume) || 0) * (a.quantity || 1), 0).toFixed(4)} m³
+                                    {articles.reduce((sum, a) => sum + (parseFloat(a.volume) || 0) * (a.quantity || 1), 0).toFixed(2)} m³
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-600">

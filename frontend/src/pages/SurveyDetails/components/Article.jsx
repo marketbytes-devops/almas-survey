@@ -263,7 +263,7 @@ const Article = ({ apiData, setMessage, setError }) => {
             const width = item?.width || "";
             const height = item?.height || "";
             const volumeValue = calculateVolume(length, width, height);
-            const volume = volumeValue > 0 ? volumeValue.toFixed(4) : "";
+            const volume = volumeValue > 0 ? volumeValue.toFixed(2) : "";
             const weight = volumeValue > 0 ? calculateWeight(volumeValue).toFixed(2) : "";
 
             const itemKey = getItemKey(itemName);
@@ -369,7 +369,7 @@ const Article = ({ apiData, setMessage, setError }) => {
             length: manualFormData.length || "",
             width: manualFormData.width || "",
             height: manualFormData.height || "",
-            volume: manualVolume > 0 ? manualVolume.toFixed(4) : "",
+            volume: manualVolume > 0 ? manualVolume.toFixed(2) : "",
             volumeUnit: apiData.volumeUnits[0]?.value || "",
             weight: manualWeight > 0 ? manualWeight.toFixed(2) : "",
             weightUnit: apiData.weightUnits[0]?.value || "",
@@ -413,7 +413,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                         <p className="text-xs text-gray-600 mt-1 ml-10">Select a room to begin adding items</p>
                     </div>
 
-                    <button type="button" onClick={() => setShowArticlesSidebar(true)} className={`${BUTTON_SECONDARY} ml-auto`}>
+                    <button type="button" onClick={() => setShowArticlesSidebar(true)} className="btn-primary ml-auto !font-medium">
                         <FaBars /> View List ({articles.length})
                     </button>
                 </div>
