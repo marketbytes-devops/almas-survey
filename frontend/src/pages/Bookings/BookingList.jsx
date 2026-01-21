@@ -2,12 +2,19 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiSearch, FiEye, FiEdit3, FiTrash2, FiUsers } from "react-icons/fi";
+import { FiSearch, FiEye, FiEdit3, FiTrash2, FiUsers, FiSend } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
+
+const formatMoveType = (type) => {
+    if (!type || type === "N/A") return "—";
+    // Replace camelCase with spaces and capitalize
+    const formatted = type.replace(/([A-Z])/g, ' $1').trim();
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+};
 
 const BookingList = () => {
     const { hasPermission } = usePermissions();
@@ -16,8 +23,41 @@ const BookingList = () => {
     const [filteredBookings, setFilteredBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [hoveredBooking, setHoveredBooking] = useState(null);
+    const [openStaffDropdown, setOpenStaffDropdown] = useState(null); // { id, pos, booking }
     const [successMessage, setSuccessMessage] = useState("");
+
+    useEffect(() => {
+        const handleScrollOrResize = () => setOpenStaffDropdown(null);
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        window.addEventListener('resize', handleScrollOrResize);
+        return () => {
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (openStaffDropdown && !e.target.closest('.staff-dropdown-portal') && !e.target.closest('.staff-trigger-btn')) {
+                setOpenStaffDropdown(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openStaffDropdown]);
+
+    const handleSendStaff = async (bookingId, staffId) => {
+        try {
+            const response = await apiClient.post(`/bookings/${bookingId}/share-staff-whatsapp/`, { staff_id: staffId });
+            if (response.data.whatsapp_url) {
+                window.open(response.data.whatsapp_url, '_blank');
+            }
+        } catch (err) {
+            console.error("Failed to send WhatsApp to staff:", err);
+            alert(err.response?.data?.error || "Failed to send WhatsApp.");
+        }
+    };
+
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -57,14 +97,31 @@ const BookingList = () => {
         const filtered = bookings.filter((b) =>
             b.booking_id?.toLowerCase().includes(query) ||
             b.client_name?.toLowerCase().includes(query) ||
-            b.move_type?.toLowerCase().includes(query) ||
+            formatMoveType(b.move_type).toLowerCase().includes(query) ||
             b.contact_number?.toLowerCase().includes(query) ||
-            b.origin_location?.toLowerCase().includes(query)
+            b.origin_location?.toLowerCase().includes(query) ||
+            (b.origin_location && b.destination_location && `${b.origin_location} to ${b.destination_location}`.toLowerCase().includes(query))
         );
         setFilteredBookings(filtered);
     }, [searchQuery, bookings]);
 
     if (loading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
+
+    const toggleStaffDropdown = (e, booking) => {
+        if (openStaffDropdown?.id === booking.id) {
+            setOpenStaffDropdown(null);
+        } else {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setOpenStaffDropdown({
+                id: booking.id,
+                booking: booking,
+                pos: {
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + rect.width / 2 + window.scrollX
+                }
+            });
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-10">
@@ -106,106 +163,54 @@ const BookingList = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-gray-50/50">
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Booking ID</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Move Date</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Client</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Move Type</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Contact</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Location</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Supervisor</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center whitespace-nowrap">Staff</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center whitespace-nowrap">Actions</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Booking ID</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Move Date</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Move Type</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Location</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Supervisor</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Staff</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {filteredBookings.length > 0 ? (
                                     filteredBookings.map((b) => (
                                         <tr key={b.id} className="hover:bg-gray-50/30 transition-colors group">
+                                            <td className="px-6 py-5 whitespace-nowrap font-medium text-gray-800">{b.booking_id}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{b.move_date || "—"}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap font-medium text-gray-800">{b.client_name}</td>
                                             <td className="px-6 py-5 whitespace-nowrap">
-                                                <div className="font-medium text-gray-800">{b.booking_id}</div>
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-700">{b.move_date || "—"}</div>
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <div className="font-medium text-gray-800">{b.client_name}</div>
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 inline-block">
-                                                    {b.move_type}
+                                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 uppercase">
+                                                    {formatMoveType(b.move_type)}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-700">{b.contact_number}</div>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{b.contact_number}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">
+                                                {b.origin_location} {b.destination_location ? `→ ${b.destination_location}` : ""}
                                             </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-700">
-                                                    {b.origin_location} {b.destination_location ? `→ ${b.destination_location}` : ""}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-700">{b.supervisor_name || "Unassigned"}</div>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{b.supervisor_name || "—"}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-center">
+                                                <button
+                                                    onClick={(e) => toggleStaffDropdown(e, b)}
+                                                    className={`staff-trigger-btn w-10 h-10 flex items-center justify-center rounded-xl transition-all ${b.labours?.length > 0 ? "text-[#4c7085] bg-blue-50/50 hover:bg-blue-100/50" : "text-gray-300 bg-gray-50/50"
+                                                        }`}
+                                                >
+                                                    <FiUsers className="w-5 h-5" />
+                                                </button>
                                             </td>
                                             <td className="px-6 py-5 whitespace-nowrap text-center">
-                                                <div
-                                                    className="relative inline-block"
-                                                    onMouseEnter={(e) => {
-                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                        setHoveredBooking({
-                                                            staff: b.labours || [],
-                                                            pos: {
-                                                                top: rect.bottom + window.scrollY + 10,
-                                                                left: rect.left + rect.width / 2 + window.scrollX
-                                                            }
-                                                        });
-                                                    }}
-                                                    onMouseLeave={() => setHoveredBooking(null)}
-                                                >
-                                                    <FiUsers
-                                                        className={`w-5 h-5 mx-auto cursor-pointer transition-colors flex-shrink-0 ${b.labours && b.labours.length > 0
-                                                            ? "text-[#4c7085]"
-                                                            : "text-gray-300"
-                                                            }`}
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => navigate(`/booking-detail/${b.id}`)}
-                                                        className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all flex-shrink-0"
-                                                        title="View"
-                                                    >
-                                                        <FiEye className="w-4.5 h-4.5" />
-                                                    </button>
-                                                    {hasPermission("booking", "edit") && (
-                                                        <button
-                                                            onClick={() => navigate(`/booking-form/${b.id}`)}
-                                                            className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0"
-                                                            title="Edit"
-                                                        >
-                                                            <FiEdit3 className="w-4.5 h-4.5" />
-                                                        </button>
-                                                    )}
-                                                    {hasPermission("booking", "delete") && (
-                                                        <button
-                                                            onClick={() => handleDelete(b.id)}
-                                                            className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all flex-shrink-0"
-                                                            title="Delete"
-                                                        >
-                                                            <FiTrash2 className="w-4.5 h-4.5" />
-                                                        </button>
-                                                    )}
+                                                    <button onClick={() => navigate(`/booking-detail/${b.id}`)} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all"><FiEye /></button>
+                                                    {hasPermission("booking", "edit") && <button onClick={() => navigate(`/booking-form/${b.id}`)} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all"><FiEdit3 /></button>}
+                                                    {hasPermission("booking", "delete") && <button onClick={() => handleDelete(b.id)} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all"><FiTrash2 /></button>}
                                                 </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
-                                    <tr>
-                                        <td colSpan="9" className="px-6 py-10 text-center text-gray-600">
-                                            No bookings found.
-                                        </td>
-                                    </tr>
+                                    <tr><td colSpan="9" className="px-6 py-10 text-center text-gray-600">No bookings found.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -214,119 +219,77 @@ const BookingList = () => {
 
                 {/* Mobile Grid */}
                 <div className="lg:hidden space-y-4">
-                    {filteredBookings.length > 0 ? (
-                        filteredBookings.map((b) => (
-                            <div key={b.id} className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <div className="font-medium text-gray-800 text-base">{b.booking_id}</div>
-                                        <div className="text-sm text-gray-600 mt-1">{b.move_date || "—"}</div>
-                                    </div>
-                                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
-                                        {b.move_type}
-                                    </span>
+                    {filteredBookings.map((b) => (
+                        <div key={b.id} className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <div className="font-medium text-gray-800 text-base">{b.booking_id}</div>
+                                    <div className="text-sm text-gray-600 mt-1">{b.move_date || "—"}</div>
                                 </div>
-
-                                <div className="space-y-2 mb-4">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-600 min-w-[80px]">Client:</span>
-                                        <span className="text-gray-800 font-medium">{b.client_name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-600 min-w-[80px]">Contact:</span>
-                                        <span className="text-gray-800">{b.contact_number}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-600 min-w-[80px]">Location:</span>
-                                        <span className="text-gray-800">
-                                            {b.origin_location} {b.destination_location ? `→ ${b.destination_location}` : ""}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-600 min-w-[80px]">Supervisor:</span>
-                                        <span className="text-gray-800">{b.supervisor_name || "Unassigned"}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-gray-600 min-w-[80px]">Staff:</span>
-                                        <span className="text-gray-800">{b.labours?.length || 0} assigned</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2 pt-3 border-t border-gray-200">
-                                    <button
-                                        onClick={() => navigate(`/booking-detail/${b.id}`)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors text-sm font-medium"
-                                    >
-                                        <FiEye className="w-4 h-4" /> View
+                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 uppercase">{formatMoveType(b.move_type)}</span>
+                            </div>
+                            <div className="space-y-2 mb-4">
+                                <p className="text-sm"><span className="text-gray-600 w-20 inline-block">Client:</span> <span className="text-gray-800 font-medium">{b.client_name}</span></p>
+                                <p className="text-sm"><span className="text-gray-600 w-20 inline-block">Contact:</span> <span className="text-gray-800">{b.contact_number}</span></p>
+                                <p className="text-sm"><span className="text-gray-600 w-20 inline-block">Location:</span> <span className="text-gray-800">{b.origin_location} {b.destination_location ? `→ ${b.destination_location}` : ""}</span></p>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-gray-600 w-20">Staff:</span>
+                                    <button onClick={(e) => toggleStaffDropdown(e, b)} className="staff-trigger-btn text-[#4c7085] font-semibold flex items-center gap-1">
+                                        {b.labours?.length || 0} assigned <FiUsers className="w-3.5 h-3.5" />
                                     </button>
-                                    {hasPermission("booking", "edit") && (
-                                        <button
-                                            onClick={() => navigate(`/booking-form/${b.id}`)}
-                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors text-sm font-medium"
-                                        >
-                                            <FiEdit3 className="w-4 h-4" /> Edit
-                                        </button>
-                                    )}
-                                    {hasPermission("booking", "delete") && (
-                                        <button
-                                            onClick={() => handleDelete(b.id)}
-                                            className="flex items-center justify-center px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
-                                        >
-                                            <FiTrash2 className="w-4 h-4" />
-                                        </button>
-                                    )}
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-10 text-gray-600">
-                            No bookings found.
+                            <div className="flex gap-2 pt-3 border-t border-gray-200">
+                                <button onClick={() => navigate(`/booking-detail/${b.id}`)} className="flex-1 bg-blue-50 text-blue-600 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"><FiEye /> View</button>
+                                {hasPermission("booking", "edit") && <button onClick={() => navigate(`/booking-form/${b.id}`)} className="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"><FiEdit3 /> Edit</button>}
+                            </div>
                         </div>
-                    )}
+                    ))}
                 </div>
             </div>
 
-            {/* Staff Hover Tooltip */}
-            {hoveredBooking && createPortal(
+            {/* Staff Dropdown Portal - Rendered Outside everything to avoid clipping */}
+            {openStaffDropdown && createPortal(
                 <div
-                    className="fixed pointer-events-none z-[9999]"
+                    className="fixed z-[9999] staff-dropdown-portal pointer-events-none"
                     style={{
-                        top: hoveredBooking.pos.top,
-                        left: hoveredBooking.pos.left,
+                        top: openStaffDropdown.pos.top,
+                        left: openStaffDropdown.pos.left,
                         transform: 'translateX(-50%)'
                     }}
                 >
-                    <div className="w-56 bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 animate-in fade-in zoom-in duration-200">
-                        <div className="bg-slate-800 px-4 py-3">
-                            <p className="text-[10px] uppercase tracking-widest font-medium text-slate-400 mb-1">Assigned Resources</p>
-                            <p className="text-sm font-medium text-white flex items-center gap-2">
-                                <FiUsers className="text-[#6b8ca3] w-4 h-4" />
-                                Staff / Manpower
-                            </p>
-                        </div>
-                        <div className="p-4 max-h-48 overflow-y-auto">
-                            {hoveredBooking.staff.length > 0 ? (
-                                <ul className="space-y-2">
-                                    {hoveredBooking.staff.map((l, idx) => (
-                                        <li key={idx} className="flex items-center gap-2.5 text-sm text-gray-700">
-                                            <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-xs font-medium text-blue-600 border border-blue-100">
-                                                {idx + 1}
-                                            </div>
-                                            <span className="truncate font-medium">
-                                                {l.staff_member_name || "Unnamed Staff"}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-4 text-gray-600">
-                                    <FiUsers className="w-6 h-6 mb-2 opacity-20" />
-                                    <p className="text-xs italic">No staff assigned</p>
+                    <div className="pointer-events-auto mt-3">
+                        <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+                        >
+                            <div className="bg-slate-800 px-4 py-3 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-widest font-medium text-slate-400">Assigned Resources</p>
+                                    <p className="text-sm font-semibold text-white">Staff / Manpower</p>
                                 </div>
-                            )}
-                        </div>
-                        {/* Arrow */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-[8px] border-transparent border-b-white"></div>
+                            </div>
+                            <div className="p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                                {openStaffDropdown.booking.labours?.map((labour, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl transition-colors">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-xs font-bold text-blue-600 border border-blue-100">{idx + 1}</div>
+                                            <span className="truncate text-sm font-medium text-gray-700">{labour.staff_member_name}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleSendStaff(openStaffDropdown.id, labour.staff_member)}
+                                            className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-400 hover:bg-[#25D366] hover:text-white rounded-lg transition-all"
+                                        >
+                                            <FiSend className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
+                                {(!openStaffDropdown.booking.labours || openStaffDropdown.booking.labours.length === 0) && (
+                                    <div className="text-center py-6 text-gray-400 italic text-xs">No staff assigned</div>
+                                )}
+                            </div>
+                        </motion.div>
                     </div>
                 </div>,
                 document.body

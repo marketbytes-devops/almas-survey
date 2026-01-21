@@ -10,6 +10,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
+const formatMoveType = (type) => {
+    if (!type || type === "N/A") return "—";
+    const formatted = type.replace(/([A-Z])/g, ' $1').trim();
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+};
+
 const BookingDetailView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -205,7 +211,7 @@ const BookingDetailView = () => {
                                 </div>
                                 <div>
                                     <span className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-1">Move Type</span>
-                                    <p className="text-sm font-medium text-indigo-600">{booking.move_type || quotation?.service_type || "N/A"}</p>
+                                    <p className="text-sm font-medium text-indigo-600">{formatMoveType(booking.move_type || quotation?.service_type)}</p>
                                 </div>
                             </div>
                             <div>
@@ -229,7 +235,7 @@ const BookingDetailView = () => {
                                 Assigned Staff (Manpower)
                             </h3>
                             {booking.assigned_staff?.length > 0 || booking.labours?.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     {(booking.assigned_staff || booking.labours || []).map((staff, idx) => (
                                         <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                             <p className="font-medium text-gray-800">{staff.name || staff.staff_member_name || "Unnamed Staff"}</p>
@@ -251,7 +257,7 @@ const BookingDetailView = () => {
                                 Assigned Trucks
                             </h3>
                             {booking.trucks?.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     {booking.trucks.map((truck, idx) => (
                                         <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                             <p className="font-medium text-gray-800">{truck.truck_type_name || truck.truck_type || "Unknown Truck"}</p>
@@ -273,7 +279,7 @@ const BookingDetailView = () => {
                                 Assigned Materials
                             </h3>
                             {booking.materials?.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     {booking.materials.map((material, idx) => (
                                         <div key={idx} className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                                             <p className="font-medium text-gray-800">{material.material_name || material.material || "Unknown Material"}</p>
@@ -297,7 +303,7 @@ const BookingDetailView = () => {
                     ref={printRef}
                     booking={booking}
                     clientName={booking?.client_name || quotation?.full_name || "Customer"}
-                    moveType={booking?.move_type || quotation?.service_type || "Not specified"}
+                    moveType={formatMoveType(booking?.move_type || quotation?.service_type)}
                     contactNumber={booking?.contact_number || quotation?.phone_number || "Not provided"}
                     origin={booking?.origin_location || quotation?.survey?.origin_address || "Not specified"}
                     destination={booking?.destination_location || quotation?.survey?.destination_addresses?.[0]?.city || "Not specified"}

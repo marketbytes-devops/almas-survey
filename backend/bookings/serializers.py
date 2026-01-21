@@ -6,10 +6,11 @@ from additional_settings.serializers import MaterialSerializer, ManpowerSerializ
 
 class BookingLabourSerializer(serializers.ModelSerializer):
     staff_member_name = serializers.CharField(source='staff_member.name', read_only=True, allow_null=True)
+    staff_member_phone = serializers.CharField(source='staff_member.phone_number', read_only=True, allow_null=True)
     
     class Meta:
         model = BookingLabour
-        fields = ['id', 'booking', 'staff_member', 'staff_member_name', 'quantity']
+        fields = ['id', 'booking', 'staff_member', 'staff_member_name', 'staff_member_phone', 'quantity']
 
 class BookingTruckSerializer(serializers.ModelSerializer):
     truck_type_name = serializers.CharField(source='truck_type.name', read_only=True)

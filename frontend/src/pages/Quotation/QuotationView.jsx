@@ -6,6 +6,7 @@ import {
   FiPrinter,
   FiDownload,
   FiCheckCircle,
+  FiMail,
 } from "react-icons/fi";
 import { IoLogoWhatsapp } from "react-icons/io";
 import apiClient from "../../api/apiClient";
@@ -342,6 +343,28 @@ export default function QuotationView() {
     }
   };
 
+  const handleEmailQuotation = async () => {
+    if (!quotation?.quotation_id) {
+      alert("❌ Quotation ID not found.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiClient.post(
+        `/quotation-create/${quotation.quotation_id}/send-email/`
+      );
+
+      alert(`✅ Success!\n\n${response.data.message}`);
+    } catch (err) {
+      console.error("Email share error:", err);
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || "Failed to send email.";
+      alert(`❌ Error: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-[500px]">
@@ -410,34 +433,49 @@ export default function QuotationView() {
       </AnimatePresence>
 
       <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-        <PageHeader
-          title="Quotation Details"
-          subtitle={`Quotation ID: ${quotation?.quotation_id || "—"} • Survey ID: ${survey?.survey_id || "—"}`}
-          extra={
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                onClick={handleSendQuotation}
-                className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700"
-              >
-                <span className="whitespace-nowrap">Share via WhatsApp</span>
-              </button>
-              <button
-                onClick={triggerPrint}
-                className="btn-secondary flex items-center justify-center gap-2"
-              >
-                <FiPrinter className="w-4 h-4" />
-                <span>Print</span>
-              </button>
-              <button
-                onClick={() => navigate(-1)}
-                className="btn-secondary flex items-center justify-center gap-2"
-              >
-                <FiArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </button>
+        <div className="flex flex-col gap-6 animate-in fade-in duration-500">
+          {/* Header Row 1: Title & Back Button */}
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-4">
+            <div className="text-center md:text-left">
+              <h1 className="text-2xl font-medium text-[#4c7085] tracking-tight leading-tight">Quotation Details</h1>
+              <p className="text-sm text-gray-500 mt-1.5 font-medium">
+                Quotation ID: <span className="text-gray-900">{quotation?.quotation_id || "—"}</span> • Survey ID: <span className="text-gray-900">{survey?.survey_id || "—"}</span>
+              </p>
             </div>
-          }
-        />
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full md:w-auto px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl flex items-center justify-center gap-2 text-sm font-medium hover:bg-gray-50 shadow-sm transition-all active:scale-95"
+            >
+              <FiArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+          </div>
+
+          {/* Header Row 2: Actions Row */}
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
+            <button
+              onClick={handleSendQuotation}
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#25D366] text-white rounded-xl flex items-center justify-center gap-2 text-sm font-medium hover:brightness-95 shadow-md shadow-green-100 transition-all active:scale-95"
+            >
+              <IoLogoWhatsapp className="w-5 h-5" />
+              <span>Share via WhatsApp</span>
+            </button>
+            <button
+              onClick={handleEmailQuotation}
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#4c7085] text-white rounded-xl flex items-center justify-center gap-2 text-sm font-medium hover:brightness-110 shadow-md shadow-blue-100 transition-all active:scale-95"
+            >
+              <FiMail className="w-5 h-5" />
+              <span>Share via Email</span>
+            </button>
+            <button
+              onClick={triggerPrint}
+              className="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl flex items-center justify-center gap-2 text-sm font-medium hover:bg-gray-50 shadow-sm transition-all active:scale-95"
+            >
+              <FiPrinter className="w-4 h-4 text-gray-500" />
+              <span>Print</span>
+            </button>
+          </div>
+        </div>
 
         <div className="space-y-6">
           {/* Quotation Information */}
@@ -725,7 +763,7 @@ export default function QuotationView() {
             </div>
           </div>
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4">
             <button
               onClick={triggerPrint}
               className="btn-primary flex items-center justify-center gap-2"
@@ -748,6 +786,14 @@ export default function QuotationView() {
             >
               <IoLogoWhatsapp className="w-4 h-4" />
               <span>Send Quotation</span>
+            </button>
+
+            <button
+              onClick={handleEmailQuotation}
+              className="btn-primary flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+            >
+              <FiMail className="w-4 h-4" />
+              <span>Share via Email</span>
             </button>
 
             <button
