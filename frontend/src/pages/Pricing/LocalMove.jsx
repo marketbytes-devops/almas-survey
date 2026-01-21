@@ -56,7 +56,7 @@ const LocalMove = () => {
     weightUnits: [],
   });
 
-  const API_BASE_URL = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
+  const API_BASE_URL = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
   useEffect(() => {
     if (!permissionsLoading && !hasPermission("local_move", "view")) {
