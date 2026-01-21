@@ -653,7 +653,7 @@ const SurveySummary = () => {
                       </div>
                     </div>
 
-                    {/* Col 2: Contact details (span 2 on mobile if needed, or just normal) */}
+                    {/* Col 2: Contact details */}
                     <div className="grid grid-cols-1 gap-3 sm:border-l sm:border-gray-50 sm:pl-6">
                       <div className="space-y-0.5">
                         <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Contact Phone</span>
@@ -673,7 +673,6 @@ const SurveySummary = () => {
 
                     {/* Col 3: Reserved for extra space/alignment on desktop, hidden on mobile depending on grid */}
                     <div className="hidden lg:block space-y-3 border-l border-gray-50 pl-6">
-                      {/* This column ensures the 3-col layout on desktop */}
                       <div className="h-full flex items-center justify-center opacity-5">
                         <FiUser className="w-12 h-12" />
                       </div>
@@ -712,7 +711,7 @@ const SurveySummary = () => {
                         {survey.service_type_display || survey.service_type_name || "N/A"}
                       </div>
                     </div>
-                    {/* Col 3: Timing (Full width on mobile grid if we span it) */}
+                    {/* Col 3: Timing */}
                     <div className="col-span-2 lg:col-span-1 grid grid-cols-2 gap-4 lg:gap-6 lg:border-l lg:border-gray-50 lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-gray-50 border-dashed">
                       <div className="space-y-1.5">
                         <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Survey Date</span>
@@ -731,7 +730,7 @@ const SurveySummary = () => {
                     </div>
                   </div>
 
-                  {/* Row 3: Detail toggle (Center) & Actions (Right) */}
+                  {/* Row 3: Detail toggle & Actions */}
                   <div className="flex flex-col lg:flex-row items-center gap-6 pt-6 border-t border-gray-100">
                     <div className="hidden lg:block lg:flex-1"></div>
                     <div className="w-full lg:flex-1 flex items-center justify-center lg:justify-end flex-wrap gap-2.5">
