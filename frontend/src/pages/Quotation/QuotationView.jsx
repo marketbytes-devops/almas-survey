@@ -591,12 +591,15 @@ export default function QuotationView() {
                       key={index}
                       className="bg-gray-50 rounded-2xl p-4 flex flex-col md:flex-row justify-between gap-4"
                     >
-                      <div>
+                      <div className="flex items-center space-x-2">
                         <div className="font-medium text-gray-800">
-                          {charge.service_name || "Additional Service"}
+                          {charge.service_name || charge.service?.name || "Additional Service"} x {quantity}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {Number(charge.price_per_unit || (subtotal / quantity)).toFixed(2)} QAR per unit
                         </div>
                       </div>
-                      <div className="text-right text-lg font-medium text-[#4c7085]">
+                      <div className="text-right text-lg font-medium text-[#4c7085] min-w-[100px]">
                         {subtotal.toFixed(2)} QAR
                       </div>
                     </div>
