@@ -31,6 +31,7 @@ import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal"; // Assuming this exists based on other files
 import ReactDOMServer from "react-dom/server";
 import SurveyPrint from "../SurveyPrint";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 // Reusable styling constants
 const CARD_CLASS = "bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md";
@@ -55,6 +56,7 @@ const SurveySummary = () => {
   const [signatureModalUrl, setSignatureModalUrl] = useState(null);
   const [surveySignatures, setSurveySignatures] = useState({});
   const [selectedArticlePhoto, setSelectedArticlePhoto] = useState(null);
+  const { hasPermission } = usePermissions();
 
   const statusOptions = [
     { value: "pending", label: "Pending" },
@@ -651,7 +653,7 @@ const SurveySummary = () => {
                       </div>
                     </div>
 
-                    {/* Col 2: Contact details (span 2 on mobile if needed, or just normal) */}
+                    {/* Col 2: Contact details */}
                     <div className="grid grid-cols-1 gap-3 sm:border-l sm:border-gray-50 sm:pl-6">
                       <div className="space-y-0.5">
                         <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Contact Phone</span>
@@ -671,7 +673,6 @@ const SurveySummary = () => {
 
                     {/* Col 3: Reserved for extra space/alignment on desktop, hidden on mobile depending on grid */}
                     <div className="hidden lg:block space-y-3 border-l border-gray-50 pl-6">
-                      {/* This column ensures the 3-col layout on desktop */}
                       <div className="h-full flex items-center justify-center opacity-5">
                         <FiUser className="w-12 h-12" />
                       </div>
@@ -684,11 +685,19 @@ const SurveySummary = () => {
                     <div className="space-y-1.5">
                       <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Current Status</span>
                       <button
-                        onClick={(e) => { e.stopPropagation(); setStatusModal({ ...survey, newStatus: survey.status }); }}
-                        className={`px-4 py-2 rounded-xl text-xs font-medium border flex items-center gap-2 w-fit transition-all hover:scale-105 active:scale-95 shadow-sm ${statusClass} whitespace-nowrap`}
+                        onClick={(e) => {
+                          if (hasPermission("survey_summary", "edit")) {
+                            e.stopPropagation();
+                            setStatusModal({ ...survey, newStatus: survey.status });
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-xl text-xs font-medium border flex items-center gap-2 w-fit transition-all shadow-sm ${statusClass} whitespace-nowrap ${hasPermission("survey_summary", "edit")
+                          ? "hover:scale-105 active:scale-95 cursor-pointer"
+                          : "opacity-80 cursor-default"
+                          }`}
                       >
                         {formatStatus(survey.status)}
-                        <FiEdit className="w-3.5 h-3.5 opacity-70" />
+                        {hasPermission("survey_summary", "edit") && <FiEdit className="w-3.5 h-3.5 opacity-70" />}
                       </button>
                     </div>
 
@@ -702,7 +711,7 @@ const SurveySummary = () => {
                         {survey.service_type_display || survey.service_type_name || "N/A"}
                       </div>
                     </div>
-                    {/* Col 3: Timing (Full width on mobile grid if we span it) */}
+                    {/* Col 3: Timing */}
                     <div className="col-span-2 lg:col-span-1 grid grid-cols-2 gap-4 lg:gap-6 lg:border-l lg:border-gray-50 lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-gray-50 border-dashed">
                       <div className="space-y-1.5">
                         <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Survey Date</span>
@@ -721,7 +730,7 @@ const SurveySummary = () => {
                     </div>
                   </div>
 
-                  {/* Row 3: Detail toggle (Center) & Actions (Right) */}
+                  {/* Row 3: Detail toggle & Actions */}
                   <div className="flex flex-col lg:flex-row items-center gap-6 pt-6 border-t border-gray-100">
                     <div className="hidden lg:block lg:flex-1"></div>
                     <div className="w-full lg:flex-1 flex items-center justify-center lg:justify-end flex-wrap gap-2.5">
@@ -730,14 +739,18 @@ const SurveySummary = () => {
                           <FiFileText /> Quote
                         </button>
                       ) : (
-                        <button onClick={() => handleCreateQuotation(survey.survey_id)} className={`${BUTTON_BASE} bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200`} title="Create Quote">
-                          <FiFileText /> Quote
-                        </button>
+                        hasPermission("quotation", "add") && (
+                          <button onClick={() => handleCreateQuotation(survey.survey_id)} className={`${BUTTON_BASE} bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200`} title="Create Quote">
+                            <FiFileText /> Quote
+                          </button>
+                        )
                       )}
 
-                      <button onClick={() => handleEditSurvey(survey)} className={`${BUTTON_BASE} bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200`} title="Edit Survey">
-                        <FiEdit />
-                      </button>
+                      {hasPermission("survey_summary", "edit") && (
+                        <button onClick={() => handleEditSurvey(survey)} className={`${BUTTON_BASE} bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200`} title="Edit Survey">
+                          <FiEdit />
+                        </button>
+                      )}
 
                       <button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`${BUTTON_BASE} bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 disabled:opacity-50`} title="Print">
                         <FiPrinter />
@@ -749,9 +762,11 @@ const SurveySummary = () => {
                         </button>
                       )}
 
-                      <button onClick={() => handleDeleteSurvey(survey.survey_id)} className={`${BUTTON_BASE} bg-red-50 text-red-600 hover:bg-red-100 border border-red-200`} title="Delete">
-                        <FiTrash2 />
-                      </button>
+                      {hasPermission("survey_summary", "delete") && (
+                        <button onClick={() => handleDeleteSurvey(survey.survey_id)} className={`${BUTTON_BASE} bg-red-50 text-red-600 hover:bg-red-100 border border-red-200`} title="Delete">
+                          <FiTrash2 />
+                        </button>
+                      )}
                       <button
                         onClick={() => toggleSectionExpansion(survey.survey_id)}
                         className="group flex items-center gap-2 py-2.5 px-6 text-sm font-medium text-gray-600 hover:text-[#4c7085] bg-gray-50 hover:bg-white rounded-full border border-gray-100 hover:border-[#4c7085]/30 hover:shadow-md transition-all active:scale-95 whitespace-nowrap"

@@ -263,7 +263,7 @@ const ScheduledSurveys = () => {
   };
 
   const startSurvey = async (enquiry) => {
-    if (!hasPermission("surveys", "edit")) return alert("Permission denied");
+    if (!hasPermission("scheduled_surveys", "add")) return alert("Permission denied");
     if (isSurveyFinished(enquiry)) return;
     setIsStartingSurvey(true);
     setStartingSurveyId(enquiry.id);
@@ -316,7 +316,7 @@ const ScheduledSurveys = () => {
   };
 
   const confirmReschedule = async () => {
-    if (!hasPermission("surveys", "edit")) return alert("Permission denied");
+    if (!hasPermission("scheduled_surveys", "edit")) return alert("Permission denied");
     setIsReschedulingSurvey(true);
     try {
       const res = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/schedule/`, {
@@ -341,7 +341,7 @@ const ScheduledSurveys = () => {
   };
 
   const confirmCancel = async () => {
-    if (!hasPermission("surveys", "edit")) return alert("Permission denied");
+    if (!hasPermission("scheduled_surveys", "edit")) return alert("Permission denied");
     setIsCancelingSurvey(true);
     try {
       const res = await apiClient.post(`/contacts/enquiries/${selectedEnquiry.id}/cancel-survey/`, { reason: cancelSurveyData.reason });
@@ -493,7 +493,7 @@ const ScheduledSurveys = () => {
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
-                          {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotations", "add") && (
+                          {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotation", "add") && (
                             <button
                               onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
                               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-medium rounded-xl shadow-sm transition-all"
@@ -501,7 +501,7 @@ const ScheduledSurveys = () => {
                               Create Quote
                             </button>
                           )}
-                          {!isSurveyFinished(enquiry) && hasPermission("surveys", "edit") && (
+                          {!isSurveyFinished(enquiry) && (hasPermission("scheduled_surveys", "add") || hasPermission("scheduled_surveys", "edit")) && (
                             <>
                               <button
                                 onClick={() => startSurvey(enquiry)}
@@ -510,20 +510,24 @@ const ScheduledSurveys = () => {
                               >
                                 {status === 'in_progress' ? (isStartingSurvey && startingSurveyId === enquiry.id ? 'Resuming...' : 'Continue') : (isStartingSurvey && startingSurveyId === enquiry.id ? 'Starting...' : 'Start')}
                               </button>
-                              <button
-                                onClick={() => openRescheduleSurveyModal(enquiry)}
-                                className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all"
-                                title="Reschedule"
-                              >
-                                <FiRotateCw className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => openCancelSurveyModal(enquiry)}
-                                className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all"
-                                title="Cancel"
-                              >
-                                <FiXCircle className="w-4 h-4" />
-                              </button>
+                              {hasPermission("scheduled_surveys", "edit") && (
+                                <>
+                                  <button
+                                    onClick={() => openRescheduleSurveyModal(enquiry)}
+                                    className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all"
+                                    title="Reschedule"
+                                  >
+                                    <FiRotateCw className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => openCancelSurveyModal(enquiry)}
+                                    className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                                    title="Cancel"
+                                  >
+                                    <FiXCircle className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
                             </>
                           )}
                           {isSurveyFinished(enquiry) && (
@@ -590,7 +594,7 @@ const ScheduledSurveys = () => {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-2 pt-2">
-                            {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotations", "add") && (
+                            {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotation", "add") && (
                               <button
                                 onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
                                 className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2.5 rounded-xl text-[11px] font-medium shadow-sm"
@@ -598,13 +602,17 @@ const ScheduledSurveys = () => {
                                 Create Quote
                               </button>
                             )}
-                            {!isSurveyFinished(enquiry) && hasPermission("surveys", "edit") && (
+                            {!isSurveyFinished(enquiry) && (hasPermission("scheduled_surveys", "add") || hasPermission("scheduled_surveys", "edit")) && (
                               <>
                                 <button onClick={() => startSurvey(enquiry)} className={`flex-1 ${status === 'in_progress' ? 'bg-blue-500' : 'bg-green-500'} text-white py-2.5 rounded-xl text-[11px] font-medium shadow-sm transition-transform active:scale-95`}>
                                   {status === 'in_progress' ? 'Continue Survey' : 'Start Survey'}
                                 </button>
-                                <button onClick={() => openRescheduleSurveyModal(enquiry)} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-[#4c7085] shadow-sm"><FiRotateCw /></button>
-                                <button onClick={() => openCancelSurveyModal(enquiry)} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-red-500 shadow-sm"><FiXCircle /></button>
+                                {hasPermission("scheduled_surveys", "edit") && (
+                                  <>
+                                    <button onClick={() => openRescheduleSurveyModal(enquiry)} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-[#4c7085] shadow-sm"><FiRotateCw /></button>
+                                    <button onClick={() => openCancelSurveyModal(enquiry)} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-red-500 shadow-sm"><FiXCircle /></button>
+                                  </>
+                                )}
                               </>
                             )}
                             <button onClick={() => openPhoneModal(enquiry)} className="w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-5 h-5" /></button>

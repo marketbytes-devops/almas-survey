@@ -11,8 +11,11 @@ import {
   FiInfo,
   FiCheckCircle,
   FiXCircle,
+
   FiChevronUp,
-  FiChevronDown
+  FiChevronDown,
+  FiLock,
+  FiSave
 } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
@@ -34,6 +37,9 @@ const Roles = () => {
   const [editRole, setEditRole] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [expandedRoles, setExpandedRoles] = useState(new Set());
+  const [selectedRoleForPerms, setSelectedRoleForPerms] = useState(null);
+  const [rolePermissions, setRolePermissions] = useState({});
+  const [isSavingPermissions, setIsSavingPermissions] = useState(false);
 
   const createForm = useForm({
     defaultValues: { name: "", description: "" },
@@ -187,6 +193,110 @@ const Roles = () => {
     });
   };
 
+  // --- Permissions Editor Logic ---
+
+  const openPermissionsModal = async (role) => {
+    if (!hasPermission("roles", "edit")) {
+      setError("You do not have permission to manage role permissions.");
+      return;
+    }
+    setSelectedRoleForPerms(role);
+    setRolePermissions({}); // Clear previous
+    setIsLoadingPermissions(true);
+
+    try {
+      // Fetch fresh role data to get permissions
+      const response = await apiClient.get(`/auth/roles/${role.id}/`);
+      const perms = response.data.permissions || [];
+
+      const permsMap = {};
+      perms.forEach(p => {
+        permsMap[p.page] = p; // Store the full permission object
+      });
+      setRolePermissions(permsMap);
+    } catch (err) {
+      console.error("Failed to fetch role permissions:", err);
+      setError("Failed to load permissions.");
+    } finally {
+      setIsLoadingPermissions(false);
+    }
+  };
+
+  const handlePermissionChange = (page, field) => {
+    setRolePermissions(prev => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        [field]: !prev[page][field]
+      }
+    }));
+  };
+
+  const saveRolePermissions = async () => {
+    if (!selectedRoleForPerms) return;
+    setIsSavingPermissions(true);
+    setMessage("");
+    setError("");
+
+    try {
+      // Create list of promises for all permission updates
+      const updatePromises = Object.values(rolePermissions).map(perm => {
+        return apiClient.put(`/auth/permissions/${perm.id}/`, {
+          role: selectedRoleForPerms.id,
+          page: perm.page,
+          can_view: perm.can_view,
+          can_add: perm.can_add,
+          can_edit: perm.can_edit,
+          can_delete: perm.can_delete
+        });
+      });
+
+      await Promise.all(updatePromises);
+      setMessage(`Permissions updated for ${selectedRoleForPerms.name}`);
+      setTimeout(() => {
+        setIsSavingPermissions(false);
+        setSelectedRoleForPerms(null);
+        setMessage("");
+      }, 2000);
+
+      // Refresh roles list to ensure underlying data is sync (though we edited perms directly)
+      fetchRoles();
+
+    } catch (err) {
+      console.error("Failed to save permissions:", err);
+      setError("Failed to save permission changes.");
+      setIsSavingPermissions(false);
+    }
+  };
+
+  const displayNames = {
+    Dashboard: "Dashboard",
+    Profile: "Profile",
+    enquiries: "Enquiries",
+    new_enquiries: "New Assigned Enquiries",
+    scheduled_surveys: "Scheduled Surveys",
+    survey_summary: "Survey Summary",
+    quotation: "Quotation Management",
+    booking: "Booked Moves",
+    inventory: "Inventory Management",
+    pricing: "Pricing Settings",
+    local_move: "Local Move Pricing",
+    international_move: "International Move Pricing",
+    types: "Types",
+    units: "Units",
+    currency: "Currency",
+    tax: "Tax Settings",
+    handyman: "Handyman Services",
+    manpower: "Manpower",
+    room: "Room Types",
+    "additional-services": "Additional Services",
+    labours: "Labours",
+    materials: "Materials",
+    users: "Users",
+    roles: "Roles",
+    permissions: "Permissions",
+  };
+
   const filteredRoles = roles.filter((role) =>
     role.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -319,6 +429,13 @@ const Roles = () => {
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2">
                         <button
+                          onClick={() => openPermissionsModal(role)}
+                          className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
+                          title="Manage Permissions"
+                        >
+                          <FiLock className="w-4.5 h-4.5" />
+                        </button>
+                        <button
                           onClick={() => openEditModal(role)}
                           className="w-9 h-9 flex items-center justify-center text-gray-600 bg-gray-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all"
                           title="Edit Role"
@@ -375,6 +492,12 @@ const Roles = () => {
                             </p>
                           </div>
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => openPermissionsModal(role)}
+                              className="flex-1 bg-blue-50 text-blue-600 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2"
+                            >
+                              <FiLock /> Perms
+                            </button>
                             <button
                               onClick={() => openEditModal(role)}
                               className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2"
@@ -486,8 +609,87 @@ const Roles = () => {
           </form>
         </FormProvider>
       </Modal>
+
+      {/* Permissions Modal */}
+      <Modal
+        isOpen={!!selectedRoleForPerms}
+        onClose={() => setSelectedRoleForPerms(null)}
+        title={`Manage Role Permissions: ${selectedRoleForPerms?.name}`}
+        maxWidth="max-w-5xl"
+      >
+        <div className="space-y-6">
+          <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3 items-start">
+            <FiShield className="text-amber-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">Role-Level Permissions</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Changes here will affect ALL users assigned to this role, unless they have individual overrides.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+            <div className="overflow-x-auto max-h-[60vh]">
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 z-20 bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Module / Page</th>
+                    <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">View</th>
+                    <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Add</th>
+                    <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Edit</th>
+                    <th className="px-4 py-4 text-xs font-medium text-gray-400 uppercase tracking-widest text-center">Delete</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 bg-white">
+                  {Object.keys(rolePermissions).sort().map((page) => (
+                    <tr key={page} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-800">{displayNames[page] || page}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">/{page}</p>
+                      </td>
+                      {["can_view", "can_add", "can_edit", "can_delete"].map((field) => (
+                        <td key={field} className="px-4 py-4 text-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={rolePermissions[page][field] || false}
+                              onChange={() => handlePermissionChange(page, field)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#4c7085]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4c7085]"></div>
+                          </label>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-gray-50">
+            <button
+              type="button"
+              onClick={() => setSelectedRoleForPerms(null)}
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+              disabled={isSavingPermissions}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={saveRolePermissions}
+              className="flex-1 bg-[#4c7085] text-white py-3 rounded-xl text-sm font-medium hover:bg-[#6b8ca3] transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+              disabled={isSavingPermissions}
+            >
+              {isSavingPermissions ? "Saving..." : <><FiSave /> Save Permissions</>}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
+
 
 export default Roles;
