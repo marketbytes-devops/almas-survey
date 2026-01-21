@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const ServicesTab = () => {
+  const { hasPermission } = usePermissions();
   const [items, setItems] = useState([]);
   const [newText, setNewText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -31,6 +33,10 @@ const ServicesTab = () => {
   };
 
   const addItem = async () => {
+    if (!hasPermission("local_move", "add")) {
+      alert("Permission denied");
+      return;
+    }
     const text = newText.trim();
     if (!text) return;
 
@@ -49,6 +55,10 @@ const ServicesTab = () => {
   };
 
   const deleteItem = async (id) => {
+    if (!hasPermission("local_move", "delete")) {
+      alert("Permission denied");
+      return;
+    }
     if (!window.confirm("Delete this service permanently?")) return;
 
     setDeletingId(id);
@@ -85,21 +95,23 @@ const ServicesTab = () => {
               disabled={saving}
             />
           </div>
-          <div>
-            <button
-              onClick={addItem}
-              disabled={saving || !newText.trim()}
-              className="w-full h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                "Adding..."
-              ) : (
-                <>
-                  <FaPlus className="w-4 h-4" /> Add Service
-                </>
-              )}
-            </button>
-          </div>
+          {hasPermission("local_move", "add") && (
+            <div>
+              <button
+                onClick={addItem}
+                disabled={saving || !newText.trim()}
+                className="w-full h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  "Adding..."
+                ) : (
+                  <>
+                    <FaPlus className="w-4 h-4" /> Add Service
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -131,18 +143,20 @@ const ServicesTab = () => {
                     <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-8 py-4 text-gray-700 font-medium">{item.name}</td>
                       <td className="px-8 py-4 text-right">
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          disabled={deletingId === item.id}
-                          className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors ml-auto disabled:opacity-50"
-                          title="Delete permanently"
-                        >
-                          {deletingId === item.id ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                          ) : (
-                            <FaTrash size={14} />
-                          )}
-                        </button>
+                        {hasPermission("local_move", "delete") && (
+                          <button
+                            onClick={() => deleteItem(item.id)}
+                            disabled={deletingId === item.id}
+                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors ml-auto disabled:opacity-50"
+                            title="Delete permanently"
+                          >
+                            {deletingId === item.id ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              <FaTrash size={14} />
+                            )}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -155,17 +169,19 @@ const ServicesTab = () => {
               {items.map((item) => (
                 <div key={item.id} className="p-4 flex items-center justify-between">
                   <span className="font-medium text-gray-800">{item.name}</span>
-                  <button
-                    onClick={() => deleteItem(item.id)}
-                    disabled={deletingId === item.id}
-                    className="w-10 h-10 flex items-center justify-center text-red-600 bg-red-50 rounded-xl active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    {deletingId === item.id ? (
-                      <span className="loading loading-spinner loading-xs"></span>
-                    ) : (
-                      <FaTrash size={16} />
-                    )}
-                  </button>
+                  {hasPermission("local_move", "delete") && (
+                    <button
+                      onClick={() => deleteItem(item.id)}
+                      disabled={deletingId === item.id}
+                      className="w-10 h-10 flex items-center justify-center text-red-600 bg-red-50 rounded-xl active:scale-95 transition-transform disabled:opacity-50"
+                    >
+                      {deletingId === item.id ? (
+                        <span className="loading loading-spinner loading-xs"></span>
+                      ) : (
+                        <FaTrash size={16} />
+                      )}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

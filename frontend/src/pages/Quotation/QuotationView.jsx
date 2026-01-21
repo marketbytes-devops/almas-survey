@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import {
   FiArrowLeft,
   FiEye,
@@ -26,6 +27,7 @@ const SERVICE_TYPE_DISPLAY = {
 export default function QuotationView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
 
   const [quotation, setQuotation] = useState(null);
   const [survey, setSurvey] = useState(null);
@@ -172,6 +174,11 @@ export default function QuotationView() {
   }, [quotation]);
 
   useEffect(() => {
+    if (!permissionsLoading && !hasPermission("quotation", "view")) {
+      navigate("/dashboard");
+      return;
+    }
+
     const fetchData = async () => {
       try {
         const quotRes = await apiClient.get(`/quotation-create/${id}/`);

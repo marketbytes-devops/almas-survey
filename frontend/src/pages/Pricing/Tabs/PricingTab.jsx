@@ -4,6 +4,7 @@ import { Country, State, City } from "country-state-city";
 import apiClient from "../../../api/apiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiTrash2, FiCopy, FiSave, FiPlus } from "react-icons/fi";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const PricingTab = ({
   selectedMoveType,
@@ -16,6 +17,7 @@ const PricingTab = ({
   setSelectedCurrency,
   dropdownData,
 }) => {
+  const { hasPermission } = usePermissions();
   const [tableData, setTableData] = useState([]);
   const [nextId, setNextId] = useState(1);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
@@ -121,6 +123,7 @@ const PricingTab = ({
   };
 
   const addRow = () => {
+    if (!hasPermission("local_move", "add")) return;
     setTableData((prev) => [
       ...prev,
       {
@@ -137,6 +140,7 @@ const PricingTab = ({
   };
 
   const deleteRow = (id) => {
+    if (!hasPermission("local_move", "delete")) return;
     setTableData((prev) => prev.filter((row) => row.id !== id));
     if (existingIds.has(id)) {
       setExistingIds((prev) => {
@@ -148,6 +152,11 @@ const PricingTab = ({
   };
 
   const handleSave = async () => {
+    if (!hasPermission("local_move", "edit") && !hasPermission("local_move", "add")) {
+      alert("Permission denied");
+      return;
+    }
+
     if (!selectedPricingCity || !selectedMoveType || !selectedTariff || !selectedUnit || !selectedCurrency) {
       alert("Please fill all required fields: City, Move Type, Tariff, Unit, and Currency");
       return;
@@ -315,17 +324,21 @@ const PricingTab = ({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-100">
-          <button className="btn-secondary">
-            <FiCopy className="w-4 h-4" /> <span className="pl-2">Copy</span>
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="btn-primary"
-          >
-            <FiSave className="w-4 h-4" />
-            <span>{saving ? "Saving..." : isUpdateMode ? "Update Pricing" : "Save Pricing"}</span>
-          </button>
+          {hasPermission("local_move", "edit") && (
+            <button className="btn-secondary">
+              <FiCopy className="w-4 h-4" /> <span className="pl-2">Copy</span>
+            </button>
+          )}
+          {(hasPermission("local_move", "edit") || hasPermission("local_move", "add")) && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-primary"
+            >
+              <FiSave className="w-4 h-4" />
+              <span>{saving ? "Saving..." : isUpdateMode ? "Update Pricing" : "Save Pricing"}</span>
+            </button>
+          )}
         </div>
 
         {selectedPricingCity && (
@@ -346,13 +359,15 @@ const PricingTab = ({
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-8 py-6 border-b border-gray-100 grid justify-center items-center md:flex md:justify-between md:items-center gap-2">
           <h3 className="text-lg font-medium text-gray-800">Pricing Ranges</h3>
-          <button
-            onClick={addRow}
-            className="btn-primary !py-2.5 !px-5 !text-xs !rounded-xl"
-          >
-            <FiPlus className="w-4 h-4" />
-            <span>Add Range</span>
-          </button>
+          {hasPermission("local_move", "add") && (
+            <button
+              onClick={addRow}
+              className="btn-primary !py-2.5 !px-5 !text-xs !rounded-xl"
+            >
+              <FiPlus className="w-4 h-4" />
+              <span>Add Range</span>
+            </button>
+          )}
         </div>
 
         {tableData.length === 0 ? (
@@ -439,12 +454,14 @@ const PricingTab = ({
                           </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-center">
-                          <button
-                            onClick={() => deleteRow(row.id)}
-                            className="w-8 h-8 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-lg transition-all duration-200 mx-auto"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
+                          {hasPermission("local_move", "delete") && (
+                            <button
+                              onClick={() => deleteRow(row.id)}
+                              className="w-8 h-8 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-lg transition-all duration-200 mx-auto"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -460,9 +477,11 @@ const PricingTab = ({
                   <div key={row.id} className="border-b border-gray-100 p-6 hover:bg-gray-50/50 transition-colors">
                     <div className="flex justify-between items-center mb-6">
                       <span className="px-3 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-700">{row.range}</span>
-                      <button onClick={() => deleteRow(row.id)} className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg">
-                        <FiTrash2 size={14} />
-                      </button>
+                      {hasPermission("local_move", "delete") && (
+                        <button onClick={() => deleteRow(row.id)} className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg">
+                          <FiTrash2 size={14} />
+                        </button>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>

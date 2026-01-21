@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { FaPlus, FaTrash, FaEdit, FaSave, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../../api/apiClient";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const AdditionalChargesTab = ({ dropdownData }) => {
+  const { hasPermission } = usePermissions();
   const [rows, setRows] = useState([]);
   const [masterServices, setMasterServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,18 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   };
 
   const handleAddOrUpdate = async () => {
+    if (editingId) {
+      if (!hasPermission("local_move", "edit")) {
+        alert("Permission denied");
+        return;
+      }
+    } else {
+      if (!hasPermission("local_move", "add")) {
+        alert("Permission denied");
+        return;
+      }
+    }
+
     if (!selectedServiceId) {
       alert("Please select a service");
       return;
@@ -110,6 +124,11 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   };
 
   const deleteRow = async (id) => {
+    if (!hasPermission("local_move", "delete")) {
+      alert("Permission denied");
+      return;
+    }
+
     if (String(id).startsWith("temp_")) {
       setRows(rows.filter((r) => r.id !== id));
       return;
@@ -126,6 +145,10 @@ const AdditionalChargesTab = ({ dropdownData }) => {
   };
 
   const handleSaveAll = async () => {
+    if (!hasPermission("local_move", "add") && !hasPermission("local_move", "edit")) {
+      alert("Permission denied");
+      return;
+    }
     if (rows.length === 0) return;
 
     const unsavedRows = rows.filter((r) => String(r.id).startsWith("temp_"));
@@ -285,27 +308,31 @@ const AdditionalChargesTab = ({ dropdownData }) => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-100">
-          <button
-            onClick={handleAddOrUpdate}
-            className="btn-secondary w-full sm:w-auto"
-          >
-            {editingId ? <><FaSave className="w-4 h-4" /> <span className="pl-2">Update Service</span></> : <><FaPlus className="w-4 h-4" /> <span className="pl-2">Add Service</span></>}
-          </button>
+          {(editingId ? hasPermission("local_move", "edit") : hasPermission("local_move", "add")) && (
+            <button
+              onClick={handleAddOrUpdate}
+              className="btn-secondary w-full sm:w-auto"
+            >
+              {editingId ? <><FaSave className="w-4 h-4" /> <span className="pl-2">Update Service</span></> : <><FaPlus className="w-4 h-4" /> <span className="pl-2">Add Service</span></>}
+            </button>
+          )}
 
           <div className="flex-1"></div>
 
-          <button
-            onClick={handleSaveAll}
-            disabled={saving || unsavedCount === 0}
-            className={`btn-primary w-full sm:w-auto ${saving || unsavedCount === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            <FaSave className="w-4 h-4" />
-            {saving
-              ? "Saving..."
-              : unsavedCount > 0
-                ? `Save ${unsavedCount} Service${unsavedCount > 1 ? "s" : ""}`
-                : "All Saved"}
-          </button>
+          {(hasPermission("local_move", "add") || hasPermission("local_move", "edit")) && (
+            <button
+              onClick={handleSaveAll}
+              disabled={saving || unsavedCount === 0}
+              className={`btn-primary w-full sm:w-auto ${saving || unsavedCount === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <FaSave className="w-4 h-4" />
+              {saving
+                ? "Saving..."
+                : unsavedCount > 0
+                  ? `Save ${unsavedCount} Service${unsavedCount > 1 ? "s" : ""}`
+                  : "All Saved"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -362,18 +389,22 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => startEdit(row)}
-                              className="w-8 h-8 flex items-center justify-center text-[#4c7085] hover:bg-[#4c7085]/10 rounded-lg transition-colors"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => deleteRow(row.id)}
-                              className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <FaTrash />
-                            </button>
+                            {hasPermission("local_move", "edit") && (
+                              <button
+                                onClick={() => startEdit(row)}
+                                className="w-8 h-8 flex items-center justify-center text-[#4c7085] hover:bg-[#4c7085]/10 rounded-lg transition-colors"
+                              >
+                                <FaEdit />
+                              </button>
+                            )}
+                            {hasPermission("local_move", "delete") && (
+                              <button
+                                onClick={() => deleteRow(row.id)}
+                                className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -395,12 +426,16 @@ const AdditionalChargesTab = ({ dropdownData }) => {
                         {isSaved ? "SAVED" : "UNSAVED"}
                       </span>
                       <div className="flex gap-2">
-                        <button onClick={() => startEdit(row)} className="p-2 text-[#4c7085] bg-white rounded-lg shadow-sm border border-gray-100">
-                          <FaEdit />
-                        </button>
-                        <button onClick={() => deleteRow(row.id)} className="p-2 text-red-500 bg-white rounded-lg shadow-sm border border-gray-100">
-                          <FaTrash />
-                        </button>
+                        {hasPermission("local_move", "edit") && (
+                          <button onClick={() => startEdit(row)} className="p-2 text-[#4c7085] bg-white rounded-lg shadow-sm border border-gray-100">
+                            <FaEdit />
+                          </button>
+                        )}
+                        {hasPermission("local_move", "delete") && (
+                          <button onClick={() => deleteRow(row.id)} className="p-2 text-red-500 bg-white rounded-lg shadow-sm border border-gray-100">
+                            <FaTrash />
+                          </button>
+                        )}
                       </div>
                     </div>
 

@@ -14,6 +14,7 @@ from rest_framework import serializers
 from django.core.mail import EmailMessage
 
 from survey.models import Survey
+from authapp.permissions import HasPagePermission
 from .models import Quotation, QuotationRemark
 from .serializers import QuotationSerializer, QuotationRemarkSerializer
 from .pdf_generator import generate_quotation_pdf
@@ -25,11 +26,11 @@ class QuotationViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing quotations.
     - One quotation per survey (enforced)
-    - JWT + IsAuthenticated protection
+    - RBAC via HasPagePermission
     """
     queryset = Quotation.objects.select_related("survey", "currency").all()
     serializer_class = QuotationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasPagePermission("quotation")]
     authentication_classes = [JWTAuthentication]
 
     def get_object(self):
@@ -379,6 +380,7 @@ Almas Movers Management"""
 class QuotationRemarkViewSet(viewsets.ModelViewSet):
     queryset = QuotationRemark.objects.all()
     serializer_class = QuotationRemarkSerializer
+    permission_classes = [HasPagePermission("quotation")]
 
     def get_queryset(self):
         return QuotationRemark.objects.all().order_by("-created_at")

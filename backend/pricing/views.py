@@ -31,9 +31,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from survey.models import SurveyAdditionalService
 from rest_framework import viewsets, filters
-
+from authapp.permissions import HasPagePermission
 
 class InclusionExclusionViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = InclusionExclusion.objects.filter(is_active=True).order_by("text")
     serializer_class = InclusionExclusionSerializer
 
@@ -102,6 +103,7 @@ def additional_services_list_create(request):
 
 
 class PriceViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = Price.objects.filter(is_active=True).order_by("min_volume")
     serializer_class = PriceSerializer
 
@@ -248,6 +250,7 @@ class SurveyAdditionalServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class QuotationAdditionalChargeViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = QuotationAdditionalCharge.objects.select_related(
         "service", "currency"
     ).all()
@@ -264,6 +267,7 @@ class QuotationAdditionalChargeViewSet(viewsets.ModelViewSet):
 
 
 class InsurancePlanViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = InsurancePlan.objects.all()
     serializer_class = InsurancePlanSerializer
 
@@ -287,6 +291,7 @@ class InsurancePlanViewSet(viewsets.ModelViewSet):
 
 
 class PaymentTermViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = PaymentTerm.objects.all()
     serializer_class = PaymentTermSerializer
 
@@ -307,6 +312,7 @@ class PaymentTermViewSet(viewsets.ModelViewSet):
 
 
 class QuoteNoteViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = QuoteNote.objects.all()
     serializer_class = QuoteNoteSerializer
 
@@ -319,6 +325,7 @@ class QuoteNoteViewSet(viewsets.ModelViewSet):
 
 
 class TruckTypeViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = TruckType.objects.all()
     serializer_class = TruckTypeSerializer
 
@@ -340,6 +347,7 @@ class TruckTypeViewSet(viewsets.ModelViewSet):
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
+    permission_classes = [HasPagePermission("local_move")]
     queryset = Service.objects.filter(is_active=True)
     serializer_class = ServiceSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]

@@ -10,10 +10,12 @@ import {
   FaTimes
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
 const NoteTab = () => {
+  const { hasPermission } = usePermissions();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -45,6 +47,18 @@ const NoteTab = () => {
   }, []);
 
   const handleSubmit = async () => {
+    if (editingId) {
+      if (!hasPermission("local_move", "edit")) {
+        alert("Permission denied");
+        return;
+      }
+    } else {
+      if (!hasPermission("local_move", "add")) {
+        alert("Permission denied");
+        return;
+      }
+    }
+
     if (!formData.content) return;
 
     setSaving(true);
@@ -88,6 +102,10 @@ const NoteTab = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!hasPermission("local_move", "delete")) {
+      alert("Permission denied");
+      return;
+    }
     if (!window.confirm("Delete this note permanently?")) return;
     try {
       await apiClient.delete(`${API_BASE}/quote-notes/${id}/`);
@@ -98,6 +116,10 @@ const NoteTab = () => {
   };
 
   const toggleActive = async (note) => {
+    if (!hasPermission("local_move", "edit")) {
+      alert("Permission denied");
+      return;
+    }
     try {
       await apiClient.post(`${API_BASE}/quote-notes/${note.id}/toggle_active/`);
       fetchNotes();
@@ -141,20 +163,22 @@ const NoteTab = () => {
               <FaTimes /> Cancel
             </button>
           )}
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !formData.content}
-            className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              "Saving..."
-            ) : (
-              <>
-                {editingId ? <FaSave /> : <FaPlus />}
-                {editingId ? "Update Note" : "Add Note"}
-              </>
-            )}
-          </button>
+          {(editingId ? hasPermission("local_move", "edit") : hasPermission("local_move", "add")) && (
+            <button
+              onClick={handleSubmit}
+              disabled={saving || !formData.content}
+              className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                "Saving..."
+              ) : (
+                <>
+                  {editingId ? <FaSave /> : <FaPlus />}
+                  {editingId ? "Update Note" : "Add Note"}
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -195,24 +219,32 @@ const NoteTab = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center align-top pt-5">
-                        <button onClick={() => toggleActive(note)} className="focus:outline-none">
+                        <button
+                          onClick={() => toggleActive(note)}
+                          className="focus:outline-none"
+                          disabled={!hasPermission("local_move", "edit")}
+                        >
                           {note.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-right pr-8 align-top pt-5">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(note)}
-                            className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
-                          >
-                            <FaEdit size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(note.id)}
-                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
-                          >
-                            <FaTrash size={14} />
-                          </button>
+                          {hasPermission("local_move", "edit") && (
+                            <button
+                              onClick={() => startEdit(note)}
+                              className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
+                            >
+                              <FaEdit size={14} />
+                            </button>
+                          )}
+                          {hasPermission("local_move", "delete") && (
+                            <button
+                              onClick={() => handleDelete(note.id)}
+                              className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -233,25 +265,33 @@ const NoteTab = () => {
                       <p className="font-medium text-gray-800 text-sm whitespace-pre-wrap">{note.content}</p>
                     </div>
                     <div className="flex-shrink-0">
-                      <button onClick={() => toggleActive(note)} className="focus:outline-none">
+                      <button
+                        onClick={() => toggleActive(note)}
+                        className="focus:outline-none"
+                        disabled={!hasPermission("local_move", "edit")}
+                      >
                         {note.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-1 border-t border-gray-50">
-                    <button
-                      onClick={() => startEdit(note)}
-                      className="flex-1 sm:flex-none py-2 px-4 bg-gray-100 text-[#4c7085] rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(note.id)}
-                      className="flex-1 sm:flex-none py-2 px-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                      <FaTrash /> Delete
-                    </button>
+                    {hasPermission("local_move", "edit") && (
+                      <button
+                        onClick={() => startEdit(note)}
+                        className="flex-1 sm:flex-none py-2 px-4 bg-gray-100 text-[#4c7085] rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                    )}
+                    {hasPermission("local_move", "delete") && (
+                      <button
+                        onClick={() => handleDelete(note.id)}
+                        className="flex-1 sm:flex-none py-2 px-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <FaTrash /> Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
