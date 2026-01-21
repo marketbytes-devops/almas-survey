@@ -358,7 +358,6 @@ Almas Movers Management"""
                 [email],
             )
             
-            # Attach the PDF
             with open(filepath, 'rb') as f:
                 email_msg.attach(filename, f.read(), 'application/pdf')
             

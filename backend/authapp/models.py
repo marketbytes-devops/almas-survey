@@ -28,11 +28,7 @@ class CustomUser(AbstractUser):
         """
         effective = {}
 
-        # 1. Role permissions (base)
         if self.role:
-            print(
-                f"DEBUG: Loading {self.role.permissions.count()} role permissions for {self.email}"
-            )
             for perm in self.role.permissions.all():
                 effective[perm.page] = {
                     "can_view": perm.can_view,
@@ -41,9 +37,7 @@ class CustomUser(AbstractUser):
                     "can_delete": perm.can_delete,
                 }
 
-        # 2. User-specific overrides (override role)
         overrides = self.permission_overrides.all()
-        print(f"DEBUG: Loading {overrides.count()} user overrides for {self.email}")
         for uperm in overrides:
             effective[uperm.page] = {
                 "can_view": uperm.can_view,
@@ -52,7 +46,6 @@ class CustomUser(AbstractUser):
                 "can_delete": uperm.can_delete,
             }
 
-        print(f"DEBUG: Effective permissions for {self.email}: {effective}")
         return effective
 
     def has_effective_permission(self, page, action):
@@ -61,13 +54,11 @@ class CustomUser(AbstractUser):
         Superadmin always passes — regular users use effective permissions.
         """
         if self.is_superuser:
-            print(f"DEBUG: Superadmin {self.email} bypass — granted {action} on {page}")
             return True
 
         perms = self.get_effective_permissions()
         page_perm = perms.get(page, {})
         allowed = page_perm.get(f"can_{action}", False)
-        print(f"DEBUG: Permission check {self.email} - {page}.{action} = {allowed}")
         return allowed
 
 
@@ -115,12 +106,10 @@ class UserPermission(models.Model):
         return f"{self.user.email} - {self.page}"
 
 
-# Signal to set default role permissions when a new role is created
 @receiver(post_save, sender=Role)
 def set_default_permissions(sender, instance, created, **kwargs):
     if created:
         default_permissions = [
-            # Core / Always Visible
             {
                 "page": "Dashboard",
                 "can_view": True,
@@ -135,7 +124,6 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": True,
                 "can_delete": False,
             },
-            # Enquiries & Survey Flow
             {
                 "page": "enquiries",
                 "can_view": False,
@@ -185,7 +173,6 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": False,
                 "can_delete": False,
             },
-            # Quotation & Booking
             {
                 "page": "quotation",
                 "can_view": False,
@@ -200,7 +187,6 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": False,
                 "can_delete": False,
             },
-            # Inventory
             {
                 "page": "inventory",
                 "can_view": False,
@@ -208,7 +194,6 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": False,
                 "can_delete": False,
             },
-            # Pricing
             {
                 "page": "pricing",
                 "can_view": False,
@@ -230,7 +215,6 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": False,
                 "can_delete": False,
             },
-            # Additional Settings
             {
                 "page": "types",
                 "can_view": False,
@@ -301,7 +285,6 @@ def set_default_permissions(sender, instance, created, **kwargs):
                 "can_edit": False,
                 "can_delete": False,
             },
-            # Admin / RBAC
             {
                 "page": "users",
                 "can_view": False,

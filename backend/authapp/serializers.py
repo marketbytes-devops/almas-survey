@@ -64,10 +64,9 @@ class UserPermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPermission
         fields = ['id', 'user', 'page', 'can_view', 'can_add', 'can_edit', 'can_delete']
-        read_only_fields = ['id', 'user']  # user is set from URL/context
+        read_only_fields = ['id', 'user']  
 
     def validate_page(self, value):
-        # Optional: Validate page is one of the known pages (from your sidebar)
         valid_pages = [
             'Dashboard', 'Profile', 'enquiries', 'new_enquiries', 'scheduled_surveys',
             'survey_summary', 'quotation', 'booking', 'inventory', 'pricing',
@@ -160,7 +159,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user.save()
         print(f"\n[DEBUG] Created user '{user.email}' with password: '{random_password}'\n")
 
-        # Send welcome email with credentials
         subject = 'Your Account Credentials'
         message = (
             f'Hello {user.name},\n\n'
@@ -182,7 +180,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 fail_silently=False,
             )
         except Exception as e:
-            # Log error but don't fail user creation
             print(f"Failed to send welcome email: {e}")
 
         return user

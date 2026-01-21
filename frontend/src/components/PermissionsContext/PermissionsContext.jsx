@@ -4,7 +4,7 @@ import apiClient from "../../api/apiClient"; // Adjust the path based on your pr
 
 const PermissionsContext = createContext();
 
-export const PermissionsProvider = ({ children }) => {
+export const PermissionsProvider = ({ children, isAuthenticated }) => {
   const [effectivePermissions, setEffectivePermissions] = useState({});
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
@@ -15,8 +15,10 @@ export const PermissionsProvider = ({ children }) => {
     const fetchEffectivePermissions = async () => {
       // Skip if no auth token (user not logged in)
       const token = localStorage.getItem("access_token"); // Adjust if your token key is different
-      if (!token) {
+      if (!token || !isAuthenticated) {
         setIsLoadingPermissions(false);
+        setIsSuperadmin(false);
+        setEffectivePermissions({});
         return;
       }
 
@@ -49,7 +51,7 @@ export const PermissionsProvider = ({ children }) => {
     const handleFocus = () => fetchEffectivePermissions();
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, []);
+  }, [isAuthenticated]);
 
   // Core permission check function - used everywhere
   const hasPermission = (page, action) => {

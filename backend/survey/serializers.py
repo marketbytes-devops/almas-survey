@@ -100,7 +100,6 @@ class ArticleSerializer(serializers.ModelSerializer):
             if request:
                 ret['photo'] = request.build_absolute_uri(instance.photo.url)
             else:
-                # Fallback if no request in context (e.g. background task)
                 ret['photo'] = instance.photo.url
         return ret
 

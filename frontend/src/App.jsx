@@ -53,7 +53,6 @@ const ProtectedRoute = ({
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#4c7085]"></div>
-        <p className="ml-4 text-gray-600 font-medium">Loading permissions...</p>
       </div>
     );
   }
@@ -149,7 +148,7 @@ function App() {
   ]);
 
   return (
-    <PermissionsProvider>
+    <PermissionsProvider isAuthenticated={isAuthenticated}>
       <RouterProvider router={router} />
     </PermissionsProvider>
   );

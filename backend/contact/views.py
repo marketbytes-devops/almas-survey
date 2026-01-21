@@ -634,10 +634,9 @@ class EnquiryListCreate(generics.ListCreateAPIView):
             logger.warning("User not authenticated, returning empty queryset")
             return queryset.none()
 
-        # Check specifically for "view" permission on "enquiries" page
-        can_view_all = False
-        if hasattr(user, 'has_effective_permission'):
-             can_view_all = user.has_effective_permission('enquiries', 'view')
+        if user.is_superuser or (hasattr(user, 'role') and user.role.name == "Superadmin"):
+            logger.debug("Superadmin access: returning all enquiries")
+            return queryset
 
         has_survey = self.request.query_params.get("has_survey")
         contact_status = self.request.query_params.get("contact_status")
@@ -646,20 +645,10 @@ class EnquiryListCreate(generics.ListCreateAPIView):
 
         logger.debug(f"Query Params: has_survey={has_survey}, assigned_user_email={assigned_user_email}, contact_status={contact_status}, unassigned={unassigned}")
 
-        if user.is_superuser or (hasattr(user, 'role') and user.role.name == "Superadmin") or can_view_all:
-            logger.debug("User has access to view all enquiries")
-            # Don't restrict to assigned_user=user automatically here
-            # But still respect explicit filters below
-        else:
-            # Fallback: Only show assigned to self if no broader permission
-            if not assigned_user_email:
-                 queryset = queryset.filter(assigned_user=user)
-
         if assigned_user_email:
             queryset = queryset.filter(assigned_user__email__iexact=assigned_user_email)
-        
-        # Note: The original 'else' was part of the assigned_user_email check, causing the restricted view.
-        # I've restructured it to prioritize permissions.
+        else:
+            queryset = queryset.filter(assigned_user=user)
 
         if contact_status:
             queryset = queryset.filter(contact_status=contact_status)
