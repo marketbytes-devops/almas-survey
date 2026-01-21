@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import serializers
+from django.core.mail import EmailMessage
 
 from survey.models import Survey
 from .models import Quotation, QuotationRemark
@@ -308,6 +309,71 @@ Thank you for choosing Almas Movers!
         except Exception as e:
             logger.error(f"WhatsApp action failed: {str(e)}", exc_info=True)
             return Response({"error": "Unexpected error occurred"}, status=500)
+
+    @action(detail=True, methods=["post"], url_path="send-email")
+    def send_email(self, request, pk=None):
+        try:
+            quotation = self.get_object()
+            if not quotation.survey:
+                return Response({"error": "No associated survey found"}, status=400)
+
+            survey = quotation.survey
+            customer_name = getattr(survey, "full_name", "Sir/Madam") or "Sir/Madam"
+            email = getattr(survey, "email", None)
+
+            if not email:
+                return Response({"error": "Customer email not found"}, status=400)
+
+            try:
+                filepath, filename = generate_quotation_pdf(quotation)
+            except Exception as pdf_error:
+                logger.error(f"PDF generation failed: {str(pdf_error)}", exc_info=True)
+                return Response({"error": "Failed to generate PDF"}, status=500)
+
+            subject = f"Quotation from Almas Movers - {quotation.quotation_id}"
+            message = f"""Dear {customer_name},
+
+Greetings from Almas Movers Intl.
+
+Many thanks for the enquiry. Please find the attached quotation for your kind perusal.
+
+Quotation Details:
+- Quotation ID: {quotation.quotation_id}
+- Client Name: {customer_name}
+
+Hope the above meets your requirement. Please let us know if you need any assistance or clarification.
+
+Kindly acknowledge receipt of this email. We look forward to your feedback.
+
+Thank you for choosing Almas Movers!
+
+Best regards,
+Almas Movers Management"""
+
+            email_msg = EmailMessage(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+            )
+            
+            # Attach the PDF
+            with open(filepath, 'rb') as f:
+                email_msg.attach(filename, f.read(), 'application/pdf')
+            
+            email_msg.send()
+
+            return Response({
+                "success": True,
+                "message": f"Quotation sent successfully to {email}",
+                "email": email
+            }, status=200)
+
+        except Quotation.DoesNotExist:
+            return Response({"error": "Quotation not found"}, status=404)
+        except Exception as e:
+            logger.error(f"Email action failed: {str(e)}", exc_info=True)
+            return Response({"error": f"Unexpected error occurred: {str(e)}"}, status=500)
 
 
 class QuotationRemarkViewSet(viewsets.ModelViewSet):

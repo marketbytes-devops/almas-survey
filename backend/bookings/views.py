@@ -127,6 +127,92 @@ Almas Movers Management"""
             traceback.print_exc()
             return Response({"error": f"Unexpected error: {str(e)}"}, status=500)
 
+    @action(detail=True, methods=["post"], url_path="share-staff-whatsapp")
+    def share_staff_whatsapp(self, request, pk=None):
+        """Share booking details to a specific staff member via WhatsApp"""
+        try:
+            booking = self.get_object()
+            staff_id = request.data.get("staff_id")
+            
+            if not staff_id:
+                return Response({"error": "Staff member ID is required."}, status=400)
+                
+            try:
+                labour = booking.labours.get(staff_member_id=staff_id)
+                staff = labour.staff_member
+            except BookingLabour.DoesNotExist:
+                return Response({"error": "Staff member is not assigned to this booking."}, status=404)
+            
+            staff_phone = staff.phone_number
+            if not staff_phone or staff_phone.strip() == '':
+                return Response(
+                    {"error": f"Staff '{staff.name}' has no phone number."},
+                    status=400
+                )
+            
+            clean_phone = ''.join(filter(str.isdigit, staff_phone))
+            if clean_phone.startswith('0'):
+                clean_phone = clean_phone[1:]
+            if len(clean_phone) == 10:
+                clean_phone = '91' + clean_phone
+            elif len(clean_phone) == 8:
+                clean_phone = '974' + clean_phone
+            
+            try:
+                filepath, filename = generate_booking_pdf(booking)
+                pdf_url = request.build_absolute_uri(f"{settings.MEDIA_URL}booking_pdfs/{filename}")
+            except Exception as pdf_error:
+                return Response({"error": f"Failed to generate PDF: {str(pdf_error)}"}, status=500)
+
+            client_name = "Customer"
+            contact_number = "N/A"
+            move_type = "N/A"
+            origin = "N/A"
+            destination = "N/A"
+            
+            if booking.quotation and hasattr(booking.quotation, 'survey') and booking.quotation.survey:
+                survey = booking.quotation.survey
+                client_name = getattr(survey, 'full_name', 'Customer') or 'Customer'
+                contact_number = getattr(survey, 'phone_number', 'N/A') or 'N/A'
+                move_type = getattr(survey, 'service_type', 'N/A') or 'N/A'
+                origin = getattr(survey, 'origin_city', 'N/A') or 'N/A'
+                
+                if hasattr(survey, 'destination_addresses') and survey.destination_addresses.exists():
+                    dest = survey.destination_addresses.first()
+                    destination = getattr(dest, 'city', 'N/A') or 'N/A'
+
+            message = f"""Booking Assignment - Almas Movers
+
+Dear {staff.name},
+
+You have been assigned to the following move:
+
+Booking ID: {booking.booking_id}
+Client: {client_name}
+Move Date: {booking.move_date if booking.move_date else 'TBA'}
+Start Time: {booking.start_time.strftime('%I:%M %p') if booking.start_time else 'TBA'}
+
+From: {origin}
+To: {destination}
+
+Download Full Details (PDF): {pdf_url}
+
+Please report on time. Thank you!
+
+Almas Movers Management"""
+            
+            whatsapp_url = f"https://wa.me/{clean_phone}?text={quote(message)}"
+            
+            return Response({
+                'success': True,
+                'whatsapp_url': whatsapp_url,
+                'staff_name': staff.name,
+                'staff_phone': staff_phone,
+            })
+            
+        except Exception as e:
+            return Response({"error": f"Unexpected error: {str(e)}"}, status=500)
+
 
 class BookingLabourViewSet(viewsets.ModelViewSet):
     queryset = BookingLabour.objects.all()

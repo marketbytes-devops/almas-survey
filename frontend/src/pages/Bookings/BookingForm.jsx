@@ -8,6 +8,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
+const formatMoveType = (type) => {
+    if (!type || type === "N/A") return "—";
+    const formatted = type.replace(/([A-Z])/g, ' $1').trim();
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+};
+
 const BookingForm = () => {
     const { id, quotId } = useParams();
     const navigate = useNavigate();
@@ -38,6 +44,7 @@ const BookingForm = () => {
     const [assignedLabours, setAssignedLabours] = useState([]);
     const [assignedTrucks, setAssignedTrucks] = useState([]);
     const [assignedMaterials, setAssignedMaterials] = useState([]);
+    const [busyStaffDetails, setBusyStaffDetails] = useState({}); // { staffId: bookingId }
 
     useEffect(() => {
         const fetchData = async () => {
@@ -121,12 +128,50 @@ const BookingForm = () => {
         fetchData();
     }, [id, quotId, navigate]);
 
-    const getAvailableStaff = (currentIndex) => {
-        const selectedIds = assignedLabours
-            .filter((_, idx) => idx !== currentIndex)
-            .map(lab => lab.staff_member)
-            .filter(Boolean);
+    // Availability Check
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            if (!formData.move_date) {
+                setBusyStaffDetails({});
+                return;
+            }
+            try {
+                // Fetch bookings for the selected date to check staff availability
+                // Note: Ideally the backend would filter by date, but we'll filter here for now
+                const res = await apiClient.get('/bookings/');
+                const otherBookings = res.data.filter(b =>
+                    b.move_date === formData.move_date &&
+                    String(b.id) !== String(id)
+                );
 
+                const busy = {};
+                otherBookings.forEach(b => {
+                    b.labours?.forEach(l => {
+                        if (l.staff_member) {
+                            busy[String(l.staff_member)] = {
+                                booking_id: b.booking_id,
+                                client: b.client_name
+                            };
+                        }
+                    });
+                    if (b.supervisor) {
+                        busy[String(b.supervisor)] = {
+                            booking_id: b.booking_id,
+                            client: b.client_name,
+                            isSupervisor: true
+                        };
+                    }
+                });
+                setBusyStaffDetails(busy);
+            } catch (err) {
+                console.warn("Failed to fetch staff availability:", err);
+            }
+        };
+        fetchAvailability();
+    }, [formData.move_date, id]);
+
+    const getAvailableStaff = () => {
+        const selectedIds = assignedLabours.map(lab => String(lab.staff_member));
         return staffOptions.filter(staff => !selectedIds.includes(String(staff.id)));
     };
 
@@ -154,8 +199,13 @@ const BookingForm = () => {
         );
     };
 
-    const addItem = (type) => {
-        if (type === 'labour') setAssignedLabours([...assignedLabours, { staff_member: "" }]);
+    const addItem = (type, value) => {
+        if (type === 'labour') {
+            if (!value) return;
+            // Prevent duplicates
+            if (assignedLabours.some(l => String(l.staff_member) === String(value))) return;
+            setAssignedLabours([...assignedLabours, { staff_member: value, isNew: true }]);
+        }
         if (type === 'truck') setAssignedTrucks([...assignedTrucks, { truck_type: "", quantity: 1, isNew: true }]);
     };
 
@@ -347,9 +397,19 @@ const BookingForm = () => {
                                     onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
                                 >
                                     <option value="">Select Supervisor</option>
-                                    {staffOptions.filter(s => s.category === "Supervisor").map(s => (
-                                        <option key={s.id} value={String(s.id)}>{s.name} ({s.employer || "Almas Movers"})</option>
-                                    ))}
+                                    {staffOptions.filter(s => s.category === "Supervisor").map(s => {
+                                        const isBusy = !!busyStaffDetails[String(s.id)];
+                                        return (
+                                            <option
+                                                key={s.id}
+                                                value={String(s.id)}
+                                                className={isBusy ? "text-gray-400 bg-gray-50" : ""}
+                                                disabled={isBusy}
+                                            >
+                                                {s.name} ({s.employer || "Almas"}) {isBusy ? `— BUSY on ${busyStaffDetails[String(s.id)].booking_id}` : ""}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             </div>
                         </div>
@@ -369,7 +429,7 @@ const BookingForm = () => {
                                 <div>
                                     <span className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-1">Move Type</span>
                                     <p className="text-sm font-medium text-indigo-600">
-                                        {booking?.move_type || quotation?.service_type || "N/A"}
+                                        {formatMoveType(booking?.move_type || quotation?.service_type)}
                                     </p>
                                 </div>
                             </div>
@@ -388,45 +448,75 @@ const BookingForm = () => {
 
                 {/* Labours / Manpower */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-lg font-medium text-gray-800">Labours / Manpower</h2>
-                        <button
-                            onClick={() => addItem('labour')}
-                            className="btn-secondary flex items-center gap-2 text-sm"
-                        >
-                            <FiPlus className="w-4 h-4" />
-                            <span>Add Labour</span>
-                        </button>
-                    </div>
-                    <div className="space-y-3">
-                        {assignedLabours.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                                <div className="flex-1">
-                                    <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Assigned Staff</label>
-                                    <select
-                                        className="input-style w-full"
-                                        value={String(item.staff_member || "")}
-                                        onChange={(e) => updateItem('labour', idx, 'staff_member', e.target.value)}
-                                        disabled={getAvailableStaff(idx).length === 0 && !item.staff_member}
-                                    >
-                                        <option value="">Select Staff</option>
-                                        {getAvailableStaff(idx).map(s => (
-                                            <option key={s.id} value={String(s.id)}>
-                                                {s.name} ({s.employer || "Almas Movers"})
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 className="text-lg font-medium text-gray-800">Labours / Manpower</h2>
+                            <p className="text-sm text-gray-500 mt-1">Select staff members to assign to this booking</p>
+                        </div>
+                        <div className="w-full sm:w-72">
+                            <select
+                                className="input-style w-full"
+                                value=""
+                                onChange={(e) => addItem('labour', e.target.value)}
+                            >
+                                <option value="">+ Add Staff Member</option>
+                                {staffOptions
+                                    .filter(s => !assignedLabours.some(al => String(al.staff_member) === String(s.id)))
+                                    .map(s => {
+                                        const isBusy = !!busyStaffDetails[String(s.id)];
+                                        return (
+                                            <option
+                                                key={s.id}
+                                                value={String(s.id)}
+                                                className={isBusy ? "text-gray-400 bg-gray-50" : ""}
+                                                disabled={isBusy}
+                                            >
+                                                {s.name} ({s.employer || "Almas"}) {isBusy ? `— BUSY on ${busyStaffDetails[String(s.id)].booking_id}` : ""}
                                             </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <button
-                                    onClick={() => removeItem('labour', idx, item.id)}
-                                    className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-6"
-                                >
-                                    <FiTrash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
+                                        );
+                                    })
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {assignedLabours.map((item, idx) => {
+                                const staff = staffOptions.find(s => String(s.id) === String(item.staff_member));
+                                return (
+                                    <div key={idx} className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-200 group hover:border-indigo-200 transition-all duration-200">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+                                                {staff?.name?.charAt(0) || "S"}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-800">{staff?.name || "Unknown Staff"}</p>
+                                                <p className="text-xs text-gray-500">{staff?.category || "Manpower"} • {staff?.employer || "Almas Movers"}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => removeItem('labour', idx, item.id)}
+                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                            title="Remove Staff"
+                                        >
+                                            <FiTrash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
                         {assignedLabours.length === 0 && (
-                            <p className="text-sm text-gray-600 text-center py-6 bg-gray-50 rounded-2xl">No labour assigned yet. Click "Add Labour" to assign staff.</p>
+                            <div className="text-center py-10 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                                <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <FiPlus className="w-6 h-6 text-gray-400" />
+                                </div>
+                                <p className="text-sm text-gray-500">No labour assigned yet. Use the dropdown above to select staff.</p>
+                                {!formData.move_date && (
+                                    <p className="text-xs text-amber-600 mt-2 font-medium italic">Tip: Select a move date first to check staff availability.</p>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>

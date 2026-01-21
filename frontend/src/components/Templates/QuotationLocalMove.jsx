@@ -1,7 +1,10 @@
 import React, { forwardRef, useImperativeHandle } from "react";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
-import Logo1 from "../../assets/images/bg-auth.JPG";
-import ProfileIcon from "../../assets/images/profile-icon.png";
+import IAMLogo from "../../assets/images/iam.webp";
+import IAMXLogo from "../../assets/images/iamx.webp";
+import ISOLogo from "../../assets/images/iso.webp";
+import PCGLogo from "../../assets/images/pcg.webp";
+import TrustedLogo from "../../assets/images/trusted.webp";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -10,7 +13,7 @@ if (false) {
     console.log(jsPDF);
 }
 
-const CERTIFICATION_LOGOS = [Logo1, ProfileIcon];
+const CERTIFICATION_LOGOS = [IAMLogo, IAMXLogo, ISOLogo, PCGLogo, TrustedLogo];
 
 const QuotationLocalMove = forwardRef((props, ref) => {
     const {
@@ -94,7 +97,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                     const total = Number(charge.price_per_unit * qty);
                     return `
             <tr>
-              <td class="label">${charge.service_name || "Additional Service"}:</td>
+              <td class="label">${charge.service_name || "Additional Service"} x ${qty}:</td>
               <td class="value">${formatCurrency(total)}</td>
             </tr>`;
                 })
@@ -145,7 +148,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         <section class="selected-services-section">
             <div class="scope-container">
                 <div class="scope-header">
-                    <div class="header-col include-header" style="width: 100%;">Selected Services</div>
+                    <div class="header-col include-header" style="width: 100%;">Services</div>
                 </div>
                 <div class="scope-body">
                     <div class="body-col include-body" style="width: 100%;">
@@ -157,6 +160,8 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             </div>
         </section>`;
         }
+
+        const certLogosHTML = CERTIFICATION_LOGOS.map(logo => `<img src="${logo}" class="footer-cert-logo" />`).join("");
 
         return `
       <div class="page-container">
@@ -252,6 +257,15 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                         </div>
                     </section>
 
+                    <!-- REMARKS -->
+                    ${surveyRemarksHTML ? `
+                    <section class="remarks-section" style="margin-bottom: 30px;">
+                        <div class="terms-box">
+                            <h3>REMARKS</h3>
+                            <div class="text-content">${surveyRemarksHTML}</div>
+                        </div>
+                    </section>` : ''}
+
                     <!-- SELECTED SERVICES -->
                     ${selectedServicesSection}
 
@@ -277,9 +291,8 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                         </div>
                     </section>
 
-                    <!-- REMARKS & TERMS -->
+                    <!-- TERMS & NOTES -->
                     <section class="terms-section" style="margin-top: 20px;">
-                        ${surveyRemarksHTML ? `<div class="terms-box"><h3>REMARKS</h3><div class="text-content">${surveyRemarksHTML}</div></div>` : ''}
                         <div class="terms-box"><h3>INSURANCE</h3><div class="text-content"><p>Comprehensive transit insurance is available upon request. Standard liability is limited as per terms.</p></div></div>
                         <div class="terms-box"><h3>PAYMENT TERMS</h3><div class="text-content">${paymentTermsHTML}</div></div>
                         ${notesHTML ? `<div class="terms-box"><h3>IMPORTANT NOTES</h3><div class="text-content">${notesHTML}</div></div>` : ''}
@@ -312,7 +325,14 @@ const QuotationLocalMove = forwardRef((props, ref) => {
             </tr>
           </tbody>
           <tfoot>
-            <tr><td><div class="page-footer-space"></div></td></tr>
+            <tr>
+              <td>
+                <div class="page-footer-space"></div>
+                <div class="footer-certification-logos">
+                    ${certLogosHTML}
+                </div>
+              </td>
+            </tr>
           </tfoot>
         </table>
       </div>
@@ -330,7 +350,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .page-container { width: 100%; margin: 0; position: relative; background: white; }
     .print-wrapper { width: 100%; border-collapse: collapse; }
     .page-header-space { height: 30px; width: 100%; }
-    .page-footer-space { height: 10px; width: 100%; }
+    .page-footer-space { height: 80px; width: 100%; }
 
     .print-actual-content { padding: 0 10mm; }
 
@@ -406,7 +426,31 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .signature-img { max-height: 50px; }
     .sign-line { border-bottom: 1px solid #757575; margin: 5px 0; }
     .sign-name, .sign-date { font-size: 9pt; color: #555; }
-    .footer-bottom { text-align: center; font-size: 8pt; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+    .footer-bottom { text-align: center; font-size: 8pt; color: #999; padding-top: 10px; }
+
+    .footer-certification-logos {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+        padding: 10px 0;
+        background: transparent;
+    }
+    .footer-cert-logo {
+        height: 35px;
+        width: auto;
+        object-fit: contain;
+    }
+    
+    @media print {
+        .footer-certification-logos {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            width: 100%;
+        }
+    }
   `;
 
     useImperativeHandle(ref, () => ({

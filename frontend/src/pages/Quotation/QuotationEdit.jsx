@@ -135,19 +135,30 @@ export default function QuotationEdit() {
 
         const chargesRes = await apiClient.get("/quotation-additional-charges/");
         const selectedServices = s.additional_services || [];
+        const savedCharges = q.additional_charges || [];
+
         const breakdown = selectedServices
           .map((service) => {
             const sId = service.service_id || service.id;
             const pricing = chargesRes.data.find((p) => p.service?.id === sId);
             if (!pricing) return null;
 
+            // Prioritize quantity from the saved quotation (q), then the survey (s), then fallback
+            const savedCharge = savedCharges.find(c => String(c.service_id) === String(sId));
             const pricePerUnit = parseFloat(pricing.price_per_unit) || 0;
-            const quantity = pricing.rate_type === "FIX" ? 1 : (parseInt(service.quantity) || parseInt(pricing.per_unit_quantity) || 1);
+
+            let quantity;
+            if (savedCharge) {
+              quantity = savedCharge.quantity;
+            } else {
+              quantity = pricing.rate_type === "FIX" ? 1 : (parseInt(service.quantity) || parseInt(pricing.per_unit_quantity) || 1);
+            }
+
             const total = pricing.rate_type === "FIX" ? pricePerUnit : pricePerUnit * quantity;
 
             return {
               id: pricing.id,
-              service_name: pricing.service?.name || service.name,
+              service_name: savedCharge?.service_name || pricing.service?.name || service.name,
               price_per_unit: pricePerUnit,
               quantity: quantity,
               rate_type: pricing.rate_type,
@@ -600,10 +611,12 @@ export default function QuotationEdit() {
                       key={charge.id}
                       className="bg-gray-50 rounded-2xl p-4 flex flex-col md:flex-row justify-between gap-4"
                     >
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-800">{charge.service_name}</div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {charge.price_per_unit} {charge.currency} × {quantity} unit(s)
+                      <div className="flex items-center space-x-2">
+                        <div className="font-medium text-gray-800">
+                          {charge.service_name || "Additional Service"} x {quantity}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {charge.price_per_unit} {charge.currency} per unit
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
