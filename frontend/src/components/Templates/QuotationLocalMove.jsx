@@ -148,7 +148,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         <section class="selected-services-section">
             <div class="scope-container">
                 <div class="scope-header">
-                    <div class="header-col include-header" style="width: 100%;">Selected Services</div>
+                    <div class="header-col include-header" style="width: 100%;">Services</div>
                 </div>
                 <div class="scope-body">
                     <div class="body-col include-body" style="width: 100%;">
@@ -257,6 +257,15 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                         </div>
                     </section>
 
+                    <!-- REMARKS -->
+                    ${surveyRemarksHTML ? `
+                    <section class="remarks-section" style="margin-bottom: 30px;">
+                        <div class="terms-box">
+                            <h3>REMARKS</h3>
+                            <div class="text-content">${surveyRemarksHTML}</div>
+                        </div>
+                    </section>` : ''}
+
                     <!-- SELECTED SERVICES -->
                     ${selectedServicesSection}
 
@@ -282,9 +291,8 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                         </div>
                     </section>
 
-                    <!-- REMARKS & TERMS -->
+                    <!-- TERMS & NOTES -->
                     <section class="terms-section" style="margin-top: 20px;">
-                        ${surveyRemarksHTML ? `<div class="terms-box"><h3>REMARKS</h3><div class="text-content">${surveyRemarksHTML}</div></div>` : ''}
                         <div class="terms-box"><h3>INSURANCE</h3><div class="text-content"><p>Comprehensive transit insurance is available upon request. Standard liability is limited as per terms.</p></div></div>
                         <div class="terms-box"><h3>PAYMENT TERMS</h3><div class="text-content">${paymentTermsHTML}</div></div>
                         ${notesHTML ? `<div class="terms-box"><h3>IMPORTANT NOTES</h3><div class="text-content">${notesHTML}</div></div>` : ''}
@@ -342,7 +350,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .page-container { width: 100%; margin: 0; position: relative; background: white; }
     .print-wrapper { width: 100%; border-collapse: collapse; }
     .page-header-space { height: 30px; width: 100%; }
-    .page-footer-space { height: 10px; width: 100%; }
+    .page-footer-space { height: 80px; width: 100%; }
 
     .print-actual-content { padding: 0 10mm; }
 
