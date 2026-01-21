@@ -25,6 +25,7 @@ from .serializers import (
     UserPermissionSerializer,
     CustomTokenObtainPairSerializer,
 )
+from .permissions import IsAdmin, HasPagePermission
 
 
 # ── NEW: Missing Mixin (this fixes your NameError) ────────────────────────────────
@@ -139,7 +140,8 @@ class ResetPasswordView(APIView):
 
 
 class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission]
+    required_page = "Profile"
 
     def get(self, request):
         serializer = ProfileSerializer(request.user)
@@ -154,7 +156,8 @@ class ProfileView(APIView):
 
 
 class ChangePasswordView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission]
+    required_page = "Profile"
 
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
@@ -174,6 +177,8 @@ class RoleListCreateView(APIView, EffectivePermissionMixin):
         if not self.check_permission(request, "roles", "view"):
             return Response({"error": "Permission denied"}, status=403)
         roles = Role.objects.all()
+        if not request.user.is_superuser:
+            roles = roles.exclude(name="Superadmin")
         serializer = RoleSerializer(roles, many=True)
         return Response(serializer.data)
 
@@ -204,15 +209,25 @@ class RoleDetailView(APIView, EffectivePermissionMixin):
         role = self.get_object(pk)
         if not role:
             return Response({"error": "Role not found"}, status=404)
+        
+        # BLOCK: Non-superadmins cannot view/manage Superadmin role details
+        if role.name == "Superadmin" and not request.user.is_superuser:
+            return Response({"error": "Permission denied"}, status=403)
+
         serializer = RoleSerializer(role)
         return Response(serializer.data)
 
     def put(self, request, pk):
-        if not self.check_permission(request, "roles", "edit"):
-            return Response({"error": "Permission denied"}, status=403)
         role = self.get_object(pk)
         if not role:
             return Response({"error": "Role not found"}, status=404)
+
+        # BLOCK: Non-superadmins cannot edit Superadmin role
+        if role.name == "Superadmin" and not request.user.is_superuser:
+            return Response({"error": "Permission denied"}, status=403)
+
+        if not self.check_permission(request, "roles", "edit"):
+            return Response({"error": "Permission denied"}, status=403)
         serializer = RoleSerializer(role, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -220,12 +235,16 @@ class RoleDetailView(APIView, EffectivePermissionMixin):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        if not self.check_permission(request, "roles", "delete"):
-            return Response({"error": "Permission denied"}, status=403)
         role = self.get_object(pk)
         if not role:
             return Response({"error": "Role not found"}, status=404)
-        role.delete()
+
+        # BLOCK: Non-superadmins cannot delete Superadmin role
+        if role.name == "Superadmin" and not request.user.is_superuser:
+            return Response({"error": "Permission denied"}, status=403)
+
+        if not self.check_permission(request, "roles", "delete"):
+            return Response({"error": "Permission denied"}, status=403)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -287,6 +306,8 @@ class UserListCreateView(APIView, EffectivePermissionMixin):
         # Allow any authenticated user to list users (needed for "Assign To" dropdowns)
         # SENSITIVE DATA NOTE: UserSerializer only exposes safe public info (name, email, role).
         users = CustomUser.objects.all()
+        if not request.user.is_superuser:
+            users = users.exclude(role__name="Superadmin")
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
@@ -313,15 +334,26 @@ class UserDetailView(APIView, EffectivePermissionMixin):
         user = self.get_object(pk)
         if not user:
             return Response({"error": "User not found"}, status=404)
+
+        # BLOCK: Non-superadmins cannot view Superadmin details
+        if user.role and user.role.name == "Superadmin" and not request.user.is_superuser:
+            return Response({"error": "Permission denied"}, status=403)
+
         serializer = UserDetailSerializer(user)  # Now includes overrides
         return Response(serializer.data)
 
     def put(self, request, pk):
-        if not self.check_permission(request, "users", "edit"):
-            return Response({"error": "Permission denied"}, status=403)
         user = self.get_object(pk)
         if not user:
             return Response({"error": "User not found"}, status=404)
+
+        # BLOCK: Non-superadmins cannot edit Superadmin users
+        if user.role and user.role.name == "Superadmin" and not request.user.is_superuser:
+            return Response({"error": "Permission denied"}, status=403)
+
+        if not self.check_permission(request, "users", "edit"):
+            return Response({"error": "Permission denied"}, status=403)
+        user = self.get_object(pk)
         serializer = UserDetailSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -329,11 +361,16 @@ class UserDetailView(APIView, EffectivePermissionMixin):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        if not self.check_permission(request, "users", "delete"):
-            return Response({"error": "Permission denied"}, status=403)
         user = self.get_object(pk)
         if not user:
             return Response({"error": "User not found"}, status=404)
+
+        # BLOCK: Non-superadmins cannot delete Superadmin users
+        if user.role and user.role.name == "Superadmin" and not request.user.is_superuser:
+            return Response({"error": "Permission denied"}, status=403)
+
+        if not self.check_permission(request, "users", "delete"):
+            return Response({"error": "Permission denied"}, status=403)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -356,6 +393,11 @@ class UserPermissionListCreateView(APIView, EffectivePermissionMixin):
 
         try:
             user = CustomUser.objects.get(pk=user_id)
+            
+            # BLOCK: Non-superadmins cannot view/manage Superadmin permissions
+            if user.role and user.role.name == "Superadmin" and not request.user.is_superuser:
+                return Response({"error": "Permission denied"}, status=403)
+
             overrides = (
                 user.permission_overrides.all()
             )  # ← use your actual related_name

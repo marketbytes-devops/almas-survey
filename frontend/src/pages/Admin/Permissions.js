@@ -1,5 +1,6 @@
 /* src/pages/Admin/Permissions.js */
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSettings,
@@ -21,6 +22,7 @@ import Modal from "../../components/Modal";
 import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 const Permissions = () => {
+  const navigate = useNavigate();
   const { hasPermission, refreshPermissions } = usePermissions();
 
   const [users, setUsers] = useState([]);
@@ -29,7 +31,6 @@ const Permissions = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isOverridesLoading, setIsOverridesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -121,12 +122,12 @@ const Permissions = () => {
   };
 
   useEffect(() => {
+    if (!hasPermission("permissions", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     const fetchData = async () => {
       try {
-        const profileRes = await apiClient.get("/auth/profile/");
-        const user = profileRes.data;
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-
         const usersRes = await apiClient.get("/auth/users/");
         setUsers(usersRes.data);
       } catch (err) {
@@ -138,10 +139,10 @@ const Permissions = () => {
     };
 
     fetchData();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const openPermissionsModal = async (user) => {
-    if (!hasPermission("permissions", "edit") && !isSuperadmin) {
+    if (!hasPermission("permissions", "edit")) {
       setError("You do not have permission to edit user permissions.");
       return;
     }
@@ -210,7 +211,7 @@ const Permissions = () => {
   };
 
   const saveUserOverrides = async () => {
-    if (!hasPermission("permissions", "edit") && !isSuperadmin) return;
+    if (!hasPermission("permissions", "edit")) return;
 
     setIsSaving(true);
     setError("");

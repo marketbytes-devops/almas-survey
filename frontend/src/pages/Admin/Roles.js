@@ -1,6 +1,8 @@
 /* src/pages/Admin/Roles.js */
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FormProvider, useForm } from "react-hook-form";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSearch,
@@ -24,14 +26,13 @@ import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
 
 const Roles = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [roles, setRoles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [permissions, setPermissions] = useState([]);
   const [isCreatingRole, setIsCreatingRole] = useState(false);
   const [isEditingRole, setIsEditingRole] = useState(false);
   const [editRole, setEditRole] = useState(null);
@@ -53,37 +54,13 @@ const Roles = () => {
   const { handleSubmit: handleEdit, reset: resetEdit } = editForm;
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await apiClient.get("/auth/profile/");
-        const user = response.data;
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-
-        const roleId = user.role?.id;
-        if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
-        } else {
-          setPermissions([]);
-        }
-      } catch (error) {
-        console.error("Unable to fetch user profile:", error);
-        setPermissions([]);
-        setIsSuperadmin(false);
-      } finally {
-        setIsLoadingPermissions(false);
-      }
-    };
-
-    fetchProfile();
+    if (!hasPermission("roles", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchRoles();
-  }, []);
+  }, [hasPermission, navigate]);
 
-  const hasPermission = (page, action) => {
-    if (isSuperadmin) return true;
-    const perm = permissions.find((p) => p.page === page);
-    return perm && perm[`can_${action}`];
-  };
 
   const fetchRoles = async () => {
     setIsLoading(true);
@@ -201,7 +178,6 @@ const Roles = () => {
       return;
     }
     setSelectedRoleForPerms(role);
-    setRolePermissions({}); // Clear previous
     setIsLoadingPermissions(true);
 
     try {
@@ -331,7 +307,7 @@ const Roles = () => {
     role.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading || isLoadingPermissions) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loading />

@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
@@ -10,6 +12,8 @@ import Input from "../../components/Input";
 import Loading from "../../components/Loading";
 
 const Units = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [volumeUnits, setVolumeUnits] = useState([]);
   const [weightUnits, setWeightUnits] = useState([]);
   const [category, setCategory] = useState("volume");
@@ -27,8 +31,12 @@ const Units = () => {
   const { handleSubmit, reset } = methods;
 
   useEffect(() => {
+    if (!hasPermission("units", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchUnits();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const fetchUnits = async () => {
     try {
@@ -46,6 +54,10 @@ const Units = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!hasPermission("units", "add")) {
+      setError("Permission denied");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -71,6 +83,10 @@ const Units = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!hasPermission("units", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm("Are you sure you want to delete this unit?")) return;
     try {
       const endpoint = category === "volume" ? `/volume-units/${id}/` : `/weight-units/${id}/`;
@@ -183,13 +199,15 @@ const Units = () => {
           )}
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="w-full btn-primary"
-        >
-          <FiPlus className="w-5 h-5" />
-          <span className="text-sm tracking-wide">Add New {category === 'volume' ? 'Volume' : 'Weight'} Unit</span>
-        </button>
+        {hasPermission("units", "add") && (
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="w-full btn-primary"
+          >
+            <FiPlus className="w-5 h-5" />
+            <span className="text-sm tracking-wide">Add New {category === 'volume' ? 'Volume' : 'Weight'} Unit</span>
+          </button>
+        )}
 
         {/* Content Area */}
         {filteredUnits.length === 0 ? (
@@ -237,13 +255,15 @@ const Units = () => {
                       </p>
                     </div>
                     <div className="col-span-1 flex justify-end md:justify-center">
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        title="Delete"
-                      >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
+                      {hasPermission("units", "delete") && (
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Delete"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

@@ -1,6 +1,8 @@
 /* src/pages/AdditionalSettings/Room.jsx */
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FiPlus, FiTrash2, FiEdit2, FiSearch, FiX, FiInfo,
@@ -13,6 +15,8 @@ import Input from "../../components/Input";
 import Loading from "../../components/Loading";
 
 const Room = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [rooms, setRooms] = useState([]);
   const [items, setItems] = useState({});
   const [loading, setLoading] = useState(true);
@@ -49,8 +53,12 @@ const Room = () => {
   });
 
   useEffect(() => {
+    if (!hasPermission("room", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchData();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const fetchData = async () => {
     try {
@@ -84,6 +92,11 @@ const Room = () => {
   };
 
   const onRoomSubmit = async (data) => {
+    const action = editingRoom ? "edit" : "add";
+    if (!hasPermission("room", action)) {
+      setError("Permission denied");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -108,6 +121,10 @@ const Room = () => {
   };
 
   const handleDeleteRoom = async (id) => {
+    if (!hasPermission("room", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm("Delete room and all items?")) return;
     try {
       await apiClient.delete(`/rooms/${id}/`);
@@ -125,6 +142,11 @@ const Room = () => {
   };
 
   const onItemSubmit = async (data) => {
+    const action = editingItem ? "edit" : "add";
+    if (!hasPermission("room", action)) {
+      setError("Permission denied");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -170,6 +192,10 @@ const Room = () => {
   };
 
   const handleDeleteItem = async (id, roomId) => {
+    if (!hasPermission("room", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm("Delete item?")) return;
     try {
       await apiClient.delete(`/items/${id}/`);
@@ -225,6 +251,10 @@ const Room = () => {
   };
 
   const handlePaste = async (targetRoomId = null) => {
+    if (!hasPermission("room", "add")) {
+      setError("Permission denied");
+      return;
+    }
     if (!clipboard) return;
     setSaving(true);
     setError(null);
@@ -338,19 +368,23 @@ const Room = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-            <button
-              onClick={() => { setEditingRoom(null); roomMethods.reset(); setIsRoomModalOpen(true); }}
-              className="bg-[#4c7085] hover:bg-[#3a5d72] text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all font-medium shadow-sm hover:shadow active:scale-[0.99]"
-            >
-              <FiPlus /> Add Room
-            </button>
-            <button
-              onClick={() => { setEditingItem(null); itemMethods.reset({ items: [{ name: "", description: "", length: "", width: "", height: "", volume: "", weight: "" }] }); setIsItemModalOpen(true); }}
-              className="btn-secondary"
-            >
-              <FiPlus /> Add Item
-            </button>
-            {clipboard && (
+            {hasPermission("room", "add") && (
+              <button
+                onClick={() => { setEditingRoom(null); roomMethods.reset(); setIsRoomModalOpen(true); }}
+                className="bg-[#4c7085] hover:bg-[#3a5d72] text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all font-medium shadow-sm hover:shadow active:scale-[0.99]"
+              >
+                <FiPlus /> Add Room
+              </button>
+            )}
+            {hasPermission("room", "add") && (
+              <button
+                onClick={() => { setEditingItem(null); itemMethods.reset({ items: [{ name: "", description: "", length: "", width: "", height: "", volume: "", weight: "" }] }); setIsItemModalOpen(true); }}
+                className="btn-secondary"
+              >
+                <FiPlus /> Add Item
+              </button>
+            )}
+            {clipboard && hasPermission("room", "add") && (
               <button
                 onClick={() => setIsPasteModalOpen(true)}
                 disabled={saving}
@@ -384,12 +418,16 @@ const Room = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditingRoom(room); roomMethods.reset(room); setIsRoomModalOpen(true); }} className="p-2 text-slate-400 hover:text-[#4c7085] hover:bg-slate-100 rounded-lg transition-all" title="Edit Room"><FiEdit2 /></button>
+                    {hasPermission("room", "edit") && (
+                      <button onClick={() => { setEditingRoom(room); roomMethods.reset(room); setIsRoomModalOpen(true); }} className="p-2 text-slate-400 hover:text-[#4c7085] hover:bg-slate-100 rounded-lg transition-all" title="Edit Room"><FiEdit2 /></button>
+                    )}
                     <button onClick={() => handleCopy('room', room.id, room.name)} className="p-2 text-slate-400 hover:text-green-600 hover:bg-slate-100 rounded-lg transition-all" title="Copy Room & Items"><FiCopy /></button>
-                    {clipboard && (
+                    {clipboard && hasPermission("room", "add") && (
                       <button onClick={() => handlePaste(room.id)} disabled={saving} className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all" title={`Paste ${clipboard.type} into this room`}><FiClipboard /></button>
                     )}
-                    <button onClick={() => handleDeleteRoom(room.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Room"><FiTrash2 /></button>
+                    {hasPermission("room", "delete") && (
+                      <button onClick={() => handleDeleteRoom(room.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Room"><FiTrash2 /></button>
+                    )}
                     <button onClick={() => toggleRoomExpansion(room.id)} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all">
                       {expandedRooms.has(room.id) ? <FiChevronUp /> : <FiChevronDown />}
                     </button>
@@ -407,9 +445,13 @@ const Room = () => {
                                 <div className="flex justify-between items-start mb-2">
                                   <h4 className="font-medium text-slate-800">{item.name}</h4>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => { setEditingItem(item); itemMethods.reset({ room: room.id, items: [item] }); setIsItemModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-[#4c7085] transition-colors" title="Edit Item"><FiEdit2 size={14} /></button>
+                                    {hasPermission("room", "edit") && (
+                                      <button onClick={() => { setEditingItem(item); itemMethods.reset({ room: room.id, items: [item] }); setIsItemModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-[#4c7085] transition-colors" title="Edit Item"><FiEdit2 size={14} /></button>
+                                    )}
                                     <button onClick={() => handleCopy('item', item.id, item.name)} className="p-1.5 text-slate-400 hover:text-green-600 transition-colors" title="Copy Item"><FiCopy size={14} /></button>
-                                    <button onClick={() => handleDeleteItem(item.id, room.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors" title="Delete Item"><FiTrash2 size={14} /></button>
+                                    {hasPermission("room", "delete") && (
+                                      <button onClick={() => handleDeleteItem(item.id, room.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors" title="Delete Item"><FiTrash2 size={14} /></button>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-y-2 text-xs text-slate-500">

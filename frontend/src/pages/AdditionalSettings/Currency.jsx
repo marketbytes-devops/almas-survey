@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
@@ -9,6 +11,8 @@ import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
 
 const Currency = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [currencies, setCurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -26,8 +30,12 @@ const Currency = () => {
   const { handleSubmit, reset, setError: setFormError } = methods;
 
   useEffect(() => {
+    if (!hasPermission("currency", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchCurrencies();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const fetchCurrencies = async () => {
     try {
@@ -41,6 +49,10 @@ const Currency = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!hasPermission("currency", "add")) {
+      setError("Permission denied");
+      return;
+    }
     if (!data.name.trim()) return;
 
     setIsSubmitting(true);
@@ -73,6 +85,10 @@ const Currency = () => {
   };
 
   const handleDeleteCurrency = async (id) => {
+    if (!hasPermission("currency", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm("Are you sure you want to delete this currency?")) return;
 
     try {
@@ -134,13 +150,15 @@ const Currency = () => {
         />
       </div>
 
-      <button
-        onClick={() => setIsAddOpen(true)}
-        className="w-full btn-primary"
-      >
-        <FiPlus className="w-5 h-5" />
-        <span className="text-sm tracking-wide">Add New Currency</span>
-      </button>
+      {hasPermission("currency", "add") && (
+        <button
+          onClick={() => setIsAddOpen(true)}
+          className="w-full btn-primary"
+        >
+          <FiPlus className="w-5 h-5" />
+          <span className="text-sm tracking-wide">Add New Currency</span>
+        </button>
+      )}
 
       {/* Content Area */}
       {filteredCurrencies.length === 0 ? (
@@ -188,13 +206,15 @@ const Currency = () => {
                     </p>
                   </div>
                   <div className="col-span-1 flex justify-end md:justify-center">
-                    <button
-                      onClick={() => handleDeleteCurrency(currency.id)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    {hasPermission("currency", "delete") && (
+                      <button
+                        onClick={() => handleDeleteCurrency(currency.id)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
