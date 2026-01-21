@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
@@ -10,6 +12,8 @@ import Input from "../../components/Input";
 import Loading from "../../components/Loading";
 
 const Labours = () => {
+    const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     const [labours, setLabours] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -25,8 +29,12 @@ const Labours = () => {
     const { handleSubmit, reset } = methods;
 
     useEffect(() => {
+        if (!hasPermission("labours", "view")) {
+            navigate("/dashboard");
+            return;
+        }
         fetchLabours();
-    }, []);
+    }, [hasPermission, navigate]);
 
     const fetchLabours = async () => {
         try {
@@ -40,6 +48,10 @@ const Labours = () => {
     };
 
     const onSubmit = async (data) => {
+        if (!hasPermission("labours", "add")) {
+            setError("Permission denied");
+            return;
+        }
         setSaving(true);
         setError(null);
         try {
@@ -58,6 +70,10 @@ const Labours = () => {
     };
 
     const handleDelete = async (id) => {
+        if (!hasPermission("labours", "delete")) {
+            setError("Permission denied");
+            return;
+        }
         if (!window.confirm("Are you sure you want to delete this labour?")) return;
         try {
             await apiClient.delete(`/labours/${id}/`);
@@ -139,13 +155,15 @@ const Labours = () => {
                     )}
                 </div>
 
-                <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="w-full btn-primary"
-                >
-                    <FiPlus className="w-5 h-5" />
-                    <span className="text-sm tracking-wide">Add New Labour</span>
-                </button>
+                {hasPermission("labours", "add") && (
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="w-full btn-primary"
+                    >
+                        <FiPlus className="w-5 h-5" />
+                        <span className="text-sm tracking-wide">Add New Labour</span>
+                    </button>
+                )}
 
                 {/* Content Area */}
                 {filteredLabours.length === 0 ? (
@@ -193,13 +211,15 @@ const Labours = () => {
                                             </p>
                                         </div>
                                         <div className="col-span-1 flex justify-end md:justify-center">
-                                            <button
-                                                onClick={() => handleDelete(item.id)}
-                                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                title="Delete"
-                                            >
-                                                <FiTrash2 className="w-4 h-4" />
-                                            </button>
+                                            {hasPermission("labours", "delete") && (
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                    title="Delete"
+                                                >
+                                                    <FiTrash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>

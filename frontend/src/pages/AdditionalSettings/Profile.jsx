@@ -1,5 +1,7 @@
 /* src/pages/AdditionalSettings/Profile.jsx */
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../components/PermissionsContext/PermissionsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCamera } from 'react-icons/fa';
 import { RiChatAiFill } from "react-icons/ri";
@@ -11,6 +13,8 @@ import PageHeader from '../../components/PageHeader';
 import fallbackProfile from '../../assets/images/profile-icon.png';
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const profileForm = useForm({
     defaultValues: {
       email: '',
@@ -37,6 +41,10 @@ const Profile = () => {
   const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
+    if (!hasPermission("Profile", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     apiClient
       .get('/auth/profile/')
       .then((response) => {
@@ -61,9 +69,13 @@ const Profile = () => {
         setImagePreview(fallbackProfile);
         setLoading(false);
       });
-  }, [profileForm]);
+  }, [profileForm, hasPermission, navigate]);
 
   const handleImageChange = (e) => {
+    if (!hasPermission("Profile", "edit")) {
+      setError("You do not have permission to edit your profile image.");
+      return;
+    }
     const file = e.target.files?.[0];
     if (file) {
       setImage(file);
@@ -123,7 +135,7 @@ const Profile = () => {
     formData.append('confirm_password', data.confirmPassword);
 
     try {
-      await apiClient.put('/auth/profile/', formData);
+      await apiClient.post('/auth/change-password/', formData);
       setSuccess('Password changed successfully');
       passwordForm.reset();
       setTimeout(() => setSuccess(''), 3000);
@@ -179,9 +191,9 @@ const Profile = () => {
                   onError={(e) => { e.target.src = fallbackProfile; }}
                 />
               </div>
-              <label className="absolute bottom-1 right-2 bg-[#4c7085] hover:bg-[#3a5d72] text-white p-3 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-105">
+              <label className={`absolute bottom-1 right-2 bg-[#4c7085] hover:bg-[#3a5d72] text-white p-3 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-105 ${!hasPermission("Profile", "edit") ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <FaCamera size={18} />
-                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" disabled={!hasPermission("Profile", "edit")} />
               </label>
             </div>
 
@@ -220,15 +232,17 @@ const Profile = () => {
                     <Input label="Address" name="address" placeholder="Full address" />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="px-6 py-2.5 bg-[#4c7085] hover:bg-[#3a5d72] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {savingProfile ? 'Saving...' : <><FiSave className="mr-2" /> Update Profile</>}
-                  </button>
-                </div>
+                {hasPermission("Profile", "edit") && (
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="px-6 py-2.5 bg-[#4c7085] hover:bg-[#3a5d72] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {savingProfile ? 'Saving...' : <><FiSave className="mr-2" /> Update Profile</>}
+                    </button>
+                  </div>
+                )}
               </form>
             </FormProvider>
           </div>
@@ -254,15 +268,17 @@ const Profile = () => {
                     rules={{ required: "Required" }}
                   />
                 </div>
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={savingPassword}
-                    className="btn-secondary active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {savingPassword ? 'Updating...' : <><FiLock className="mr-2" /> Change Password</>}
-                  </button>
-                </div>
+                {hasPermission("Profile", "edit") && (
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={savingPassword}
+                      className="btn-secondary active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {savingPassword ? 'Updating...' : <><FiLock className="mr-2" /> Change Password</>}
+                    </button>
+                  </div>
+                )}
               </form>
             </FormProvider>
           </div>

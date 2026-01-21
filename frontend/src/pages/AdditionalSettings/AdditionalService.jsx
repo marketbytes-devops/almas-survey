@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
@@ -9,6 +11,8 @@ import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
 
 const AdditionalServices = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -26,8 +30,12 @@ const AdditionalServices = () => {
   const { handleSubmit, reset, setError: setFormError } = methods;
 
   useEffect(() => {
+    if (!hasPermission("additional-services", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchServices();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const fetchServices = async () => {
     try {
@@ -41,6 +49,10 @@ const AdditionalServices = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!hasPermission("additional-services", "add")) {
+      setError("Permission denied");
+      return;
+    }
     if (!data.name.trim()) return;
 
     setIsSubmitting(true);
@@ -74,6 +86,10 @@ const AdditionalServices = () => {
   };
 
   const handleDelete = async (id, name) => {
+    if (!hasPermission("additional-services", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
@@ -134,13 +150,15 @@ const AdditionalServices = () => {
         />
       </div>
 
-      <button
-        onClick={() => setIsAddOpen(true)}
-        className="w-full btn-primary"
-      >
-        <FiPlus className="w-5 h-5" />
-        <span className="text-sm tracking-wide">Add New Service</span>
-      </button>
+      {hasPermission("additional-services", "add") && (
+        <button
+          onClick={() => setIsAddOpen(true)}
+          className="w-full btn-primary"
+        >
+          <FiPlus className="w-5 h-5" />
+          <span className="text-sm tracking-wide">Add New Service</span>
+        </button>
+      )}
 
       {/* Content Area */}
       {filteredServices.length === 0 ? (
@@ -182,13 +200,15 @@ const AdditionalServices = () => {
                     </div>
                   </div>
                   <div className="col-span-1 flex justify-end md:justify-center">
-                    <button
-                      onClick={() => handleDelete(service.id, service.name)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    {hasPermission("additional-services", "delete") && (
+                      <button
+                        onClick={() => handleDelete(service.id, service.name)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

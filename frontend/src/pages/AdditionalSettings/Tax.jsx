@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
@@ -9,6 +11,8 @@ import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
 
 const Tax = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -26,8 +30,12 @@ const Tax = () => {
   const { handleSubmit, reset, setError: setFormError } = methods;
 
   useEffect(() => {
+    if (!hasPermission("tax", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchTaxes();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const fetchTaxes = async () => {
     try {
@@ -41,6 +49,10 @@ const Tax = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!hasPermission("tax", "add")) {
+      setError("Permission denied");
+      return;
+    }
     if (!data.tax_name.trim()) return;
 
     setIsSubmitting(true);
@@ -73,6 +85,10 @@ const Tax = () => {
   };
 
   const handleDeleteTax = async (id) => {
+    if (!hasPermission("tax", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm("Are you sure you want to delete this tax?")) return;
 
     try {
@@ -134,13 +150,15 @@ const Tax = () => {
         />
       </div>
 
-      <button
-        onClick={() => setIsAddOpen(true)}
-        className="w-full btn-primary"
-      >
-        <FiPlus className="w-5 h-5" />
-        <span className="text-sm tracking-wide">Add New Tax</span>
-      </button>
+      {hasPermission("tax", "add") && (
+        <button
+          onClick={() => setIsAddOpen(true)}
+          className="w-full btn-primary"
+        >
+          <FiPlus className="w-5 h-5" />
+          <span className="text-sm tracking-wide">Add New Tax</span>
+        </button>
+      )}
 
       {/* Content Area */}
       {filteredTaxes.length === 0 ? (
@@ -188,13 +206,15 @@ const Tax = () => {
                     </p>
                   </div>
                   <div className="col-span-1 flex justify-end md:justify-center">
-                    <button
-                      onClick={() => handleDeleteTax(tax.id)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    {hasPermission("tax", "delete") && (
+                      <button
+                        onClick={() => handleDeleteTax(tax.id)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

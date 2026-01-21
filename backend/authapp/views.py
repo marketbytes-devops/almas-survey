@@ -25,6 +25,7 @@ from .serializers import (
     UserPermissionSerializer,
     CustomTokenObtainPairSerializer,
 )
+from .permissions import IsAdmin, HasPagePermission
 
 
 # ── NEW: Missing Mixin (this fixes your NameError) ────────────────────────────────
@@ -139,7 +140,8 @@ class ResetPasswordView(APIView):
 
 
 class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission]
+    required_page = "Profile"
 
     def get(self, request):
         serializer = ProfileSerializer(request.user)
@@ -154,7 +156,8 @@ class ProfileView(APIView):
 
 
 class ChangePasswordView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission]
+    required_page = "Profile"
 
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
@@ -174,6 +177,8 @@ class RoleListCreateView(APIView, EffectivePermissionMixin):
         if not self.check_permission(request, "roles", "view"):
             return Response({"error": "Permission denied"}, status=403)
         roles = Role.objects.all()
+        if not request.user.is_superuser:
+            roles = roles.exclude(name="Superadmin")
         serializer = RoleSerializer(roles, many=True)
         return Response(serializer.data)
 
@@ -287,6 +292,8 @@ class UserListCreateView(APIView, EffectivePermissionMixin):
         # Allow any authenticated user to list users (needed for "Assign To" dropdowns)
         # SENSITIVE DATA NOTE: UserSerializer only exposes safe public info (name, email, role).
         users = CustomUser.objects.all()
+        if not request.user.is_superuser:
+            users = users.exclude(role__name="Superadmin")
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 

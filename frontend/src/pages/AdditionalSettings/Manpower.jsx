@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiX, FiInfo, FiEdit2, FiCheckCircle, FiMinusCircle } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import PageHeader from "../../components/PageHeader";
 import Modal from "../../components/Modal";
@@ -10,6 +12,8 @@ import Input from "../../components/Input";
 import Loading from "../../components/Loading";
 
 const Manpower = () => {
+    const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     const [manpower, setManpower] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -32,8 +36,12 @@ const Manpower = () => {
     const { handleSubmit, reset, setValue } = methods;
 
     useEffect(() => {
+        if (!hasPermission("manpower", "view")) {
+            navigate("/dashboard");
+            return;
+        }
         fetchManpower();
-    }, []);
+    }, [hasPermission, navigate]);
 
     const fetchManpower = async () => {
         try {
@@ -47,6 +55,11 @@ const Manpower = () => {
     };
 
     const onSubmit = async (data) => {
+        const action = editingItem ? "edit" : "add";
+        if (!hasPermission("manpower", action)) {
+            setError("Permission denied");
+            return;
+        }
         setIsSubmitting(true);
         setError(null);
         try {
@@ -80,6 +93,10 @@ const Manpower = () => {
     };
 
     const handleDelete = async (id) => {
+        if (!hasPermission("manpower", "delete")) {
+            setError("Permission denied");
+            return;
+        }
         if (!window.confirm("Are you sure you want to delete this record?")) return;
         try {
             await apiClient.delete(`/manpower/${id}/`);
@@ -179,13 +196,15 @@ const Manpower = () => {
                             </button>
                         )}
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full md:w-auto btn-primary whitespace-nowrap min-w-[180px]"
-                    >
-                        <FiPlus className="w-5 h-5" />
-                        <span className="text-sm tracking-wide">Add New Staff</span>
-                    </button>
+                    {hasPermission("manpower", "add") && (
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="w-full md:w-auto btn-primary whitespace-nowrap min-w-[180px]"
+                        >
+                            <FiPlus className="w-5 h-5" />
+                            <span className="text-sm tracking-wide">Add New Staff</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Content Area */}
@@ -269,20 +288,24 @@ const Manpower = () => {
 
                                         {/* Actions */}
                                         <div className="lg:col-span-2 flex justify-end gap-2 border-t lg:border-t-0 pt-3 lg:pt-0">
-                                            <button
-                                                onClick={() => handleEdit(item)}
-                                                className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-[#4c7085] hover:bg-[#4c7085]/5 rounded-xl transition-all"
-                                                title="Edit"
-                                            >
-                                                <FiEdit2 className="w-4.5 h-4.5" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(item.id)}
-                                                className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                                title="Delete"
-                                            >
-                                                <FiTrash2 className="w-4.5 h-4.5" />
-                                            </button>
+                                            {hasPermission("manpower", "edit") && (
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-[#4c7085] hover:bg-[#4c7085]/5 rounded-xl transition-all"
+                                                    title="Edit"
+                                                >
+                                                    <FiEdit2 className="w-4.5 h-4.5" />
+                                                </button>
+                                            )}
+                                            {hasPermission("manpower", "delete") && (
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    title="Delete"
+                                                >
+                                                    <FiTrash2 className="w-4.5 h-4.5" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiSearch, FiCheck, FiX, FiInfo } from "react-icons/fi";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import Input from "../../components/Input";
 import Loading from "../../components/Loading";
@@ -31,6 +33,8 @@ const CATEGORY_LABEL = {
 };
 
 const SurveyTypes = () => {
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [types, setTypes] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("customer");
   const [loading, setLoading] = useState(true);
@@ -46,8 +50,12 @@ const SurveyTypes = () => {
   const { handleSubmit, reset, setError: setFormError } = methods;
 
   useEffect(() => {
+    if (!hasPermission("types", "view")) {
+      navigate("/dashboard");
+      return;
+    }
     fetchAll();
-  }, []);
+  }, [hasPermission, navigate]);
 
   const fetchAll = async () => {
     try {
@@ -83,6 +91,10 @@ const SurveyTypes = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!hasPermission("types", "add")) {
+      setError("Permission denied");
+      return;
+    }
     if (!data.name?.trim()) return;
 
     setIsSubmitting(true);
@@ -116,6 +128,10 @@ const SurveyTypes = () => {
   };
 
   const deleteItem = async (id) => {
+    if (!hasPermission("types", "delete")) {
+      setError("Permission denied");
+      return;
+    }
     if (!window.confirm("Are you sure you want to delete this item?")) return;
 
     try {
@@ -201,13 +217,15 @@ const SurveyTypes = () => {
           className="input-style w-full !pl-12 h-[52px] rounded-2xl border-gray-100 shadow-sm"
         />
       </div>
-      <button
-        onClick={() => setIsAddOpen(true)}
-        className="w-full btn-primary"
-      >
-        <FiPlus className="w-5 h-5" />
-        <span className="text-sm tracking-wide">Add New Type</span>
-      </button>
+      {hasPermission("types", "add") && (
+        <button
+          onClick={() => setIsAddOpen(true)}
+          className="w-full btn-primary"
+        >
+          <FiPlus className="w-5 h-5" />
+          <span className="text-sm tracking-wide">Add New Type</span>
+        </button>
+      )}
       {/* Content Area */}
       {filteredList.length === 0 ? (
         <div className="bg-white rounded-3xl p-16 text-center border border-dashed border-gray-200">
@@ -254,13 +272,15 @@ const SurveyTypes = () => {
                     </p>
                   </div>
                   <div className="col-span-1 flex justify-end md:justify-center">
-                    <button
-                      onClick={() => deleteItem(item.id)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    {hasPermission("types", "delete") && (
+                      <button
+                        onClick={() => deleteItem(item.id)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
