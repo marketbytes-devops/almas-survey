@@ -127,6 +127,7 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
 };
 
 const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, originCountry, originState, register, watch, multipleAddresses, destinationAddresses, removeAddress, addAddress, setValue }) => {
+    const { hasPermission } = usePermissions();
     const [isLocating, setIsLocating] = useState(false);
 
     const salutationOptions = [
