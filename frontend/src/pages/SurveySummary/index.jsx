@@ -301,7 +301,7 @@ const SurveySummary = () => {
     }, 0) : 0;
 
     return (
-      <div className="bg-gray-50/50 border-t border-gray-100 p-6 space-y-8">
+      <div className="bg-gray-50/50 border-t border-gray-100 p-6 space-y-6">
 
         {/* Basic Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -440,9 +440,9 @@ const SurveySummary = () => {
                       <td className="px-6 py-3 text-gray-600">{a.volume ? `${formatVolume(a.volume)} ${a.volume_unit_name || "m³"}` : "-"}</td>
                       <td className="px-6 py-3">
                         {a.crate_required ? (
-                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase font-semibold">Yes</span>
+                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase font-medium">Yes</span>
                         ) : (
-                          <span className="text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 uppercase font-semibold">No</span>
+                          <span className="text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 uppercase font-medium">No</span>
                         )}
                       </td>
                       <td className="px-6 py-3">
@@ -465,7 +465,7 @@ const SurveySummary = () => {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-gray-50/80 font-semibold text-[#4c7085]">
+                <tfoot className="bg-gray-50/80 font-medium text-[#4c7085]">
                   <tr>
                     <td colSpan="3" className="px-6 py-3 text-right uppercase tracking-wider text-[10px]">Total Inventory Volume</td>
                     <td className="px-6 py-3 text-base">{formatVolume(totalVolume)} m³</td>
@@ -607,14 +607,7 @@ const SurveySummary = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Desktop Table Header (Only Visible on LG) */}
-          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/50 rounded-xl border border-gray-100 text-xs font-medium text-gray-600 uppercase tracking-widest">
-            <div className="col-span-3">Survey & Client</div>
-            <div className="col-span-2">Contact</div>
-            <div className="col-span-2">Service</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-3 text-right">Actions</div>
-          </div>
+
 
           {filteredSurveys.map((survey, index) => {
             const isExpanded = expandedSections.has(survey.survey_id);
@@ -624,98 +617,152 @@ const SurveySummary = () => {
               <motion.div
                 layout
                 key={`${survey.survey_id}-${index}`}
-                className={CARD_CLASS}
+                className={`${CARD_CLASS} !overflow-visible`}
               >
-                <div className="p-5">
-                  <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:items-center">
-
-                    {/* Survey & Client */}
-                    <div className="col-span-3 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-medium text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{survey.survey_id}</span>
-                        {survey.quotation_id && (
-                          <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">Quote sent</span>
+                <div className="p-4 sm:p-6">
+                  {/* Row 1: Identity & Contact Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    {/* Col 1: ID & Name */}
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-mono font-medium text-[#4c7085] bg-[#4c7085]/10 px-2 py-1 rounded-lg border border-[#4c7085]/20 whitespace-nowrap">
+                          {survey.survey_id}
+                        </span>
+                        {survey.quotation_id ? (
+                          <div className="inline-flex flex-col leading-tight">
+                            <span className="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-100 font-medium whitespace-nowrap">
+                              Quote Created
+                            </span>
+                            <span className="text-[9px] text-purple-400 font-medium ml-1">
+                              {formatDate(survey.quotation_created_at)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full border border-gray-100 font-medium whitespace-nowrap">
+                            Quote Pending
+                          </span>
                         )}
                       </div>
-                      <h3 className="font-medium text-gray-800 text-base">{survey.full_name || survey.enquiry?.fullName || "Unknown Client"}</h3>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <FiCalendar /> {formatDate(survey.survey_date)}
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Customer Name</span>
+                        <h3 className="font-medium text-gray-900 text-lg whitespace-nowrap overflow-x-auto no-scrollbar py-0.5">
+                          {survey.full_name || survey.enquiry?.fullName || "Unknown Client"}
+                        </h3>
                       </div>
                     </div>
 
-                    {/* Contact */}
-                    <div className="col-span-2 space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiPhone className="text-gray-300" /> {survey.phone_number || survey.enquiry?.phoneNumber || "-"}
+                    {/* Col 2: Contact details (span 2 on mobile if needed, or just normal) */}
+                    <div className="grid grid-cols-1 gap-3 sm:border-l sm:border-gray-50 sm:pl-6">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Contact Phone</span>
+                        <div className="flex items-center gap-2.5 text-sm text-gray-700 font-medium whitespace-nowrap">
+                          <FiPhone className="text-[#4c7085] w-3.5 h-3.5" />
+                          {survey.phone_number || survey.enquiry?.phoneNumber || "-"}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiMail className="text-gray-300" />
-                        <span className="truncate max-w-[150px]" title={survey.email}>{survey.email || "-"}</span>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Email Address</span>
+                        <div className="flex items-center gap-2.5 text-sm text-gray-700 font-medium whitespace-nowrap overflow-x-auto no-scrollbar py-0.5">
+                          <FiMail className="text-[#4c7085] w-3.5 h-3.5" />
+                          {survey.email || survey.enquiry?.email || "-"}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Service */}
-                    <div className="col-span-2">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100/50">
-                        <FiTruck className="w-3.5 h-3.5" />
-                        {survey.service_type_display || survey.service_type_name || "Service"}
+                    {/* Col 3: Reserved for extra space/alignment on desktop, hidden on mobile depending on grid */}
+                    <div className="hidden lg:block space-y-3 border-l border-gray-50 pl-6">
+                      {/* This column ensures the 3-col layout on desktop */}
+                      <div className="h-full flex items-center justify-center opacity-5">
+                        <FiUser className="w-12 h-12" />
                       </div>
                     </div>
+                  </div>
 
-                    {/* Status */}
-                    <div className="col-span-2">
+                  {/* Row 2: Operation & Timing Info */}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 pt-6 border-t border-gray-100 mb-6">
+                    {/* Col 1: Status */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Current Status</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setStatusModal({ ...survey, newStatus: survey.status }); }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 w-fit transition-all hover:brightness-95 ${statusClass}`}
+                        className={`px-4 py-2 rounded-xl text-xs font-medium border flex items-center gap-2 w-fit transition-all hover:scale-105 active:scale-95 shadow-sm ${statusClass} whitespace-nowrap`}
                       >
                         {formatStatus(survey.status)}
-                        <FiEdit className="w-3 h-3 opacity-50" />
+                        <FiEdit className="w-3.5 h-3.5 opacity-70" />
                       </button>
                     </div>
 
-                    {/* Actions */}
-                    <div className="col-span-3 flex items-center justify-end flex-wrap gap-2">
+
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Service Category</span>
+                      <div
+                        className={`px-4 py-2 rounded-xl text-xs font-medium border flex items-center gap-2 w-fit bg-blue-50 text-blue-700 border-blue-100 shadow-sm whitespace-nowrap`}
+                      >
+                        <FiTruck className="w-4 h-4" />
+                        {survey.service_type_display || survey.service_type_name || "N/A"}
+                      </div>
+                    </div>
+                    {/* Col 3: Timing (Full width on mobile grid if we span it) */}
+                    <div className="col-span-2 lg:col-span-1 grid grid-cols-2 gap-4 lg:gap-6 lg:border-l lg:border-gray-50 lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-gray-50 border-dashed">
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Survey Date</span>
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-800 whitespace-nowrap">
+                          <FiCalendar className="text-amber-500 w-3.5 h-3.5" />
+                          {formatDate(survey.survey_date)}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Time Window</span>
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-800 whitespace-nowrap">
+                          <FiClock className="text-purple-500 w-3.5 h-3.5" />
+                          {formatTime(survey.survey_start_time)} - {formatTime(survey.survey_end_time)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Detail toggle (Center) & Actions (Right) */}
+                  <div className="flex flex-col lg:flex-row items-center gap-6 pt-6 border-t border-gray-100">
+                    <div className="hidden lg:block lg:flex-1"></div>
+                    <div className="w-full lg:flex-1 flex items-center justify-center lg:justify-end flex-wrap gap-2.5">
                       {survey.hasQuotation ? (
-                        <button onClick={() => navigate(`/quotation-view/${survey.quotation_id}`)} className={`${BUTTON_BASE} bg-purple-50 text-purple-600 hover:bg-purple-100`} title="View Quotation">
+                        <button onClick={() => navigate(`/quotation-view/${survey.quotation_id}`)} className={`${BUTTON_BASE} bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200`} title="View Quotation">
                           <FiFileText /> Quote
                         </button>
                       ) : (
-                        <button onClick={() => handleCreateQuotation(survey.survey_id)} className={`${BUTTON_BASE} bg-indigo-50 text-indigo-600 hover:bg-indigo-100`} title="Create Quote">
+                        <button onClick={() => handleCreateQuotation(survey.survey_id)} className={`${BUTTON_BASE} bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200`} title="Create Quote">
                           <FiFileText /> Quote
                         </button>
                       )}
 
-                      <button onClick={() => handleEditSurvey(survey)} className={`${BUTTON_BASE} bg-amber-50 text-amber-600 hover:bg-amber-100`} title="Edit Survey">
+                      <button onClick={() => handleEditSurvey(survey)} className={`${BUTTON_BASE} bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200`} title="Edit Survey">
                         <FiEdit />
                       </button>
 
-                      <button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`${BUTTON_BASE} bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50`} title="Print">
+                      <button onClick={() => handlePrintSurvey(survey)} disabled={printing === survey.survey_id} className={`${BUTTON_BASE} bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 disabled:opacity-50`} title="Print">
                         <FiPrinter />
                       </button>
 
                       {survey.signature_uploaded && surveySignatures[survey.survey_id] && (
-                        <button onClick={() => setSignatureModalUrl(surveySignatures[survey.survey_id])} className={`${BUTTON_BASE} bg-teal-50 text-teal-600 hover:bg-teal-100`} title="Signature">
+                        <button onClick={() => setSignatureModalUrl(surveySignatures[survey.survey_id])} className={`${BUTTON_BASE} bg-teal-50 text-teal-600 hover:bg-teal-100 border border-teal-200`} title="Signature">
                           <FaSignature />
                         </button>
                       )}
 
-                      <button onClick={() => handleDeleteSurvey(survey.survey_id)} className={`${BUTTON_BASE} bg-red-50 text-red-600 hover:bg-red-100`} title="Delete">
+                      <button onClick={() => handleDeleteSurvey(survey.survey_id)} className={`${BUTTON_BASE} bg-red-50 text-red-600 hover:bg-red-100 border border-red-200`} title="Delete">
                         <FiTrash2 />
+                      </button>
+                      <button
+                        onClick={() => toggleSectionExpansion(survey.survey_id)}
+                        className="group flex items-center gap-2 py-2.5 px-6 text-sm font-medium text-gray-600 hover:text-[#4c7085] bg-gray-50 hover:bg-white rounded-full border border-gray-100 hover:border-[#4c7085]/30 hover:shadow-md transition-all active:scale-95 whitespace-nowrap"
+                      >
+                        {isExpanded ? "Hide Details" : "Show Full Details"}
+                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
+                          <FiChevronDown className="w-4 h-4" />
+                        </motion.div>
                       </button>
                     </div>
                   </div>
-
-                  {/* Expand Toggle */}
-                  <button
-                    onClick={() => toggleSectionExpansion(survey.survey_id)}
-                    className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-gray-600 hover:text-[#4c7085] hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    {isExpanded ? (
-                      <>Hide Details <FiChevronUp /></>
-                    ) : (
-                      <>Show Full Details <FiChevronDown /></>
-                    )}
-                  </button>
                 </div>
 
                 {/* Expanded Details */}
@@ -818,8 +865,5 @@ const SurveySummary = () => {
   );
 };
 
-// Simple Button Component Replacement for the internal 'Button' usage if needed, 
-// strictly we will use standard HTML buttons with Tailwind classes in the render for best control.
-// The imported Button component is removed from usage in favor of direct standard elements to ensure styling match.
 
 export default SurveySummary;
