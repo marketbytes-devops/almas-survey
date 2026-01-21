@@ -404,7 +404,7 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                     })}
                 </div>
 
-                {multipleAddresses && hasPermission("surveys", "edit") && (
+                {multipleAddresses && hasPermission("survey_details", "edit") && (
                     <button
                         type="button"
                         onClick={addAddress}
@@ -502,7 +502,7 @@ const SurveyStatus = ({ register, watch, signatureUploaded, signatureImageUrl, i
                             <p className="text-sm text-gray-600 leading-relaxed">
                                 The signature confirms the customer agrees with the surveyed items and volume.
                             </p>
-                            {hasPermission("surveys", "edit") && (
+                            {hasPermission("survey_details", "edit") && (
                                 <button
                                     type="button"
                                     onClick={() => setIsSignatureModalOpen(true)}
@@ -790,7 +790,7 @@ const SurveyDetails = () => {
     };
 
     const handleSignatureSave = async (file) => {
-        if (!hasPermission("surveys", "edit")) return alert("Permission denied");
+        if (!hasPermission("survey_details", "edit")) return alert("Permission denied");
         if (!file) return;
 
         if (!existingSurvey) {
