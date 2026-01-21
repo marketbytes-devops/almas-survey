@@ -104,7 +104,6 @@ const Sidebar = ({ toggleSidebar }) => {
     { id: "dashboard", to: "/", label: "Dashboard", icon: <FiGrid className="w-5 h-5" />, page: "Dashboard", action: "view" },
     { id: "enquiries", to: "/enquiries", label: "Enquiries", icon: <FiSearch className="w-5 h-5" />, page: "enquiries", action: "view" },
     { id: "new-enquiries", to: "/new-enquiries", label: "New Assigned", icon: <FiPlusSquare className="w-5 h-5" />, page: "new_enquiries", action: "view" },
-    { id: "follow-ups", to: "/follow-ups", label: "Follow Ups", icon: <FiClock className="w-5 h-5" />, page: "follow_ups", action: "view" },
     { id: "scheduled-surveys", to: "/scheduled-surveys", label: "Scheduled Surveys", icon: <FiCalendar className="w-5 h-5" />, page: "scheduled_surveys", action: "view" },
     { id: "survey_summary", to: "/survey/survey-summary", label: "Survey Summary", icon: <FiBarChart2 className="w-5 h-5" />, page: "survey_summary", action: "view" },
     { id: "quotation", to: "/quotation-list", label: "Quotation", icon: <RiBillLine className="w-5 h-5" />, page: "quotation", action: "view" },
@@ -171,7 +170,6 @@ const Sidebar = ({ toggleSidebar }) => {
     "inventory",
     "dashboard",
     "profile",
-    "follow-ups"
   ];
 
   const menuItems = isMobile()
