@@ -19,6 +19,7 @@ import PageHeader from "../../components/PageHeader";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import { FaSignature } from "react-icons/fa";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 const SERVICE_TYPE_DISPLAY = {
   localMove: "Local Move",
@@ -30,6 +31,7 @@ const SERVICE_TYPE_DISPLAY = {
 
 export default function QuotationList() {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [surveys, setSurveys] = useState([]);
   const [filteredSurveys, setFilteredSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -324,25 +326,33 @@ export default function QuotationList() {
                           <div className="flex items-center justify-center gap-2">
                             {s.hasQuotation ? (
                               <>
-                                <Link to={`/quotation-view/${s.quotation_id}`} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all flex-shrink-0" title="View">
-                                  <FiEye className="w-4.5 h-4.5" />
-                                </Link>
-                                <Link to={`/quotation-edit/${s.survey_id}`} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0" title="Edit">
-                                  <FiEdit3 className="w-4.5 h-4.5" />
-                                </Link>
-                                {s.quotation_signature_uploaded && (
+                                {hasPermission("quotation", "view") && (
+                                  <Link to={`/quotation-view/${s.quotation_id}`} className="w-9 h-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all flex-shrink-0" title="View">
+                                    <FiEye className="w-4.5 h-4.5" />
+                                  </Link>
+                                )}
+                                {hasPermission("quotation", "edit") && (
+                                  <Link to={`/quotation-edit/${s.survey_id}`} className="w-9 h-9 flex items-center justify-center text-gray-600 bg-slate-50 hover:bg-gray-800 hover:text-white rounded-xl transition-all flex-shrink-0" title="Edit">
+                                    <FiEdit3 className="w-4.5 h-4.5" />
+                                  </Link>
+                                )}
+                                {s.quotation_signature_uploaded && hasPermission("quotation", "view") && (
                                   <button onClick={() => viewSignature(s)} className="w-9 h-9 flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all flex-shrink-0" title="Signature">
                                     <FaSignature className="w-4.5 h-4.5" />
                                   </button>
                                 )}
-                                <button onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all flex-shrink-0" title="Delete">
-                                  <FiTrash2 className="w-4.5 h-4.5" />
-                                </button>
+                                {hasPermission("quotation", "delete") && (
+                                  <button onClick={() => handleDeleteQuotation(s.survey_id, s.quotation_id)} className="w-9 h-9 flex items-center justify-center text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all flex-shrink-0" title="Delete">
+                                    <FiTrash2 className="w-4.5 h-4.5" />
+                                  </button>
+                                )}
                               </>
                             ) : (
-                              <button onClick={() => handleCreateQuotation(s.survey_id)} className="px-4 py-2 text-xs font-medium text-white bg-[#4c7085] hover:bg-[#6b8ca3] rounded-xl transition-all shadow-sm">
-                                Create Quotation
-                              </button>
+                              hasPermission("quotation", "add") && (
+                                <button onClick={() => handleCreateQuotation(s.survey_id)} className="px-4 py-2 text-xs font-medium text-white bg-[#4c7085] hover:bg-[#6b8ca3] rounded-xl transition-all shadow-sm">
+                                  Create Quotation
+                                </button>
+                              )
                             )}
                             <button onClick={() => openPhoneModal(s)} className="w-9 h-9 flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all" title="Contact">
                               <IoLogoWhatsapp className="w-5 h-5" />
@@ -405,20 +415,26 @@ export default function QuotationList() {
                           <div className="flex gap-2 pt-2">
                             {s.hasQuotation ? (
                               <>
-                                <Link to={`/quotation-view/${s.quotation_id}`} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm">
-                                  <FiEye /> View
-                                </Link>
-                                <Link to={`/quotation-edit/${s.survey_id}`} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm">
-                                  <FiEdit3 /> Edit
-                                </Link>
+                                {hasPermission("quotation", "view") && (
+                                  <Link to={`/quotation-view/${s.quotation_id}`} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm">
+                                    <FiEye /> View
+                                  </Link>
+                                )}
+                                {hasPermission("quotation", "edit") && (
+                                  <Link to={`/quotation-edit/${s.survey_id}`} className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm">
+                                    <FiEdit3 /> Edit
+                                  </Link>
+                                )}
                                 <button onClick={() => openPhoneModal(s)} className="w-[52px] bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm">
                                   <IoLogoWhatsapp className="w-5 h-5" />
                                 </button>
                               </>
                             ) : (
-                              <button onClick={() => handleCreateQuotation(s.survey_id)} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium shadow-sm">
-                                Create Quotation
-                              </button>
+                              hasPermission("quotation", "add") && (
+                                <button onClick={() => handleCreateQuotation(s.survey_id)} className="flex-1 bg-[#4c7085] text-white py-2.5 rounded-xl text-xs font-medium shadow-sm">
+                                  Create Quotation
+                                </button>
+                              )
                             )}
                           </div>
                         </div>

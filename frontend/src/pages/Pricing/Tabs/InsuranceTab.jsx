@@ -11,10 +11,12 @@ import {
   FaTimes
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
 const InsuranceTab = () => {
+  const { hasPermission } = usePermissions();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -50,6 +52,18 @@ const InsuranceTab = () => {
   }, []);
 
   const handleSubmit = async () => {
+    if (editingId) {
+      if (!hasPermission("local_move", "edit")) {
+        alert("Permission denied");
+        return;
+      }
+    } else {
+      if (!hasPermission("local_move", "add")) {
+        alert("Permission denied");
+        return;
+      }
+    }
+
     if (!formData.name) return;
 
     setSaving(true);
@@ -105,6 +119,10 @@ const InsuranceTab = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!hasPermission("local_move", "delete")) {
+      alert("Permission denied");
+      return;
+    }
     if (!window.confirm("Delete this insurance plan permanently?")) return;
 
     try {
@@ -117,6 +135,10 @@ const InsuranceTab = () => {
   };
 
   const toggleActive = async (plan) => {
+    if (!hasPermission("local_move", "edit")) {
+      alert("Permission denied");
+      return;
+    }
     try {
       await apiClient.post(
         `${API_BASE}/insurance-plans/${plan.id}/toggle_active/`
@@ -128,6 +150,10 @@ const InsuranceTab = () => {
   };
 
   const setAsDefault = async (plan) => {
+    if (!hasPermission("local_move", "edit")) {
+      alert("Permission denied");
+      return;
+    }
     try {
       await apiClient.post(
         `${API_BASE}/insurance-plans/${plan.id}/set_default/`
@@ -185,20 +211,22 @@ const InsuranceTab = () => {
               <FaTimes /> Cancel
             </button>
           )}
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !formData.name}
-            className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              "Saving..."
-            ) : (
-              <>
-                {editingId ? <FaSave /> : <FaPlus />}
-                {editingId ? "Update Plan" : "Add Plan"}
-              </>
-            )}
-          </button>
+          {(editingId ? hasPermission("local_move", "edit") : hasPermission("local_move", "add")) && (
+            <button
+              onClick={handleSubmit}
+              disabled={saving || !formData.name}
+              className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                "Saving..."
+              ) : (
+                <>
+                  {editingId ? <FaSave /> : <FaPlus />}
+                  {editingId ? "Update Plan" : "Add Plan"}
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -246,13 +274,22 @@ const InsuranceTab = () => {
                         {plan.description || "-"}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button onClick={() => toggleActive(plan)} className="focus:outline-none">
+                        <button
+                          onClick={() => toggleActive(plan)}
+                          className="focus:outline-none"
+                          disabled={!hasPermission("local_move", "edit")}
+                        >
                           {plan.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-center">
                         {!plan.is_default ? (
-                          <button onClick={() => setAsDefault(plan)} className="text-gray-300 hover:text-yellow-500 transition-colors" title="Set Default">
+                          <button
+                            onClick={() => setAsDefault(plan)}
+                            className="text-gray-300 hover:text-yellow-500 transition-colors"
+                            title="Set Default"
+                            disabled={!hasPermission("local_move", "edit")}
+                          >
                             <FaCheck />
                           </button>
                         ) : (
@@ -261,18 +298,22 @@ const InsuranceTab = () => {
                       </td>
                       <td className="px-6 py-4 text-right pr-8">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(plan)}
-                            className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
-                          >
-                            <FaEdit size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(plan.id)}
-                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
-                          >
-                            <FaTrash size={14} />
-                          </button>
+                          {hasPermission("local_move", "edit") && (
+                            <button
+                              onClick={() => startEdit(plan)}
+                              className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
+                            >
+                              <FaEdit size={14} />
+                            </button>
+                          )}
+                          {hasPermission("local_move", "delete") && (
+                            <button
+                              onClick={() => handleDelete(plan.id)}
+                              className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -299,7 +340,11 @@ const InsuranceTab = () => {
                       </div>
                     </div>
                     <div className="flex-shrink-0">
-                      <button onClick={() => toggleActive(plan)} className="focus:outline-none">
+                      <button
+                        onClick={() => toggleActive(plan)}
+                        className="focus:outline-none"
+                        disabled={!hasPermission("local_move", "edit")}
+                      >
                         {plan.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
                       </button>
                     </div>
@@ -310,18 +355,22 @@ const InsuranceTab = () => {
                   </p>
 
                   <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      onClick={() => startEdit(plan)}
-                      className="flex-1 sm:flex-none py-2 px-4 bg-gray-100 text-[#4c7085] rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(plan.id)}
-                      className="flex-1 sm:flex-none py-2 px-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                      <FaTrash /> Delete
-                    </button>
+                    {hasPermission("local_move", "edit") && (
+                      <button
+                        onClick={() => startEdit(plan)}
+                        className="flex-1 sm:flex-none py-2 px-4 bg-gray-100 text-[#4c7085] rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                    )}
+                    {hasPermission("local_move", "delete") && (
+                      <button
+                        onClick={() => handleDelete(plan.id)}
+                        className="flex-1 sm:flex-none py-2 px-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <FaTrash /> Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

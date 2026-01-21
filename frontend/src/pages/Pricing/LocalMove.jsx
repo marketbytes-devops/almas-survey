@@ -1,6 +1,8 @@
 /* src/pages/Pricing/LocalMove.jsx */
 import React, { useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
@@ -35,6 +37,8 @@ const QATAR_CITIES = [
 
 const LocalMove = () => {
   const methods = useForm();
+  const navigate = useNavigate();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [activeTab, setActiveTab] = useState("pricing");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,6 +59,11 @@ const LocalMove = () => {
   const API_BASE_URL = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
   useEffect(() => {
+    if (!permissionsLoading && !hasPermission("local_move", "view")) {
+      navigate("/dashboard");
+      return;
+    }
+
     const fetchDropdowns = async () => {
       try {
         setLoading(true);

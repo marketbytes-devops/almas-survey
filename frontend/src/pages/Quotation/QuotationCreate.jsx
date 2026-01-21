@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import { FiArrowLeft, FiCheckCircle, FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from "react-icons/fi";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
@@ -17,6 +18,7 @@ const SERVICE_TYPE_DISPLAY = {
 export default function QuotationCreate() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,6 +65,11 @@ export default function QuotationCreate() {
   });
 
   useEffect(() => {
+    if (!permissionsLoading && !hasPermission("quotation", "add")) {
+      navigate("/dashboard");
+      return;
+    }
+
     const fetchSurvey = async () => {
       try {
         const res = await apiClient.get(`/surveys/${id}/`);

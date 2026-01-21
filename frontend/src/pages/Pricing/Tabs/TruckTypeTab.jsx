@@ -11,10 +11,12 @@ import {
   FaTimes
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
 const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
 const TruckTypeTab = () => {
+  const { hasPermission } = usePermissions();
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -47,6 +49,18 @@ const TruckTypeTab = () => {
   }, []);
 
   const handleSubmit = async () => {
+    if (editingId) {
+      if (!hasPermission("local_move", "edit")) {
+        alert("Permission denied");
+        return;
+      }
+    } else {
+      if (!hasPermission("local_move", "add")) {
+        alert("Permission denied");
+        return;
+      }
+    }
+
     if (!formData.name) return;
 
     setSaving(true);
@@ -101,6 +115,10 @@ const TruckTypeTab = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!hasPermission("local_move", "delete")) {
+      alert("Permission denied");
+      return;
+    }
     if (!window.confirm("Delete this truck type?")) return;
     try {
       await apiClient.delete(`${API_BASE}/truck-types/${id}/`);
@@ -111,6 +129,10 @@ const TruckTypeTab = () => {
   };
 
   const toggleActive = async (truck) => {
+    if (!hasPermission("local_move", "edit")) {
+      alert("Permission denied");
+      return;
+    }
     try {
       await apiClient.post(`${API_BASE}/truck-types/${truck.id}/toggle_active/`);
       fetchTrucks();
@@ -120,6 +142,10 @@ const TruckTypeTab = () => {
   };
 
   const setDefault = async (truck) => {
+    if (!hasPermission("local_move", "edit")) {
+      alert("Permission denied");
+      return;
+    }
     try {
       await apiClient.post(`${API_BASE}/truck-types/${truck.id}/set_default/`);
       fetchTrucks();
@@ -202,20 +228,22 @@ const TruckTypeTab = () => {
               <FaTimes /> Cancel
             </button>
           )}
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !formData.name}
-            className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              "Saving..."
-            ) : (
-              <>
-                {editingId ? <FaSave /> : <FaPlus />}
-                {editingId ? "Update Truck" : "Add Truck"}
-              </>
-            )}
-          </button>
+          {(editingId ? hasPermission("local_move", "edit") : hasPermission("local_move", "add")) && (
+            <button
+              onClick={handleSubmit}
+              disabled={saving || !formData.name}
+              className="w-full sm:w-auto px-8 h-[46px] bg-[#4c7085] hover:bg-[#405d6f] text-white rounded-xl font-medium transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                "Saving..."
+              ) : (
+                <>
+                  {editingId ? <FaSave /> : <FaPlus />}
+                  {editingId ? "Update Truck" : "Add Truck"}
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -267,13 +295,22 @@ const TruckTypeTab = () => {
                         QAR {Number(truck.price_per_trip).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button onClick={() => toggleActive(truck)} className="focus:outline-none">
+                        <button
+                          onClick={() => toggleActive(truck)}
+                          className="focus:outline-none"
+                          disabled={!hasPermission("local_move", "edit")}
+                        >
                           {truck.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-center">
                         {!truck.is_default ? (
-                          <button onClick={() => setDefault(truck)} className="text-gray-300 hover:text-yellow-500 transition-colors" title="Set Default">
+                          <button
+                            onClick={() => setDefault(truck)}
+                            className="text-gray-300 hover:text-yellow-500 transition-colors"
+                            title="Set Default"
+                            disabled={!hasPermission("local_move", "edit")}
+                          >
                             <FaCheck />
                           </button>
                         ) : (
@@ -282,18 +319,22 @@ const TruckTypeTab = () => {
                       </td>
                       <td className="px-6 py-4 text-right pr-8">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(truck)}
-                            className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
-                          >
-                            <FaEdit size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(truck.id)}
-                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
-                          >
-                            <FaTrash size={14} />
-                          </button>
+                          {hasPermission("local_move", "edit") && (
+                            <button
+                              onClick={() => startEdit(truck)}
+                              className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg hover:bg-[#4c7085] hover:text-white transition-colors"
+                            >
+                              <FaEdit size={14} />
+                            </button>
+                          )}
+                          {hasPermission("local_move", "delete") && (
+                            <button
+                              onClick={() => handleDelete(truck.id)}
+                              className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-colors"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -317,21 +358,29 @@ const TruckTypeTab = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => toggleActive(truck)} className="focus:outline-none">
+                      <button
+                        onClick={() => toggleActive(truck)}
+                        className="focus:outline-none"
+                        disabled={!hasPermission("local_move", "edit")}
+                      >
                         {truck.is_active ? <FaToggleOn className="text-2xl text-green-500" /> : <FaToggleOff className="text-2xl text-gray-300" />}
                       </button>
-                      <button
-                        onClick={() => startEdit(truck)}
-                        className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg"
-                      >
-                        <FaEdit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(truck.id)}
-                        className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg"
-                      >
-                        <FaTrash size={14} />
-                      </button>
+                      {hasPermission("local_move", "edit") && (
+                        <button
+                          onClick={() => startEdit(truck)}
+                          className="w-8 h-8 flex items-center justify-center text-[#4c7085] bg-gray-50 rounded-lg"
+                        >
+                          <FaEdit size={14} />
+                        </button>
+                      )}
+                      {hasPermission("local_move", "delete") && (
+                        <button
+                          onClick={() => handleDelete(truck.id)}
+                          className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 rounded-lg"
+                        >
+                          <FaTrash size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
 

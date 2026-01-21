@@ -269,6 +269,36 @@ const Roles = () => {
     }
   };
 
+  const SIDEBAR_ORDER = [
+    "Dashboard",
+    "enquiries",
+    "new_enquiries",
+    "follow_ups",
+    "scheduled_surveys",
+    "survey_summary",
+    "quotation",
+    "booking",
+    "inventory",
+    "pricing",
+    "local_move",
+    "international_move",
+    "additional_settings",
+    "types",
+    "units",
+    "currency",
+    "tax",
+    "handyman",
+    "manpower",
+    "room",
+    "additional-services",
+    "labours",
+    "materials",
+    "users",
+    "roles",
+    "permissions",
+    "Profile",
+  ];
+
   const displayNames = {
     Dashboard: "Dashboard",
     Profile: "Profile",
@@ -641,7 +671,14 @@ const Roles = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 bg-white">
-                  {Object.keys(rolePermissions).sort().map((page) => (
+                  {Object.keys(rolePermissions).sort((a, b) => {
+                    const indexA = SIDEBAR_ORDER.indexOf(a);
+                    const indexB = SIDEBAR_ORDER.indexOf(b);
+                    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                  }).map((page) => (
                     <tr key={page} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4">
                         <p className="text-sm font-medium text-gray-800">{displayNames[page] || page}</p>
