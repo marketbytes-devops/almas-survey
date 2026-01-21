@@ -383,9 +383,9 @@ const PricingTab = ({
                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Range</th>
                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Min</th>
                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Max</th>
+                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap text-center">Rate Type</th>
                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Flat Rate</th>
                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Variable Rate</th>
-                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap text-center">Rate Type</th>
                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap text-center">Action</th>
                   </tr>
                 </thead>
@@ -411,25 +411,7 @@ const PricingTab = ({
                             className="input-style w-24 !py-2 !px-3 font-medium text-center"
                           />
                         </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <input
-                            type="text"
-                            value={row.flatRate}
-                            disabled={!isFlat}
-                            onChange={(e) => handleInputChange(row.id, "flatRate", e.target.value)}
-                            className={`input-style w-28 !py-2 !px-3 font-medium transition ${!isFlat ? "bg-gray-50 text-gray-600" : "text-gray-800"}`}
-                          />
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <input
-                            type="text"
-                            value={row.variableRate}
-                            disabled={isFlat}
-                            onChange={(e) => handleInputChange(row.id, "variableRate", e.target.value)}
-                            className={`input-style w-28 !py-2 !px-3 font-medium transition ${isFlat ? "bg-gray-50 text-gray-600" : "text-gray-800"}`}
-                          />
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
+                       <td className="px-6 py-5 whitespace-nowrap">
                           <div className="flex justify-center gap-4">
                             <label className="flex items-center cursor-pointer group">
                               <input
@@ -452,6 +434,24 @@ const PricingTab = ({
                               <span className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${isFlat ? "bg-[#4c7085] text-white border-[#4c7085]" : "bg-white text-gray-600 border-gray-200 group-hover:bg-gray-50"}`}>Flat</span>
                             </label>
                           </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={row.flatRate}
+                            disabled={!isFlat}
+                            onChange={(e) => handleInputChange(row.id, "flatRate", e.target.value)}
+                            className={`input-style w-28 !py-2 !px-3 font-medium transition ${!isFlat ? "bg-gray-50 text-gray-600" : "text-gray-800"}`}
+                          />
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={row.variableRate}
+                            disabled={isFlat}
+                            onChange={(e) => handleInputChange(row.id, "variableRate", e.target.value)}
+                            className={`input-style w-28 !py-2 !px-3 font-medium transition ${isFlat ? "bg-gray-50 text-gray-600" : "text-gray-800"}`}
+                          />
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-center">
                           {hasPermission("local_move", "delete") && (
