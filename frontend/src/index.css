@@ -172,6 +172,15 @@ textarea {
   border-bottom: 1px solid var(--border-color) !important;
 }
 
+#datepicker-portal {
+  position: relative;
+  z-index: 9999;
+}
+
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+
 .grecaptcha-badge {
   visibility: hidden;
 }

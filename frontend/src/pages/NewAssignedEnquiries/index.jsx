@@ -714,25 +714,70 @@ const NewAssignedEnquiries = () => {
           }
         >
           <FormProvider {...scheduleSurveyForm}>
-            <form id="schedule-survey-form" onSubmit={scheduleSurveyForm.handleSubmit(onScheduleSurveySubmit)} className="space-y-4">
-              <div className="flex flex-col">
-                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">Survey Date and Time <span className="text-red-500">*</span></label>
-                <DatePicker
-                  selected={scheduleSurveyForm.watch("surveyDate")}
-                  onChange={(date) => scheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
-                  showTimeSelect
-                  timeFormat="HH:mm"
-                  timeIntervals={15}
-                  dateFormat="yyyy-MM-dd HH:mm"
-                  minDate={new Date()}
-                  className="input-style w-full"
-                  placeholderText="Select date and time"
-                  wrapperClassName="w-full"
-                />
-                {scheduleSurveyForm.formState.errors.surveyDate && (
-                  <p className="text-red-500 text-xs mt-1 font-medium">{scheduleSurveyForm.formState.errors.surveyDate.message}</p>
-                )}
+            <form id="schedule-survey-form" onSubmit={scheduleSurveyForm.handleSubmit(onScheduleSurveySubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                    <FiCalendar className="text-[#4c7085]" />
+                    Survey Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <DatePicker
+                      selected={scheduleSurveyForm.watch("surveyDate")}
+                      onChange={(date) => {
+                        const current = scheduleSurveyForm.getValues("surveyDate") || new Date();
+                        if (date) {
+                          const newDate = new Date(date);
+                          newDate.setHours(current.getHours(), current.getMinutes());
+                          scheduleSurveyForm.setValue("surveyDate", newDate, { shouldValidate: true });
+                        }
+                      }}
+                      dateFormat="MMMM d, yyyy"
+                      minDate={new Date()}
+                      className="input-style w-full !pl-10 h-[52px] rounded-xl"
+                      placeholderText="Select date"
+                      wrapperClassName="w-full"
+                      portalId="datepicker-portal"
+                    />
+                    <FiCalendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                    <FiClock className="text-[#4c7085]" />
+                    Survey Time <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <DatePicker
+                      selected={scheduleSurveyForm.watch("surveyDate")}
+                      onChange={(time) => {
+                        const current = scheduleSurveyForm.getValues("surveyDate") || new Date();
+                        if (time) {
+                          const newDate = new Date(current);
+                          newDate.setHours(time.getHours(), time.getMinutes());
+                          scheduleSurveyForm.setValue("surveyDate", newDate, { shouldValidate: true });
+                        }
+                      }}
+                      showTimeSelect
+                      showTimeSelectOnly
+                      timeIntervals={15}
+                      timeCaption="Time"
+                      dateFormat="h:mm aa"
+                      className="input-style w-full !pl-10 h-[52px] rounded-xl"
+                      placeholderText="Select time"
+                      wrapperClassName="w-full"
+                      portalId="datepicker-portal"
+                    />
+                    <FiClock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
+              {scheduleSurveyForm.formState.errors.surveyDate && (
+                <p className="text-red-500 text-xs font-medium ml-1">
+                  {scheduleSurveyForm.formState.errors.surveyDate.message}
+                </p>
+              )}
             </form>
           </FormProvider>
         </Modal>

@@ -493,14 +493,6 @@ const ScheduledSurveys = () => {
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
-                          {(!enquiry.survey_status || enquiry.survey_status === 'cancelled') && hasPermission("quotation", "add") && (
-                            <button
-                              onClick={() => navigate(`/quotation-create/enquiry/${enquiry.id}`)}
-                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-medium rounded-xl shadow-sm transition-all"
-                            >
-                              Create Quote
-                            </button>
-                          )}
                           {!isSurveyFinished(enquiry) && (hasPermission("scheduled_surveys", "add") || hasPermission("scheduled_surveys", "edit")) && (
                             <>
                               <button
@@ -642,22 +634,70 @@ const ScheduledSurveys = () => {
           }
         >
           <FormProvider {...rescheduleSurveyForm}>
-            <form id="reschedule-form" onSubmit={rescheduleSurveyForm.handleSubmit(onRescheduleSubmit)} className="space-y-4">
-              <div className="flex flex-col">
-                <label className="block text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1">New Date and Time <span className="text-red-500">*</span></label>
-                <DatePicker
-                  selected={rescheduleSurveyForm.watch("surveyDate")}
-                  onChange={(date) => rescheduleSurveyForm.setValue("surveyDate", date, { shouldValidate: true })}
-                  showTimeSelect
-                  timeFormat="HH:mm"
-                  timeIntervals={15}
-                  dateFormat="yyyy-MM-dd HH:mm"
-                  minDate={new Date()}
-                  className="input-style w-full"
-                  placeholderText="Select new date/time"
-                  wrapperClassName="w-full"
-                />
+            <form id="reschedule-form" onSubmit={rescheduleSurveyForm.handleSubmit(onRescheduleSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                    <FiCalendar className="text-[#4c7085]" />
+                    New Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <DatePicker
+                      selected={rescheduleSurveyForm.watch("surveyDate")}
+                      onChange={(date) => {
+                        const current = rescheduleSurveyForm.getValues("surveyDate") || new Date();
+                        if (date) {
+                          const newDate = new Date(date);
+                          newDate.setHours(current.getHours(), current.getMinutes());
+                          rescheduleSurveyForm.setValue("surveyDate", newDate, { shouldValidate: true });
+                        }
+                      }}
+                      dateFormat="MMMM d, yyyy"
+                      minDate={new Date()}
+                      className="input-style w-full !pl-10 h-[52px] rounded-xl"
+                      placeholderText="Select new date"
+                      wrapperClassName="w-full"
+                      portalId="datepicker-portal"
+                    />
+                    <FiCalendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-600 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                    <FiClock className="text-[#4c7085]" />
+                    New Time <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <DatePicker
+                      selected={rescheduleSurveyForm.watch("surveyDate")}
+                      onChange={(time) => {
+                        const current = rescheduleSurveyForm.getValues("surveyDate") || new Date();
+                        if (time) {
+                          const newDate = new Date(current);
+                          newDate.setHours(time.getHours(), time.getMinutes());
+                          rescheduleSurveyForm.setValue("surveyDate", newDate, { shouldValidate: true });
+                        }
+                      }}
+                      showTimeSelect
+                      showTimeSelectOnly
+                      timeIntervals={15}
+                      timeCaption="Time"
+                      dateFormat="h:mm aa"
+                      className="input-style w-full !pl-10 h-[52px] rounded-xl"
+                      placeholderText="Select new time"
+                      wrapperClassName="w-full"
+                      portalId="datepicker-portal"
+                    />
+                    <FiClock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
+              {rescheduleSurveyForm.formState.errors.surveyDate && (
+                <p className="text-red-500 text-xs font-medium ml-1">
+                  {rescheduleSurveyForm.formState.errors.surveyDate.message}
+                </p>
+              )}
             </form>
           </FormProvider>
         </Modal>

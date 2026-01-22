@@ -166,7 +166,7 @@ const BookingList = () => {
                                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Booking ID</th>
                                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Move Date</th>
                                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
-                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Move Type</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Move Type</th>
                                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact</th>
                                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Location</th>
                                     <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Supervisor</th>
@@ -182,7 +182,7 @@ const BookingList = () => {
                                             <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{b.move_date || "—"}</td>
                                             <td className="px-6 py-5 whitespace-nowrap font-medium text-gray-800">{b.client_name}</td>
                                             <td className="px-6 py-5 whitespace-nowrap">
-                                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 uppercase">
+                                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 uppercase whitespace-nowrap">
                                                     {formatMoveType(b.move_type)}
                                                 </span>
                                             </td>
@@ -226,7 +226,7 @@ const BookingList = () => {
                                     <div className="font-medium text-gray-800 text-base">{b.booking_id}</div>
                                     <div className="text-sm text-gray-600 mt-1">{b.move_date || "—"}</div>
                                 </div>
-                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 uppercase">{formatMoveType(b.move_type)}</span>
+                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100 uppercase whitespace-nowrap">{formatMoveType(b.move_type)}</span>
                             </div>
                             <div className="space-y-2 mb-4">
                                 <p className="text-sm"><span className="text-gray-600 w-20 inline-block">Client:</span> <span className="text-gray-800 font-medium">{b.client_name}</span></p>

@@ -116,6 +116,7 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
                     className={`${INPUT_CLASS_BASE} ${error ? "border-red-500 bg-red-50/10" : ""}`}
                     placeholderText={isTimeOnly ? "Select time" : "Select date"}
                     wrapperClassName="w-full"
+                    portalId="datepicker-portal"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-600">
                     {isTimeOnly ? <FaClock className="w-4 h-4" /> : <FaCalendar className="w-4 h-4" />}
