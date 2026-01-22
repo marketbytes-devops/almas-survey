@@ -664,30 +664,32 @@ class EnquiryListCreate(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            recaptcha_token = request.data.get("recaptchaToken")
-            if not recaptcha_token:
-                return Response(
-                    {"error": "reCAPTCHA token is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            # Skip reCAPTCHA for authenticated users (dashboard submissions)
+            if not request.user.is_authenticated:
+                recaptcha_token = request.data.get("recaptchaToken")
+                if not recaptcha_token:
+                    return Response(
+                        {"error": "reCAPTCHA token is required"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-            recaptcha_response = requests.post(
-                "https://www.google.com/recaptcha/api/siteverify",
-                data={
-                    "secret": settings.RECAPTCHA_SECRET_KEY,
-                    "response": recaptcha_token,
-                },
-            )
-            recaptcha_result = recaptcha_response.json()
-
-            if (
-                not recaptcha_result.get("success")
-                or recaptcha_result.get("score", 0) < 0.5
-            ):
-                return Response(
-                    {"error": "Invalid reCAPTCHA. Please try again."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                recaptcha_response = requests.post(
+                    "https://www.google.com/recaptcha/api/siteverify",
+                    data={
+                        "secret": settings.RECAPTCHA_SECRET_KEY,
+                        "response": recaptcha_token,
+                    },
                 )
+                recaptcha_result = recaptcha_response.json()
+
+                if (
+                    not recaptcha_result.get("success")
+                    or recaptcha_result.get("score", 0) < 0.5
+                ):
+                    return Response(
+                        {"error": "Invalid reCAPTCHA. Please try again."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)

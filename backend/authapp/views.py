@@ -43,7 +43,6 @@ class EffectivePermissionsView(APIView):
 
     def get(self, request):
         perms = request.user.get_effective_permissions()
-        print("Effective perms for", request.user.email, ":", perms) 
         return Response(perms)
 
 

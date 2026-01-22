@@ -168,16 +168,16 @@ class LabourViewSet(viewsets.ModelViewSet):
 class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer
-    permission_classes = [HasPagePermission("materials")]
+    permission_classes = [HasPagePermission("inventory")]
 
 
 class MaterialPurchaseViewSet(viewsets.ModelViewSet):
     queryset = MaterialPurchase.objects.all().order_by('-purchase_date')
     serializer_class = MaterialPurchaseSerializer
-    permission_classes = [HasPagePermission("materials")]
+    permission_classes = [HasPagePermission("inventory")]
 
 
 class InventoryLogViewSet(viewsets.ModelViewSet):
     queryset = InventoryLog.objects.all().order_by('-date')
     serializer_class = InventoryLogSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [HasPagePermission("inventory")]
