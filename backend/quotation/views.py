@@ -382,7 +382,6 @@ Almas Movers Management"""
             quotation = self.get_object()
             filepath, filename = generate_quotation_pdf(quotation)
             
-            # Using standard FileResponse for binary download
             response = FileResponse(open(filepath, 'rb'), content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
             return response

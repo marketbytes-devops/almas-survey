@@ -163,8 +163,6 @@ class LabourViewSet(viewsets.ModelViewSet):
     permission_classes = [HasPagePermission("labours")]
 
 
-
-
 class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer

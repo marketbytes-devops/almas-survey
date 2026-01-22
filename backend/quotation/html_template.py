@@ -22,7 +22,6 @@ def get_base64_image(file_path):
         return ""
     try:
         ext = os.path.splitext(file_path)[1].lower().replace('.', '')
-        # Handle webp as image/webp
         mime_type = f"image/{ext}" if ext != 'jpg' else "image/jpeg"
         with open(file_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
@@ -46,13 +45,11 @@ def build_html_template(quotation):
     """
     survey = quotation.survey
     currency = quotation.currency.code if quotation.currency else "QAR"
-    
-    # Customer & Survey Data
+
     customer_name = getattr(survey, 'full_name', 'Valued Customer') if survey else 'Valued Customer'
     phone = getattr(survey, 'phone_number', 'N/A') if survey else 'N/A'
     email = getattr(survey, 'email', 'N/A') if survey else 'N/A'
     
-    # Service Type Mapping
     service_type_map = {
         'localMove': 'Local Move',
         'internationalMove': 'International Move',
@@ -65,7 +62,6 @@ def build_html_template(quotation):
         'Local Move'
     )
     
-    # Move Details
     origin = 'Doha, Qatar'
     if survey:
         origin = getattr(survey, 'origin_city', None) or getattr(survey, 'origin_address', 'Doha, Qatar')
@@ -79,7 +75,6 @@ def build_html_template(quotation):
     if survey and survey.packing_date_from:
         move_date = survey.packing_date_from.strftime('%d %B %Y')
     
-    # Calculate volume from articles
     volume = 'TBA'
     if survey and hasattr(survey, 'articles'):
         try:
@@ -92,28 +87,23 @@ def build_html_template(quotation):
         except:
             volume = 'TBA'
     
-    # Financial Data
     amount = float(quotation.amount or 0)
     discount = float(quotation.discount or 0)
     final_amount = float(quotation.final_amount or (amount - discount))
     advance = float(quotation.advance or 0)
     balance = float(quotation.balance or (final_amount - advance))
     
-    # Format currency values
     total_price = format_currency(amount)
     discount_amt = format_currency(discount)
     final_amt = format_currency(final_amount)
     advance_amt = format_currency(advance)
     balance_amt = format_currency(balance)
     
-    # Quote Details
     quote_number = quotation.quotation_id or "AMS/2600001"
     today_formatted = datetime.now().strftime('%d %B %Y')
     
-    # Build breakdown rows
     breakdown_rows = ""
     
-    # Additional Charges
     if quotation.additional_charges:
         for charge in quotation.additional_charges:
             service_name = charge.get('service_name', 'Additional Service')
@@ -129,7 +119,6 @@ def build_html_template(quotation):
                 </tr>
             """
     
-    # Discount row
     discount_row = ""
     if discount > 0:
         discount_row = f"""
@@ -139,7 +128,6 @@ def build_html_template(quotation):
             </tr>
         """
     
-    # Included/Excluded Services
     from additional_settings.models import SurveyAdditionalService
     
     included_services = []
@@ -160,7 +148,6 @@ def build_html_template(quotation):
             except SurveyAdditionalService.DoesNotExist:
                 pass
     
-    # Build HTML lists
     inclusions_html = ""
     for item in included_services:
         inclusions_html += f'<li><span class="check-icon">✓</span> {item}</li>'
@@ -175,7 +162,6 @@ def build_html_template(quotation):
     if not exclusions_html:
         exclusions_html = '<li><span class="cross-icon">✗</span> Customs Duties</li><li><span class="cross-icon">✗</span> Storage</li>'
     
-    # Payment Terms
     from pricing.models import PaymentTerm
     payment_terms = PaymentTerm.objects.filter(is_active=True).order_by('order')
     
@@ -185,8 +171,7 @@ def build_html_template(quotation):
     
     if not payment_terms_html:
         payment_terms_html = '<div>Standard Payment Terms Apply</div>'
-    
-    # Quote Notes
+
     from pricing.models import QuoteNote
     quote_notes = QuoteNote.objects.filter(is_active=True).order_by('order')
     
@@ -196,7 +181,6 @@ def build_html_template(quotation):
     
     notes_section = f'<div class="terms-box"><h3>IMPORTANT NOTES</h3><div class="text-content">{notes_html}</div></div>' if notes_html else ''
     
-    # Survey Remarks  
     from quotation.models import QuotationRemark
     survey_remarks_html = ""
     if quotation.remarks:
@@ -213,7 +197,6 @@ def build_html_template(quotation):
         </section>
     """ if survey_remarks_html else ''
     
-    # Signatures
     survey_signature_img = ""
     if survey and hasattr(survey, 'signature') and survey.signature:
         try:
@@ -236,7 +219,6 @@ def build_html_template(quotation):
         except:
             pass
     
-    # Logo paths
     logo_path = os.path.join(settings.BASE_DIR, 'quotation', 'static', 'quotation', 'images', 'logo-quotation.webp')
     logo_b64 = get_base64_image(logo_path)
     
@@ -248,7 +230,6 @@ def build_html_template(quotation):
         if logo_b64_item:
             cert_logos_html += f'<img src="{logo_b64_item}" class="footer-cert-logo" />'
     
-    # Build complete HTML
     html = f"""
     <!DOCTYPE html>
     <html>

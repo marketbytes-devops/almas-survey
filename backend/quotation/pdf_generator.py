@@ -18,15 +18,12 @@ def generate_quotation_pdf(quotation):
     """
     Generate a beautiful PDF from HTML template using Playwright
     """
-    # Ensure PDF directory exists
     pdf_dir = os.path.join(settings.MEDIA_ROOT, 'quotation_pdfs')
     os.makedirs(pdf_dir, exist_ok=True)
     
-    # Generate filename
     filename = f"Quotation_{quotation.quotation_id}.pdf"
     filepath = os.path.join(pdf_dir, filename)
     
-    # Use a result container to get data back from the thread
     result = {
         'success': False,
         'filepath': filepath,
@@ -37,12 +34,10 @@ def generate_quotation_pdf(quotation):
 
     def worker():
         try:
-            # Build HTML content from template
             logger.info(f"Building HTML template for quotation: {quotation.quotation_id}")
             html_content = build_html_template(quotation)
             logger.info(f"HTML template built successfully. Length: {len(html_content)}")
             
-            # Generate PDF using Playwright
             logger.info(f"About to enter sync_playwright() for: {quotation.quotation_id}")
             with sync_playwright() as p:
                 logger.info(f"Launching browser for PDF generation: {quotation.quotation_id}")
@@ -68,14 +63,12 @@ def generate_quotation_pdf(quotation):
                 result['success'] = True
         except Exception as e:
             import traceback
-            # Convert error to string and replace non-ascii chars to prevent CP1252 encoding crashes in logs
             error_str = str(e).encode('ascii', 'replace').decode('ascii')
             result['error'] = f"{type(e).__name__}: {error_str}"
             result['traceback'] = traceback.format_exc().encode('ascii', 'replace').decode('ascii')
             logger.error(f"Error in PDF worker thread: {result['error']}")
             logger.error(result['traceback'])
 
-    # Run in a separate thread to avoid asyncio loop issues in Django
     thread = threading.Thread(target=worker)
     thread.start()
     thread.join()
