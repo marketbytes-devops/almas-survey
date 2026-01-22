@@ -27,7 +27,7 @@ const PricingTab = ({
   const [selectedPricingCity, setSelectedPricingCity] = useState("");
 
   const API_BASE_URL =
-    apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+    apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
   useEffect(() => {
     const getQatarCities = () => {
@@ -411,7 +411,7 @@ const PricingTab = ({
                             className="input-style w-24 !py-2 !px-3 font-medium text-center"
                           />
                         </td>
-                       <td className="px-6 py-5 whitespace-nowrap">
+                        <td className="px-6 py-5 whitespace-nowrap">
                           <div className="flex justify-center gap-4">
                             <label className="flex items-center cursor-pointer group">
                               <input

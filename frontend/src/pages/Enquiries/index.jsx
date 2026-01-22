@@ -218,8 +218,10 @@ const Enquiries = () => {
     if (!hasPermission("enquiries", "add")) return alert("Permission denied");
     setIsSubmitting(true);
     try {
-      const token = await getRecaptchaToken();
-      const res = await apiClient.post("/contacts/enquiries/", { ...data, recaptchaToken: token, submittedUrl: window.location.href });
+      const res = await apiClient.post("/contacts/enquiries/", {
+        ...data,
+        submittedUrl: window.location.href
+      });
       const updated = [res.data, ...enquiries];
       setEnquiries(updated);
       setFilteredEnquiries(applyFilters(updated));

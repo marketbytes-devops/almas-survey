@@ -157,7 +157,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user = CustomUser(**validated_data)
         user.set_password(random_password)
         user.save()
-        print(f"\n[DEBUG] Created user '{user.email}' with password: '{random_password}'\n")
 
         subject = 'Your Account Credentials'
         message = (
@@ -180,7 +179,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 fail_silently=False,
             )
         except Exception as e:
-            print(f"Failed to send welcome email: {e}")
+            pass
 
         return user
 

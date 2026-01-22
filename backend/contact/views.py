@@ -634,10 +634,6 @@ class EnquiryListCreate(generics.ListCreateAPIView):
             logger.warning("User not authenticated, returning empty queryset")
             return queryset.none()
 
-        if user.is_superuser or (hasattr(user, 'role') and user.role.name == "Superadmin"):
-            logger.debug("Superadmin access: returning all enquiries")
-            return queryset
-
         has_survey = self.request.query_params.get("has_survey")
         contact_status = self.request.query_params.get("contact_status")
         unassigned = self.request.query_params.get("unassigned")
@@ -645,10 +641,30 @@ class EnquiryListCreate(generics.ListCreateAPIView):
 
         logger.debug(f"Query Params: has_survey={has_survey}, assigned_user_email={assigned_user_email}, contact_status={contact_status}, unassigned={unassigned}")
 
-        if assigned_user_email:
-            queryset = queryset.filter(assigned_user__email__iexact=assigned_user_email)
+        # Check if user has permission to see more than just their own assigned enquiries
+        can_view_all = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin") or
+            user.has_effective_permission('enquiries', 'view') or
+            user.has_effective_permission('new_enquiries', 'view') or
+            user.has_effective_permission('processing_enquiries', 'view') or
+            user.has_effective_permission('scheduled_surveys', 'view') or
+            user.has_effective_permission('follow_ups', 'view')
+        )
+
+        if can_view_all:
+            logger.debug(f"User {user.email} has broad enquiry view permission.")
         else:
-            queryset = queryset.filter(assigned_user=user)
+            # Fallback for restricted users: only show assigned ones unless a specific override exists
+            if not assigned_user_email and not unassigned == "true":
+                queryset = queryset.filter(assigned_user=user)
+                logger.debug(f"Restricted access: defaulting to assigned_user={user.email}")
+
+        if assigned_user_email:
+            if assigned_user_email == "not_null":
+                queryset = queryset.filter(assigned_user__isnull=False)
+            else:
+                queryset = queryset.filter(assigned_user__email__iexact=assigned_user_email)
 
         if contact_status:
             queryset = queryset.filter(contact_status=contact_status)
@@ -664,30 +680,32 @@ class EnquiryListCreate(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            recaptcha_token = request.data.get("recaptchaToken")
-            if not recaptcha_token:
-                return Response(
-                    {"error": "reCAPTCHA token is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            # Skip reCAPTCHA for authenticated users (dashboard submissions)
+            if not request.user.is_authenticated:
+                recaptcha_token = request.data.get("recaptchaToken")
+                if not recaptcha_token:
+                    return Response(
+                        {"error": "reCAPTCHA token is required"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-            recaptcha_response = requests.post(
-                "https://www.google.com/recaptcha/api/siteverify",
-                data={
-                    "secret": settings.RECAPTCHA_SECRET_KEY,
-                    "response": recaptcha_token,
-                },
-            )
-            recaptcha_result = recaptcha_response.json()
-
-            if (
-                not recaptcha_result.get("success")
-                or recaptcha_result.get("score", 0) < 0.5
-            ):
-                return Response(
-                    {"error": "Invalid reCAPTCHA. Please try again."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                recaptcha_response = requests.post(
+                    "https://www.google.com/recaptcha/api/siteverify",
+                    data={
+                        "secret": settings.RECAPTCHA_SECRET_KEY,
+                        "response": recaptcha_token,
+                    },
                 )
+                recaptcha_result = recaptcha_response.json()
+
+                if (
+                    not recaptcha_result.get("success")
+                    or recaptcha_result.get("score", 0) < 0.5
+                ):
+                    return Response(
+                        {"error": "Invalid reCAPTCHA. Please try again."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 import StockInHand from "./tabs/StockInHand";
 import Purchase from "./tabs/Purchase";
 import UsageTracking from "./tabs/UsageTracking";
@@ -6,7 +8,15 @@ import PlasticBoxes from "./tabs/PlasticBoxes";
 import PageHeader from "../../components/PageHeader";
 
 const Inventory = () => {
+    const navigate = useNavigate();
+    const { hasPermission, isLoadingPermissions } = usePermissions();
     const [activeTab, setActiveTab] = useState("stock");
+
+    useEffect(() => {
+        if (!isLoadingPermissions && !hasPermission("inventory", "view")) {
+            navigate("/dashboard");
+        }
+    }, [hasPermission, isLoadingPermissions, navigate]);
 
     const tabs = [
         { id: "stock", label: "Stock in Hand", component: <StockInHand /> },

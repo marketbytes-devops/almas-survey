@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { FiPlus, FiClock } from "react-icons/fi";
+import { FiPlus, FiClock, FiLock } from "react-icons/fi";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 import apiClient from "../../../api/apiClient";
 import Loading from "../../../components/Loading";
 
 const Purchase = () => {
+    const { hasPermission } = usePermissions();
+    const canAdd = hasPermission("inventory", "add");
     const [materials, setMaterials] = useState([]);
     const [purchases, setPurchases] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -42,6 +45,10 @@ const Purchase = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!canAdd) {
+            alert("You do not have permission to record purchases.");
+            return;
+        }
         setSubmitting(true);
         try {
             const response = await apiClient.post("/material-purchases/", formData);
@@ -150,12 +157,20 @@ const Purchase = () => {
 
                         <button
                             type="submit"
-                            disabled={submitting}
-                            className="btn-primary w-full flex justify-center mt-2"
+                            disabled={submitting || !canAdd}
+                            className={`w-full flex justify-center mt-2 px-6 py-2.5 rounded-xl font-medium transition-all shadow-sm ${!canAdd
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                : "bg-[#4c7085] hover:bg-[#3a5d72] text-white hover:shadow active:scale-[0.99]"
+                                }`}
                         >
-                            {submitting ? "Processing..." : "Save Purchase"}
+                            {submitting ? "Processing..." : !canAdd ? <><FiLock className="mr-2" /> Read Only</> : "Save Purchase"}
                         </button>
                     </form>
+                    {!canAdd && (
+                        <p className="mt-4 text-xs text-center text-gray-500 flex items-center justify-center gap-1">
+                            <FiLock size={12} /> Contact admin to enable purchase recording
+                        </p>
+                    )}
                 </div>
             </div>
 
