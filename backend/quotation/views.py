@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import serializers
 from django.core.mail import EmailMessage
+from django.http import FileResponse
 
 from survey.models import Survey
 from authapp.permissions import HasPagePermission
@@ -374,6 +375,20 @@ Almas Movers Management"""
         except Exception as e:
             logger.error(f"Email action failed: {str(e)}", exc_info=True)
             return Response({"error": f"Unexpected error occurred: {str(e)}"}, status=500)
+
+    @action(detail=True, methods=["get"], url_path="download-pdf")
+    def download_pdf(self, request, pk=None):
+        try:
+            quotation = self.get_object()
+            filepath, filename = generate_quotation_pdf(quotation)
+            
+            # Using standard FileResponse for binary download
+            response = FileResponse(open(filepath, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except Exception as e:
+            logger.error(f"Download PDF failed: {str(e)}", exc_info=True)
+            return Response({"error": f"Failed to generate PDF: {str(e)}"}, status=500)
 
 
 class QuotationRemarkViewSet(viewsets.ModelViewSet):
