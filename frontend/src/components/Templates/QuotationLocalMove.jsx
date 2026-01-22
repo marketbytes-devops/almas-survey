@@ -83,10 +83,10 @@ const QuotationLocalMove = forwardRef((props, ref) => {
 
         if (baseAmount > 0) {
             breakdownRows += `
-            <tr>
-              <td class="label">${service || "Moving Charges"}:</td>
-              <td class="value">${formatCurrency(baseAmount)}</td>
-            </tr>`;
+            <div class="summary-line">
+              <span class="label">${service || "Moving Charges"}:</span>
+              <span class="value">${formatCurrency(baseAmount)}</span>
+            </div>`;
         }
 
         // Additional Charges
@@ -98,10 +98,10 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                     const price = parseFloat(charge.price_per_unit || 0);
                     const total = (price / perUnitBase) * qty;
                     return `
-            <tr>
-              <td class="label">${charge.service_name || "Additional Service"} x ${qty}:</td>
-              <td class="value">${formatCurrency(total)}</td>
-            </tr>`;
+            <div class="summary-line">
+              <span class="label">${charge.service_name || "Additional Service"} x ${qty}:</span>
+              <span class="value">${formatCurrency(total)}</span>
+            </div>`;
                 })
                 .join("");
         }
@@ -165,11 +165,11 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                         </div>
                         <div class="meta-col">
                             <h1 class="doc-title">QUOTATION</h1>
-                            <table class="meta-table">
-                                <tr><th>Quote No:</th><td>${quoteNumber}</td></tr>
-                                <tr><th>Date:</th><td>${todayFormatted}</td></tr>
-                                <tr><th>Valid Until:</th><td>30 Days</td></tr>
-                            </table>
+                            <div class="meta-details">
+                                <p><strong>Quote No:</strong> ${quoteNumber}</p>
+                                <p><strong>Date:</strong> ${todayFormatted}</p>
+                                <p><strong>Valid Until:</strong> 30 Days</p>
+                            </div>
                         </div>
                     </header>
 
@@ -214,27 +214,27 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                     <section class="pricing-section">
                         <div class="breakdown-container">
                             <h3 class="breakdown-title">Breakdown of Charges (All prices in QAR)</h3>
-                            <table class="summary-table">
+                            <div class="summary-content">
                                 ${breakdownRows}
                                 ${discount > 0 ? `
-                                <tr>
-                                    <td class="label">Discount:</td>
-                                    <td class="value text-red">-${formatCurrency(discount)}</td>
-                                </tr>` : ''}
+                                <div class="summary-line">
+                                    <span class="label">Discount:</span>
+                                    <span class="value text-red">-${formatCurrency(discount)}</span>
+                                </div>` : ''}
                                 
-                                <tr class="total-row">
-                                    <td class="label">Lump sum moving charges:</td>
-                                    <td class="value">${finalAmt}</td>
-                                </tr>
-                                <tr>
-                                    <td class="label">Advance:</td>
-                                    <td class="value">${advanceAmt}</td>
-                                </tr>
-                                <tr>
-                                    <td class="label">Balance:</td>
-                                    <td class="value">${balanceAmt}</td>
-                                </tr>
-                            </table>
+                                <div class="summary-line total-line">
+                                    <span class="label">Lump sum moving charges:</span>
+                                    <span class="value">${finalAmt}</span>
+                                </div>
+                                <div class="summary-line">
+                                    <span class="label">Advance:</span>
+                                    <span class="value">${advanceAmt}</span>
+                                </div>
+                                <div class="summary-line">
+                                    <span class="label">Balance:</span>
+                                    <span class="value">${balanceAmt}</span>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -345,15 +345,15 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .logo { height: 70px; width: auto; margin-bottom: 8px; }
     .company-address { font-size: 9pt; color: #555; line-height: 1.4; }
     .doc-title { font-size: 24pt; color: #003087; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; text-align: right; }
-    .meta-table { float: right; font-size: 10pt; }
-    .meta-table th { text-align: right; padding-right: 10px; color: #666; font-weight: 600; }
-    .meta-table td { text-align: right; font-weight: bold; color: #757575; }
+    .meta-details { float: right; text-align: left; }
+    .meta-details p { margin: 2px 0; font-size: 10pt; }
+    .meta-details strong { color: #666; margin-right: 5px; font-weight: 600; }
 
     .info-section { display: flex; gap: 20px; margin-bottom: 30px; page-break-inside: avoid; }
     .info-box { flex: 1; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #003087; padding: 12px 15px; page-break-inside: avoid; }
     .info-box h3 { margin: 0 0 10px 0; font-size: 10pt; color: #003087; text-transform: uppercase; }
     .info-box .content p { margin: 3px 0; font-size: 10pt; }
-    .info-box .content strong { color: #555; min-width: 70px; display: inline-block; }
+    .info-box .content strong { color: #555; display: inline-block; margin-right: 5px; }
 
     .rate-section { margin-bottom: 25px; page-break-inside: avoid; }
     .rate-box { padding: 15px 25px !important; }
@@ -367,11 +367,12 @@ const QuotationLocalMove = forwardRef((props, ref) => {
     .pricing-section { margin-bottom: 30px; display: flex; justify-content: center; page-break-inside: avoid; }
     .breakdown-container { width: 60%; }
     .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 10px; }
-    .summary-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-    .summary-table td { padding: 4px 0; }
-    .summary-table .label { text-align: left; color: #757575; }
-    .summary-table .value { text-align: right; font-weight: bold; }
-    .total-row .label, .total-row .value { font-weight: bold; color: #000; font-size: 11pt; padding-top: 10px; }
+    .summary-content { font-size: 10pt; }
+    .summary-line { padding: 4px 0; display: flex; gap: 5px; }
+    .summary-line .label { color: #757575; }
+    .summary-line .value { font-weight: bold; color: #757575; }
+    .total-line { font-weight: bold; color: #000 !important; font-size: 11pt; border-top: 1px solid #eee; margin-top: 5px; padding-top: 10px; }
+    .total-line .label, .total-line .value { color: #000; }
     .text-red { color: #d32f2f; }
 
     .selected-services-section { margin-bottom: 20px; page-break-inside: avoid; }
