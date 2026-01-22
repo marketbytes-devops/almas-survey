@@ -145,7 +145,7 @@ const BookingConfirmation = forwardRef(
         <div style={{ marginTop: "10px" }}>
           <div style={{ display: "flex", gap: "20px" }}>
             <div style={{ flex: 1 }}>
-              <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", borderBottom: "2px solid #003087", paddingBottom: "3px" }}>Assigned Manpower</h3>
+              <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", paddingBottom: "3px" }}>Assigned Manpower</h3>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}>
                 <thead><tr style={{ background: "#f1f5f8", color: "#003087" }}>
                   <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Staff Member</th>
@@ -159,7 +159,7 @@ const BookingConfirmation = forwardRef(
               </table>
             </div>
             <div style={{ flex: 1 }}>
-              <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", borderBottom: "2px solid #003087", paddingBottom: "3px" }}>Trucks Required</h3>
+              <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", paddingBottom: "3px" }}>Trucks Required</h3>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}>
                 <thead><tr style={{ background: "#f1f5f8", color: "#003087" }}>
                   <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Truck Type</th>
@@ -174,7 +174,7 @@ const BookingConfirmation = forwardRef(
             </div>
           </div>
           <div style={{ marginTop: "20px" }}>
-            <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", borderBottom: "2px solid #003087", paddingBottom: "3px" }}>Packing Materials</h3>
+            <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", paddingBottom: "3px" }}>Packing Materials</h3>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}>
               <thead><tr style={{ background: "#f1f5f8", color: "#003087" }}>
                 <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Material</th>
@@ -190,7 +190,7 @@ const BookingConfirmation = forwardRef(
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "40px", marginTop: "40px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "40px", marginTop: "40px", paddingTop: "20px" }}>
           {CERTIFICATION_LOGOS.map((logo, i) => (
             <img key={i} src={logo} alt="cert" style={{ height: "30px", opacity: 0.8 }} />
           ))}

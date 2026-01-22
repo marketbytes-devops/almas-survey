@@ -282,22 +282,6 @@ def build_work_order_template(booking):
 
                                 <!-- FOOTER -->
                                 <footer class="footer-section">
-                                    <div class="signature-block">
-                                        <div class="sign-box client-sign">
-                                            <p><strong>Acknowledged By (Client):</strong></p>
-                                            <div class="sign-area"></div>
-                                            <div class="sign-line"></div>
-                                            <p class="sign-name">{customer_name}</p>
-                                            <p class="sign-date">Date: {move_date}</p>
-                                        </div>
-                                        <div class="sign-box company-sign">
-                                            <p><strong>Work Order Completed By:</strong></p>
-                                            <div class="sign-area"></div>
-                                            <div class="sign-line"></div>
-                                            <p class="sign-name">Supervisor / Lead Packer</p>
-                                            <p class="sign-date">Date: {move_date}</p>
-                                        </div>
-                                    </div>
                                     <div class="footer-bottom">
                                         <p>ALMAS MOVERS INTERNATIONAL - Operation Department</p>
                                         <p>Ensuring a smooth relocation for our valued clients.</p>
@@ -366,7 +350,7 @@ def get_styles():
     .resources-section { margin-top: 10px; page-break-inside: avoid; }
     .resource-grid { display: flex; gap: 20px; }
     .resource-item { flex: 1; }
-    .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 8px; border-bottom: 2px solid #003087; padding-bottom: 3px; }
+    .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 8px; padding-bottom: 3px; }
     
     .data-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
     .data-table th { background: #f1f5f8; color: #003087; text-align: left; padding: 8px; border: 1px solid #ddd; }
@@ -392,12 +376,8 @@ def get_styles():
     .terms-box .text-content { padding: 10px; border: 1px solid #eee; border-top: none; font-size: 9pt; line-height: 1.5; }
 
     .footer-section { page-break-inside: avoid; margin-top: 30px; }
-    .signature-block { display: flex; justify-content: space-between; margin-bottom: 20px; }
-    .sign-box { width: 45%; }
-    .sign-area { height: 60px; }
-    .sign-line { border-bottom: 1px solid #757575; margin: 5px 0; }
-    .sign-name, .sign-date { font-size: 9pt; color: #555; }
-    .footer-bottom { text-align: center; font-size: 8pt; color: #999; padding-top: 10px; border-top: 1px solid #eee; }
+
+    .footer-bottom { text-align: center; font-size: 8pt; color: #999; padding-top: 10px; }
 
     .footer-certification-logos {
         display: flex;
