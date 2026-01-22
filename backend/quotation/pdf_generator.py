@@ -41,7 +41,10 @@ def generate_quotation_pdf(quotation):
             logger.info(f"About to enter sync_playwright() for: {quotation.quotation_id}")
             with sync_playwright() as p:
                 logger.info(f"Launching browser for PDF generation: {quotation.quotation_id}")
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                )
                 logger.info("Browser launched successfully.")
                 
                 context = browser.new_context()
