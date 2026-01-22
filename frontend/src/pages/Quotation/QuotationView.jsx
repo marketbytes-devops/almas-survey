@@ -283,9 +283,32 @@ export default function QuotationView() {
     }
   };
 
-  const triggerDownloadPdf = () => {
-    if (printRef.current) {
-      printRef.current.downloadPdf();
+  const triggerDownloadPdf = async () => {
+    if (!quotation?.quotation_id) {
+      alert("❌ Quotation ID not found.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiClient.get(
+        `/quotation-create/${quotation.quotation_id}/download-pdf/`,
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Quotation_${quotation.quotation_id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download PDF error:", err);
+      alert("❌ Failed to download PDF. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
