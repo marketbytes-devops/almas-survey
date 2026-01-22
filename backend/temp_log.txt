@@ -1,0 +1,1000 @@
+﻿    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+ERROR 2026-01-20 18:27:22,580 log Internal Server Error: /api/surveys/
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+MySQLdb.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+ERROR 2026-01-20 18:27:22,880 log Internal Server Error: /api/surveys/
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+MySQLdb.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+ERROR 2026-01-20 18:27:23,401 log Internal Server Error: /api/surveys/
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+MySQLdb.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+ERROR 2026-01-20 18:27:23,752 log Internal Server Error: /api/surveys/
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+MySQLdb.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+ERROR 2026-01-20 18:27:33,150 log Internal Server Error: /api/surveys/
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+MySQLdb.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+ERROR 2026-01-20 18:27:33,243 log Internal Server Error: /api/surveys/
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+MySQLdb.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 46, in list
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 716, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 540, in to_representation
+    ret[field.field_name] = field.to_representation(attribute)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\fields.py", line 1870, in to_representation
+    return method(value)
+           ^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\survey\serializers.py", line 213, in get_quotation_id
+    quot = Quotation.objects.filter(survey=obj).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1104, in first
+    for obj in queryset[:1]:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 384, in __iter__
+    self._fetch_all()
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 1945, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\django\db\backends\mysql\base.py", line 76, in execute
+    return self.cursor.execute(query, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 179, in execute
+    res = self._query(mogrified_query)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\cursors.py", line 330, in _query
+    db.query(q)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\MySQLdb\connections.py", line 280, in query
+    _mysql.connection.query(self, query)
+django.db.utils.OperationalError: (1054, "Unknown column 'quotation_quotation.remarks' in 'field list'")
+INFO 2026-01-21 10:35:01,018 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 10:36:15,897 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 10:36:37,157 autoreload E:\enquiry-app\almas-survey\backend\additional_settings\models.py changed, reloading.
+INFO 2026-01-21 10:36:38,245 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 10:37:06,918 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 10:46:51,928 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 10:46:51,938 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 10:46:52,112 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 10:46:52,122 log Not Found: /api/token/refresh/
+INFO 2026-01-21 10:49:38,631 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 11:53:58,588 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 11:55:39,081 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 11:55:39,216 log Not Found: /api/token/refresh/
+INFO 2026-01-21 11:56:45,326 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 12:00:28,204 autoreload E:\enquiry-app\almas-survey\backend\authapp\models.py changed, reloading.
+INFO 2026-01-21 12:00:29,415 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 12:01:17,837 autoreload E:\enquiry-app\almas-survey\backend\authapp\models.py changed, reloading.
+INFO 2026-01-21 12:01:18,887 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 12:10:21,953 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:10:21,974 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:10:24,400 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:10:24,430 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:10:28,348 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:10:28,369 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:12:21,154 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-21 12:13:09,213 log Bad Request: /api/contacts/enquiries/
+INFO 2026-01-21 12:16:45,737 autoreload E:\enquiry-app\almas-survey\backend\contact\views.py changed, reloading.
+INFO 2026-01-21 12:16:46,555 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 12:17:01,450 autoreload E:\enquiry-app\almas-survey\backend\contact\views.py changed, reloading.
+INFO 2026-01-21 12:17:02,226 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 12:20:15,074 views Async email sent: Enquiry Assignment: ajay
+ERROR 2026-01-21 12:20:49,528 serializers Survey date 2026-01-15 07:15:00+00:00 is too far in the past compared to 2026-01-21 06:50:49.528720+00:00
+ERROR 2026-01-21 12:20:49,528 views Failed to schedule survey for enquiry 9: {'survey_date': [ErrorDetail(string='Survey date must be in the future.', code='invalid')]}
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\contact\views.py", line 789, in post
+    serializer.is_valid(raise_exception=True)
+  File "E:\enquiry-app\almas-survey\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 233, in is_valid
+    raise ValidationError(self.errors)
+rest_framework.exceptions.ValidationError: {'survey_date': [ErrorDetail(string='Survey date must be in the future.', code='invalid')]}
+WARNING 2026-01-21 12:20:49,585 log Bad Request: /api/contacts/enquiries/9/schedule/
+WARNING 2026-01-21 12:23:28,029 log Bad Request: /api/contacts/enquiries/
+INFO 2026-01-21 12:27:08,984 views Survey submission email sent to akshaysambhu07@gmail.com
+INFO 2026-01-21 12:27:09,087 views Signature uploaded for survey SURVEY-9-20260121065703
+WARNING 2026-01-21 12:28:10,915 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:28:10,970 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:30:16,795 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:30:16,861 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:30:51,894 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 12:30:51,922 log Forbidden: /api/auth/roles/
+INFO 2026-01-21 12:40:34,755 views Survey submission email sent to akshaysambhu07@gmail.com
+INFO 2026-01-21 12:40:34,828 views Signature uploaded for survey SURVEY-9-20260121071029
+INFO 2026-01-21 12:41:00,078 views Survey submission email sent to akshaysambhu07@gmail.com
+INFO 2026-01-21 12:42:03,516 views Survey submission email sent to akshaysambhu07@gmail.com
+INFO 2026-01-21 12:42:37,802 views Survey submission email sent to akshaysambhu07@gmail.com
+WARNING 2026-01-21 12:49:44,370 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 12:49:44,456 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 12:49:44,493 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 12:49:44,500 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 12:49:44,510 log Unauthorized: /api/auth/profile/
+INFO 2026-01-21 13:20:07,121 autoreload E:\enquiry-app\almas-survey\backend\authapp\models.py changed, reloading.
+INFO 2026-01-21 13:20:08,116 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 14:10:00,263 log Unauthorized: /api/contacts/enquiries/
+WARNING 2026-01-21 14:10:08,130 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:10:08,137 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:10:08,222 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 14:10:08,281 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 14:50:39,221 log Bad Request: /api/auth/login/
+WARNING 2026-01-21 14:50:46,898 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:50:46,951 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 14:50:47,015 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:50:47,023 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:50:47,033 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:50:47,042 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:50:47,045 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:50:47,055 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 14:51:01,542 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 14:51:01,563 log Forbidden: /api/auth/roles/
+INFO 2026-01-21 15:12:08,927 autoreload E:\enquiry-app\almas-survey\backend\quotation\views.py changed, reloading.
+INFO 2026-01-21 15:12:18,474 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 15:18:58,718 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:18:58,718 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:19:00,242 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:19:00,253 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:19:10,342 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:19:10,365 log Forbidden: /api/auth/roles/
+INFO 2026-01-21 15:23:57,550 views Survey submission email sent to akshaysambhu07@gmail.com
+INFO 2026-01-21 15:24:31,481 views Quotation AMSQA-26001 created for survey SURVEY-9-20260121071029
+INFO 2026-01-21 15:24:31,498 views Signature uploaded for quotation AMSQA-26001
+INFO 2026-01-21 15:32:10,133 views Survey submission email sent to akshaysambhu07@gmail.com, admin@gmail.com
+INFO 2026-01-21 15:32:10,187 views Signature uploaded for survey SURVEY-8-20260121100204
+INFO 2026-01-21 15:34:55,812 autoreload E:\enquiry-app\almas-survey\backend\quotation\views.py changed, reloading.
+INFO 2026-01-21 15:34:56,548 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 15:35:02,821 autoreload E:\enquiry-app\almas-survey\backend\quotation\views.py changed, reloading.
+INFO 2026-01-21 15:35:03,487 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 15:41:36,413 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:41:36,436 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:16,685 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:16,707 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:23,703 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:23,720 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:42,892 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:42,903 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:44,523 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 15:42:44,543 log Forbidden: /api/auth/roles/
+INFO 2026-01-21 16:07:14,503 autoreload E:\enquiry-app\almas-survey\backend\pricing\views.py changed, reloading.
+INFO 2026-01-21 16:07:15,730 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 16:07:27,177 autoreload E:\enquiry-app\almas-survey\backend\pricing\views.py changed, reloading.
+INFO 2026-01-21 16:07:28,168 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 16:09:02,478 views Survey submission email sent to akshaysambhu07@gmail.com
+WARNING 2026-01-21 16:09:21,094 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 16:09:21,136 log Forbidden: /api/auth/roles/
+INFO 2026-01-21 16:36:12,938 autoreload E:\enquiry-app\almas-survey\backend\additional_settings\views.py changed, reloading.
+INFO 2026-01-21 16:36:14,004 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-21 16:53:14,957 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 16:53:14,967 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 16:53:15,180 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 16:53:15,184 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 16:53:22,814 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 16:53:22,821 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-21 16:53:22,940 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 16:53:23,000 log Not Found: /api/token/refresh/
+WARNING 2026-01-21 17:31:50,630 log Bad Request: /api/auth/login/
+WARNING 2026-01-21 17:47:59,725 log Forbidden: /api/auth/roles/
+WARNING 2026-01-21 17:47:59,742 log Forbidden: /api/auth/roles/
+INFO 2026-01-21 18:14:27,410 autoreload E:\enquiry-app\almas-survey\backend\authapp\views.py changed, reloading.
+INFO 2026-01-21 18:14:28,765 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 18:19:34,371 autoreload E:\enquiry-app\almas-survey\backend\authapp\views.py changed, reloading.
+INFO 2026-01-21 18:19:35,136 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 18:24:38,394 autoreload E:\enquiry-app\almas-survey\backend\authapp\views.py changed, reloading.
+INFO 2026-01-21 18:24:39,451 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 18:25:55,563 autoreload E:\enquiry-app\almas-survey\backend\authapp\views.py changed, reloading.
+INFO 2026-01-21 18:25:56,760 autoreload Watching for file changes with StatReloader
+INFO 2026-01-21 18:26:56,469 autoreload E:\enquiry-app\almas-survey\backend\authapp\views.py changed, reloading.
+INFO 2026-01-21 18:26:57,414 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 10:46:45,722 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-22 10:47:23,921 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 10:47:23,929 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 10:47:24,079 log Not Found: /api/token/refresh/
+WARNING 2026-01-22 10:47:24,083 log Not Found: /api/token/refresh/
+INFO 2026-01-22 10:48:22,566 autoreload E:\enquiry-app\almas-survey\backend\authapp\urls.py changed, reloading.
+INFO 2026-01-22 10:48:23,901 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-22 10:56:14,873 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 10:56:14,878 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 10:56:14,987 log Not Found: /api/token/refresh/
+WARNING 2026-01-22 10:56:14,990 log Not Found: /api/token/refresh/
+WARNING 2026-01-22 11:03:22,793 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-22 11:03:35,466 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-22 11:10:06,291 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-22 11:23:33,186 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-22 12:28:05,726 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-22 12:28:40,227 log Bad Request: /api/contacts/enquiries/
+WARNING 2026-01-22 12:29:07,847 log Bad Request: /api/contacts/enquiries/
+INFO 2026-01-22 12:34:12,529 autoreload E:\enquiry-app\almas-survey\backend\authapp\views.py changed, reloading.
+INFO 2026-01-22 12:34:18,328 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 12:34:28,670 autoreload E:\enquiry-app\almas-survey\backend\additional_settings\views.py changed, reloading.
+INFO 2026-01-22 12:34:29,254 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 12:34:37,594 autoreload E:\enquiry-app\almas-survey\backend\additional_settings\views.py changed, reloading.
+INFO 2026-01-22 12:34:38,252 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 12:35:37,672 autoreload E:\enquiry-app\almas-survey\backend\authapp\serializers.py changed, reloading.
+INFO 2026-01-22 12:35:38,268 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 12:35:48,604 autoreload E:\enquiry-app\almas-survey\backend\authapp\serializers.py changed, reloading.
+INFO 2026-01-22 12:35:49,362 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 12:36:29,913 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-22 12:40:37,822 log Bad Request: /api/contacts/enquiries/
+INFO 2026-01-22 12:45:10,590 autoreload E:\enquiry-app\almas-survey\backend\contact\views.py changed, reloading.
+INFO 2026-01-22 12:45:11,221 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 12:48:33,756 views Async email sent: Thank You for Your Enquiry
+INFO 2026-01-22 12:48:34,585 views Async email sent: New Enquiry: International Move from arun
+WARNING 2026-01-22 12:54:26,043 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:26,102 log Not Found: /api/token/refresh/
+WARNING 2026-01-22 12:54:26,128 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:26,133 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:26,154 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:26,164 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:26,170 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:26,173 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 12:54:30,178 log Bad Request: /api/auth/login/
+WARNING 2026-01-22 12:54:38,494 log Bad Request: /api/auth/login/
+WARNING 2026-01-22 12:55:01,167 log Bad Request: /api/auth/login/
+WARNING 2026-01-22 12:55:21,565 log Not Found: /api/auth/logout/
+WARNING 2026-01-22 12:55:21,580 log Unauthorized: /api/auth/effective-permissions/
+WARNING 2026-01-22 12:56:11,091 log Bad Request: /api/auth/login/
+WARNING 2026-01-22 12:56:20,248 log Bad Request: /api/auth/login/
+INFO 2026-01-22 12:57:14,651 autoreload Watching for file changes with StatReloader
+WARNING 2026-01-22 12:57:34,474 log Not Found: /
+WARNING 2026-01-22 12:57:35,081 log Not Found: /favicon.ico
+INFO 2026-01-22 12:58:57,821 views Async email sent: Thank You for Your Enquiry
+INFO 2026-01-22 12:58:58,221 views Async email sent: New Enquiry: Storage Services from amal
+INFO 2026-01-22 13:05:32,455 autoreload E:\enquiry-app\almas-survey\backend\contact\views.py changed, reloading.
+INFO 2026-01-22 13:05:33,172 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 13:05:50,913 autoreload E:\enquiry-app\almas-survey\backend\contact\views.py changed, reloading.
+INFO 2026-01-22 13:05:51,673 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 13:06:20,082 autoreload E:\enquiry-app\almas-survey\backend\contact\views.py changed, reloading.
+INFO 2026-01-22 13:06:20,704 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 13:10:08,163 views Async email sent: Thank You for Your Enquiry
+INFO 2026-01-22 13:10:08,475 views Async email sent: New Enquiry: International Move from aswin
+INFO 2026-01-22 13:10:26,655 views Async email sent: Thank You for Your Enquiry
+INFO 2026-01-22 13:10:26,879 views Async email sent: New Enquiry: International Move from arun
+WARNING 2026-01-22 14:58:54,583 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 14:58:54,703 log Not Found: /api/token/refresh/
+WARNING 2026-01-22 14:58:54,763 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 14:58:54,777 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 14:58:54,795 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 14:58:54,806 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 14:58:54,815 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 14:58:54,823 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 15:51:23,879 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 15:51:23,890 log Unauthorized: /api/auth/profile/
+WARNING 2026-01-22 15:51:24,031 log Not Found: /api/token/refresh/
+WARNING 2026-01-22 15:51:24,061 log Not Found: /api/token/refresh/
+INFO 2026-01-22 15:59:21,478 autoreload E:\enquiry-app\almas-survey\backend\quotation\pdf_generator.py changed, reloading.
+INFO 2026-01-22 15:59:28,827 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 16:05:36,213 autoreload Watching for file changes with StatReloader
+ERROR 2026-01-22 16:13:07,901 pdf_generator Error generating PDF for quotation AMSQA-26001: 'Survey' object has no attribute 'total_volume_cbm'
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\quotation\pdf_generator.py", line 35, in generate_quotation_pdf
+    html_content = build_html_template(quotation)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\quotation\html_template.py", line 66, in build_html_template
+    if survey and survey.total_volume_cbm:
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Survey' object has no attribute 'total_volume_cbm'
+INFO 2026-01-22 16:13:37,043 autoreload E:\enquiry-app\almas-survey\backend\quotation\html_template.py changed, reloading.
+INFO 2026-01-22 16:13:37,986 autoreload Watching for file changes with StatReloader
+ERROR 2026-01-22 16:13:47,451 pdf_generator Error generating PDF for quotation AMSQA-26001: cannot import name 'PaymentTerm' from 'additional_settings.models' (E:\enquiry-app\almas-survey\backend\additional_settings\models.py)
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\quotation\pdf_generator.py", line 35, in generate_quotation_pdf
+    html_content = build_html_template(quotation)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\quotation\html_template.py", line 162, in build_html_template
+    from additional_settings.models import PaymentTerm
+ImportError: cannot import name 'PaymentTerm' from 'additional_settings.models' (E:\enquiry-app\almas-survey\backend\additional_settings\models.py)
+ERROR 2026-01-22 16:15:49,092 pdf_generator Error generating PDF for quotation AMSQA-26001: cannot import name 'PaymentTerm' from 'additional_settings.models' (E:\enquiry-app\almas-survey\backend\additional_settings\models.py)
+Traceback (most recent call last):
+  File "E:\enquiry-app\almas-survey\backend\quotation\pdf_generator.py", line 35, in generate_quotation_pdf
+    html_content = build_html_template(quotation)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\enquiry-app\almas-survey\backend\quotation\html_template.py", line 162, in build_html_template
+    from additional_settings.models import PaymentTerm
+ImportError: cannot import name 'PaymentTerm' from 'additional_settings.models' (E:\enquiry-app\almas-survey\backend\additional_settings\models.py)
+INFO 2026-01-22 16:17:00,444 autoreload E:\enquiry-app\almas-survey\backend\quotation\html_template.py changed, reloading.
+INFO 2026-01-22 16:17:01,586 autoreload Watching for file changes with StatReloader
+INFO 2026-01-22 16:17:14,508 pdf_generator Launching browser for PDF generation: AMSQA-26001
+INFO 2026-01-22 16:17:15,844 pdf_generator PDF generated successfully: E:\enquiry-app\almas-survey\backend\media\quotation_pdfs\Quotation_AMSQA-26001.pdf
+INFO 2026-01-22 16:21:32,358 pdf_generator Launching browser for PDF generation: AMSQA-26001
+ERROR 2026-01-22 16:21:32,846 log Internal Server Error: /api/quotation-create/AMSQA-26001/send-whatsapp/
+INFO 2026-01-22 16:21:33,188 pdf_generator Launching browser for PDF generation: AMSQA-26001
+ERROR 2026-01-22 16:21:33,271 log Internal Server Error: /api/quotation-create/AMSQA-26001/send-whatsapp/
+INFO 2026-01-22 16:21:51,740 pdf_generator Launching browser for PDF generation: AMSQA-26001
+ERROR 2026-01-22 16:21:51,826 log Internal Server Error: /api/quotation-create/AMSQA-26001/send-whatsapp/

@@ -166,17 +166,10 @@ const NewAssignedEnquiries = () => {
           has_survey: "false",
         };
 
-        if (!isSuperadmin) {
-          params.assigned_user_email = user.email;
-        }
-
         const enquiryResponse = await apiClient.get("/contacts/enquiries/", { params });
 
-        const assignedEnquiries = enquiryResponse.data.filter(
-          (enquiry) => enquiry.assigned_user_email
-        );
-
-        const sortedEnquiries = assignedEnquiries.sort((a, b) =>
+        const rawEnquiries = enquiryResponse.data;
+        const sortedEnquiries = rawEnquiries.sort((a, b) =>
           new Date(b.created_at) - new Date(a.created_at)
         );
 
