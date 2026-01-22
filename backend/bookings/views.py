@@ -88,7 +88,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
 Click above link to view exact pickup location on Google Maps!
 """
-            message = f"""Booking Confirmation - Almas Movers
+            message = f"""Work Order - Almas Movers
 
 Booking ID: {booking.booking_id}
 Client: {client_name}
@@ -181,7 +181,7 @@ Almas Movers Management"""
                     dest = survey.destination_addresses.first()
                     destination = getattr(dest, 'city', 'N/A') or 'N/A'
 
-            message = f"""Booking Assignment - Almas Movers
+            message = f"""Work Order Assignment - Almas Movers
 
 Dear {staff.name},
 
@@ -212,6 +212,18 @@ Almas Movers Management"""
             
         except Exception as e:
             return Response({"error": f"Unexpected error: {str(e)}"}, status=500)
+
+    @action(detail=True, methods=["get"], url_path="download-pdf")
+    def download_pdf(self, request, pk=None):
+        try:
+            booking = self.get_object()
+            filepath, filename = generate_booking_pdf(booking)
+            from django.http import FileResponse
+            response = FileResponse(open(filepath, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except Exception as e:
+            return Response({"error": f"Failed to generate PDF: {str(e)}"}, status=500)
 
 
 class BookingLabourViewSet(viewsets.ModelViewSet):

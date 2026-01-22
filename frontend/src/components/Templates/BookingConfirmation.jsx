@@ -3,15 +3,19 @@ import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import CompanyLogo from "../../assets/images/logo-quotation.webp";
-import Logo1 from "../../assets/images/bg-auth.JPG";
-import ProfileIcon from "../../assets/images/profile-icon.png";
+import IAMLogo from "../../assets/images/iam.webp";
+import IAMXLogo from "../../assets/images/iamx.webp";
+import ISOLogo from "../../assets/images/iso.webp";
+import PCGLogo from "../../assets/images/pcg.webp";
+import TrustedLogo from "../../assets/images/trusted.webp";
 
-const CERTIFICATION_LOGOS = [Logo1, ProfileIcon];
+const CERTIFICATION_LOGOS = [IAMLogo, IAMXLogo, ISOLogo, PCGLogo, TrustedLogo];
 
 const BookingConfirmation = forwardRef(
   (
     {
       booking = null,
+      quotation = null,
       clientName = "Customer",
       moveType = "Local Move",
       contactNumber = "Not provided",
@@ -22,7 +26,6 @@ const BookingConfirmation = forwardRef(
   ) => {
     const componentRef = useRef();
 
-    // Guard clause
     if (!booking) {
       return null;
     }
@@ -32,530 +35,171 @@ const BookingConfirmation = forwardRef(
       return timeStr.slice(0, 5);
     };
 
-    const today = new Date().toLocaleDateString("en-GB");
-
-    const companyAddress = "P.O. Box 24665, Doha, Qatar";
-
-    // Full printable content (this gets captured by html2canvas)
-    const PrintableContent = () => (
-      <div
-        ref={componentRef}
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          background: "white",
-          padding: "40px",
-          fontFamily: "Arial, sans-serif",
-          color: "#757575",
-          width: "794px", // A4 width in pixels
-        }}
-      >
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <img
-            src={CompanyLogo}
-            alt="ALMAS MOVERS"
-            style={{ maxWidth: "250px", marginBottom: "20px" }}
-          />
-          <h1
-            style={{
-              fontSize: "32pt",
-              fontWeight: "bold",
-              color: "#4c7085",
-              margin: "10px 0",
-            }}
-          >
-            Booking Confirmation
-          </h1>
-          <div
-            style={{
-              width: "120px",
-              height: "4px",
-              background: "linear-gradient(to right, #4c7085, #6b8ca3)",
-              margin: "15px auto",
-            }}
-          ></div>
-          <p style={{ fontSize: "16pt", color: "#666" }}>
-            <strong>Booking ID:</strong> {booking.booking_id || "TBA"}
-          </p>
-          <p style={{ fontSize: "12pt", color: "#888", marginTop: "10px" }}>
-            Generated on: {today}
-          </p>
-        </div>
-
-        {/* Client & Move Info */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "30px",
-            marginBottom: "40px",
-            background: "#f9f9f9",
-            padding: "25px",
-            borderRadius: "12px",
-            border: "1px solid #ddd",
-          }}
-        >
-          <div>
-            <h2
-              style={{
-                fontSize: "16pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "15px",
-              }}
-            >
-              Client Details
-            </h2>
-            <p style={{ margin: "8px 0" }}>
-              <strong>Name:</strong> {clientName}
-            </p>
-            <p style={{ margin: "8px 0" }}>
-              <strong>Contact:</strong> {contactNumber}
-            </p>
-            <p style={{ margin: "8px 0" }}>
-              <strong>Move Type:</strong> {moveType}
-            </p>
-          </div>
-          <div>
-            <h2
-              style={{
-                fontSize: "16pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "15px",
-              }}
-            >
-              Move Schedule
-            </h2>
-            <p style={{ margin: "8px 0" }}>
-              <strong>Move Date:</strong> {booking.move_date || "—"}
-            </p>
-            <p style={{ margin: "8px 0" }}>
-              <strong>Start Time:</strong>{" "}
-              {booking.start_time ? formatTime(booking.start_time) : "—"}
-            </p>
-            <p style={{ margin: "8px 0" }}>
-              <strong>Est. End Time:</strong>{" "}
-              {booking.estimated_end_time
-                ? formatTime(booking.estimated_end_time)
-                : "—"}
-            </p>
-            <p style={{ margin: "8px 0" }}>
-              <strong>From → To:</strong> {origin} → {destination}
-            </p>
-          </div>
-        </div>
-
-        {/* Supervisor */}
-        {booking.supervisor_name && (
-          <div
-            style={{
-              marginBottom: "40px",
-              background: "#e3f2fd",
-              padding: "20px",
-              borderRadius: "12px",
-              border: "1px solid #90caf9",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "16pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "10px",
-              }}
-            >
-              Assigned Supervisor
-            </h2>
-            <p style={{ fontSize: "14pt", fontWeight: "500" }}>
-              {booking.supervisor_name}
-            </p>
-          </div>
-        )}
-
-        {/* Labours Table */}
-        {/* Labours Table - Updated (Labour Type removed) */}
-        {booking.labours?.length > 0 && (
-          <div style={{ marginBottom: "30px" }}>
-            <h2
-              style={{
-                fontSize: "18pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "15px",
-                borderBottom: "2px solid #4c7085",
-                paddingBottom: "8px",
-              }}
-            >
-              Assigned Labours / Manpower
-            </h2>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr
-                  style={{
-                    background: "linear-gradient(to right, #4c7085, #6b8ca3)",
-                    color: "white",
-                  }}
-                >
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontSize: "11pt",
-                    }}
-                  >
-                    Staff Member
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "center",
-                      fontSize: "11pt",
-                    }}
-                  >
-                    Quantity
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {booking.labours.map((labour, i) => (
-                  <tr
-                    key={i}
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
-                    }}
-                  >
-                    <td style={{ padding: "10px", fontWeight: "500" }}>
-                      {labour.staff_member_name ||
-                        labour.name ||
-                        "Unnamed Staff"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "10px",
-                        textAlign: "center",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {labour.quantity || 1}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Trucks Table */}
-        {booking.trucks?.length > 0 && (
-          <div style={{ marginBottom: "30px" }}>
-            <h2
-              style={{
-                fontSize: "18pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "15px",
-                borderBottom: "2px solid #4c7085",
-                paddingBottom: "8px",
-              }}
-            >
-              Trucks Required
-            </h2>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr
-                  style={{
-                    background: "linear-gradient(to right, #4c7085, #6b8ca3)",
-                    color: "white",
-                  }}
-                >
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontSize: "11pt",
-                    }}
-                  >
-                    Truck Type
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "center",
-                      fontSize: "11pt",
-                    }}
-                  >
-                    Quantity
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {booking.trucks.map((truck, i) => (
-                  <tr
-                    key={i}
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
-                    }}
-                  >
-                    <td style={{ padding: "10px", fontWeight: "500" }}>
-                      {truck.truck_type_name}
-                    </td>
-                    <td
-                      style={{
-                        padding: "10px",
-                        textAlign: "center",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {truck.quantity}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Materials Table */}
-        {booking.materials?.length > 0 && (
-          <div style={{ marginBottom: "30px" }}>
-            <h2
-              style={{
-                fontSize: "18pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "15px",
-                borderBottom: "2px solid #4c7085",
-                paddingBottom: "8px",
-              }}
-            >
-              Packing Materials
-            </h2>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr
-                  style={{
-                    background: "linear-gradient(to right, #4c7085, #6b8ca3)",
-                    color: "white",
-                  }}
-                >
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontSize: "11pt",
-                    }}
-                  >
-                    Material
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "center",
-                      fontSize: "11pt",
-                    }}
-                  >
-                    Quantity
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {booking.materials.map((mat, i) => (
-                  <tr
-                    key={i}
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
-                    }}
-                  >
-                    <td style={{ padding: "10px", fontWeight: "500" }}>
-                      {mat.material_name}
-                    </td>
-                    <td
-                      style={{
-                        padding: "10px",
-                        textAlign: "center",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {mat.quantity}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Notes */}
-        {booking.notes && (
-          <div style={{ marginBottom: "40px" }}>
-            <h2
-              style={{
-                fontSize: "18pt",
-                fontWeight: "bold",
-                color: "#4c7085",
-                marginBottom: "15px",
-                borderBottom: "2px solid #4c7085",
-                paddingBottom: "8px",
-              }}
-            >
-              Internal Notes
-            </h2>
-            <div
-              style={{
-                background: "#f9f9f9",
-                padding: "20px",
-                borderRadius: "12px",
-                border: "1px solid #ddd",
-              }}
-            >
-              <p style={{ whiteSpace: "pre-wrap" }}>{booking.notes}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "60px",
-            paddingTop: "30px",
-            borderTop: "2px solid #ddd",
-          }}
-        >
-          <p style={{ fontSize: "14pt", color: "#4c7085", fontWeight: "bold" }}>
-            Thank you for choosing Almas Movers International
-          </p>
-          <p style={{ color: "#666", marginTop: "10px" }}>
-            Your move is in safe hands.
-          </p>
-          <p style={{ fontSize: "10pt", color: "#888", marginTop: "20px" }}>
-            For any queries, contact your assigned supervisor.
-          </p>
-        </div>
-
-        {/* Certifications */}
-        <div
-          style={{
-            marginTop: "40px",
-            textAlign: "center",
-            fontSize: "9pt",
-            color: "#555",
-          }}
-        >
-          <p style={{ margin: "5px 0", fontWeight: "bold" }}>
-            Almas Movers Services
-          </p>
-          <p style={{ margin: "3px 0" }}>{companyAddress}</p>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              flexWrap: "wrap",
-              gap: "15px",
-              marginTop: "15px",
-            }}
-          >
-            {CERTIFICATION_LOGOS.map((logo, i) => (
-              <img
-                key={i}
-                src={logo}
-                alt={`Certification ${i + 1}`}
-                style={{ maxHeight: "40px", maxWidth: "120px" }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-
-    // PDF Generation Function (reusable)
-    const generatePdf = async () => {
-      if (!componentRef.current) throw new Error("Component ref not ready");
-
-      const canvas = await html2canvas(componentRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgWidth = 210; // A4 width mm
-      const pageHeight = 297; // A4 height mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        pdf.addPage();
-        pdf.addImage(
-          imgData,
-          "JPEG",
-          0,
-          heightLeft - imgHeight,
-          imgWidth,
-          imgHeight
-        );
-        heightLeft -= pageHeight;
-      }
-
-      return pdf;
-    };
+    const today = new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'long', year: 'numeric' });
 
     // Exposed methods via ref
     useImperativeHandle(ref, () => ({
       downloadPdf: async () => {
         try {
-          const pdf = await generatePdf();
-          pdf.save(`Booking_${booking.booking_id || "Confirmation"}.pdf`);
+          const canvas = await html2canvas(componentRef.current, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+          });
+
+          const imgWidth = 210;
+          const pageHeight = 297;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+
+          const pdf = new jsPDF("p", "mm", "a4");
+          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+          pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+
+          while (heightLeft >= 0) {
+            pdf.addPage();
+            pdf.addImage(imgData, "JPEG", 0, heightLeft - imgHeight, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+
+          pdf.save(`WorkOrder_${booking.booking_id || "Confirmation"}.pdf`);
         } catch (err) {
           console.error("PDF download failed:", err);
-          alert("Failed to download PDF.");
-        }
-      },
-
-      handleShareSupervisorWhatsApp: async () => {
-        try {
-          const pdf = await generatePdf();
-
-          // Download PDF for manual attachment
-          pdf.save(`Booking_${booking.booking_id || "Confirmation"}.pdf`);
-
-          // WhatsApp message
-          const supervisorPhone = booking.supervisor?.phone_number || "";
-
-          const message =
-            `Booking Confirmation - ${booking.booking_id || "TBA"}\n` +
-            `Move Date: ${booking.move_date || "N/A"}\n` +
-            `Start Time: ${booking.start_time ? formatTime(booking.start_time) : "N/A"
-            }\n` +
-            `Supervisor: ${booking.supervisor_name || "N/A"}`;
-
-          const whatsappUrl = `https://wa.me/${supervisorPhone.replace(
-            /\+/g,
-            ""
-          )}?text=${encodeURIComponent(message)}`;
-          window.open(whatsappUrl, "_blank");
-
-          alert(
-            "PDF downloaded! WhatsApp opened — attach the PDF manually before sending."
-          );
-        } catch (err) {
-          console.error("WhatsApp share failed:", err);
-          alert("Failed to prepare WhatsApp share.");
         }
       },
     }));
 
-    return <PrintableContent />;
+    return (
+      <div
+        ref={componentRef}
+        style={{
+          width: "210mm",
+          margin: "0 auto",
+          background: "white",
+          padding: "10mm",
+          fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+          color: "#555",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "25px", borderBottom: "1px solid #eee", paddingBottom: "15px" }}>
+          <div>
+            <img src={CompanyLogo} alt="Almas Movers" style={{ height: "70px", marginBottom: "8px" }} />
+            <div style={{ fontSize: "9pt", color: "#555", lineHeight: "1.4" }}>
+              P.O. Box 24665, Doha, Qatar<br />
+              Freight@almasint.com | +974 5013 6999
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <h1 style={{ fontSize: "24pt", color: "#b71c1c", margin: "0 0 10px 0", textTransform: "uppercase" }}>Work Order</h1>
+            <div style={{ fontSize: "10pt" }}>
+              <p style={{ margin: "2px 0" }}><strong>Order No:</strong> {booking.booking_id || "TBA"}</p>
+              <p style={{ margin: "2px 0" }}><strong>Date:</strong> {today}</p>
+              <p style={{ margin: "2px 0" }}><strong>Status:</strong> {(booking.status || "confirmed").toUpperCase()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Info Grid */}
+        <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+          <div style={{ flex: 1, background: "#f8f9fa", borderRadius: "6px", borderLeft: "4px solid #003087", padding: "12px 15px" }}>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "10pt", color: "#003087", textTransform: "uppercase" }}>Client Details</h3>
+            <div style={{ fontSize: "10pt" }}>
+              <p style={{ margin: "3px 0" }}><strong>Name:</strong> {clientName}</p>
+              <p style={{ margin: "3px 0" }}><strong>Phone:</strong> {contactNumber}</p>
+            </div>
+          </div>
+          <div style={{ flex: 1, background: "#f8f9fa", borderRadius: "6px", borderLeft: "4px solid #003087", padding: "12px 15px" }}>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "10pt", color: "#003087", textTransform: "uppercase" }}>Move Details</h3>
+            <div style={{ fontSize: "10pt" }}>
+              <p style={{ margin: "3px 0" }}><strong>Service:</strong> {moveType}</p>
+              <p style={{ margin: "3px 0" }}><strong>Origin:</strong> {origin}</p>
+              <p style={{ margin: "3px 0" }}><strong>Destination:</strong> {destination}</p>
+              <p style={{ margin: "3px 0" }}><strong>Move Date:</strong> {booking.move_date || "—"}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Schedule & Supervisor */}
+        <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+          <div style={{ flex: 1, background: "#f8f9fa", borderRadius: "6px", borderLeft: "4px solid #003087", padding: "12px 15px" }}>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "10pt", color: "#003087", textTransform: "uppercase" }}>Move Schedule</h3>
+            <div style={{ fontSize: "10pt" }}>
+              <p style={{ margin: "3px 0" }}><strong>Start Time:</strong> {booking.start_time ? formatTime(booking.start_time) : "—"}</p>
+              <p style={{ margin: "3px 0" }}><strong>Est. End Time:</strong> {booking.estimated_end_time ? formatTime(booking.estimated_end_time) : "—"}</p>
+            </div>
+          </div>
+          <div style={{ flex: 1, background: "#f8f9fa", borderRadius: "6px", borderLeft: "4px solid #456475", padding: "12px 15px" }}>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "10pt", color: "#003087", textTransform: "uppercase" }}>Supervisor</h3>
+            <div style={{ fontSize: "10pt" }}>
+              <p style={{ margin: "3px 0" }}><strong>Name:</strong> {booking.supervisor_name || "N/A"}</p>
+              <p style={{ margin: "3px 0" }}><strong>Phone:</strong> {booking.supervisor?.phone_number || "N/A"}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Resources Tables */}
+        <div style={{ marginTop: "10px" }}>
+          <div style={{ display: "flex", gap: "20px" }}>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", borderBottom: "2px solid #003087", paddingBottom: "3px" }}>Assigned Manpower</h3>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}>
+                <thead><tr style={{ background: "#f1f5f8", color: "#003087" }}>
+                  <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Staff Member</th>
+                  <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Qty</th>
+                </tr></thead>
+                <tbody>
+                  {booking.labours?.length > 0 ? booking.labours.map((l, i) => (
+                    <tr key={i}><td style={{ padding: "8px", border: "1px solid #ddd" }}>{l.staff_member_name || l.name || "—"}</td><td style={{ padding: "8px", border: "1px solid #ddd" }}>{l.quantity || 1}</td></tr>
+                  )) : <tr><td colSpan="2" style={{ textAlign: "center", padding: "8px", border: "1px solid #ddd" }}>No manpower assigned</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", borderBottom: "2px solid #003087", paddingBottom: "3px" }}>Trucks Required</h3>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}>
+                <thead><tr style={{ background: "#f1f5f8", color: "#003087" }}>
+                  <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Truck Type</th>
+                  <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Qty</th>
+                </tr></thead>
+                <tbody>
+                  {booking.trucks?.length > 0 ? booking.trucks.map((t, i) => (
+                    <tr key={i}><td style={{ padding: "8px", border: "1px solid #ddd" }}>{t.truck_type_name || "N/A"}</td><td style={{ padding: "8px", border: "1px solid #ddd" }}>{t.quantity || 1}</td></tr>
+                  )) : <tr><td colSpan="2" style={{ textAlign: "center", padding: "8px", border: "1px solid #ddd" }}>No trucks assigned</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style={{ marginTop: "20px" }}>
+            <h3 style={{ color: "#003087", fontSize: "11pt", marginBottom: "8px", borderBottom: "2px solid #003087", paddingBottom: "3px" }}>Packing Materials</h3>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}>
+              <thead><tr style={{ background: "#f1f5f8", color: "#003087" }}>
+                <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Material</th>
+                <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Quantity</th>
+              </tr></thead>
+              <tbody>
+                {booking.materials?.length > 0 ? booking.materials.map((m, i) => (
+                  <tr key={i}><td style={{ padding: "8px", border: "1px solid #ddd" }}>{m.material_name || "N/A"}</td><td style={{ padding: "8px", border: "1px solid #ddd" }}>{m.quantity || 1}</td></tr>
+                )) : <tr><td colSpan="2" style={{ textAlign: "center", padding: "8px", border: "1px solid #ddd" }}>No materials assigned</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "40px", marginTop: "40px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
+          {CERTIFICATION_LOGOS.map((logo, i) => (
+            <img key={i} src={logo} alt="cert" style={{ height: "30px", opacity: 0.8 }} />
+          ))}
+        </div>
+        <div style={{ textAlign: "center", fontSize: "8pt", color: "#999", marginTop: "10px" }}>
+          ALMAS MOVERS INTERNATIONAL - Operation Department
+        </div>
+      </div>
+    );
   }
 );
 

@@ -455,15 +455,15 @@ def get_styles():
     .welcome-content strong { font-size: 12pt; color: #000; display: block; margin-bottom: 5px; }
 
     .pricing-section { margin-bottom: 30px; display: flex; justify-content: center; page-break-inside: avoid; }
-    .breakdown-container { width: 60%; }
-    .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 10px; }
+    .breakdown-container { width: 80%; }
+    .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 10px; padding-bottom: 5px; }
     .summary-content { font-size: 10pt; }
-    .summary-line { padding: 4px 0; display: flex; gap: 5px; }
+    .summary-line { padding: 4px 0; display: flex; justify-content: space-between; align-items: center; }
     .summary-line .label { color: #757575; }
-    .summary-line .value { font-weight: bold; color: #757575; }
-    .total-line { font-weight: bold; color: #000 !important; font-size: 11pt; border-top: 1px solid #eee; margin-top: 5px; padding-top: 10px; }
+    .summary-line .value { font-weight: bold; color: #757575; text-align: right; }
+    .total-line { font-weight: bold; color: #000 !important; font-size: 11pt; margin-top: 5px; padding-top: 10px; }
     .total-line .label, .total-line .value { color: #000; }
-    .text-red { color: #d32f2f; }
+    .text-red { color: #d32f2f !important; }
 
     .selected-services-section { margin-bottom: 20px; page-break-inside: avoid; }
     .service-scope-section { margin-bottom: 30px; page-break-inside: avoid; }
