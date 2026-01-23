@@ -97,6 +97,44 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
     const value = watch(name);
     const error = errors?.[name];
 
+    if (isTimeOnly) {
+        // Native time pickers provide a much better "time select" experience
+        const timeValue = value instanceof Date
+            ? value.toTimeString().slice(0, 5)
+            : (typeof value === 'string' ? value : "");
+
+        const handleTimeChange = (e) => {
+            const val = e.target.value;
+            if (val) {
+                const [h, m] = val.split(':');
+                const d = new Date();
+                d.setHours(parseInt(h), parseInt(m), 0, 0);
+                setValue(name, d, { shouldValidate: true });
+            } else {
+                setValue(name, null, { shouldValidate: true });
+            }
+        };
+
+        return (
+            <div className="w-full">
+                {label && (
+                    <label className={LABEL_CLASS}>
+                        {label} {rules?.required && <span className="text-red-500">*</span>}
+                    </label>
+                )}
+                <div className="relative">
+                    <input
+                        type="time"
+                        value={timeValue}
+                        onChange={handleTimeChange}
+                        className={`${INPUT_CLASS_BASE} ${error ? "border-red-500 bg-red-50/10" : ""}`}
+                    />
+                </div>
+                {error && <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">{error.message}</p>}
+            </div>
+        );
+    }
+
     return (
         <div className="w-full">
             {label && (
@@ -108,18 +146,16 @@ const DatePickerInput = ({ label, name, rules = {}, isTimeOnly = false }) => {
                 <DatePicker
                     selected={value}
                     onChange={(date) => setValue(name, date, { shouldValidate: true })}
-                    showTimeSelect={isTimeOnly}
-                    showTimeSelectOnly={isTimeOnly}
+                    showTimeSelect={false}
                     timeIntervals={15}
-                    timeCaption="Time"
-                    dateFormat={isTimeOnly ? "h:mm aa" : "MM/dd/yyyy"}
+                    dateFormat="MM/dd/yyyy"
                     className={`${INPUT_CLASS_BASE} ${error ? "border-red-500 bg-red-50/10" : ""}`}
-                    placeholderText={isTimeOnly ? "Select time" : "Select date"}
+                    placeholderText="Select date"
                     wrapperClassName="w-full"
                     portalId="datepicker-portal"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-600">
-                    {isTimeOnly ? <FaClock className="w-4 h-4" /> : <FaCalendar className="w-4 h-4" />}
+                    <FaCalendar className="w-4 h-4" />
                 </div>
             </div>
             {error && <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">{error.message}</p>}
@@ -315,10 +351,12 @@ const Customer = ({ apiData, countryOptions, getStateOptions, getCityOptions, or
                     </div>
                     Survey Schedule
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <DatePickerInput label="Survey Date" name="surveyDate" />
-                    <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
-                    <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
+                    <div className="grid grid-cols-2 gap-4">
+                        <DatePickerInput label="Start Time" name="surveyStartTime" isTimeOnly />
+                        <DatePickerInput label="End Time" name="surveyEndTime" isTimeOnly />
+                    </div>
                 </div>
             </div>
 

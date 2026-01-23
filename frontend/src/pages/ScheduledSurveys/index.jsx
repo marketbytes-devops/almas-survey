@@ -669,25 +669,22 @@ const ScheduledSurveys = () => {
                     New Time <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <DatePicker
-                      selected={rescheduleSurveyForm.watch("surveyDate")}
-                      onChange={(time) => {
+                    <input
+                      type="time"
+                      value={rescheduleSurveyForm.watch("surveyDate") instanceof Date
+                        ? rescheduleSurveyForm.watch("surveyDate").toTimeString().slice(0, 5)
+                        : ""}
+                      onChange={(e) => {
+                        const time = e.target.value;
                         const current = rescheduleSurveyForm.getValues("surveyDate") || new Date();
                         if (time) {
+                          const [h, m] = time.split(':');
                           const newDate = new Date(current);
-                          newDate.setHours(time.getHours(), time.getMinutes());
+                          newDate.setHours(parseInt(h), parseInt(m), 0, 0);
                           rescheduleSurveyForm.setValue("surveyDate", newDate, { shouldValidate: true });
                         }
                       }}
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
                       className="input-style w-full !pl-10 h-[52px] rounded-xl"
-                      placeholderText="Select new time"
-                      wrapperClassName="w-full"
-                      portalId="datepicker-portal"
                     />
                     <FiClock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>

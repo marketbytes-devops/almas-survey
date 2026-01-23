@@ -732,18 +732,17 @@ const SurveySummary = () => {
 
                   {/* Row 3: Detail toggle & Actions */}
                   <div className="flex flex-col lg:flex-row items-center gap-6 pt-6 border-t border-gray-100">
-                    <div className="hidden lg:block lg:flex-1"></div>
                     <div className="w-full lg:flex-1 flex items-center justify-center lg:justify-end flex-wrap gap-2.5">
                       {survey.hasQuotation ? (
                         hasPermission("quotation", "view") && (
                           <button onClick={() => navigate(`/quotation-view/${survey.quotation_id}`)} className={`${BUTTON_BASE} bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200`} title="View Quotation">
-                            <FiFileText /> Quote
+                            <FiFileText />Create Quote
                           </button>
                         )
                       ) : (
                         hasPermission("quotation", "add") && (
                           <button onClick={() => handleCreateQuotation(survey.survey_id)} className={`${BUTTON_BASE} bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200`} title="Create Quote">
-                            <FiFileText /> Quote
+                            <FiFileText /> Create Quote
                           </button>
                         )
                       )}
