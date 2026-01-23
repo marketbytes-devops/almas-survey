@@ -125,6 +125,15 @@ class SurveyViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(enquiry__assigned_user=user)
+
         survey_id = self.request.query_params.get('enquiry_id')
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
@@ -240,6 +249,16 @@ class DestinationAddressViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+
         survey_id = self.request.query_params.get('survey_id')
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
@@ -252,6 +271,16 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+
         survey_id = self.request.query_params.get('survey_id')
         room_id = self.request.query_params.get('room_id')
         if survey_id:
@@ -285,6 +314,16 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+
         survey_id = self.request.query_params.get('survey_id')
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
@@ -297,6 +336,16 @@ class PetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+
         survey_id = self.request.query_params.get('survey_id')
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
