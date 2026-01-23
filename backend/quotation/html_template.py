@@ -114,7 +114,7 @@ def build_html_template(quotation):
             
             breakdown_rows += f"""
                 <div class="summary-line">
-                    <span class="label">{service_name} x {qty}:</span>
+                    <span class="label">{service_name} x {qty}</span>
                     <span class="value">{format_currency(total)}</span>
                 </div>
             """
@@ -123,7 +123,7 @@ def build_html_template(quotation):
     if discount > 0:
         discount_row = f"""
             <div class="summary-line">
-                <span class="label">Discount:</span>
+                <span class="label">Discount</span>
                 <span class="value text-red">-{discount_amt}</span>
             </div>
         """
@@ -289,19 +289,19 @@ def build_html_template(quotation):
                                     <div class="info-box client-box">
                                         <h3>CLIENT DETAILS</h3>
                                         <div class="content">
-                                            <p><strong>Name:</strong> {customer_name}</p>
-                                            <p><strong>Phone:</strong> {phone}</p>
-                                            <p><strong>Email:</strong> {email}</p>
+                                            <p><strong>Name</strong> <span class="colon-separator">:</span> {customer_name}</p>
+                                            <p><strong>Phone</strong> <span class="colon-separator">:</span> {phone}</p>
+                                            <p><strong>Email</strong> <span class="colon-separator">:</span> {email}</p>
                                         </div>
                                     </div>
                                     <div class="info-box move-box">
                                         <h3>MOVE DETAILS</h3>
                                         <div class="content">
-                                            <p><strong>Service:</strong> {service_type}</p>
-                                            <p><strong>Origin:</strong> {origin}</p>
-                                            <p><strong>Destination:</strong> {destination}</p>
-                                            <p><strong>Commodity:</strong> Used Household Goods</p>
-                                            <p><strong>Move Date:</strong> {move_date}</p>
+                                            <p><strong>Service</strong> <span class="colon-separator">:</span> {service_type}</p>
+                                            <p><strong>Origin</strong> <span class="colon-separator">:</span> {origin}</p>
+                                            <p><strong>Destination</strong> <span class="colon-separator">:</span> {destination}</p>
+                                            <p><strong>Commodity</strong> <span class="colon-separator">:</span> Used Household Goods</p>
+                                            <p><strong>Move Date</strong> <span class="colon-separator">:</span> {move_date}</p>
                                         </div>
                                     </div>
                                 </section>
@@ -315,15 +315,15 @@ def build_html_template(quotation):
                                             {discount_row}
                                             
                                             <div class="summary-line total-line">
-                                                <span class="label">Lump sum moving charges:</span>
+                                                <span class="label">Lump sum moving charges: </span>
                                                 <span class="value">{final_amt}</span>
                                             </div>
                                             <div class="summary-line">
-                                                <span class="label">Advance:</span>
+                                                <span class="label">Advance</span>
                                                 <span class="value">{advance_amt}</span>
                                             </div>
                                             <div class="summary-line">
-                                                <span class="label">Balance:</span>
+                                                <span class="label">Balance</span>
                                                 <span class="value">{balance_amt}</span>
                                             </div>
                                         </div>
@@ -442,8 +442,9 @@ def get_styles():
     .info-section { display: flex; gap: 20px; margin-bottom: 30px; page-break-inside: avoid; }
     .info-box { flex: 1; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #003087; padding: 12px 15px; page-break-inside: avoid; }
     .info-box h3 { margin: 0 0 10px 0; font-size: 10pt; color: #003087; text-transform: uppercase; }
-    .info-box .content p { margin: 3px 0; font-size: 10pt; }
-    .info-box .content strong { color: #555; display: inline-block; margin-right: 5px; }
+    .info-box .content p { margin: 3px 0; font-size: 10pt; display: flex; align-items: flex-start; }
+    .info-box .content strong { color: #555; display: inline-block; width: 85px; flex-shrink: 0; }
+    .colon-separator { margin: 0 5px; color: #555; font-weight: bold; }
 
     .rate-section { margin-bottom: 25px; page-break-inside: avoid; }
     .rate-box { padding: 15px 25px !important; }
@@ -454,15 +455,15 @@ def get_styles():
     .welcome-content p { margin-bottom: 8px; }
     .welcome-content strong { font-size: 12pt; color: #000; display: block; margin-bottom: 5px; }
 
-    .pricing-section { margin-bottom: 30px; display: flex; justify-content: center; page-break-inside: avoid; }
-    .breakdown-container { width: 80%; }
-    .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 10px; padding-bottom: 5px; }
+    .pricing-section { margin-bottom: 45px; display: flex; justify-content: center; page-break-inside: avoid; }
+    .breakdown-container { width: 55%; }
+    .breakdown-title { color: #003087; font-size: 11pt; margin-bottom: 5px; padding-bottom: 5px; }
     .summary-content { font-size: 10pt; }
-    .summary-line { padding: 4px 0; display: flex; justify-content: space-between; align-items: center; }
-    .summary-line .label { color: #757575; }
-    .summary-line .value { font-weight: bold; color: #757575; text-align: right; }
-    .total-line { font-weight: bold; color: #000 !important; font-size: 11pt; margin-top: 5px; padding-top: 10px; }
-    .total-line .label, .total-line .value { color: #000; }
+    .summary-line { padding: 1px 0; display: flex; justify-content: flex-start; align-items: center; }
+    .summary-line .label { color: #757575; display: inline-block; width: 170px; white-space: nowrap; }
+    .summary-line .value { font-weight: bold; color: #757575; flex: 1; text-align: right; }
+    .total-line { font-weight: bold; color: #000 !important; font-size: 11pt; margin-top: 5px; padding-top: 5px; }
+    .total-line .label, .total-line .value, .total-line .colon-separator { color: #000; }
     .text-red { color: #d32f2f !important; }
 
     .selected-services-section { margin-bottom: 20px; page-break-inside: avoid; }

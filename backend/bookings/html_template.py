@@ -186,18 +186,18 @@ def build_work_order_template(booking):
                                     <div class="info-box client-box">
                                         <h3>CLIENT DETAILS</h3>
                                         <div class="content">
-                                            <p><strong>Name:</strong> {customer_name}</p>
-                                            <p><strong>Phone:</strong> {phone}</p>
-                                            <p><strong>Email:</strong> {email}</p>
+                                            <p><strong>Name</strong> <span class="colon-separator">:</span> {customer_name}</p>
+                                            <p><strong>Phone</strong> <span class="colon-separator">:</span> {phone}</p>
+                                            <p><strong>Email</strong> <span class="colon-separator">:</span> {email}</p>
                                         </div>
                                     </div>
                                     <div class="info-box move-box">
                                         <h3>MOVE DETAILS</h3>
                                         <div class="content">
-                                            <p><strong>Service:</strong> {service_type}</p>
-                                            <p><strong>Origin:</strong> {origin}</p>
-                                            <p><strong>Destination:</strong> {destination}</p>
-                                            <p><strong>Move Date:</strong> {move_date}</p>
+                                            <p><strong>Service</strong> <span class="colon-separator">:</span> {service_type}</p>
+                                            <p><strong>Origin</strong> <span class="colon-separator">:</span> {origin}</p>
+                                            <p><strong>Destination</strong> <span class="colon-separator">:</span> {destination}</p>
+                                            <p><strong>Move Date</strong> <span class="colon-separator">:</span> {move_date}</p>
                                         </div>
                                     </div>
                                 </section>
@@ -207,15 +207,15 @@ def build_work_order_template(booking):
                                     <div class="info-box schedule-box">
                                         <h3>MOVE SCHEDULE</h3>
                                         <div class="content">
-                                            <p><strong>Start Time:</strong> {start_time}</p>
-                                            <p><strong>Est. End Time:</strong> {end_time}</p>
+                                            <p><strong>Start Time</strong> <span class="colon-separator">:</span> {start_time}</p>
+                                            <p><strong>Est. End Time</strong> <span class="colon-separator">:</span> {end_time}</p>
                                         </div>
                                     </div>
                                     <div class="info-box supervisor-box" style="border-left-color: #456475;">
                                         <h3>SUPERVISOR</h3>
                                         <div class="content">
-                                            <p><strong>Name:</strong> {supervisor_name}</p>
-                                            <p><strong>Phone:</strong> {supervisor_phone}</p>
+                                            <p><strong>Name</strong> <span class="colon-separator">:</span> {supervisor_name}</p>
+                                            <p><strong>Phone</strong> <span class="colon-separator">:</span> {supervisor_phone}</p>
                                         </div>
                                     </div>
                                 </section>
@@ -344,8 +344,9 @@ def get_styles():
     .info-section { display: flex; gap: 20px; margin-bottom: 20px; page-break-inside: avoid; }
     .info-box { flex: 1; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #003087; padding: 12px 15px; page-break-inside: avoid; }
     .info-box h3 { margin: 0 0 10px 0; font-size: 10pt; color: #003087; text-transform: uppercase; }
-    .info-box .content p { margin: 3px 0; font-size: 10pt; }
-    .info-box .content strong { color: #555; display: inline-block; margin-right: 5px; }
+    .info-box .content p { margin: 3px 0; font-size: 10pt; display: flex; align-items: flex-start; }
+    .info-box .content strong { color: #555; display: inline-block; width: 100px; flex-shrink: 0; }
+    .colon-separator { margin: 0 5px; color: #555; font-weight: bold; }
 
     .resources-section { margin-top: 10px; page-break-inside: avoid; }
     .resource-grid { display: flex; gap: 20px; }
