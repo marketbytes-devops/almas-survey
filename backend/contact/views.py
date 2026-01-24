@@ -2,6 +2,7 @@ import threading
 import logging
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
+from authapp.permissions import HasPagePermission
 import requests
 from authapp.models import CustomUser
 from rest_framework import generics, status
@@ -9,6 +10,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from .models import Enquiry
 from .serializers import EnquirySerializer
+# Add this line near the top of contact/views.py
+from authapp.permissions import HasPagePermission
 
 logger = logging.getLogger(__name__)
 
@@ -644,21 +647,15 @@ class EnquiryListCreate(generics.ListCreateAPIView):
         # Check if user has permission to see more than just their own assigned enquiries
         can_view_all = (
             user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin") or
-            user.has_effective_permission('enquiries', 'view') or
-            user.has_effective_permission('new_enquiries', 'view') or
-            user.has_effective_permission('processing_enquiries', 'view') or
-            user.has_effective_permission('scheduled_surveys', 'view') or
-            user.has_effective_permission('follow_ups', 'view')
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
         )
 
         if can_view_all:
             logger.debug(f"User {user.email} has broad enquiry view permission.")
         else:
-            # Fallback for restricted users: only show assigned ones unless a specific override exists
-            if not assigned_user_email and not unassigned == "true":
-                queryset = queryset.filter(assigned_user=user)
-                logger.debug(f"Restricted access: defaulting to assigned_user={user.email}")
+            # Salespersons or other roles ONLY see their assigned enquiries
+            queryset = queryset.filter(assigned_user=user)
+            logger.debug(f"Restricted access: Filtering by assigned_user={user.email}")
 
         if assigned_user_email:
             if assigned_user_email == "not_null":
@@ -728,6 +725,15 @@ class EnquiryRetrieveUpdate(generics.RetrieveUpdateAPIView):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
+        
+        # Consistent RBAC filtering for retrieve/update
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(assigned_user=user)
+            
         return queryset
 
     def patch(self, request, *args, **kwargs):
@@ -753,6 +759,18 @@ class EnquiryRetrieveUpdate(generics.RetrieveUpdateAPIView):
 class EnquiryDelete(generics.DestroyAPIView):
     queryset = Enquiry.objects.all()
     serializer_class = EnquirySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(assigned_user=user)
+        return queryset
 
     def perform_destroy(self, instance):
         instance.delete()
@@ -768,7 +786,17 @@ class EnquiryDelete(generics.DestroyAPIView):
 class EnquiryDeleteAll(generics.GenericAPIView):
 
     def delete(self, request, *args, **kwargs):
-        count, _ = Enquiry.objects.all().delete()
+        user = self.request.user
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        
+        if is_privileged:
+            count, _ = Enquiry.objects.all().delete()
+        else:
+            count, _ = Enquiry.objects.filter(assigned_user=user).delete()
+            
         return Response(
             {"message": f"Successfully deleted {count} enquiries"},
             status=status.HTTP_204_NO_CONTENT,
@@ -777,7 +805,18 @@ class EnquiryDeleteAll(generics.GenericAPIView):
 class EnquirySchedule(generics.GenericAPIView):
     queryset = Enquiry.objects.all()
     serializer_class = EnquirySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("scheduled_surveys")]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(assigned_user=user)
+        return queryset
 
     def post(self, request, pk, *args, **kwargs):
         try:
@@ -815,7 +854,18 @@ class EnquirySchedule(generics.GenericAPIView):
 class EnquiryCancelSurvey(generics.GenericAPIView):
     queryset = Enquiry.objects.all()
     serializer_class = EnquirySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("new_enquiries")]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            queryset = queryset.filter(assigned_user=user)
+        return queryset
 
     def post(self, request, pk, *args, **kwargs):
         try:

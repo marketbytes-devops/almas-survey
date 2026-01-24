@@ -25,7 +25,7 @@ from .serializers import (
     UserPermissionSerializer,
     CustomTokenObtainPairSerializer,
 )
-from .permissions import IsAdmin, HasPagePermission
+from authapp.permissions import HasPagePermission
 
 class EffectivePermissionMixin:
     """

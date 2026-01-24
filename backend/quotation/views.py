@@ -48,6 +48,16 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            qs = qs.filter(survey__enquiry__assigned_user=user)
+
         survey_id = self.request.query_params.get("survey_id")
         if survey_id:
             qs = qs.filter(survey__survey_id=survey_id)
@@ -396,4 +406,15 @@ class QuotationRemarkViewSet(viewsets.ModelViewSet):
     permission_classes = [HasPagePermission("quotation")]
 
     def get_queryset(self):
-        return QuotationRemark.objects.all().order_by("-created_at")
+        qs = QuotationRemark.objects.all().order_by("-created_at")
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            qs = qs.filter(quotation__survey__enquiry__assigned_user=user)
+            
+        return qs

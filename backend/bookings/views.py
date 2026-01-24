@@ -15,7 +15,20 @@ import traceback
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all().order_by("-created_at")
+    queryset = Booking.objects.all()
+    def get_queryset(self):
+        qs = Booking.objects.all().order_by("-created_at")
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            qs = qs.filter(quotation__survey__enquiry__assigned_user=user)
+            
+        return qs
     serializer_class = BookingSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -229,16 +242,58 @@ Almas Movers Management"""
 class BookingLabourViewSet(viewsets.ModelViewSet):
     queryset = BookingLabour.objects.all()
     serializer_class = BookingLabourSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            qs = qs.filter(booking__quotation__survey__enquiry__assigned_user=user)
+            
+        return qs
 
 
 class BookingTruckViewSet(viewsets.ModelViewSet):
     queryset = BookingTruck.objects.all()
     serializer_class = BookingTruckSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            qs = qs.filter(booking__quotation__survey__enquiry__assigned_user=user)
+            
+        return qs
 
 
 class BookingMaterialViewSet(viewsets.ModelViewSet):
     queryset = BookingMaterial.objects.all()
     serializer_class = BookingMaterialSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        
+        # RBAC Filtering
+        is_privileged = (
+            user.is_superuser or 
+            (hasattr(user, 'role') and user.role.name == "Superadmin")
+        )
+        if not is_privileged:
+            qs = qs.filter(booking__quotation__survey__enquiry__assigned_user=user)
+            
+        return qs
