@@ -20,6 +20,7 @@ import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 // Shared Input Component with Premium Styling
 const InputField = ({
@@ -80,9 +81,7 @@ const NewAssignedEnquiries = () => {
   const [filteredEnquiries, setFilteredEnquiries] = useState([]);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [permissions, setPermissions] = useState([]);
+  const { hasPermission, isSuperadmin, isLoadingPermissions } = usePermissions();
   const [isContactStatusOpen, setIsContactStatusOpen] = useState(false);
   const [isContactStatusConfirmOpen, setIsContactStatusConfirmOpen] = useState(false);
   const [isScheduleSurveyOpen, setIsScheduleSurveyOpen] = useState(false);
@@ -148,25 +147,13 @@ const NewAssignedEnquiries = () => {
 
     const fetchData = async () => {
       try {
-        const profileResponse = await apiClient.get("/auth/profile/");
-        const user = profileResponse.data;
-
-        if (!isMounted) return;
-
-        const isSuperadmin = user.is_superuser || user.role?.name === "Superadmin";
-        setIsSuperadmin(isSuperadmin);
-
-        const roleId = user.role?.id;
-        if (roleId) {
-          const roleRes = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(roleRes.data.permissions || []);
-        }
-
         const params = {
           has_survey: "false",
         };
 
         const enquiryResponse = await apiClient.get("/contacts/enquiries/", { params });
+
+        if (!isMounted) return;
 
         const rawEnquiries = enquiryResponse.data;
         const sortedEnquiries = rawEnquiries.sort((a, b) =>
@@ -249,11 +236,7 @@ const NewAssignedEnquiries = () => {
     applyFiltersAndSearch(filterForm.getValues(), value);
   };
 
-  const hasPermission = (page, action) => {
-    if (isSuperadmin) return true;
-    const perm = permissions.find((p) => p.page === page);
-    return perm?.[`can_${action}`];
-  };
+  // Removed local hasPermission as it is now provided by usePermissions()
 
   const onContactStatusSubmit = async (data) => {
     if (!hasPermission("new_enquiries", "edit")) {
@@ -350,7 +333,7 @@ const NewAssignedEnquiries = () => {
     setIsPhoneModalOpen(true);
   };
 
-  if (isLoading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
+  if (isLoadingPermissions) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
@@ -501,13 +484,15 @@ const NewAssignedEnquiries = () => {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openContactStatusModal(item)}
-                          className="px-3 py-1.5 text-[11px] font-medium text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all"
-                        >
-                          Status
-                        </button>
-                        {!item.survey_date && (
+                        {hasPermission("new_enquiries", "edit") && (
+                          <button
+                            onClick={() => openContactStatusModal(item)}
+                            className="px-3 py-1.5 text-[11px] font-medium text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all"
+                          >
+                            Status
+                          </button>
+                        )}
+                        {hasPermission("new_enquiries", "edit") && !item.survey_date && (
                           <button
                             onClick={() => openScheduleSurveyModal(item)}
                             className="px-3 py-1.5 text-[11px] font-medium text-white bg-[#4c7085] hover:bg-[#6b8ca3] rounded-xl transition-all shadow-sm"
@@ -586,8 +571,12 @@ const NewAssignedEnquiries = () => {
                             </div>
                           </div>
                           <div className="flex gap-2 pt-2">
-                            <button onClick={() => openContactStatusModal(item)} className="flex-1 bg-white border border-gray-200 py-2 rounded-xl text-[11px] font-medium flex items-center justify-center gap-2 shadow-sm">Status</button>
-                            <button onClick={() => openScheduleSurveyModal(item)} className="flex-1 bg-[#4c7085] text-white py-2 rounded-xl text-[11px] font-medium flex items-center justify-center gap-2 shadow-sm">Schedule</button>
+                            {hasPermission("new_enquiries", "edit") && (
+                              <button onClick={() => openContactStatusModal(item)} className="flex-1 bg-white border border-gray-200 py-2 rounded-xl text-[11px] font-medium flex items-center justify-center gap-2 shadow-sm">Status</button>
+                            )}
+                            {hasPermission("new_enquiries", "edit") && (
+                              <button onClick={() => openScheduleSurveyModal(item)} className="flex-1 bg-[#4c7085] text-white py-2 rounded-xl text-[11px] font-medium flex items-center justify-center gap-2 shadow-sm">Schedule</button>
+                            )}
                             <button onClick={() => openPhoneModal(item)} className="w-10 bg-green-500 text-white rounded-xl flex items-center justify-center shadow-sm"><IoLogoWhatsapp className="w-5 h-5" /></button>
                           </div>
                         </div>

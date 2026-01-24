@@ -196,7 +196,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const addArticle = (itemName, formData = {}, isMoving = true) => {
-        if (!hasPermission("surveys", "edit")) return setError("Permission denied");
+        if (!hasPermission("survey_details", "edit")) return setError("Permission denied");
         const length = formData[`length_${itemName}`] || "";
         const width = formData[`width_${itemName}`] || "";
         const height = formData[`height_${itemName}`] || "";
@@ -248,7 +248,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const addMultipleArticles = () => {
-        if (!hasPermission("surveys", "edit")) return setError("Permission denied");
+        if (!hasPermission("survey_details", "edit")) return setError("Permission denied");
         const selectedItemNames = Object.keys(selectedItems).filter(name => selectedItems[name]);
         if (selectedItemNames.length === 0) return setError("Select at least one item");
 
@@ -350,7 +350,7 @@ const Article = ({ apiData, setMessage, setError }) => {
     };
 
     const addManualItem = () => {
-        if (!hasPermission("surveys", "edit")) return setError("Permission denied");
+        if (!hasPermission("survey_details", "edit")) return setError("Permission denied");
         if (!manualFormData.itemName.trim()) {
             setError("Item name is required");
             return;
@@ -507,7 +507,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     </button>
                                 )}
                             </div>
-                            {hasPermission("surveys", "edit") && (
+                            {hasPermission("survey_details", "edit") && (
                                 <button type="button" onClick={() => setShowManualAddForm(true)} className={`${BUTTON_SECONDARY} whitespace-nowrap`}>
                                     <FaPlus /> Custom Item
                                 </button>
@@ -525,7 +525,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                         <span className="text-sm font-medium text-[#4c7085]">
                                             {Object.values(selectedItems).filter(Boolean).length} items selected
                                         </span>
-                                        {hasPermission("surveys", "edit") && (
+                                        {hasPermission("survey_details", "edit") && (
                                             <button type="button" onClick={addMultipleArticles} className={BUTTON_PRIMARY}>
                                                 Save Selected Items
                                             </button>
@@ -546,7 +546,7 @@ const Article = ({ apiData, setMessage, setError }) => {
                                     <p className="text-gray-600 text-sm mt-1 max-w-xs mx-auto">
                                         We couldn't find matches for "{itemSearchQuery || 'this room'}". Try a different search or add a custom item.
                                     </p>
-                                    {hasPermission("surveys", "edit") && (
+                                    {hasPermission("survey_details", "edit") && (
                                         <button onClick={() => setShowManualAddForm(true)} className="mt-4 text-[#4c7085] text-sm font-medium hover:underline">
                                             Add Custom Item
                                         </button>

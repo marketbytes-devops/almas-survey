@@ -14,14 +14,14 @@ import Modal from "../../components/Modal";
 import PageHeader from "../../components/PageHeader";
 import apiClient from "../../api/apiClient";
 import Loading from "../../components/Loading";
+import { usePermissions } from "../../components/PermissionsContext/PermissionsContext";
 
 const ProcessingEnquiries = () => {
   const [enquiries, setEnquiries] = useState([]);
   const [filteredEnquiries, setFilteredEnquiries] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [permissions, setPermissions] = useState([]);
+  const { hasPermission, isSuperadmin, isLoadingPermissions } = usePermissions();
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,15 +38,6 @@ const ProcessingEnquiries = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const profileResponse = await apiClient.get("/auth/profile/");
-        const user = profileResponse.data;
-        setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
-
-        const roleId = user.role?.id;
-        if (roleId) {
-          const res = await apiClient.get(`/auth/roles/${roleId}/`);
-          setPermissions(res.data.permissions || []);
-        }
 
         const enquiryResponse = await apiClient.get("/contacts/enquiries/", {
           params: {
@@ -99,7 +90,7 @@ const ProcessingEnquiries = () => {
     setIsPhoneModalOpen(true);
   };
 
-  if (isLoading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
+  if (isLoadingPermissions || isLoading) return <div className="flex justify-center items-center min-h-[500px]"><Loading /></div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">

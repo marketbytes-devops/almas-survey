@@ -166,7 +166,6 @@ class TruckTypeSerializer(serializers.ModelSerializer):
         ]
 
 
-
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service

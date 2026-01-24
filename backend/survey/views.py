@@ -13,6 +13,7 @@ from additional_settings.models import Item
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from authapp.mixins import RowLevelFilterMixin
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ Website: www.almasintl.com
         logger.error(f"Failed to send survey submission email: {str(e)}", exc_info=True)
 
 @method_decorator(csrf_exempt, name='dispatch')
-class SurveyViewSet(viewsets.ModelViewSet):
+class SurveyViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Survey.objects.all()
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticated]
@@ -126,13 +127,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            queryset = queryset.filter(enquiry__assigned_user=user)
+        queryset = self.get_row_level_queryset(queryset, user, user_field='enquiry__assigned_user')
 
         survey_id = self.request.query_params.get('enquiry_id')
         if survey_id:
@@ -242,7 +237,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
                 )
 
 
-class DestinationAddressViewSet(viewsets.ModelViewSet):
+class DestinationAddressViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = DestinationAddress.objects.all()
     serializer_class = DestinationAddressSerializer
     permission_classes = [IsAuthenticated]
@@ -251,20 +246,14 @@ class DestinationAddressViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+        queryset = self.get_row_level_queryset(queryset, user, user_field='survey__enquiry__assigned_user')
 
         survey_id = self.request.query_params.get('survey_id')
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
         return queryset
 
-class ArticleViewSet(viewsets.ModelViewSet):
+class ArticleViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticated]
@@ -273,13 +262,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+        queryset = self.get_row_level_queryset(queryset, user, user_field='survey__enquiry__assigned_user')
 
         survey_id = self.request.query_params.get('survey_id')
         room_id = self.request.query_params.get('room_id')
@@ -307,7 +290,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             logger.error(f"Failed to fetch items for room {room_id}: {str(e)}")
             return Response({'error': f'Failed to fetch items for room: {room_id}'}, status=status.HTTP_400_BAD_REQUEST)
 
-class VehicleViewSet(viewsets.ModelViewSet):
+class VehicleViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
     permission_classes = [IsAuthenticated]
@@ -316,20 +299,14 @@ class VehicleViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+        queryset = self.get_row_level_queryset(queryset, user, user_field='survey__enquiry__assigned_user')
 
         survey_id = self.request.query_params.get('survey_id')
         if survey_id:
             queryset = queryset.filter(survey_id=survey_id)
         return queryset.select_related('vehicle_type')
 
-class PetViewSet(viewsets.ModelViewSet):
+class PetViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Pet.objects.all()
     serializer_class = PetSerializer
     permission_classes = [IsAuthenticated]
@@ -338,13 +315,7 @@ class PetViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            queryset = queryset.filter(survey__enquiry__assigned_user=user)
+        queryset = self.get_row_level_queryset(queryset, user, user_field='survey__enquiry__assigned_user')
 
         survey_id = self.request.query_params.get('survey_id')
         if survey_id:

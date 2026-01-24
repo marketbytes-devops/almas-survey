@@ -11,22 +11,17 @@ from .serializers import (
 from .pdf_generator import generate_booking_pdf  
 from urllib.parse import quote
 from django.conf import settings
+from authapp.mixins import RowLevelFilterMixin
 import traceback
 
 
-class BookingViewSet(viewsets.ModelViewSet):
+class BookingViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Booking.objects.all()
     def get_queryset(self):
         qs = Booking.objects.all().order_by("-created_at")
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            qs = qs.filter(quotation__survey__enquiry__assigned_user=user)
+        qs = self.get_row_level_queryset(qs, user, user_field='quotation__survey__enquiry__assigned_user')
             
         return qs
     serializer_class = BookingSerializer
@@ -239,7 +234,7 @@ Almas Movers Management"""
             return Response({"error": f"Failed to generate PDF: {str(e)}"}, status=500)
 
 
-class BookingLabourViewSet(viewsets.ModelViewSet):
+class BookingLabourViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = BookingLabour.objects.all()
     serializer_class = BookingLabourSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -248,18 +243,13 @@ class BookingLabourViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            qs = qs.filter(booking__quotation__survey__enquiry__assigned_user=user)
+        # Enforce row-level isolation for all users except Django superusers
+        qs = self.get_row_level_queryset(qs, user, user_field='booking__quotation__survey__enquiry__assigned_user')
             
         return qs
 
 
-class BookingTruckViewSet(viewsets.ModelViewSet):
+class BookingTruckViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = BookingTruck.objects.all()
     serializer_class = BookingTruckSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -268,18 +258,12 @@ class BookingTruckViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            qs = qs.filter(booking__quotation__survey__enquiry__assigned_user=user)
+        qs = self.get_row_level_queryset(qs, user, user_field='booking__quotation__survey__enquiry__assigned_user')
             
         return qs
 
 
-class BookingMaterialViewSet(viewsets.ModelViewSet):
+class BookingMaterialViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = BookingMaterial.objects.all()
     serializer_class = BookingMaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -288,12 +272,6 @@ class BookingMaterialViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            qs = qs.filter(booking__quotation__survey__enquiry__assigned_user=user)
+        qs = self.get_row_level_queryset(qs, user, user_field='booking__quotation__survey__enquiry__assigned_user')
             
         return qs

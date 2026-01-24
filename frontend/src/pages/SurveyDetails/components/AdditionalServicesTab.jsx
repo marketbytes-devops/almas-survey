@@ -30,7 +30,7 @@ const AdditionalServicesTab = () => {
     }, []);
 
     const handleServiceToggle = (serviceId, serviceName) => {
-        if (!hasPermission("surveys", "edit")) return;
+        if (!hasPermission("survey_details", "edit")) return;
         const isCurrentlySelected = selectedServices.some(service => service.id === serviceId);
 
         let updatedServices;
@@ -50,7 +50,7 @@ const AdditionalServicesTab = () => {
     };
 
     const updateServiceDetails = (serviceId, field, value) => {
-        if (!hasPermission("surveys", "edit")) return;
+        if (!hasPermission("survey_details", "edit")) return;
         const updatedServices = selectedServices.map(service => {
             if (service.id === serviceId) {
                 return { ...service, [field]: value };
@@ -92,11 +92,11 @@ const AdditionalServicesTab = () => {
                         <div
                             key={service.id}
                             onClick={() => {
-                                if (hasPermission("surveys", "edit")) {
+                                if (hasPermission("survey_details", "edit")) {
                                     handleServiceToggle(service.id, service.name);
                                 }
                             }}
-                            className={`flex items-center justify-between p-3 sm:p-4 border rounded-xl transition-all duration-200 ${hasPermission("surveys", "edit") ? "cursor-pointer" : "cursor-not-allowed opacity-60"} ${isServiceSelected(service.id)
+                            className={`flex items-center justify-between p-3 sm:p-4 border rounded-xl transition-all duration-200 ${hasPermission("survey_details", "edit") ? "cursor-pointer" : "cursor-not-allowed opacity-60"} ${isServiceSelected(service.id)
                                 ? "bg-[#4c7085]/5 border-[#4c7085] shadow-sm"
                                 : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                                 }`}
@@ -147,7 +147,7 @@ const AdditionalServicesTab = () => {
                                                     const newQty = Math.max(1, (service.quantity || 1) - 1);
                                                     updateServiceDetails(service.id, "quantity", newQty);
                                                 }}
-                                                disabled={!hasPermission("surveys", "edit")}
+                                                disabled={!hasPermission("survey_details", "edit")}
                                                 className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-700 border-r border-gray-100 transition-colors disabled:opacity-50"
                                             >
                                                 -
@@ -161,7 +161,7 @@ const AdditionalServicesTab = () => {
                                                     const newQty = (service.quantity || 1) + 1;
                                                     updateServiceDetails(service.id, "quantity", newQty);
                                                 }}
-                                                disabled={!hasPermission("surveys", "edit")}
+                                                disabled={!hasPermission("survey_details", "edit")}
                                                 className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-[#4c7085] border-l border-gray-100 transition-colors disabled:opacity-50"
                                             >
                                                 +
@@ -171,7 +171,7 @@ const AdditionalServicesTab = () => {
                                         <button
                                             type="button"
                                             onClick={() => handleServiceToggle(service.id, service.name)}
-                                            disabled={!hasPermission("surveys", "edit")}
+                                            disabled={!hasPermission("survey_details", "edit")}
                                             className="w-9 h-9 flex items-center justify-center rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100 disabled:opacity-50"
                                             title="Remove Service"
                                         >
@@ -188,8 +188,8 @@ const AdditionalServicesTab = () => {
                                     <textarea
                                         value={service.remarks || ""}
                                         onChange={(e) => updateServiceDetails(service.id, "remarks", e.target.value)}
-                                        readOnly={!hasPermission("surveys", "edit")}
-                                        className={`w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#4c7085] focus:bg-white transition-all min-h-[60px] resize-y ${!hasPermission("surveys", "edit") ? "opacity-60 cursor-not-allowed" : ""}`}
+                                        readOnly={!hasPermission("survey_details", "edit")}
+                                        className={`w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#4c7085] focus:bg-white transition-all min-h-[60px] resize-y ${!hasPermission("survey_details", "edit") ? "opacity-60 cursor-not-allowed" : ""}`}
                                         placeholder="Add any specific details..."
                                     />
                                 </div>

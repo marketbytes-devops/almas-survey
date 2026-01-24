@@ -345,7 +345,6 @@ class TruckTypeViewSet(viewsets.ModelViewSet):
         return Response({"status": "default set"})
 
 
-
 class ServiceViewSet(viewsets.ModelViewSet):
     permission_classes = [HasPagePermission("local_move")]
     queryset = Service.objects.filter(is_active=True)

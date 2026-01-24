@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import apiClient from "../../../api/apiClient";
+import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 import {
   FiUsers,
   FiPieChart,
@@ -27,6 +28,7 @@ const AdminDashboard = () => {
     totalRoles: 0
   });
   const [loading, setLoading] = useState(true);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -36,13 +38,23 @@ const AdminDashboard = () => {
         const enquiryRes = await apiClient.get("/contacts/enquiries/");
         const allEnquiries = enquiryRes.data || [];
 
-        // Fetch users
-        const userRes = await apiClient.get("/auth/users/");
-        const allUsers = userRes.data || [];
+        // Fetch users (if permitted)
+        let allUsers = [];
+        if (hasPermission("users", "view")) {
+          try {
+            const userRes = await apiClient.get("/auth/users/");
+            allUsers = userRes.data || [];
+          } catch (e) { console.warn("Failed to fetch users stats"); }
+        }
 
-        // Fetch roles
-        const roleRes = await apiClient.get("/auth/roles/");
-        const allRoles = roleRes.data || [];
+        // Fetch roles (if permitted)
+        let allRoles = [];
+        if (hasPermission("roles", "view")) {
+          try {
+            const roleRes = await apiClient.get("/auth/roles/");
+            allRoles = roleRes.data || [];
+          } catch (e) { console.warn("Failed to fetch roles stats"); }
+        }
 
         const unassigned = allEnquiries.filter(e => !e.assigned_user).length;
         const processing = allEnquiries.filter(e => e.assigned_user).length;

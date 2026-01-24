@@ -234,6 +234,7 @@ class RoleDetailView(APIView, EffectivePermissionMixin):
 
         if not self.check_permission(request, "roles", "delete"):
             return Response({"error": "Permission denied"}, status=403)
+        role.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

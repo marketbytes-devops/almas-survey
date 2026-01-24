@@ -30,6 +30,8 @@ export const PermissionsProvider = ({ children, isAuthenticated }) => {
         const profileRes = await apiClient.get("/auth/profile/");
         const user = profileRes.data;
 
+        // Restore: Both Django superusers AND users with 'Superadmin' role get full page access.
+        // Data isolation is still enforced on the backend via RowLevelFilterMixin.
         setIsSuperadmin(user.is_superuser || user.role?.name === "Superadmin");
 
         // Fetch effective permissions (role + user overrides)

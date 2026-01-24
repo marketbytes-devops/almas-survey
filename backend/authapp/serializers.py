@@ -68,11 +68,11 @@ class UserPermissionSerializer(serializers.ModelSerializer):
 
     def validate_page(self, value):
         valid_pages = [
-            'Dashboard', 'Profile', 'enquiries', 'new_enquiries', 'scheduled_surveys',
-            'survey_summary', 'quotation', 'booking', 'inventory', 'pricing',
-            'local_move', 'international_move', 'types', 'units', 'currency', 'tax',
-            'handyman', 'manpower', 'room', 'additional-services', 'labours', 'materials',
-            'users', 'roles', 'permissions'
+            'Dashboard', 'Profile', 'enquiries', 'new_enquiries', 'follow_ups', 'processing_enquiries',
+            'scheduled_surveys', 'survey_details', 'survey_summary', 'quotation', 'booking',
+            'inventory', 'pricing', 'local_move', 'international_move', 'types', 'units',
+            'currency', 'tax', 'handyman', 'manpower', 'room', 'additional-services',
+            'labours', 'materials', 'users', 'roles', 'permissions'
         ]
         if value not in valid_pages:
             raise serializers.ValidationError(f"Invalid page: {value}. Must be one of: {', '.join(valid_pages)}")

@@ -51,9 +51,9 @@ class CustomUser(AbstractUser):
     def has_effective_permission(self, page, action):
         """
         Check if user has permission for page + action.
-        Superadmin always passes — regular users use effective permissions.
+        Superadmin role and Django superusers always pass.
         """
-        if self.is_superuser:
+        if self.is_superuser or (self.role and self.role.name == "Superadmin"):
             return True
 
         perms = self.get_effective_permissions()

@@ -124,7 +124,7 @@ const ItemRow = ({
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty - 1)}
-                            disabled={qty <= 0 || !hasPermission("surveys", "edit")}
+                            disabled={qty <= 0 || !hasPermission("survey_details", "edit")}
                             className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-gray-100"
                         >
                             <FaMinus className="w-2.5 h-2.5" />
@@ -139,7 +139,7 @@ const ItemRow = ({
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => updateQuantity(item.name, qty + 1)}
-                            disabled={!hasPermission("surveys", "edit")}
+                            disabled={!hasPermission("survey_details", "edit")}
                             className="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-[#4c7085] transition-colors border-l border-gray-100 disabled:opacity-50"
                         >
                             <FaPlus className="w-2.5 h-2.5" />
@@ -150,7 +150,7 @@ const ItemRow = ({
                     <button
                         type="button"
                         onClick={() => toggleMoveStatus(item.name)}
-                        disabled={!hasPermission("surveys", "edit")}
+                        disabled={!hasPermission("survey_details", "edit")}
                         className={`h-9 px-3 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all disabled:opacity-50 ${isMoving
                             ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                             : "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
@@ -164,7 +164,7 @@ const ItemRow = ({
                     <button
                         type="button"
                         onClick={() => handleCrateChange(isCrateRequired ? 'no' : 'yes')}
-                        disabled={!hasPermission("surveys", "edit")}
+                        disabled={!hasPermission("survey_details", "edit")}
                         className={`h-9 px-3 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all disabled:opacity-50 ${isCrateRequired
                             ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
                             : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
@@ -179,7 +179,7 @@ const ItemRow = ({
                     <button
                         type="button"
                         onClick={handleCameraClick}
-                        disabled={!hasPermission("surveys", "edit")}
+                        disabled={!hasPermission("survey_details", "edit")}
                         className={`h-9 w-9 flex items-center justify-center rounded-lg border transition-all disabled:opacity-50 ${hasPhoto
                             ? "bg-indigo-50 border-indigo-200 text-indigo-600 shadow-inner"
                             : "bg-white border-gray-200 text-gray-600 hover:text-gray-600 hover:border-gray-300"

@@ -15,7 +15,7 @@ const VehicleDetails = () => {
     const vehicles = watch("vehicles") || [];
 
     const addVehicle = () => {
-        if (!hasPermission("surveys", "edit")) return;
+        if (!hasPermission("survey_details", "edit")) return;
         setValue("vehicles", [
             ...vehicles,
             {
@@ -30,7 +30,7 @@ const VehicleDetails = () => {
     };
 
     const removeVehicle = (id) => {
-        if (!hasPermission("surveys", "edit")) return;
+        if (!hasPermission("survey_details", "edit")) return;
         setValue("vehicles", vehicles.filter(v => v.id !== id));
     };
 
@@ -63,7 +63,7 @@ const VehicleDetails = () => {
                             key={vehicle.id}
                             className="group relative bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#4c7085]/30"
                         >
-                            {hasPermission("surveys", "edit") && (
+                            {hasPermission("survey_details", "edit") && (
                                 <button
                                     type="button"
                                     onClick={() => removeVehicle(vehicle.id)}
@@ -125,7 +125,7 @@ const VehicleDetails = () => {
             )}
 
             <div className="flex justify-end">
-                {hasPermission("surveys", "edit") && (
+                {hasPermission("survey_details", "edit") && (
                     <button
                         type="button"
                         onClick={addVehicle}

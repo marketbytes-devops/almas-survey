@@ -19,6 +19,7 @@ from authapp.permissions import HasPagePermission
 from .models import Quotation, QuotationRemark
 from .serializers import QuotationSerializer, QuotationRemarkSerializer
 from .pdf_generator import generate_quotation_pdf
+from authapp.mixins import RowLevelFilterMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +51,7 @@ class QuotationViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            qs = qs.filter(survey__enquiry__assigned_user=user)
+        qs = self.get_row_level_queryset(qs, user, user_field='survey__enquiry__assigned_user')
 
         survey_id = self.request.query_params.get("survey_id")
         if survey_id:
@@ -400,7 +395,7 @@ Almas Movers Management"""
             return Response({"error": f"Failed to generate PDF: {str(e)}"}, status=500)
 
 
-class QuotationRemarkViewSet(viewsets.ModelViewSet):
+class QuotationRemarkViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = QuotationRemark.objects.all()
     serializer_class = QuotationRemarkSerializer
     permission_classes = [HasPagePermission("quotation")]
@@ -409,12 +404,6 @@ class QuotationRemarkViewSet(viewsets.ModelViewSet):
         qs = QuotationRemark.objects.all().order_by("-created_at")
         user = self.request.user
         
-        # RBAC Filtering
-        is_privileged = (
-            user.is_superuser or 
-            (hasattr(user, 'role') and user.role.name == "Superadmin")
-        )
-        if not is_privileged:
-            qs = qs.filter(quotation__survey__enquiry__assigned_user=user)
+        qs = self.get_row_level_queryset(qs, user, user_field='quotation__survey__enquiry__assigned_user')
             
         return qs
