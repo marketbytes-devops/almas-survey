@@ -14,6 +14,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from authapp.mixins import RowLevelFilterMixin
+from authapp.permissions import HasPagePermission
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ Website: www.almasintl.com
 class SurveyViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Survey.objects.all()
     serializer_class = SurveySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("survey_details")]
     authentication_classes = [JWTAuthentication] 
     lookup_field = "survey_id"
 
@@ -129,9 +130,15 @@ class SurveyViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
         
         queryset = self.get_row_level_queryset(queryset, user, user_field='enquiry__assigned_user')
 
-        survey_id = self.request.query_params.get('enquiry_id')
-        if survey_id:
-            queryset = queryset.filter(survey_id=survey_id)
+        id_param = self.request.query_params.get('enquiry_id')
+        if id_param:
+            if id_param.isdigit():
+                # It's an integer PK
+                queryset = queryset.filter(enquiry_id=id_param)
+            else:
+                # It's a string survey_id
+                queryset = queryset.filter(survey_id=id_param)
+        
         return queryset.select_related('enquiry').prefetch_related(
             'destination_addresses', 'articles', 'vehicles', 'pets'
         )
@@ -240,7 +247,7 @@ class SurveyViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
 class DestinationAddressViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = DestinationAddress.objects.all()
     serializer_class = DestinationAddressSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("survey_details")]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -256,7 +263,7 @@ class DestinationAddressViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
 class ArticleViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("survey_details")]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -293,7 +300,7 @@ class ArticleViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
 class VehicleViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("survey_details")]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -309,7 +316,7 @@ class VehicleViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
 class PetViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     queryset = Pet.objects.all()
     serializer_class = PetSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPagePermission("survey_details")]
 
     def get_queryset(self):
         queryset = super().get_queryset()

@@ -255,8 +255,8 @@ def build_html_template(quotation):
                                     <div class="brand-col">
                                         <img src="{logo_b64}" alt="Almas Movers" class="logo"/>
                                         <div class="company-address">
-                                            P.O. Box 24665, Doha, Qatar<br>
-                                            Freight@almasint.com | +974 5013 6999
+                                            CR No 72379, Doha, Qatar<br>
+                                            {quotation.created_by.email if quotation.created_by and quotation.created_by.email else "Freight@almasint.com"} | {f"+{quotation.created_by.phone_number}" if quotation.created_by and quotation.created_by.phone_number else "+974 5013 6999"}
                                         </div>
                                     </div>
                                     <div class="meta-col">

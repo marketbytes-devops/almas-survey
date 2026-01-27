@@ -69,6 +69,14 @@ export default function QuotationCreate() {
 
     const fetchSurvey = async () => {
       try {
+        // First check if a quotation already exists for this survey
+        const checkRes = await apiClient.get(`/quotation-create/exists/?survey_id=${id}`);
+        if (checkRes.data.exists) {
+          // If it exists, redirect to the view page
+          navigate(`/quotation-view/${checkRes.data.quotation_id}`);
+          return;
+        }
+
         const res = await apiClient.get(`/surveys/${id}/`);
         const s = res.data;
         setSurvey(s);
@@ -353,7 +361,14 @@ export default function QuotationCreate() {
       alert("Quotation created successfully!");
       navigate("/quotation-list");
     } catch (err) {
-      alert("Error: " + (err.response?.data?.detail || "Failed to create quotation."));
+      const data = err.response?.data;
+      if (data?.status === "duplicate" || data?.survey?.[0]?.includes("already exists")) {
+        const qId = data.existing_quotation_id || "the existing";
+        alert(`A quotation already exists for this survey (ID: ${qId}). Navigating to the quotation.`);
+        navigate(`/quotation-view/${qId}`);
+      } else {
+        alert("Error: " + (data?.detail || "Failed to create quotation."));
+      }
     }
   };
 

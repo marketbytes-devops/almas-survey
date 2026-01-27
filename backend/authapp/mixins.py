@@ -10,7 +10,7 @@ class RowLevelFilterMixin:
         Superusers (Django Admin) bypass this check.
         All other users (including 'Superadmin' role) are filtered.
         """
-        if user.is_superuser:
+        if user.is_superuser or (user.role and user.role.name.strip().lower() == 'superadmin'):
             return queryset
         
         filter_kwargs = {user_field: user}

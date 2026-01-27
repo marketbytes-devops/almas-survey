@@ -873,7 +873,7 @@ const SurveyDetails = () => {
     };
 
     const saveSurveyData = async (data) => {
-        if (!hasPermission("surveys", "edit")) return alert("Permission denied");
+        if (!hasPermission("survey_details", "edit")) return alert("Permission denied");
         setIsLoading(true);
 
         const processedArticles = await Promise.all(data.articles.map(async (a) => {
@@ -916,7 +916,7 @@ const SurveyDetails = () => {
         }));
 
         const payload = {
-            enquiry: surveyId ? parseInt(surveyId) : null,
+            enquiry: existingSurvey ? existingSurvey.enquiry : (surveyId ? parseInt(surveyId) : null),
             customer_type: data.customerType || null,
             is_military: data.isMilitary,
             salutation: data.salutation,
