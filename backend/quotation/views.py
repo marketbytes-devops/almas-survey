@@ -402,8 +402,4 @@ class QuotationRemarkViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
 
     def get_queryset(self):
         qs = QuotationRemark.objects.all().order_by("-created_at")
-        user = self.request.user
-        
-        qs = self.get_row_level_queryset(qs, user, user_field='quotation__survey__enquiry__assigned_user')
-            
         return qs
