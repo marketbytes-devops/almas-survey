@@ -916,7 +916,7 @@ const SurveyDetails = () => {
         }));
 
         const payload = {
-            enquiry: surveyId ? parseInt(surveyId) : null,
+            enquiry: existingSurvey ? existingSurvey.enquiry : (surveyId ? parseInt(surveyId) : null),
             customer_type: data.customerType || null,
             is_military: data.isMilitary,
             salutation: data.salutation,

@@ -113,6 +113,13 @@ class Quotation(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    created_by = models.ForeignKey(
+        'authapp.CustomUser', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="created_quotations"
+    )
     signature = models.FileField(upload_to='quotation_signatures/', null=True, blank=True)
     signature_uploaded = models.BooleanField(default=False)
 

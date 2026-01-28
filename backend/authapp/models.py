@@ -109,213 +109,34 @@ class UserPermission(models.Model):
 @receiver(post_save, sender=Role)
 def set_default_permissions(sender, instance, created, **kwargs):
     if created:
-        default_permissions = [
-            {
-                "page": "Dashboard",
-                "can_view": True,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "Profile",
-                "can_view": True,
-                "can_add": False,
-                "can_edit": True,
-                "can_delete": False,
-            },
-            {
-                "page": "enquiries",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "new_enquiries",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "scheduled_surveys",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "survey_summary",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "survey_details",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "follow_ups",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "processing_enquiries",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "quotation",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "booking",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "inventory",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "pricing",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "local_move",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "international_move",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "types",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "units",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "currency",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "tax",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "handyman",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "manpower",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "room",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "additional-services",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "labours",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "materials",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "users",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "roles",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
-            {
-                "page": "permissions",
-                "can_view": False,
-                "can_add": False,
-                "can_edit": False,
-                "can_delete": False,
-            },
+        # Check if it's superadmin (case-insensitive for safety)
+        is_superadmin = instance.name.strip().lower() == "superadmin"
+        
+        # Comprehensive list of all page slugs used in the system
+        # These MUST match the slugs used in Sidebar and Permissions UI
+        all_pages = [
+            "Dashboard", "Profile", 
+            "enquiries", "new_enquiries", "follow_ups", "processing_enquiries",
+            "scheduled_surveys", "survey_details", "survey_summary",
+            "quotation", "booking", "inventory", "pricing", 
+            "local_move", "international_move", "additional_settings",
+            "types", "units", "currency", "tax", "handyman", "manpower", "room",
+            "additional-services", "labours", "materials", 
+            "users", "roles", "permissions"
         ]
 
-        for perm in default_permissions:
-            Permission.objects.get_or_create(
+        for page in all_pages:
+            # ONLY Dashboard and Profile should have access for normal roles
+            # Superadmin gets everything
+            allowed = is_superadmin or (page in ["Dashboard", "Profile"])
+            
+            Permission.objects.update_or_create(
                 role=instance,
-                page=perm["page"],
+                page=page,
                 defaults={
-                    "can_view": perm.get("can_view", False),
-                    "can_add": perm.get("can_add", False),
-                    "can_edit": perm.get("can_edit", False),
-                    "can_delete": perm.get("can_delete", False),
+                    "can_view": allowed,
+                    "can_add": allowed,
+                    "can_edit": allowed,
+                    "can_delete": allowed,
                 },
             )

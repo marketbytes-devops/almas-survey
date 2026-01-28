@@ -167,7 +167,7 @@ def build_work_order_template(booking):
                                     <div class="brand-col">
                                         <img src="{logo_b64}" alt="Almas Movers" class="logo"/>
                                         <div class="company-address">
-                                            P.O. Box 24665, Doha, Qatar<br>
+                                            CR No 72379, Doha, Qatar<br>
                                             Freight@almasint.com | +974 5013 6999
                                         </div>
                                     </div>

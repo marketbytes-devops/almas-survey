@@ -89,7 +89,7 @@ const BookingConfirmation = forwardRef(
           <div>
             <img src={CompanyLogo} alt="Almas Movers" style={{ height: "70px", marginBottom: "8px" }} />
             <div style={{ fontSize: "9pt", color: "#555", lineHeight: "1.4" }}>
-              P.O. Box 24665, Doha, Qatar<br />
+              CR No 72379, Doha, Qatar<br />
               Freight@almasint.com | +974 5013 6999
             </div>
           </div>

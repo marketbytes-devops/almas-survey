@@ -90,7 +90,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'username', 'name', 'role', 'role_id']
+        fields = ['id', 'email', 'username', 'name', 'phone_number', 'role', 'role_id']
         read_only_fields = ['id']
 
 
@@ -147,7 +147,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'username', 'name', 'role_id']
+        fields = ['email', 'username', 'name', 'phone_number', 'role_id']
 
     def create(self, validated_data):
         password_length = 12

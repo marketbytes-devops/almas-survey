@@ -24,7 +24,7 @@ from authapp.mixins import RowLevelFilterMixin
 logger = logging.getLogger(__name__)
 
 
-class QuotationViewSet(viewsets.ModelViewSet):
+class QuotationViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
     """
     ViewSet for managing quotations.
     - One quotation per survey (enforced)
@@ -78,9 +78,9 @@ class QuotationViewSet(viewsets.ModelViewSet):
             )
 
         with transaction.atomic():
-            quotation = serializer.save()
+            quotation = serializer.save(created_by=self.request.user)
             logger.info(
-                f"Quotation {quotation.quotation_id} created for survey {survey.survey_id}"
+                f"Quotation {quotation.quotation_id} created for survey {survey.survey_id} by {self.request.user.email}"
             )
 
     def perform_update(self, serializer):

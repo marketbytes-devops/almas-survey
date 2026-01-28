@@ -58,7 +58,7 @@ const QuotationLocalMove = forwardRef((props, ref) => {
         mobile: "0097450136999",
     };
 
-    const companyAddress = "P.O. Box 24665, Doha, Qatar";
+    const companyAddress = "CR No 72379, Doha, Qatar";
 
     const generateHtmlContent = () => {
         const customerName = name || "Valued Customer";
@@ -159,8 +159,8 @@ const QuotationLocalMove = forwardRef((props, ref) => {
                         <div class="brand-col">
                             <img src="${CompanyLogo}" alt="Almas Movers" class="logo"/>
                             <div class="company-address">
-                                P.O. Box 24665, Doha, Qatar<br>
-                                Freight@almasint.com | +974 5013 6999
+                                CR No 72379, Doha, Qatar<br>
+                                ${quotation?.created_by_email || "Freight@almasint.com"} | ${quotation?.created_by_phone ? '+' + quotation.created_by_phone : "+974 5013 6999"}
                             </div>
                         </div>
                         <div class="meta-col">

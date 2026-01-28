@@ -39,11 +39,11 @@ const Users = () => {
   const [expandedUsers, setExpandedUsers] = useState(new Set());
 
   const createForm = useForm({
-    defaultValues: { email: "", name: "", role_id: "" },
+    defaultValues: { email: "", name: "", phone_number: "", role_id: "" },
   });
 
   const editForm = useForm({
-    defaultValues: { email: "", name: "", role_id: "" },
+    defaultValues: { email: "", name: "", phone_number: "", role_id: "" },
   });
 
   const { reset: resetCreateForm } = createForm;
@@ -168,6 +168,7 @@ const Users = () => {
     editForm.reset({
       email: user.email,
       name: user.name || "",
+      phone_number: user.phone_number || "",
       role_id: user.role?.id || "",
     });
   };
@@ -308,9 +309,16 @@ const Users = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiMail className="w-4 h-4 text-gray-400" />
-                        {user.email}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FiMail className="w-4 h-4 text-gray-400" />
+                          {user.email}
+                        </div>
+                        {user.phone_number && (
+                          <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+                            <FiPlus className="w-3 h-3" /> {user.phone_number}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
@@ -421,6 +429,12 @@ const Users = () => {
                 disabled={isCreatingUser}
               />
               <Input
+                label="Phone Number"
+                name="phone_number"
+                placeholder="0097450136999"
+                disabled={isCreatingUser}
+              />
+              <Input
                 label="Email Address"
                 name="email"
                 type="email"
@@ -484,6 +498,12 @@ const Users = () => {
                 name="name"
                 placeholder="John Doe"
                 rules={{ required: "Name is required" }}
+                disabled={isEditingUser}
+              />
+              <Input
+                label="Phone Number"
+                name="phone_number"
+                placeholder="0097450136999"
                 disabled={isEditingUser}
               />
               <Input

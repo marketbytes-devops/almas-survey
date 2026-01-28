@@ -15,6 +15,9 @@ class QuotationSerializer(serializers.ModelSerializer):
     final_amount = serializers.SerializerMethodField(read_only=True)
     balance = serializers.SerializerMethodField(read_only=True)
     signature_url = serializers.SerializerMethodField(read_only=True)
+    created_by_email = serializers.EmailField(source="created_by.email", read_only=True, allow_null=True)
+    created_by_phone = serializers.CharField(source="created_by.phone_number", read_only=True, allow_null=True)
+    created_by_name = serializers.CharField(source="created_by.name", read_only=True, allow_null=True)
 
     survey = serializers.PrimaryKeyRelatedField(
         queryset=Survey.objects.all(),
@@ -71,6 +74,7 @@ class QuotationSerializer(serializers.ModelSerializer):
             "included_services", "excluded_services", "selected_services", "additional_charges", "remarks",
             "created_at", "updated_at",
             "signature", "signature_uploaded", "signature_url",
+            "created_by_email", "created_by_phone", "created_by_name",
         ]
         read_only_fields = [
             "id", "quotation_id", "created_at", "updated_at",
