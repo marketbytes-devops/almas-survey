@@ -3,8 +3,10 @@ HTML Template Generator for Quotation PDFs
 Mirrors the QuotationLocalMove.jsx component's HTML/CSS structure
 """
 import os
+import base64
 from datetime import datetime
 from django.conf import settings
+from additional_settings.models import SurveyAdditionalService
 
 
 def get_certification_logos():
@@ -13,8 +15,6 @@ def get_certification_logos():
     base_path = os.path.join(settings.BASE_DIR, 'quotation', 'static', 'quotation', 'images')
     return [os.path.join(base_path, logo) for logo in logos]
 
-
-import base64
 
 def get_base64_image(file_path):
     """Encode image file to base64 data URI"""
@@ -127,8 +127,6 @@ def build_html_template(quotation):
                 <span class="value text-red">-{discount_amt}</span>
             </div>
         """
-    
-    from additional_settings.models import SurveyAdditionalService
     
     included_services = []
     if quotation.included_services:

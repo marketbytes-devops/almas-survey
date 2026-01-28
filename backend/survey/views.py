@@ -133,10 +133,8 @@ class SurveyViewSet(viewsets.ModelViewSet, RowLevelFilterMixin):
         id_param = self.request.query_params.get('enquiry_id')
         if id_param:
             if id_param.isdigit():
-                # It's an integer PK
                 queryset = queryset.filter(enquiry_id=id_param)
             else:
-                # It's a string survey_id
                 queryset = queryset.filter(survey_id=id_param)
         
         return queryset.select_related('enquiry').prefetch_related(

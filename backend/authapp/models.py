@@ -109,27 +109,43 @@ class UserPermission(models.Model):
 @receiver(post_save, sender=Role)
 def set_default_permissions(sender, instance, created, **kwargs):
     if created:
-        # Check if it's superadmin (case-insensitive for safety)
         is_superadmin = instance.name.strip().lower() == "superadmin"
-        
-        # Comprehensive list of all page slugs used in the system
-        # These MUST match the slugs used in Sidebar and Permissions UI
+
         all_pages = [
-            "Dashboard", "Profile", 
-            "enquiries", "new_enquiries", "follow_ups", "processing_enquiries",
-            "scheduled_surveys", "survey_details", "survey_summary",
-            "quotation", "booking", "inventory", "pricing", 
-            "local_move", "international_move", "additional_settings",
-            "types", "units", "currency", "tax", "handyman", "manpower", "room",
-            "additional-services", "labours", "materials", 
-            "users", "roles", "permissions"
+            "Dashboard",
+            "Profile",
+            "enquiries",
+            "new_enquiries",
+            "follow_ups",
+            "processing_enquiries",
+            "scheduled_surveys",
+            "survey_details",
+            "survey_summary",
+            "quotation",
+            "booking",
+            "inventory",
+            "pricing",
+            "local_move",
+            "international_move",
+            "additional_settings",
+            "types",
+            "units",
+            "currency",
+            "tax",
+            "handyman",
+            "manpower",
+            "room",
+            "additional-services",
+            "labours",
+            "materials",
+            "users",
+            "roles",
+            "permissions",
         ]
 
         for page in all_pages:
-            # ONLY Dashboard and Profile should have access for normal roles
-            # Superadmin gets everything
             allowed = is_superadmin or (page in ["Dashboard", "Profile"])
-            
+
             Permission.objects.update_or_create(
                 role=instance,
                 page=page,

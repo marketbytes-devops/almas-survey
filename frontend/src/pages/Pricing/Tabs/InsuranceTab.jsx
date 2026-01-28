@@ -13,7 +13,7 @@ import {
 import apiClient from "../../../api/apiClient";
 import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
-const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
+const API_BASE = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
 const InsuranceTab = () => {
   const { hasPermission } = usePermissions();

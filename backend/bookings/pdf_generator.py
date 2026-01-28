@@ -20,7 +20,6 @@ def generate_booking_pdf(booking):
     pdf_dir = os.path.join(settings.MEDIA_ROOT, 'booking_pdfs')
     os.makedirs(pdf_dir, exist_ok=True)
     
-    # Filename changed to WorkOrder
     filename = f"WorkOrder_{booking.booking_id}.pdf"
     filepath = os.path.join(pdf_dir, filename)
     

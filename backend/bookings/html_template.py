@@ -6,7 +6,7 @@ import os
 import base64
 from datetime import datetime
 from django.conf import settings
-
+from additional_settings.models import SurveyAdditionalService
 
 def get_base64_image(file_path):
     """Encode image file to base64 data URI"""
@@ -61,12 +61,8 @@ def build_work_order_template(booking):
     booking_number = booking.booking_id or "N/A"
     today_formatted = datetime.now().strftime('%d %B %Y')
     
-    # supervisor
     supervisor_name = booking.supervisor.name if booking.supervisor else "N/A"
     supervisor_phone = booking.supervisor.phone_number if booking.supervisor else "N/A"
-
-    # Services Includes/Excludes from Quotation
-    from additional_settings.models import SurveyAdditionalService
     
     included_services = []
     if quotation.included_services:
@@ -94,28 +90,24 @@ def build_work_order_template(booking):
     if not exclusions_html:
         exclusions_html = '<li><span class="cross-icon">✗</span> Customs Duties</li><li><span class="cross-icon">✗</span> Storage</li>'
 
-    # Assigned manpower
     labours = booking.labours.all()
     manpower_rows = "".join([
         f'<tr><td>{l.staff_member.name if l.staff_member else "—"}</td><td>{l.quantity or 1}</td></tr>'
         for l in labours
     ]) if labours.exists() else '<tr><td colspan="2" style="text-align:center">No manpower assigned</td></tr>'
 
-    # Trucks
     trucks = booking.trucks.all()
     truck_rows = "".join([
         f'<tr><td>{t.truck_type.name if t.truck_type else "N/A"}</td><td>{t.quantity or 1}</td></tr>'
         for t in trucks
     ]) if trucks.exists() else '<tr><td colspan="2" style="text-align:center">No trucks assigned</td></tr>'
 
-    # Materials
     materials = booking.materials.all()
     material_rows = "".join([
         f'<tr><td>{m.material.name if m.material else "N/A"}</td><td>{m.quantity or 1}</td></tr>'
         for m in materials
     ]) if materials.exists() else '<tr><td colspan="2" style="text-align:center">No materials assigned</td></tr>'
 
-    # GPS Link
     gps_link = None
     if survey and hasattr(survey, 'origin_gps'):
         gps_link = survey.origin_gps.strip()
