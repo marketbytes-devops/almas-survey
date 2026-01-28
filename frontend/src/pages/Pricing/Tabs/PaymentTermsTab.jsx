@@ -14,7 +14,7 @@ import apiClient from "../../../api/apiClient";
 import RichTextEditor from "../../../components/RichTextEditor";
 import { usePermissions } from "../../../components/PermissionsContext/PermissionsContext";
 
-const API_BASE = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
+const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
 
 const PaymentTermsTab = () => {
   const { hasPermission } = usePermissions();
