@@ -29,35 +29,35 @@ const PlasticBoxes = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl flex items-center gap-4">
-                <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-sm">
-                    <FiBox className="w-6 h-6" />
+            <div className="bg-indigo-50 border border-indigo-100 p-4 md:p-6 rounded-2xl md:rounded-3xl flex items-center gap-4">
+                <div className="p-2.5 md:p-3 bg-indigo-600 text-white rounded-lg md:rounded-xl shadow-sm">
+                    <FiBox className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                    <p className="text-base font-medium text-indigo-700">Plastic Boxes Inventory</p>
-                    <p className="text-gray-600 text-sm mt-1">Special tracking for reusable plastic moving crates.</p>
+                    <p className="text-sm md:text-base font-medium text-indigo-700">Plastic Boxes Inventory</p>
+                    <p className="text-gray-600 text-[10px] md:text-sm mt-0.5 md:mt-1">Special tracking for reusable plastic moving crates.</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {materials.length > 0 ? (
                     materials.map((m) => (
-                        <div key={m.id} className="bg-white border border-gray-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow group">
-                            <div className="flex justify-between items-start mb-4">
-                                <h3 className="font-bold text-lg text-gray-800 group-hover:text-[#4c7085] transition-colors">{m.name}</h3>
-                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${parseFloat(m.stock_in_hand) > 0
+                        <div key={m.id} className="bg-white border border-gray-200 p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm hover:shadow-md transition-shadow group">
+                            <div className="flex justify-between items-start mb-4 gap-2">
+                                <h3 className="font-bold text-base md:text-lg text-gray-800 group-hover:text-[#4c7085] transition-colors line-clamp-1">{m.name}</h3>
+                                <span className={`px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium border whitespace-nowrap ${parseFloat(m.stock_in_hand) > 0
                                     ? "bg-green-50 text-green-700 border-green-100"
                                     : "bg-red-50 text-red-700 border-red-100"
                                     }`}>
                                     {m.stock_in_hand} {m.unit || "Pcs"}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <p className="text-xs md:text-sm text-gray-600 mb-4 md:mb-6 bg-gray-50 p-2.5 md:p-3 rounded-lg md:rounded-xl border border-gray-100 line-clamp-2 md:line-clamp-none">
                                 {m.description || "No description provided."}
                             </p>
 
                             <div className="space-y-3">
-                                <div className="flex justify-between text-sm py-3 border-t border-gray-100 text-gray-600">
+                                <div className="flex justify-between text-xs md:text-sm py-2 md:py-3 border-t border-gray-100 text-gray-600">
                                     <span className="font-medium text-gray-600">Stock in Hand</span>
                                     <span className="font-bold text-gray-800">{m.stock_in_hand}</span>
                                 </div>

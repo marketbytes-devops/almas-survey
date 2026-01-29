@@ -211,10 +211,10 @@ const AdminDashboard = () => {
           </div>
 
           <div className="p-6 flex-1 bg-gray-50/30 space-y-3">
-            <NavLink to="/additional-settings/rooms" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
+            <NavLink to="/additional-settings/room" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
               <span className="text-sm font-medium text-gray-600 group-hover:text-[#4c7085]">Rooms & Items</span>
             </NavLink>
-            <NavLink to="/pricing/additional-services" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
+            <NavLink to="/additional-settings/additional-services" className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-[#4c7085] transition-all group">
               <span className="text-sm font-medium text-gray-600 group-hover:text-[#4c7085]">Additional Services</span>
             </NavLink>
           </div>

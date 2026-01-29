@@ -26,45 +26,45 @@ const UsageTracking = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-red-50 border border-red-100 p-6 rounded-3xl flex items-center gap-4">
-                <div className="p-3 bg-red-600 text-white rounded-xl shadow-sm">
-                    <FiTrendingDown className="w-6 h-6" />
+            <div className="bg-red-50 border border-red-100 p-4 md:p-6 rounded-2xl md:rounded-3xl flex items-center gap-4">
+                <div className="p-2.5 md:p-3 bg-red-600 text-white rounded-lg md:rounded-xl shadow-sm">
+                    <FiTrendingDown className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                    <p className="text-base font-medium text-red-700">Material Usage Tracking</p>
-                    <p className="text-gray-600 text-sm mt-1">Review all materials consumed during confirmed bookings.</p>
+                    <p className="text-sm md:text-base font-medium text-red-700">Material Usage Tracking</p>
+                    <p className="text-gray-600 text-[10px] md:text-sm mt-0.5 md:mt-1">Review all materials consumed during confirmed bookings.</p>
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Date & Time</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Material</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Quantity Used</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Booking ID</th>
-                                <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Notes</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-[10px] md:text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Date & Time</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-[10px] md:text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Material</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-[10px] md:text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap text-center">Qty Used</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-[10px] md:text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Booking ID</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-[10px] md:text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Notes</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {logs.length > 0 ? (
                                 logs.map((log) => (
                                     <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-4 text-sm text-gray-600">{new Date(log.date).toLocaleString()}</td>
-                                        <td className="px-6 py-4 font-medium text-gray-800">{log.material_name}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-100">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm text-gray-600 whitespace-nowrap">{new Date(log.date).toLocaleString()}</td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4 font-medium text-gray-800 whitespace-nowrap">{log.material_name}</td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-center whitespace-nowrap">
+                                            <span className="inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-medium bg-red-50 text-red-700 border border-red-100">
                                                 -{Math.abs(log.quantity)}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-xs font-medium border border-blue-100">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                                            <span className="bg-blue-50 text-blue-600 px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg text-[10px] md:text-xs font-medium border border-blue-100">
                                                 {log.reference_id}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 italic">{log.notes || "—"}</td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm text-gray-600 italic lg:whitespace-normal whitespace-nowrap">{log.notes || "—"}</td>
                                     </tr>
                                 ))
                             ) : (

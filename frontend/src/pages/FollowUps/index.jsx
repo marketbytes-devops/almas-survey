@@ -72,6 +72,7 @@ const FollowUps = () => {
   const [filteredEnquiries, setFilteredEnquiries] = useState([]);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { hasPermission, isSuperadmin, isLoadingPermissions } = usePermissions();
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
