@@ -106,48 +106,85 @@ class UserPermission(models.Model):
         return f"{self.user.email} - {self.page}"
 
 
+ALL_PAGES = [
+    "Dashboard",
+    "Profile",
+    "enquiries",
+    "new_enquiries",
+    "follow_ups",
+    "processing_enquiries",
+    "scheduled_surveys",
+    "survey_details",
+    "survey_summary",
+    "quotation",
+    "booking",
+    "inventory",
+    "pricing",
+    "local_move",
+    "international_move",
+    "additional_settings",
+    "types",
+    "units",
+    "currency",
+    "tax",
+    "handyman",
+    "manpower",
+    "room",
+    "additional-services",
+    "labours",
+    "materials",
+    "users",
+    "roles",
+    "permissions",
+]
+
+
 @receiver(post_save, sender=Role)
 def set_default_permissions(sender, instance, created, **kwargs):
     if created:
         is_superadmin = instance.name.strip().lower() == "superadmin"
 
-        all_pages = [
-            "Dashboard",
-            "Profile",
-            "enquiries",
-            "new_enquiries",
-            "follow_ups",
-            "processing_enquiries",
-            "scheduled_surveys",
-            "survey_details",
-            "survey_summary",
-            "quotation",
-            "booking",
-            "inventory",
-            "pricing",
-            "local_move",
-            "international_move",
-            "additional_settings",
-            "types",
-            "units",
-            "currency",
-            "tax",
-            "handyman",
-            "manpower",
-            "room",
-            "additional-services",
-            "labours",
-            "materials",
-            "users",
-            "roles",
-            "permissions",
-        ]
-
-        for page in all_pages:
+        for page in ALL_PAGES:
             allowed = is_superadmin or (page in ["Dashboard", "Profile"])
 
             Permission.objects.update_or_create(
                 role=instance,
+                page=page,
+                defaults={
+                    "can_view": allowed,
+                    "can_add": allowed,
+                    "can_edit": allowed,
+                    "can_delete": allowed,
+                },
+            )
+
+
+
+@receiver(post_save, sender=CustomUser)
+def set_default_user_permissions(sender, instance, created, **kwargs):
+    """
+    Automatically create default permission overrides when a new user is created.
+    - Superadmin role: All pages get all permissions (True).
+    - Other roles: Dashboard and Profile get all permissions (True), 
+      all other pages get no permissions (False).
+    """
+    if created and instance.role:
+        is_superadmin = instance.role.name.strip().lower() == "superadmin"
+
+        for page in ALL_PAGES:
+            # If superadmin, all pages are allowed.
+            if is_superadmin:
+                allowed = True
+            # Otherwise, only Dashboard and Profile are allowed.
+            elif page in ["Dashboard", "Profile"]:
+                allowed = True
+            else:
+                # Explicitly set to False for all other pages to ensure they are 
+                # unselected in the overrides UI and restricted.
+                allowed = False
+
+            UserPermission.objects.update_or_create(
+                user=instance,
                 page=page,
                 defaults={
                     "can_view": allowed,
