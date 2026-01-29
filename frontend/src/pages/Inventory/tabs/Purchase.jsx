@@ -181,26 +181,28 @@ const Purchase = () => {
                         <FiClock className="text-[#4c7085] w-5 h-5" />
                         <h2 className="font-medium text-gray-800">Recent Purchases</h2>
                     </div>
-                    <div className="overflow-x-auto flex-1">
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto flex-1">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-gray-50/30 border-b border-gray-100">
-                                    <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Date</th>
-                                    <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Material</th>
-                                    <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right whitespace-nowrap">Qty</th>
-                                    <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right whitespace-nowrap">Unit Price</th>
-                                    <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right whitespace-nowrap">Total</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Date</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Material</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right whitespace-nowrap">Qty</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right whitespace-nowrap">Unit Price</th>
+                                    <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-right whitespace-nowrap">Total</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {purchases.length > 0 ? (
                                     purchases.map((p) => (
                                         <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-600 whitespace-nowrap">{new Date(p.purchase_date).toLocaleDateString()}</td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4 font-medium text-gray-800 whitespace-nowrap">{p.material_name}</td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-600 text-right">{p.quantity}</td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-600 text-right whitespace-nowrap">{p.unit_price} QAR</td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4 font-medium text-[#4c7085] text-right whitespace-nowrap">{p.total_price} QAR</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{new Date(p.purchase_date).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 font-medium text-gray-800 whitespace-nowrap">{p.material_name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 text-right">{p.quantity}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 text-right whitespace-nowrap">{p.unit_price} QAR</td>
+                                            <td className="px-6 py-4 font-medium text-[#4c7085] text-right whitespace-nowrap">{p.total_price} QAR</td>
                                         </tr>
                                     ))
                                 ) : (
@@ -213,6 +215,47 @@ const Purchase = () => {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-gray-50 overflow-y-auto max-h-[500px]">
+                        {purchases.length > 0 ? (
+                            purchases.map((p) => (
+                                <div key={p.id} className="p-4 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Material</p>
+                                            <h3 className="font-semibold text-gray-900">{p.material_name}</h3>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Total</p>
+                                            <p className="font-bold text-[#4c7085]">{p.total_price} QAR</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Quantity</p>
+                                            <p className="text-sm font-medium text-gray-700">{p.quantity}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Unit Price</p>
+                                            <p className="text-sm font-medium text-gray-700">{p.unit_price} QAR</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Date</span>
+                                        <span className="text-xs text-gray-600">{new Date(p.purchase_date).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="px-6 py-10 text-center text-gray-600">
+                                No purchase records found.
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </div>
         </div>
