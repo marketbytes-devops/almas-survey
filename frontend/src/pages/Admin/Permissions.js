@@ -208,6 +208,20 @@ const Permissions = () => {
     }
   };
 
+  const handleSelectAll = (selectAll = true) => {
+    const newOverrides = { ...userOverrides };
+    Object.keys(newOverrides).forEach(page => {
+      newOverrides[page] = {
+        ...newOverrides[page],
+        view: selectAll,
+        add: selectAll,
+        edit: selectAll,
+        delete: selectAll
+      };
+    });
+    setUserOverrides(newOverrides);
+  };
+
   const handleOverrideChange = (page, action) => {
     setUserOverrides((prev) => ({
       ...prev,
@@ -398,6 +412,29 @@ const Permissions = () => {
                 <p className="text-xs text-amber-700 mt-0.5">
                   These settings will override the default permissions assigned to the user's role.
                 </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100 gap-4">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Select All Permissions</h4>
+                <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Quickly enable or disable all access rights across all modules</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSelectAll(false)}
+                  className="px-4 py-2 text-xs font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-gray-200 hover:border-red-100 flex-1 sm:flex-none"
+                >
+                  Deselect All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAll(true)}
+                  className="px-5 py-2 text-xs font-medium bg-[#4c7085] text-white hover:bg-[#3a5d72] rounded-xl transition-all shadow-sm hover:shadow focus:ring-4 focus:ring-[#4c7085]/10 flex-1 sm:flex-none"
+                >
+                  Select All
+                </button>
               </div>
             </div>
 
