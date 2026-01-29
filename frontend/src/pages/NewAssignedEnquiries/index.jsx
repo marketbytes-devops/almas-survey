@@ -310,7 +310,7 @@ const NewAssignedEnquiries = () => {
     }
     setSelectedEnquiry(enquiry);
     contactStatusForm.reset({
-      status: "",
+      status: enquiry.contact_status || "Not Attended",
       contactStatusNote: enquiry.contact_status_note || "",
       reachedOutWhatsApp: enquiry.reached_out_whatsapp || false,
       reachedOutEmail: enquiry.reached_out_email || false,

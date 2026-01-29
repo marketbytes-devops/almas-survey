@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa";
 import apiClient from "../../../api/apiClient";
 
-const API_BASE = apiClient.defaults.baseURL || "http://127.0.0.1:8000/api";
+const API_BASE = apiClient.defaults.baseURL || "https://backend.almasintl.com/api";
 
 const RemarksTab = () => {
   const [remarks, setRemarks] = useState([]);
