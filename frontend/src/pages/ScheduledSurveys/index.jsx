@@ -455,7 +455,7 @@ const ScheduledSurveys = () => {
                   const status = enquiry.survey_status || "pending";
                   return (
                     <tr key={enquiry.id} className="hover:bg-gray-50/30 transition-colors group">
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-gray-800 flex items-center gap-2">
                             <FiCalendar className="w-4 h-4 text-[#4c7085]" />
@@ -467,7 +467,7 @@ const ScheduledSurveys = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-sm">
                             {enquiry.fullName?.charAt(0) || "C"}
@@ -478,7 +478,7 @@ const ScheduledSurveys = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
                           {serviceOptions.find(o => o.value === enquiry.serviceType)?.label || enquiry.serviceType}
                         </span>
@@ -488,7 +488,7 @@ const ScheduledSurveys = () => {
                           {getSurveyStatusDisplay(enquiry)}
                         </span>
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <p className="text-sm text-gray-600 font-medium">{enquiry.assigned_user_email || "Unassigned"}</p>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">

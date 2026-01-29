@@ -152,7 +152,7 @@ const ProcessingEnquiries = () => {
               <tbody className="divide-y divide-gray-50">
                 {filteredEnquiries.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/30 transition-colors">
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-sm">
                           {item.fullName?.charAt(0) || "C"}
@@ -163,27 +163,27 @@ const ProcessingEnquiries = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700">{item.phoneNumber}</p>
                         <p className="text-xs text-gray-600">{item.email}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
                         {serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                         <span className="text-sm text-gray-600 font-medium">{item.assigned_user_email}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <span className="text-sm text-gray-600">{new Date(item.created_at).toLocaleDateString()}</span>
                     </td>
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-6 py-5 text-center whitespace-nowrap">
                       <button
                         onClick={() => openPhoneModal(item)}
                         className="w-10 h-10 inline-flex items-center justify-center text-green-500 bg-green-50 hover:bg-green-500 hover:text-white rounded-xl transition-all shadow-sm"

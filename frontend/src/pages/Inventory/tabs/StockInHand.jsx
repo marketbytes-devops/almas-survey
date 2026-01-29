@@ -79,12 +79,12 @@ const StockInHand = () => {
                                 return (
                                     <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-gray-800 whitespace-nowrap">{m.name}</td>
-                                        <td className="px-6 py-4 text-base font-medium text-gray-800 text-center">
+                                        <td className="px-6 py-4 text-base font-medium text-gray-800 whitespace-nowrap text-center">
                                             {m.stock_in_hand}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{m.unit || "—"}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{m.purchase_price ? `${m.purchase_price} QAR` : "—"}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColor} whitespace-nowrap`}>
                                                 {statusText}
                                             </span>

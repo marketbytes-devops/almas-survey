@@ -408,7 +408,7 @@ const Enquiries = () => {
                 <tr className="bg-gray-50/50">
                   <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Client</th>
                   <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Contact</th>
-                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Service</th>
+                  <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest whitespace-nowrap">Service</th>
                   <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Assigned To</th>
                   <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest">Created</th>
                   <th className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tracking-widest text-center">Actions</th>
@@ -428,7 +428,7 @@ const Enquiries = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
                           <FiPhone className="w-3.5 h-3.5 text-gray-600" /> {item.phoneNumber}
@@ -438,12 +438,12 @@ const Enquiries = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
                         {serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       {item.assigned_user_email ? (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FiCheckCircle className="text-green-500" />
@@ -455,13 +455,13 @@ const Enquiries = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="text-sm text-gray-600">
                         <p>{new Date(item.created_at).toLocaleDateString()}</p>
                         <p className="text-xs opacity-60">{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-3">
                         {hasPermission("enquiries", "edit") && (
                           <button onClick={() => { setSelectedEnquiry(item); setIsAssignOpen(true); }} className="w-9 h-9 flex items-center justify-center text-[#4c7085] bg-slate-50 hover:bg-[#4c7085] hover:text-white rounded-xl transition-all duration-200" title="Assign">

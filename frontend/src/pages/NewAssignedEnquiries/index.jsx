@@ -436,7 +436,7 @@ const NewAssignedEnquiries = () => {
               <tbody className="divide-y divide-gray-50">
                 {currentEnquiries.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/30 transition-colors group">
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#4c7085]/10 flex items-center justify-center text-[#4c7085] font-medium text-sm">
                           {item.fullName?.charAt(0) || "C"}
@@ -447,7 +447,7 @@ const NewAssignedEnquiries = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
                           <FiPhone className="w-3.5 h-3.5 text-gray-600" /> {item.phoneNumber}
@@ -457,12 +457,12 @@ const NewAssignedEnquiries = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
                         {serviceOptions.find(o => o.value === item.serviceType)?.label || item.serviceType}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <span className={`text-xs font-medium flex items-center gap-1.5 ${item.contact_status === 'Attended' ? 'text-green-600' : 'text-amber-500'}`}>
                           {item.contact_status === 'Attended' ? <FiCheckCircle /> : <FiClock />}
@@ -477,12 +477,12 @@ const NewAssignedEnquiries = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="text-sm text-gray-600">
                         <p>{new Date(item.created_at).toLocaleDateString()}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2">
                         {hasPermission("new_enquiries", "edit") && (
                           <button
