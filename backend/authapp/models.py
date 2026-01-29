@@ -172,15 +172,11 @@ def set_default_user_permissions(sender, instance, created, **kwargs):
         is_superadmin = instance.role.name.strip().lower() == "superadmin"
 
         for page in ALL_PAGES:
-            # If superadmin, all pages are allowed.
             if is_superadmin:
                 allowed = True
-            # Otherwise, only Dashboard and Profile are allowed.
             elif page in ["Dashboard", "Profile"]:
                 allowed = True
             else:
-                # Explicitly set to False for all other pages to ensure they are 
-                # unselected in the overrides UI and restricted.
                 allowed = False
 
             UserPermission.objects.update_or_create(
