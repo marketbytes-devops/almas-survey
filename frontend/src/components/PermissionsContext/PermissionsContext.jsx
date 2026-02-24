@@ -78,6 +78,7 @@ export const PermissionsProvider = ({ children, isAuthenticated }) => {
   };
 
   const value = {
+    isAuthenticated,
     hasPermission,
     isSuperadmin,
     isLoadingPermissions,

@@ -1,7 +1,0 @@
-# Ignore Django static files
-static/
-!static/.gitkeep  # optional: keep empty folder in repo
-
-# Ignore Django logs
-logs/
-!logs/.gitkeep  # optional: keep the folder structure

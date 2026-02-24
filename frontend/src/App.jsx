@@ -46,7 +46,8 @@ const ProtectedRoute = ({
   requiredPage,
   requiredAction = "view",
 }) => {
-  const { hasPermission, isLoadingPermissions, isSuperadmin } = usePermissions();
+  const { isAuthenticated, hasPermission, isLoadingPermissions, isSuperadmin } = usePermissions();
+  const location = window.location.pathname;
 
   // Show loading spinner while permissions are being fetched
   if (isLoadingPermissions) {
@@ -57,11 +58,37 @@ const ProtectedRoute = ({
     );
   }
 
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   // Final permission check using effective permissions (role + user overrides)
   const canAccess = isSuperadmin || (requiredPage ? hasPermission(requiredPage, requiredAction) : true);
 
   if (!canAccess) {
-    return <Navigate to="/" replace />;
+    // If they can't access the specific page, send them to dashboard unless they are already there
+    if (location !== "/") {
+      return <Navigate to="/" replace />;
+    }
+    // If they are at "/" but don't have "Dashboard" permission, this is a configuration issue
+    // but we must avoid a loop. Maybe show a "No access" message or redirect to profile?
+    // For now, let's just show an error if they can't even see the dashboard.
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50 text-gray-800">
+        <h1 className="text-2xl font-bold mb-4">No Access</h1>
+        <p>You don't have permission to access this page.</p>
+        <button
+          onClick={() => {
+            localStorage.clear();
+            window.location.href = "/login";
+          }}
+          className="mt-4 px-4 py-2 bg-[#4c7085] text-white rounded hover:bg-[#3d5a6b]"
+        >
+          Logout and Try Again
+        </button>
+      </div>
+    );
   }
 
   return children;
